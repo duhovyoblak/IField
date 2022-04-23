@@ -5,6 +5,7 @@ import sys
 sys.path.append('lib')
 
 from siqo_lib      import journal
+from server        import srv
 
 #==============================================================================
 # package's constants
