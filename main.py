@@ -2,7 +2,7 @@
 #  IField: main file
 #------------------------------------------------------------------------------
 import sys
-sys.path.append('lib')
+sys.path.append('dwh_lib')
 
 from siqo_lib      import journal
 from server        import srv
