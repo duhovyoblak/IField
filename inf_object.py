@@ -33,7 +33,14 @@ class IObject:
         info = {}
         out  = []
         
-        out.append('{} {}'.format(100*'=', 'Objects'))
+        out.append('{} {}'.format(90*'=', 'Objects:'))
+        
+        for objId, obj in IObject.objs.items():
+            info[objId] = obj.objVal
+            
+        #----------------------------------------------------------------------
+        # Output
+        for key, val in info.items(): out.append(f'{key.ljust(_ID_LEN+3)} = {val}')
 
         #----------------------------------------------------------------------
         return {'res':'OK', 'info':info, 'out':out, 'obj':None}
@@ -46,6 +53,32 @@ class IObject:
         # Check if such Object exists already
         if objVal in IObject.vals.keys(): return True
         else                            : return False
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def getObj(objVal, create=True):
+        "Returns Object with respective objVal if exists, else returns None or creates new Object"
+
+        IObject.journal.I(f"IObject.getObj: '{objVal}'")
+        toRet = None
+
+        #----------------------------------------------------------------------
+        # Check if such Object exists already
+        #----------------------------------------------------------------------
+        if IObject.isObj(objVal): toRet =  IObject.vals[objVal]
+
+        #----------------------------------------------------------------------
+        # Decision about creating new Object
+        #----------------------------------------------------------------------
+        else:
+            if create: toRet = IObject(objVal)
+            else     : toRet = None
+        
+        if toRet is None: objId = 'None'
+        else            : objId = toRet.objId
+
+        IObject.journal.O(f"IObject.getObj: Returns Object '{objId}'")
+        return toRet
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -84,16 +117,15 @@ class IObject:
 
         #----------------------------------------------------------------------
         # datove polozky triedy
-        
+        #----------------------------------------------------------------------
         self.objVal  = objVal                   # String of raw data constitiuing this Object
         self.objId   = IObject.valToId(objVal)  # String contains unique object Id
-        
+        self.objPrp  = {}                       # Objects properties
         
         self.status  = 'I'    # Actual status of this Objects ['I'nitialised, 'A'nalysed]
 
         self.prtLst  = []     # List of Objects IDs constituing objects
         self.prtHist = {}     # histogram of valId objects count
-        self.prop    = {}     # Objects properties
 
         #----------------------------------------------------------------------
         # Update zoznamov a indexov
@@ -107,9 +139,9 @@ class IObject:
         else     : IObject.vidx[len(self.objVal)] += 1
         
         #----------------------------------------------------------------------
-        # inicializacia triedy
+        # inicializacia Objektu
         #----------------------------------------------------------------------
-#        if self.objVal!='': self.encode()
+        self.encode()
 
         IObject.journal.O(f'{self.objId}.constructor: done with status {self.status}')
 
@@ -150,7 +182,7 @@ class IObject:
         "Returns string of objId's constituing this Object"
         
         idLst = [obj.objId for obj in self.prtLst]
-        return ', '.join(idLst)[:90]
+        return ','.join(idLst)[:90]
     
     #--------------------------------------------------------------------------
     def prtValStr(self):
@@ -200,15 +232,13 @@ class IObject:
                 val += self.objVal[pos]
                 pos += 1
             
-            # Ak len(val)=1 tak ide o novy atom, inak existujuci
-            if len(val)==1: 
-                IObject.journal.M(f'{self.objId}.encode: {val}')
-                part = IObject(val)
-                
-            else: 
-                IObject.journal.M(f'{self.objId}.encode: {val[:-1]}')
-                part = IObject.vals[val[:-1]]
+            # Korekcia posledneho znaku ak existuje aspon jednoznakova sekvencia
+            if len(val)>1:
+                val = val[:-1]
                 pos -= 1
+                
+            # Ziskam objekt s prislusnou objVal
+            part = IObject.getObj(val, create=True)
         
             # Vlozim partObject do zoznamu
             self.prtLst.append(part)

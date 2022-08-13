@@ -21,16 +21,17 @@ from   inf_object      import IObject
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
     
-    journal = SiqoJournal('IField', debug=5)
+    journal = SiqoJournal('IField', debug=9)
     IObject.journal = journal
 
     journal.I('Main loop')
     
-    obj = IObject('Ahoj marmeláda. Toto bude asi omyl.')
-    
-    obj.encode()
+    obj = IObject.getObj('Ahoj marmeláda. Toto bude asi omyl.')
     print(obj)
 
+    obj = IObject.getObj('Ahoj marmeláda. Toto bude asX omyl.')
+    print(obj)
+    
     journal.O('Main end')
 
 #==============================================================================
