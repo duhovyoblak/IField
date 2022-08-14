@@ -2,6 +2,7 @@
 # Siqo class IObject
 #------------------------------------------------------------------------------
 # from  datetime import datetime, timedelta
+import inf_lib         as lib
 
 #==============================================================================
 # package's constants
@@ -126,6 +127,8 @@ class IObject:
 
         self.prtLst  = []     # List of Objects IDs constituing objects
         self.prtHist = {}     # histogram of valId objects count
+        
+        self.aidMat  = []     # AutoIdentity Matrix
 
         #----------------------------------------------------------------------
         # Update zoznamov a indexov
@@ -243,23 +246,29 @@ class IObject:
             # Vlozim partObject do zoznamu
             self.prtLst.append(part)
         
-        IObject.journal.O(f'{self.objId}.encode: ')
+        IObject.journal.O(f'{self.objId}.encode: Identified {len(self.prtLst)} parts')
     
     #--------------------------------------------------------------------------
     def analyse(self, objVal=None):
-        "Analyses objVal and creates prtLst. Returns number of identified parts"
+        "From prtLst cretaes autoIdentity matrix"
 
-        if objVal is not None: self.objVal = objVal
-
-        IObject.journal.I(f'{self.objId}.analyse: {self.objVal[:70]}...')
-
-        if self.objVal=='': self.valid = False
-        else:
-            self.valid = True
-            self.encode()
+        IObject.journal.I(f'{self.objId}.analyse:')
         
+        self.aidMat = []
+        
+        #----------------------------------------------------------------------
+        # Prejdem delta t od 0 po len
+        #----------------------------------------------------------------------
+        for delta in range(len(self.prtLst)):
+            
+            aidVec = lib.vecIdent(self.prtLst, self.prtLst, delta)
+            print(aidVec)
+            self.aidMat.append(aidVec)
+            
+            
+
+
         IObject.journal.O(f'{self.objId}.analyse: Identified {len(self.prtLst)} parts')
-        return len(self.prtLst)
         
     #==========================================================================
     # Persistency methods
