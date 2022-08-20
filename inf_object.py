@@ -2,6 +2,7 @@
 # Siqo class IObject
 #------------------------------------------------------------------------------
 # from  datetime import datetime, timedelta
+
 import inf_lib         as lib
 
 #==============================================================================
@@ -60,7 +61,7 @@ class IObject:
     def getObj(objVal, create=True):
         "Returns Object with respective objVal if exists, else returns None or creates new Object"
 
-        IObject.journal.I(f"IObject.getObj: '{objVal}'")
+        IObject.journal.I(f"IObject.getObj: '{objVal[:80]}...'")
         toRet = None
 
         #----------------------------------------------------------------------
@@ -114,7 +115,7 @@ class IObject:
     def __init__(self, objVal):
         "Calls constructor of IObject and initialise it"
 
-        IObject.journal.I(f'IObject.constructor: |{objVal}|')
+        IObject.journal.I(f"IObject.constructor: '{objVal[:80]}...'")
 
         #----------------------------------------------------------------------
         # datove polozky triedy
@@ -127,9 +128,11 @@ class IObject:
 
         self.prtLst  = []     # List of Objects IDs constituing objects
         self.prtHist = {}     # histogram of valId objects count
+        self.prtRank = {}     # Ranking of objects by count asc
         
         self.aidMat  = []     # AutoIdentity Matrix
-
+        self.aidCnt  = []     # AutoIdentity Vector
+        
         #----------------------------------------------------------------------
         # Update zoznamov a indexov
         #----------------------------------------------------------------------
@@ -145,6 +148,7 @@ class IObject:
         # inicializacia Objektu
         #----------------------------------------------------------------------
         self.encode()
+        self.histogram()
 
         IObject.journal.O(f'{self.objId}.constructor: done with status {self.status}')
 
@@ -181,6 +185,15 @@ class IObject:
         return {'res':'OK', 'info':info, 'out':out, 'obj':self}
 
     #--------------------------------------------------------------------------
+    def infoAidMat(self):
+        "Prints autoIdentityMatrix"
+        
+        for vec in self.aidMat:
+            print(''.join([str(x) for x in vec]))
+        
+        
+        
+    #--------------------------------------------------------------------------
     def prtIdStr(self):
         "Returns string of objId's constituing this Object"
         
@@ -208,6 +221,11 @@ class IObject:
         return self.valid
     
     #--------------------------------------------------------------------------
+    def charVal(self, prtId):
+        "Returns characteristics value of the particular Object"
+        
+        return self.prtRank[prtId]
+        
     #--------------------------------------------------------------------------
     #--------------------------------------------------------------------------
 
@@ -217,7 +235,7 @@ class IObject:
     def encode(self):
         "Encode objVal into prtLst using existing/new Objects in objs"
         
-        IObject.journal.I(f'{self.objId}.encode: {self.objVal[:80]}')
+        IObject.journal.I(f"{self.objId}.encode: '{self.objVal[:80]}...'")
         
         self.prtLst.clear()
         
@@ -249,7 +267,36 @@ class IObject:
         IObject.journal.O(f'{self.objId}.encode: Identified {len(self.prtLst)} parts')
     
     #--------------------------------------------------------------------------
-    def analyse(self, objVal=None):
+    def histogram(self):
+        "From prtLst cretaes histogram vector and ranking"
+
+        IObject.journal.I(f'{self.objId}.histogram:')
+        
+        self.prtHist = {}
+        self.prtRank = {}
+        
+        #----------------------------------------------------------------------
+        # Histogram
+        #----------------------------------------------------------------------
+        for obj in self.prtLst:
+            
+            if obj.objId in self.prtHist.keys(): self.prtHist[obj.objId] += 1
+            else                               : self.prtHist[obj.objId]  = 1
+            
+        #----------------------------------------------------------------------
+        # Ranking
+        #----------------------------------------------------------------------
+        pomDic = dict(sorted(self.prtHist.items(), key=lambda x: x[1], reverse=False))
+        
+        rank = 0
+        for key in pomDic.keys():
+            self.prtRank[key] = rank
+            rank += 1
+        
+        IObject.journal.O(f'{self.objId}.histogram:')
+        
+    #--------------------------------------------------------------------------
+    def analyse(self):
         "From prtLst cretaes autoIdentity matrix"
 
         IObject.journal.I(f'{self.objId}.analyse:')
@@ -257,16 +304,12 @@ class IObject:
         self.aidMat = []
         
         #----------------------------------------------------------------------
-        # Prejdem delta t od 0 po len
+        # Prejdem delta t od 0 po len a pre kazde delta urcim identity vektor
         #----------------------------------------------------------------------
         for delta in range(len(self.prtLst)):
             
             aidVec = lib.vecIdent(self.prtLst, self.prtLst, delta)
-            print(aidVec)
             self.aidMat.append(aidVec)
-            
-            
-
 
         IObject.journal.O(f'{self.objId}.analyse: Identified {len(self.prtLst)} parts')
         
