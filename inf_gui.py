@@ -16,6 +16,7 @@ import math
 import numpy             as np
 import matplotlib.pyplot as plt
 import tkinter           as tk
+import inf_lib           as lib
 
 #==============================================================================
 # package's constants
@@ -26,6 +27,10 @@ _DPI            = 100
 
 _FIG_W          = 0.99
 _FIG_H          = 1.0
+
+_MAX_ROWS       = 250
+_MAX_COLS       = 500
+
 
 _SC_RED         = 1.4
 
@@ -86,26 +91,47 @@ class IFieldGui:
         #----------------------------------------------------------------------
         # Object scatter
         
-        self.axObj = self.fig.add_subplot(1,2,1)
-        self.axObj.set_title("{Title}", fontsize=14)
+        self.axObj = self.fig.add_subplot(2,2,1)
+        self.axObj.set_title("Encoded values by rank", fontsize=14)
         self.axObj.grid(False)
-        self.axObj.set_xlabel( 'X label' )
-        self.axObj.set_ylabel( 'Y label')
+        self.axObj.set_facecolor('black')
+#        self.axObj.set_xlabel( 'X label' )
+#        self.axObj.set_ylabel( 'Y label')
         
         #----------------------------------------------------------------------
         # aidMatrix scatter
         
-        self.axAim = self.fig.add_subplot(1,2,2)
-        self.axAim.set_title("{Title}", fontsize=14)
-        self.axAim.grid(True)
-        self.axAim.set_xlabel( 'X label' )
-        self.axAim.set_ylabel( 'Y label')
+        self.axAim = self.fig.add_subplot(2,2,2)
+        self.axAim.set_title("Length of virt vs. delta by count", fontsize=14)
+        self.axAim.grid(False)
+        self.axAim.set_facecolor('black')
+        self.axAim.set_xlabel( 'Delta' )
+        self.axAim.set_ylabel( 'Length of virtual patrticle')
+        
+        #----------------------------------------------------------------------
+        # aidVector plot
+        
+        self.axAiv = self.fig.add_subplot(2,2,3)
+        self.axAiv.set_title("Aggregated autoidentity", fontsize=14)
+        self.axAiv.grid(True)
+        self.axAiv.set_xlabel( 'Delta' )
+        self.axAiv.set_ylabel( 'Ratio of Identities')
+        
+        #----------------------------------------------------------------------
+        # eimMatrix scatter
+        
+        self.axEim = self.fig.add_subplot(2,2,4)
+        self.axEim.set_title("asv", fontsize=14)
+        self.axEim.grid(False)
+        self.axEim.set_facecolor('black')
+        self.axEim.set_xlabel( 'Delta' )
+        self.axEim.set_ylabel( 'trticle')
         
         #----------------------------------------------------------------------
         # Initialisation
         
         self.show()   # Initial drawing
-        IFieldGui.journal.O( 'IFieldGui created for Objct {}'.format(self.title))
+        IFieldGui.journal.O( 'IFieldGui created for Object {}'.format(self.title))
 
         win.mainloop()       # Start listening for events
 
@@ -131,29 +157,10 @@ class IFieldGui:
     def getObjScatter(self):
         "Returns plotable data for Object value"
         
-        IFieldGui.journal.I( f"{self.title}.getObjScatter" )
+        IFieldGui.journal.M( f"{self.title}.getObjScatter" )
 
-        x = []
-        y = []
-        u = []
-        
-        lenX = math.sqrt( len(self.obj.prtLst) )
-        lenX = round(lenX + 0.5)
-
-        i  = 0
-        for obj in self.obj.prtLst:
-            
-            x.append(i %  lenX)
-            y.append(i // lenX)
-            u.append(self.obj.charVal( obj.objId ))
-            i += 1
-        
-        X = np.array(x)
-        Y = np.array(y)
-        U = np.array(u)
-
-        IFieldGui.journal.O( f"{self.title}.getObjScatter: return {i} data points")
-        return (X, Y, U)
+#        return lib.squareData(baseObj=self.obj, vec=self.obj.prtLst)
+        return lib.spiralData(baseObj=self.obj, vec=self.obj.prtLst)
         
     #--------------------------------------------------------------------------
     def getAimScatter(self):
@@ -164,15 +171,19 @@ class IFieldGui:
         x = []
         y = []
         
+        rows = min(_MAX_ROWS, len(self.obj.aidMat))
+        
         row = 0
-        for aidVec in self.obj.aidMat:
+        for row in range(rows):
             
-            col = 0
-            for val in aidVec:
+            aidVec = self.obj.aidMat[row]
+            
+            cols = min(_MAX_COLS, len(aidVec))
+            for col in range(cols):
                 
-                if val==1:
-                    x.append(col)
-                    y.append(row)
+                if aidVec[col]==1:
+                    y.append(col)
+                    x.append(row)
                 col+=1
             row+=1
 
@@ -192,12 +203,18 @@ class IFieldGui:
         
 
         (X, Y, U) = self.getObjScatter()
-        sctrObj = self.axObj.scatter( x=X, y=Y, c=U, marker="s", lw=0, s=4, cmap='RdYlBu_r')
-#        self.fig.colorbar(sctrObj, ax=self.axObj)
+        sctrObj = self.axObj.scatter( x=X, y=Y, c=U, marker="s", lw=0, s=(72./self.fig.dpi)**2, cmap='RdYlBu_r')
+        self.fig.colorbar(sctrObj, ax=self.axObj)
             
         (X, Y) = self.getAimScatter()
-        sctrAim = self.axAim.scatter( x=X, y=Y,color='black', marker='o', lw=0, s=(72./self.fig.dpi)**2)
+        sctrAim = self.axAim.scatter( x=X, y=Y,color='white', marker='o', lw=0, s=(72./self.fig.dpi)**2)
         
+#        (X, Y) = self.getAimScatter()
+        sctrAiv = self.axAiv.plot( np.array(self.obj.aidVec))
+
+        (X, Y) = self.getAimScatter()
+        sctrEim = self.axEim.scatter( x=X, y=Y, color='blue', marker='o', lw=0, s=(72./self.fig.dpi)**2)
+
         # Vykreslenie noveho grafu
         self.fig.tight_layout()
         self.canvas.draw()
@@ -252,25 +269,12 @@ class IFieldGui:
         
         if event.inaxes is not None:
             
+            ax = event.inaxes.get_title()
             x = float(event.xdata)
             y = float(event.ydata)
+            
+            print(f'x={x},  y={y}, ax={ax}')
 
-            # Ziskanie nastavenia grafu
-            valX = self.values[self.actValX]
-            valY = self.values[self.actValY]
-            valS = self.values[self.actValS]
-            
-            x = x                                  / self.meta[valX]['coeff']
-            y = y                                  / self.meta[valY]['coeff']
-            s = self.getValByGrid(self.sVal, valS) / self.meta[valS]['coeff']
-            
-            pos = {'x':0, 'y':0, 'z':0, 't':0}
-            pos[valX] = x
-            pos[valY] = y
-            pos[valS] = s
-            
-            id = self.space3M.getIdFromPos(pos)
-            self.space3M.printCell(id)
             
         else:
             print('Clicked ouside axes bounds but inside plot window')

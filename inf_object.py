@@ -8,7 +8,9 @@ import inf_lib         as lib
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-_ID_LEN   = 12  # Max length of objId
+_ID_LEN     =   12  # Max length of objId
+_OUT_MAX    =   80  # Max characters per output
+_DELTA_MAX  =  100  # Max delta for autoidentity
 
 #==============================================================================
 # package's variables
@@ -38,7 +40,7 @@ class IObject:
         out.append('{} {}'.format(90*'=', 'Objects:'))
         
         for objId, obj in IObject.objs.items():
-            info[objId] = obj.objVal
+            info[objId] = obj.objVal[:_OUT_MAX]
             
         #----------------------------------------------------------------------
         # Output
@@ -131,7 +133,9 @@ class IObject:
         self.prtRank = {}     # Ranking of objects by count asc
         
         self.aidMat  = []     # AutoIdentity Matrix
-        self.aidCnt  = []     # AutoIdentity Vector
+        self.aidVec  = []     # AutoIdentity Vector
+        
+        self.prtVirt = {}     # List of virtual parts
         
         #----------------------------------------------------------------------
         # Update zoznamov a indexov
@@ -171,9 +175,9 @@ class IObject:
         out  = []
         
         info['objId'     ] = self.objId
-        info['objVal'    ] = self.objVal[:800]
-        info['prtIds'    ] = self.prtIdStr()
-        info['prtVals'   ] = self.prtValStr()
+        info['objVal'    ] = self.objVal     [:_OUT_MAX]
+        info['prtIds'    ] = self.prtIdStr() [:_OUT_MAX]
+        info['prtVals'   ] = self.prtValStr()[:_OUT_MAX]
             
         #----------------------------------------------------------------------
         # Histogram
@@ -194,18 +198,22 @@ class IObject:
         
         
     #--------------------------------------------------------------------------
-    def prtIdStr(self):
+    def prtIdStr(self, a=0, b=None):
         "Returns string of objId's constituing this Object"
         
-        idLst = [obj.objId for obj in self.prtLst]
-        return ','.join(idLst)[:90]
+        if b is None: b = len(self.prtLst)
+        
+        idLst = [obj.objId for obj in self.prtLst[a:b]]
+        return ','.join(idLst)
     
     #--------------------------------------------------------------------------
-    def prtValStr(self):
+    def prtValStr(self, a=0, b=None):
         "Returns string of objVal's constituing this Object"
         
-        valLst = [obj.objVal for obj in self.prtLst]
-        return '|'.join(valLst)[:90]
+        if b is None: b = len(self.prtLst)
+        
+        valLst = [obj.objVal for obj in self.prtLst[a:b]]
+        return '|'.join(valLst)
     
     #--------------------------------------------------------------------------
     def isBase(self):
@@ -283,10 +291,13 @@ class IObject:
             if obj.objId in self.prtHist.keys(): self.prtHist[obj.objId] += 1
             else                               : self.prtHist[obj.objId]  = 1
             
+        # Normalizacia na percenta
+        # for cnt in self.prtHist.values(): cnt /= len(self.prtLst)
+            
         #----------------------------------------------------------------------
         # Ranking
         #----------------------------------------------------------------------
-        pomDic = dict(sorted(self.prtHist.items(), key=lambda x: x[1], reverse=False))
+        pomDic = dict(sorted(self.prtHist.items(), key=lambda x: x[1], reverse=True))
         
         rank = 0
         for key in pomDic.keys():
@@ -301,16 +312,59 @@ class IObject:
 
         IObject.journal.I(f'{self.objId}.analyse:')
         
-        self.aidMat = []
+        self.aidMat  = []
+        self.aidVec  = []
+        self.prtVirt = {}
+        self.prtEim  = {}
+        
+        maxDelta = int(len(self.prtLst)/2)
+        
+        maxDelta = min(maxDelta, _DELTA_MAX)
         
         #----------------------------------------------------------------------
-        # Prejdem delta t od 0 po len a pre kazde delta urcim identity vektor
+        # Prejdem delta t od 0 po maxDelta a pre kazde delta urcim identity vektor
         #----------------------------------------------------------------------
-        for delta in range(len(self.prtLst)):
+        for delta in range(1, maxDelta+1):
             
-            aidVec = lib.vecIdent(self.prtLst, self.prtLst, delta)
-            self.aidMat.append(aidVec)
+            if (delta%10)==0: IObject.journal.M(f'{self.objId}.analyse: delta {delta}')
 
+            #------------------------------------------------------------------
+            # Ziskam autoIdentity vektor pre konkretnu delta
+            #------------------------------------------------------------------
+            aidVec = lib.vecIdent(self.prtLst, self.prtLst, delta)
+            
+            #------------------------------------------------------------------
+            # Zapisem aidVec do AutiIdentity matrix
+            #------------------------------------------------------------------
+            self.aidMat.append(aidVec)
+            
+            #------------------------------------------------------------------
+            # Zapisem sumu identit pre danu delta normovanu na dlzku prtVec
+            #------------------------------------------------------------------
+            self.aidVec.append( sum(aidVec) / len(self.prtLst) )
+            
+            #------------------------------------------------------------------
+            # Z aidVec ziskam virtualne castice
+            #------------------------------------------------------------------
+            virts = lib.vecParts(aidVec)
+            
+            #------------------------------------------------------------------
+            # Zapisem si virtualne castice do rankingu
+            #------------------------------------------------------------------
+            for virtInt in virts:
+                prtVal = self.prtValStr(virtInt[0], virtInt[1])
+                if prtVal not in self.prtVirt.keys(): self.prtVirt[prtVal]  = 1
+                else                                : self.prtVirt[prtVal] += 1
+                
+            #------------------------------------------------------------------
+            # 
+            #------------------------------------------------------------------
+            self.prtEim[delta] = {}  # dlzka:pocet_vyskytov
+
+
+
+
+        #----------------------------------------------------------------------
         IObject.journal.O(f'{self.objId}.analyse: Identified {len(self.prtLst)} parts')
         
     #==========================================================================
