@@ -5,9 +5,9 @@
 
 #------------------------------------------------------------------------------
 import sys
-sys.path.append('lib')
+sys.path.append('..\siqo_lib')
 
-from   siqo_journal                    import SiqoJournal
+from   siqo_journal        import SiqoJournal
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 # from mpl_toolkits                      import mplot3d
@@ -56,10 +56,11 @@ class IFieldGui:
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, obj):
+    def __init__(self, journal, obj):
         "Create and show GUI for Information field"
 
-        IFieldGui.journal.I( 'IFieldGui constructor...')
+        self.journal = journal
+        self.journal.I( 'IFieldGui constructor...')
         
         #----------------------------------------------------------------------
         # Internal data
@@ -131,7 +132,7 @@ class IFieldGui:
         # Initialisation
         
         self.show()   # Initial drawing
-        IFieldGui.journal.O( 'IFieldGui created for Object {}'.format(self.title))
+        self.journal.O( 'IFieldGui created for Object {}'.format(self.title))
 
         win.mainloop()       # Start listening for events
 
@@ -157,7 +158,7 @@ class IFieldGui:
     def getObjScatter(self):
         "Returns plotable data for Object value"
         
-        IFieldGui.journal.M( f"{self.title}.getObjScatter" )
+        self.journal.M( f"{self.title}.getObjScatter" )
 
 #        return lib.squareData(baseObj=self.obj, vec=self.obj.prtLst)
         return lib.spiralData(baseObj=self.obj, vec=self.obj.prtLst)
@@ -166,7 +167,7 @@ class IFieldGui:
     def getAimScatter(self):
         "Returns plotable data for AutoIdentityMatrix"
         
-        IFieldGui.journal.I( f"{self.title}.getAimScatter" )
+        self.journal.I( f"{self.title}.getAimScatter" )
 
         x = []
         y = []
@@ -190,7 +191,7 @@ class IFieldGui:
         X = np.array(x)
         Y = np.array(y)
 
-        IFieldGui.journal.O( f"{self.title}.getAimScatter: ")
+        self.journal.O( f"{self.title}.getAimScatter: ")
         return (X, Y)
         
     #==========================================================================
@@ -199,7 +200,7 @@ class IFieldGui:
     def show(self):
         "Show Information field "
         
-        IFieldGui.journal.I( f'IFieldGui{self.title}.show' )
+        self.journal.I( f'IFieldGui{self.title}.show' )
         
 
         (X, Y, U) = self.getObjScatter()
@@ -219,7 +220,7 @@ class IFieldGui:
         self.fig.tight_layout()
         self.canvas.draw()
     
-        IFieldGui.journal.O( f'IFieldGui {self.title}.show done')
+        self.journal.O( f'IFieldGui {self.title}.show done')
         
     #--------------------------------------------------------------------------
     def onButAxe(self):

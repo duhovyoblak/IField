@@ -3,12 +3,17 @@
 #------------------------------------------------------------------------------
 # from  datetime import datetime, timedelta
 
-from inf_object         import IObject
+import  siqo_general     as     gen
+import  inf_lib          as     lib
+
+from    inf_object       import IObject
 
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
 _DELTA_MAX  =  100  # Max delta for autoidentity
+_OUT_MAX    =   80  # Max characters per output
+_ID_LEN     =   12  # Max length of objId
 
 #==============================================================================
 # package's variables
@@ -23,29 +28,26 @@ class IStruct:
     # Static variables & methods
     #--------------------------------------------------------------------------
     journal = None   # Pointer to global journal
-    objs    = {}     # Zoznam objektov      {objId : obj}
-    vals    = {}     # Zoznam values        {objVal: obj}
-    vidx    = {}     # Index ID podla dzlky {valLen: #count_of_objects}
 
     #--------------------------------------------------------------------------
     @staticmethod
     def infoAll():
-        "Returns info about Objects"
+        "Returns info about Structs"
 
         info = {}
-        out  = []
+        msg  = []
         
-        out.append('{} {}'.format(90*'=', 'Objects:'))
+        msg.append('{} {}'.format(90*'=', 'Objects:'))
         
         for objId, obj in IStruct.objs.items():
             info[objId] = obj.objVal[:_OUT_MAX]
             
         #----------------------------------------------------------------------
         # Output
-        for key, val in info.items(): out.append(f'{key.ljust(_ID_LEN+3)} = {val}')
+        for key, val in info.items(): msg.append(f'{key.ljust(_ID_LEN+3)} = {val}')
 
         #----------------------------------------------------------------------
-        return {'res':'OK', 'info':info, 'out':out, 'obj':None}
+        return {'res':'OK', 'info':info, 'msg':msg, 'obj':None}
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -82,92 +84,76 @@ class IStruct:
         IStruct.journal.O(f"IStruct.getObj: Returns Object '{objId}'")
         return toRet
 
-    #--------------------------------------------------------------------------
-    @staticmethod
-    def cntOfLen(vLen):
-        "Returns number of Objects with respective length of objVal"
-        
-        if vLen in IStruct.vidx.keys(): cnt = IStruct.vidx[vLen]
-        else                          : cnt = 0
-        
-        return cnt
-
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, objVal):
-        "Calls constructor of IStruct and initialise it"
+    def __init__(self, name):
+        "Calls constructor of IStruct"
 
-        IStruct.journal.I(f"IStruct.constructor: '{objVal[:80]}...'")
+        IStruct.journal.I(f"IStruct({name}).constructor:")
 
         #----------------------------------------------------------------------
         # datove polozky triedy
         #----------------------------------------------------------------------
-        self.objVal  = objVal                   # String of raw data constitiuing this Object
-        self.objId   = IStruct.valToId(objVal)  # String contains unique object Id
-        self.objPrp  = {}                       # Objects properties
-        
-        self.status  = 'I'    # Actual status of this Objects ['I'nitialised, 'A'nalysed]
+        self.name    = name   # 
+        self.status  = 'I'    # Actual status of this structure ['I'nitialised, 'A'nalysed]
 
-        self.prtLst  = []     # List of Objects IDs constituing objects
-        self.prtHist = {}     # histogram of valId objects count
-        self.prtRank = {}     # Ranking of objects by count asc
-        
-        self.aidMat  = []     # AutoIdentity Matrix
-        self.aidVec  = []     # AutoIdentity Vector
-        
-        self.prtVirt = {}     # List of virtual parts
+        self.objs    = []     # List of Objects constituing objects
         
         #----------------------------------------------------------------------
         # Update zoznamov a indexov
         #----------------------------------------------------------------------
-        IStruct.objs[self.objId      ] = self
-        IStruct.vals[self.objVal     ] = self
-        
-        cnt = IStruct.cntOfLen(len(self.objVal))
-        
-        if cnt==0: IStruct.vidx[len(self.objVal)]  = 1
-        else     : IStruct.vidx[len(self.objVal)] += 1
         
         #----------------------------------------------------------------------
         # inicializacia Objektu
         #----------------------------------------------------------------------
-        self.encode()
-        self.histogram()
 
-        IStruct.journal.O(f'{self.objId}.constructor: done with status {self.status}')
+        IStruct.journal.O(f'{self.name}.constructor: done with status {self.status}')
 
     #--------------------------------------------------------------------------
     def __str__(self):
         "Prints info about this object"
 
         toRet = ''
-        for line in self.info()['out']: toRet += line +'\n'
+        for line in self.info()['msg']: toRet += line +'\n'
 
         return toRet
 
-    #==========================================================================
-    # API
     #--------------------------------------------------------------------------
     def info(self):
         "Returns info about this Object"
 
         info = {}
-        out  = []
+        msg  = []
         
-        info['objId'     ] = self.objId
-        info['objVal'    ] = self.objVal     [:_OUT_MAX]
-        info['prtIds'    ] = self.prtIdStr() [:_OUT_MAX]
-        info['prtVals'   ] = self.prtValStr()[:_OUT_MAX]
-            
+        info['name'     ] = self.name
+
         #----------------------------------------------------------------------
         # Histogram
 
         #----------------------------------------------------------------------
         # Output
-        for key, val in info.items(): out.append(f'{key.ljust(_ID_LEN)} = {val}')
+        for key, val in info.items(): msg.append(f'{key.ljust(_ID_LEN)} = {val}')
 
-        return {'res':'OK', 'info':info, 'out':out, 'obj':self}
+        return {'res':'OK', 'info':info, 'msg':msg, 'obj':self}
+
+    #==========================================================================
+    # API
+    #--------------------------------------------------------------------------
+    def amp(self):
+        "Returns amplitude of the Object"
+
+        if self.isBase(): return self.objVal
+        else            : return self.objVal.amp()
+
+    #--------------------------------------------------------------------------
+    def prob(self):
+        "Returns probability of the amplitude of the Object"
+
+        if self.isBase(): return self.objVal * self.objVal.conjugate()
+        else            : return self.objVal.prob()
+
+    #--------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------
     def infoAidMat(self):
