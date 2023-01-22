@@ -49,41 +49,6 @@ class IStruct:
         #----------------------------------------------------------------------
         return {'res':'OK', 'info':info, 'msg':msg, 'obj':None}
 
-    #--------------------------------------------------------------------------
-    @staticmethod
-    def isObj(objVal):
-        "Returns True if Object with respective objVal exists"
-
-        # Check if such Object exists already
-        if objVal in IStruct.vals.keys(): return True
-        else                            : return False
-
-    #--------------------------------------------------------------------------
-    @staticmethod
-    def getObj(objVal, create=True):
-        "Returns Object with respective objVal if exists, else returns None or creates new Object"
-
-        IStruct.journal.I(f"IStruct.getObj: '{objVal[:80]}...'")
-        toRet = None
-
-        #----------------------------------------------------------------------
-        # Check if such Object exists already
-        #----------------------------------------------------------------------
-        if IStruct.isObj(objVal): toRet =  IStruct.vals[objVal]
-
-        #----------------------------------------------------------------------
-        # Decision about creating new Object
-        #----------------------------------------------------------------------
-        else:
-            if create: toRet = IStruct(objVal)
-            else     : toRet = None
-        
-        if toRet is None: objId = 'None'
-        else            : objId = toRet.objId
-
-        IStruct.journal.O(f"IStruct.getObj: Returns Object '{objId}'")
-        return toRet
-
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
@@ -98,7 +63,11 @@ class IStruct:
         self.name    = name   # 
         self.status  = 'I'    # Actual status of this structure ['I'nitialised, 'A'nalysed]
 
-        self.objs    = []     # List of Objects constituing objects
+        self.objs    = []     # List of IObject/IStruct constituing this structure
+        self.alias   = ''     # Mnemotechnic alias for this structure
+        self.len     = 0      # Total length of the object
+        self.iterPos = -1     # Position of the iterator of this structure
+        self.iterSub = None   # Iterator of the sub-object
         
         #----------------------------------------------------------------------
         # Update zoznamov a indexov
@@ -119,6 +88,79 @@ class IStruct:
 
         return toRet
 
+    #--------------------------------------------------------------------------
+    def __iter__(self):
+        "Creates iterator for this object"
+        
+        self.iterPos = 0
+        self.iterSub = None
+        return self
+
+    #--------------------------------------------------------------------------
+    def __next__(self):
+        "Returns next item in ongoing iteration of this structure"
+        
+        #----------------------------------------------------------------------
+        # Ak existuje inicializovany iterator sub-objektu z minuleho prechodu
+        #----------------------------------------------------------------------
+        if self.iterSub is not None:
+
+            #------------------------------------------------------------------
+            # Skusim vratit next value of the sub-iterator
+            #------------------------------------------------------------------
+            try                 : nxt = next(self.iterSub)
+            #------------------------------------------------------------------
+            # Ak som dosiahol koniec sub-objektu tak resetnem subIter
+            #------------------------------------------------------------------
+            except StopIteration: self.iterSub = None
+
+        #----------------------------------------------------------------------
+        # Ak som dosiahol koniec listu
+        #----------------------------------------------------------------------
+        if self.iterPos >= len(self.objs): raise StopIteration
+
+        #----------------------------------------------------------------------
+        # Nacitam nasledujuci objekt
+        #----------------------------------------------------------------------
+        obj = self.objs[self.iterPos]
+        self.iterPos += 1
+            
+        # Ak je objekt base objekt, vratim jeho hodnotu:
+        if obj.isBase(): return obj.cont
+        
+        #----------------------------------------------------------------------
+        # Ak je objekt IStruct:
+        #----------------------------------------------------------------------
+        else:
+            #------------------------------------------------------------------
+            # Inicializujem iterator sub-objektu
+            #------------------------------------------------------------------
+            self.iterSub = iter(obj)
+            #------------------------------------------------------------------
+            # Vratim nex value of the sub-object's iterator
+            #------------------------------------------------------------------
+            return next(self.iterSub)
+        
+    #--------------------------------------------------------------------------
+    def isBase(self):
+        "Returns False because IStruct can not be base object"
+        
+        return False
+        
+    #--------------------------------------------------------------------------
+    def idStr(self):
+        "Returns string representation of object's IDs"
+        
+        ids = [x.objId for x in self.objs]
+        
+        return ';'.join(ids)
+        
+    #--------------------------------------------------------------------------
+    def alStr(self):
+        "Returns string representation of object's aliases"
+        
+        return self.alias
+        
     #--------------------------------------------------------------------------
     def info(self):
         "Returns info about this Object"
@@ -154,186 +196,51 @@ class IStruct:
         else            : return self.objVal.prob()
 
     #--------------------------------------------------------------------------
+    def append(self, obj):
+        "Append object to this structure structure"
+        
+        self.objs.append(obj)
 
     #--------------------------------------------------------------------------
-    def infoAidMat(self):
-        "Prints autoIdentityMatrix"
+    def encode(self, string):
+        "Append string encoded into structure (from list of IObjects) into this structure"
         
-        for vec in self.aidMat:
-            print(''.join([str(x) for x in vec]))
+        IStruct.journal.I(f"{self.name}.encode: '{string[:_OUT_MAX]}...'")
         
+        #----------------------------------------------------------------------
+        # Prejdem vsetky charaktery stringu
+        #----------------------------------------------------------------------
+        for char in string:
+            
+            newStruct = self.encodeChar(char)
+            self.append(newStruct)
         
-        
-    #--------------------------------------------------------------------------
-    def prtIdStr(self, a=0, b=None):
-        "Returns string of objId's constituing this Object"
-        
-        if b is None: b = len(self.prtLst)
-        
-        idLst = [obj.objId for obj in self.prtLst[a:b]]
-        return ','.join(idLst)
+        IStruct.journal.O(f'{self.name}.encode: ')
     
-    #--------------------------------------------------------------------------
-    def prtValStr(self, a=0, b=None):
-        "Returns string of objVal's constituing this Object"
-        
-        if b is None: b = len(self.prtLst)
-        
-        valLst = [obj.objVal for obj in self.prtLst[a:b]]
-        return '|'.join(valLst)
-    
-    #--------------------------------------------------------------------------
-    def isBase(self):
-        "Returns True if this Object is base object"
-        
-        if self.objId==self.objVal: return True
-        else                      : return False
-    
-    #--------------------------------------------------------------------------
-    def isValid(self):
-        "Returns True if this Object is valid object"
-        
-        return self.valid
-    
-    #--------------------------------------------------------------------------
-    def charVal(self, prtId):
-        "Returns characteristics value of the particular Object"
-        
-        return self.prtRank[prtId]
-        
-    #--------------------------------------------------------------------------
     #--------------------------------------------------------------------------
 
     #==========================================================================
     # Internal Methods
     #--------------------------------------------------------------------------
-    def encode(self):
-        "Encode objVal into prtLst using existing/new Objects in objs"
+    def encodeChar(self, char):
+        "Encode char into an IStruct"
         
-        IStruct.journal.I(f"{self.objId}.encode: '{self.objVal[:80]}...'")
+        IStruct.journal.I(f"{self.name}.encodeChar: '{char}'")
         
-        self.prtLst.clear()
-        
+        i = ord(char)
+        bs = gen.
         #----------------------------------------------------------------------
         # Prejdem vsetky pozicie v objVal
         #----------------------------------------------------------------------
-        pos   =  0
-        vLen  =  len(self.objVal)
         
-        while pos < vLen:
-            
-            # Najdem njdlhsiu sekvenciu ktora sa nachadza vo vals
-            val = ''
-            while (val=='' or IStruct.isObj(val) ) and (pos < vLen):
-                val += self.objVal[pos]
-                pos += 1
-            
-            # Korekcia posledneho znaku ak existuje aspon jednoznakova sekvencia
-            if len(val)>1:
-                val = val[:-1]
-                pos -= 1
-                
-            # Ziskam objekt s prislusnou objVal
-            part = IStruct.getObj(val, create=True)
-        
-            # Vlozim partObject do zoznamu
-            self.prtLst.append(part)
-        
-        IStruct.journal.O(f'{self.objId}.encode: Identified {len(self.prtLst)} parts')
+
+
+
+
+
+        IStruct.journal.O('')
     
     #--------------------------------------------------------------------------
-    def histogram(self):
-        "From prtLst cretaes histogram vector and ranking"
-
-        IStruct.journal.I(f'{self.objId}.histogram:')
-        
-        self.prtHist = {}
-        self.prtRank = {}
-        
-        #----------------------------------------------------------------------
-        # Histogram
-        #----------------------------------------------------------------------
-        for obj in self.prtLst:
-            
-            if obj.objId in self.prtHist.keys(): self.prtHist[obj.objId] += 1
-            else                               : self.prtHist[obj.objId]  = 1
-            
-        # Normalizacia na percenta
-        # for cnt in self.prtHist.values(): cnt /= len(self.prtLst)
-            
-        #----------------------------------------------------------------------
-        # Ranking
-        #----------------------------------------------------------------------
-        pomDic = dict(sorted(self.prtHist.items(), key=lambda x: x[1], reverse=True))
-        
-        rank = 0
-        for key in pomDic.keys():
-            self.prtRank[key] = rank
-            rank += 1
-        
-        IStruct.journal.O(f'{self.objId}.histogram:')
-        
-    #--------------------------------------------------------------------------
-    def analyse(self):
-        "From prtLst cretaes autoIdentity matrix"
-
-        IStruct.journal.I(f'{self.objId}.analyse:')
-        
-        self.aidMat  = []
-        self.aidVec  = []
-        self.prtVirt = {}
-        self.prtEim  = {}
-        
-        maxDelta = int(len(self.prtLst)/2)
-        
-        maxDelta = min(maxDelta, _DELTA_MAX)
-        
-        #----------------------------------------------------------------------
-        # Prejdem delta t od 0 po maxDelta a pre kazde delta urcim identity vektor
-        #----------------------------------------------------------------------
-        for delta in range(1, maxDelta+1):
-            
-            if (delta%10)==0: IStruct.journal.M(f'{self.objId}.analyse: delta {delta}')
-
-            #------------------------------------------------------------------
-            # Ziskam autoIdentity vektor pre konkretnu delta
-            #------------------------------------------------------------------
-            aidVec = lib.vecIdent(self.prtLst, self.prtLst, delta)
-            
-            #------------------------------------------------------------------
-            # Zapisem aidVec do AutiIdentity matrix
-            #------------------------------------------------------------------
-            self.aidMat.append(aidVec)
-            
-            #------------------------------------------------------------------
-            # Zapisem sumu identit pre danu delta normovanu na dlzku prtVec
-            #------------------------------------------------------------------
-            self.aidVec.append( sum(aidVec) / len(self.prtLst) )
-            
-            #------------------------------------------------------------------
-            # Z aidVec ziskam virtualne castice
-            #------------------------------------------------------------------
-            virts = lib.vecParts(aidVec)
-            
-            #------------------------------------------------------------------
-            # Zapisem si virtualne castice do rankingu
-            #------------------------------------------------------------------
-            for virtInt in virts:
-                prtVal = self.prtValStr(virtInt[0], virtInt[1])
-                if prtVal not in self.prtVirt.keys(): self.prtVirt[prtVal]  = 1
-                else                                : self.prtVirt[prtVal] += 1
-                
-            #------------------------------------------------------------------
-            # 
-            #------------------------------------------------------------------
-            self.prtEim[delta] = {}  # dlzka:pocet_vyskytov
-
-
-
-
-        #----------------------------------------------------------------------
-        IStruct.journal.O(f'{self.objId}.analyse: Identified {len(self.prtLst)} parts')
-        
     #==========================================================================
     # Persistency methods
     #--------------------------------------------------------------------------

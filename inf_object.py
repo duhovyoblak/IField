@@ -3,6 +3,7 @@
 #------------------------------------------------------------------------------
 # from  datetime import datetime, timedelta
 
+import  siqo_general     as     gen
 # import inf_lib         as lib
 
 #==============================================================================
@@ -47,61 +48,38 @@ class IObject:
         #----------------------------------------------------------------------
         return {'res':'OK', 'info':info, 'out':out, 'obj':None}
 
-    #--------------------------------------------------------------------------
-    @staticmethod
-    def valToId(val):
-        "Returns or creates objId for respective value"
-        
-        return 0
-
-    #--------------------------------------------------------------------------
-    @staticmethod
-    def objByVal(val, create=False):
-        "Returns or creates objects for respective objVal"
-
-        # Ak existuje objekt so zadanym value
-        if val in IObject.vals.keys(): return IObject.vals[val]
-        
-        # ak taky objekt neexistuje
-        else:
-            if create: return IObject(val)
-            else     : return None
-
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
     #
     # objId - generic integer as primary key for IObject
-    # cont  - complex number for base type IObject
-    #       - list of objId [objId] for structural type of IObject
+    # cont  - complex number or IStruct 
+    #
     #--------------------------------------------------------------------------
     def __init__(self, cont=None):
         "Calls constructor of IObject for respective content"
 
         IObject.journal.I("IObject.constructor:")
         
-        # Default hodnota je komplexna nula
-        if cont is None: cont = complex()
-
         #----------------------------------------------------------------------
         # datove polozky triedy
         #----------------------------------------------------------------------
-        self.objId = len(IObject.oids)+1   # Unique object Id
-        self.cont  = cont
+        self.name    = len(IObject.oids)+1  # Unique object Id
+        self.cont    = None                 # complex number or IStruct
+        self.isBase  = None                 # If this Object is complex number
+        self.alias   = ''                   # Mnemotechnic alias for this object
+        self.len     = 0                    # Total length of the object
+        self.itPos   = -1                   # Position of the iterator
         
-        if type(self.cont) == complex: self.isBase = True
-        else                         : self.isBase = False
-        
-        if self.isBase: self.setAlias( self.contStr()  )
-        else          : self.setAlias( self.cont.alias )
+        self.setCont(cont)
         
         #----------------------------------------------------------------------
         # Update zoznamov a indexov
         #----------------------------------------------------------------------
-        IObject.oids[self.objId] = self
+        IObject.oids[self.name] = self
         IObject.alas[self.alias] = self
         
-        IObject.journal.O(f'{self.objId}.constructor: done with alias {self.alias}')
+        IObject.journal.O(f'{self.name}.constructor: done with alias {self.alias}')
 
     #--------------------------------------------------------------------------
     def __str__(self):
@@ -113,18 +91,90 @@ class IObject:
         return toRet
 
     #--------------------------------------------------------------------------
-    def contStr(self):
-        "Returns string representation of object's content"
+    def __iter__(self):
+        "Creates iterator for this object"
         
-        if self.isBase: return str(self.cont)
-        else          : return ';'.join(self.cont)
+        self.itPos = 0
+        
+        if self.isBase: return self
+        else          : return iter(self.cont)
+
+    #--------------------------------------------------------------------------
+    def __next__(self):
+        "Returns next item in ongoing iteration"
+        
+        #----------------------------------------------------------------------
+        # Next sa da volat iba pre base object
+        #----------------------------------------------------------------------
+        if self.isBase: 
+            
+            # Pri prvom volani vratim hodnotu cont
+            if self.itPos==0:
+                
+                self.itPos += 1
+                return self.cont
+            
+            # Pri druhom volani ukoncim iterator
+            else: raise StopIteration
+            
+        #----------------------------------------------------------------------
+        # Tu nastala chyba... Next sa da volat iba pre base object
+        #----------------------------------------------------------------------
+        else:
+            IObject.journal.O(f'{self.name}.__next__: ERROR No base object')
+            raise StopIteration
+        
+    #--------------------------------------------------------------------------
+    def isBase(self):
+        "Returns isBase flag for this object"
+        
+        return self.isBase
+        
+    #--------------------------------------------------------------------------
+    def idStr(self):
+        "Returns string representation of object's IDs"
+        
+        if self.isBase: return str(self.name)
+        else          : return self.cont.idStr()
+        
+    #--------------------------------------------------------------------------
+    def alStr(self):
+        "Returns string representation of object's aliases"
+        
+        return self.alias
+        
+    #--------------------------------------------------------------------------
+    def setCont(self, cont=None):
+        "Reset content for this object"
+        
+        #----------------------------------------------------------------------
+        # Default hodnota je komplexna nula
+        #----------------------------------------------------------------------
+        if cont is None: cont = complex()
+
+        #----------------------------------------------------------------------
+        # Nastavenie contentu [complex number / IStruct]
+        #----------------------------------------------------------------------
+        self.cont = cont
+
+        #----------------------------------------------------------------------
+        # Nastavenie vlastnosti
+        #----------------------------------------------------------------------
+        if type(self.cont) == complex: self.isBase = True
+        else                         : self.isBase = False
+        
+        if self.isBase: self.setAlias( self.idStr()    )
+        else          : self.setAlias( self.cont.alias )
+        
+        if self.isBase: self.length = 1
+        else          : self.length = gen.deepLen( self.cont.objs )
         
     #--------------------------------------------------------------------------
     def setAlias(self, alias):
         "Reset alias for this object"
         
         # Delete current alias from alas{}
-        if alias in IObject.alas.keys(): IObject.alas.pop(self.alias)
+        if alias in IObject.alas.keys(): IObject.alas.pop(alias)
         
         # Set new alias for this object
         self.alias = alias
@@ -137,7 +187,7 @@ class IObject:
         info = {}
         msg  = []
         
-        info['objId'] = self.objId
+        info['objId'] = self.name
         info['cont' ] = self.contStr() [:_OUT_MAX]
         info['alias'] = self.alias     [:_OUT_MAX]
         
@@ -164,64 +214,14 @@ class IObject:
         else            : return self.objVal.prob()
 
     #--------------------------------------------------------------------------
-
-    #==========================================================================
-    # Internal Methods
-    #--------------------------------------------------------------------------
-    def encode(self):
-        "Encode objVal into prtLst using existing/new Objects in objs"
-        
-        IObject.journal.I(f"{self.objId}.encode: '{self.objVal[:80]}...'")
-        
-        self.prtLst.clear()
-        
-        #----------------------------------------------------------------------
-        # Prejdem vsetky pozicie v objVal
-        #----------------------------------------------------------------------
-        pos   =  0
-        vLen  =  len(self.objVal)
-        
-        while pos < vLen:
-            
-            # Najdem njdlhsiu sekvenciu ktora sa nachadza vo vals
-            val = ''
-            while (val=='' or IObject.isObj(val) ) and (pos < vLen):
-                val += self.objVal[pos]
-                pos += 1
-            
-            # Korekcia posledneho znaku ak existuje aspon jednoznakova sekvencia
-            if len(val)>1:
-                val = val[:-1]
-                pos -= 1
-                
-            # Ziskam objekt s prislusnou objVal
-            part = IObject.getObj(val, create=True)
-        
-            # Vlozim partObject do zoznamu
-            self.prtLst.append(part)
-        
-        IObject.journal.O(f'{self.objId}.encode: Identified {len(self.prtLst)} parts')
-    
-    #==========================================================================
-    # Persistency methods
-    #--------------------------------------------------------------------------
-    def fromJson(self, json):
-        "Loads Object from json structure"
-
-        IObject.journal.I(f'{self.objId}.fromJson:')
-
-        #----------------------------------------------------------------------
-        IObject.journal.O(f'{self.objId}.fromJson: Loaded')
-
-    #--------------------------------------------------------------------------
     def toJson(self):
         "Converts Object into json structure"
         
-        IObject.journal.I(f'{self.objId}.toJson:')
+        IObject.journal.I(f'{self.name}.toJson:')
         
         toRet = {}
 
-        IObject.journal.O(f'{self.objId}.toJson: Converted')
+        IObject.journal.O(f'{self.name}.toJson: Converted')
         return toRet
 
 #------------------------------------------------------------------------------
