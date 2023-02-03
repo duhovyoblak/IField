@@ -7,7 +7,7 @@
 import sys
 sys.path.append('..\siqo_lib')
 
-from   siqo_journal        import SiqoJournal
+from   siqo_tkchart        import SiqoChart
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 # from mpl_toolkits                      import mplot3d
@@ -22,12 +22,7 @@ import inf_lib           as lib
 # package's constants
 #------------------------------------------------------------------------------
 
-_WIN            = '1680x1050'
-_DPI            = 100
-
-_FIG_W          = 0.99
-_FIG_H          = 1.0
-
+_WIN            = '1400x800'
 _MAX_ROWS       = 250
 _MAX_COLS       = 500
 
@@ -46,7 +41,7 @@ _BTN_DIS_H      = 0.025
 #==============================================================================
 # class IFieldGui
 #------------------------------------------------------------------------------
-class IFieldGui:
+class IFieldGui(tk.Tk):
     
     #==========================================================================
     # Static variables & methods
@@ -56,7 +51,7 @@ class IFieldGui:
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, journal, obj):
+    def __init__(self, journal, name):
         "Create and show GUI for Information field"
 
         self.journal = journal
@@ -65,19 +60,33 @@ class IFieldGui:
         #----------------------------------------------------------------------
         # Internal data
         
-        self.obj   = obj
-        self.title = self.obj.objId
+        self.name   = name
+#        self.obj   = obj
+#        self.name = self.obj.objId
         
         #----------------------------------------------------------------------
-        # Create output window
-        win = tk.Tk()
-        win.title(self.title)
-        win.geometry(_WIN)
-        win.resizable(False,False)
-        win.update()
-        self.w = win.winfo_width()
-        self.h = win.winfo_height()
+        # Initialise original tkInter.Tk
+        #----------------------------------------------------------------------
+        super().__init__()
+
+#        win = tk.Tk()
+        self.title(self.name)
+        self.geometry(_WIN)
+        self.resizable(False,False)
+        self.update()
         
+#        self.w = win.winfo_width()
+#        self.h = win.winfo_height()
+        
+        self.chart = SiqoChart(self.journal, 'IField visualisation', container=self)
+
+
+
+        self.journal.O( 'IFieldGui created for Object {}'.format(self.name))
+
+        self.mainloop()       # Start listening for events
+        return
+
         #----------------------------------------------------------------------
         # Create layout
 
@@ -132,7 +141,7 @@ class IFieldGui:
         # Initialisation
         
         self.show()   # Initial drawing
-        self.journal.O( 'IFieldGui created for Object {}'.format(self.title))
+        self.journal.O( 'IFieldGui created for Object {}'.format(self.name))
 
         win.mainloop()       # Start listening for events
 
@@ -158,7 +167,7 @@ class IFieldGui:
     def getObjScatter(self):
         "Returns plotable data for Object value"
         
-        self.journal.M( f"{self.title}.getObjScatter" )
+        self.journal.M( f"{self.name}.getObjScatter" )
 
 #        return lib.squareData(baseObj=self.obj, vec=self.obj.prtLst)
         return lib.spiralData(baseObj=self.obj, vec=self.obj.prtLst)
@@ -167,7 +176,7 @@ class IFieldGui:
     def getAimScatter(self):
         "Returns plotable data for AutoIdentityMatrix"
         
-        self.journal.I( f"{self.title}.getAimScatter" )
+        self.journal.I( f"{self.name}.getAimScatter" )
 
         x = []
         y = []
@@ -191,7 +200,7 @@ class IFieldGui:
         X = np.array(x)
         Y = np.array(y)
 
-        self.journal.O( f"{self.title}.getAimScatter: ")
+        self.journal.O( f"{self.name}.getAimScatter: ")
         return (X, Y)
         
     #==========================================================================
@@ -200,7 +209,7 @@ class IFieldGui:
     def show(self):
         "Show Information field "
         
-        self.journal.I( f'IFieldGui{self.title}.show' )
+        self.journal.I( f'IFieldGui{self.name}.show' )
         
 
         (X, Y, U) = self.getObjScatter()
@@ -220,7 +229,7 @@ class IFieldGui:
         self.fig.tight_layout()
         self.canvas.draw()
     
-        self.journal.O( f'IFieldGui {self.title}.show done')
+        self.journal.O( f'IFieldGui {self.name}.show done')
         
     #--------------------------------------------------------------------------
     def onButAxe(self):

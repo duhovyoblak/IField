@@ -2,9 +2,8 @@
 #  IField: main file
 #------------------------------------------------------------------------------
 import sys
-sys.path.append('lib')
+sys.path.append('..\siqo_lib')
 
-import settings
 from   siqo_journal    import SiqoJournal
 
 import inf_lib         as lib
@@ -33,18 +32,18 @@ if __name__ =='__main__':
     journal.I('Main loop')
     
 #    val = 'abrakadabra'
-#    val = lib.valGen('ABCD', _VALS_MAX)
+    val = lib.valGen('ABCD', _VALS_MAX)
     val = lib.valFromText('text/Coleida cp1250.txt', '1250')
     
-    obj = IObject.getObj(val[:_VALS_MAX])
-    obj.analyse()
+#    obj = IObject.getObj(val[:_VALS_MAX])
+#    obj.analyse()
     
-    obj.info()['out']
+#    obj.info()['out']
 #    obj.infoAidMat()
  
     
     # Vytvorim GUI
-    gui = IFieldGui(obj)
+    gui = IFieldGui(journal, name='IField GUI')
     
     journal.O('Main end')
 #==============================================================================
