@@ -26,12 +26,22 @@ _VALS_MAX  = 100000
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
     
-    journal = SiqoJournal('IField', debug=4)
+    journal = SiqoJournal('IField', debug=3)
     
 
-    cF = ComplexField.gener(journal, 'Test field', 3, 4, offMin=0.1, offMax=100, spread=_LOG)
+    cF = ComplexField.gener(journal, 'Test field', 1, 4, offMin=0.1, offMax=100, spread=_LOG)
     print(cF)
+    
+ #   for obj in cF: print(obj)
+    
+    cF.extend(count=5, offMin=8, offMax=16, spread=_LIN)
+    print(cF)
+    for obj in cF: print(obj['cP'])
 
+    cF.extend(count=6, offMin=88, offMax=168, spread=_LOG)
+    print(cF)
+    for obj in cF: print(obj['cP'])
+    
     journal.I('Main loop')
     
 #    val = 'abrakadabra'
