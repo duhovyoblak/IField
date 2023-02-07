@@ -119,7 +119,7 @@ class ComplexField:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def gener(journal, name, dim, count, offMin, offMax, spread=_LIN, pos=[], deep=0):
+    def gener(journal, name, count, dim, offMin, offMax, spread=_LIN, dimPrev=0, pos=[]):
         "Creates ComplexField with respective settings"
         
         journal.I(f"ComplexField.gener: {name} dim={dim}, count={count}")
@@ -129,30 +129,38 @@ class ComplexField:
         #----------------------------------------------------------------------
         toRet = ComplexField(journal, name)
         
-        toRet.dim    = 1 + deep
-        toRet.offset = offMin
+        toRet.dim    = dimPrev + 1
+        toRet.offMin = offMin
+        toRet.offMax = offMax
         toRet.spread = spread
         
-        if dim == (deep+1): toRet.leaf = True
-        else              : toRet.leaf = False
-        
-        # Correction if this is root dimension e.g., deep=0
-        if deep == 0:
-            
+        #----------------------------------------------------------------------
+        # Correction if this is root dimension e.g., toRet.dim=1
+        #----------------------------------------------------------------------
+        if toRet.dim == 1:
             toRet.offset = 0
             toRet.spread = _LIN
 
         #----------------------------------------------------------------------
+        # Set leaf if this is final dimension e.g., toRet.dim=dim
+        #----------------------------------------------------------------------
+        if toRet.dim == dim: toRet.leaf = True
+        else               : toRet.leaf = False
+        
+        #----------------------------------------------------------------------
         # Creating offsets
         #----------------------------------------------------------------------
-        offs = ComplexField.offsetLst(journal, count, toRet.offset, offMax, toRet.spread)
+        offs = ComplexField.offsetLst(journal, count, toRet.offMin, toRet.offMax, toRet.spread)
 
         #----------------------------------------------------------------------
         # Generate <count> objects in cF
         #----------------------------------------------------------------------
         for i, offset in offs.items():
             
+            
+            #------------------------------------------------------------------
             # Create copy of the <pos> list and add <offset> coordinate
+            #------------------------------------------------------------------
             actPos = list(pos)
             actPos.append(offset)
             
@@ -162,8 +170,8 @@ class ComplexField:
             # Ak to nie je listie stromu vytvorim aj subField
             #------------------------------------------------------------------
             if toRet.leaf: subField = None
-            else         : subField = ComplexField.gener(journal, f"{name}_{i}", dim, count, offMin, offMax, actPos, spread, deep+1)
-            
+            else         : subField = ComplexField.gener(journal, f"{name}_{i}", count, dim, offMin, offMax, spread, toRet.dim, actPos)
+
             #------------------------------------------------------------------
             toRet.cF.append( {'cP':cP, 'cF':subField} )
             
@@ -190,9 +198,10 @@ class ComplexField:
         self.name    = name       # Name of this complex field
         self.dim     = 1          # Dimension of the field
         self.leaf    = True       # Flag if this is leaf object of the tree
-        self.offset  = 0          # Offset distance in lambda from mother dimension
-        self.spread  = _LIN       # Spread of offsets in underlying field
-        self.count   = 0          # Count of underlyings fields
+        self.offMin  = 0          # Min offset distance in lambda from mother dimension
+        self.offMax  = 1          # Max offset distance in lambda from mother dimension
+        self.count   = 0          # Count of objects in this field
+        self.spread  = _LIN       # Spread of offsets of objects
         
         self.cF      = []         # List of ComplexPoint/ComplexFields
         
@@ -215,21 +224,23 @@ class ComplexField:
         dat['name'       ] = self.name
         dat['dim'        ] = self.dim
         dat['leaf'       ] = self.leaf
-        dat['offset'     ] = self.offset
-        dat['spread'     ] = self.spread
+        dat['offMin'     ] = self.offMin
+        dat['offMax'     ] = self.offMax
         dat['count'      ] = self.count
+        dat['spread'     ] = self.spread
 
         for key, val in dat.items(): msg.append("{}{:<15}: {}".format(indent*_IND, key, val))
 
         #----------------------------------------------------------------------
         # info
         #----------------------------------------------------------------------
+        
         for obj in self.cF:
         
             if self.leaf: subMsg = obj['cP'].info(indent+1)['msg']
             else        : subMsg = obj['cF'].info(indent+1)['msg']
             msg.extend(subMsg)
-
+        
         #----------------------------------------------------------------------
         return {'res':'OK', 'dat':dat, 'msg':msg}
         
@@ -304,12 +315,6 @@ class ComplexField:
         else: raise StopIteration
             
     #--------------------------------------------------------------------------
-    def dotToPos(self, dots):
-        "Evaluates distance from dots"
-        
-        return dots/self.dpl * math.pi
-
-    #--------------------------------------------------------------------------
     def copy(self, name):
         "Creates copy of this ComplexField"
         
@@ -317,6 +322,32 @@ class ComplexField:
         
 
         self.journal.O()
+        
+    #--------------------------------------------------------------------------
+    def getLstCF(self, deep=0):
+        "Returns list of all ComplexFields"
+        
+        self.journal.I(f"{self.name}.getLstCF: {deep}")
+        
+        toRet = []
+        #----------------------------------------------------------------------
+        # Add self
+        #----------------------------------------------------------------------
+        if deep==0: toRet.append(self)
+        
+        #----------------------------------------------------------------------
+        # Add all underlying ComplexFields
+        #----------------------------------------------------------------------
+        for obj in self.cF:
+            
+            if obj['cF'] is not None:
+                
+                toRet.append( obj['cF']                  )
+                toRet.extend( obj['cF'].getLstCF(deep+1) )
+        
+        #----------------------------------------------------------------------
+        self.journal.O()
+        return toRet
         
     #--------------------------------------------------------------------------
     def clear(self):
@@ -327,8 +358,8 @@ class ComplexField:
         #----------------------------------------------------------------------
         # First recursive clearing to clear all underlying structures
         #----------------------------------------------------------------------
-        if self.dim > 1:
-            for subField in self.cF: subField.clear()
+        if not self.leaf:
+            for obj in self.cF: obj['cF'].clear()
 
         #----------------------------------------------------------------------
         # Finally trivial clearing of this list
@@ -339,7 +370,7 @@ class ComplexField:
         self.journal.O()
         
     #--------------------------------------------------------------------------
-    def reset(self, inset=None, offset=None, dpl=None, spread=None):
+    def reset(self, inset=None, offset=None, spread=None):
         "Clears complex field and reset it to dimension=0"
         
         self.journal.I(f"{self.name}.reset:")
@@ -350,7 +381,6 @@ class ComplexField:
         
         if inset  is not None: self.inset  = inset
         if offset is not None: self.offset = offset
-        if dpl    is not None: self.dpl    = dpl
         if spread is not None: self.spread = spread
 
         self.journal.O()
@@ -364,21 +394,35 @@ class ComplexField:
     def extend(self, count, offMin=None, offMax=None, spread=_LIN):
         "Generate new ComplexField with one more dimension based on this ComplexField"
         
-        self.journal.I(f"{self.name}.extend: By {count} complex fields")
+        self.journal.I(f"{self.name}.extend: {count} raster in <{offMin} - {offMax}> spread by {spread}")
         
+        #----------------------------------------------------------------------
+        # Prepare all leaves objects of the tree
+        #----------------------------------------------------------------------
+        leaves = []
+        for obj in self:
+            leaves.append(obj)
+            
+        origDim = len(leaves[0]['cP'].pos)
+
         #----------------------------------------------------------------------
         # Iterate through all leaves objects of the tree
         #----------------------------------------------------------------------
-        for obj in self:
+        for obj in leaves:
             
-            subField = ComplexField.gener(self.journal, f"{self.name}_ex", self.dim+1, count, offMin, offMax, spread, obj['cP'].pos, deep=self.dim)
+            name   = f"{self.name}_ex{origDim}"
+            actPos = obj['cP'].pos
             
+            subField = ComplexField.gener(self.journal, name, count, origDim+1, offMin, offMax, spread, origDim, actPos)
             obj['cF'] = subField
             
         #----------------------------------------------------------------------
-        # Final adjustments
+        # Set leaf = False to all ComplexFields with dim=origDim
         #----------------------------------------------------------------------
-        self.leaf = False
+        cfLst = self.getLstCF()
+        
+        for cf in cfLst:
+            if cf.dim==origDim: cf.leaf = False
 
         self.journal.O()
 
