@@ -5,6 +5,7 @@ import sys
 sys.path.append('..\siqo_lib')
 
 import math
+import numpy                 as np
 import siqo_general          as gen
 
 #==============================================================================
@@ -196,7 +197,7 @@ class ComplexField:
         # Public datove polozky triedy
         #----------------------------------------------------------------------
         self.name    = name       # Name of this complex field
-        self.dim     = 1          # Dimension of the field
+        self.dim     = 1          # Dimension level of this field (Not dimension of the Space)
         self.leaf    = True       # Flag if this is leaf object of the tree
         self.offMin  = 0          # Min offset distance in lambda from mother dimension
         self.offMax  = 1          # Max offset distance in lambda from mother dimension
@@ -210,6 +211,7 @@ class ComplexField:
         #----------------------------------------------------------------------
         self.itPos   = 0          # Iterator's position in self.cF list
         self.subIter = None       # Iterator over subField
+        self.cut     = None       # Definition of cut applied in iterator
 
         self.journal.O(f"{self.name}.constructor: done")
 
@@ -324,6 +326,13 @@ class ComplexField:
         self.journal.O()
         
     #--------------------------------------------------------------------------
+    def spaceDim(self, deep=0):
+        "Returns dimension of whole space"
+        
+        if len(self.cF)==0 or self.cF[0]['cF'] is None: return deep+1
+        else                                          : return self.cF[0]['cF'].spaceDim(deep+1)
+
+    #--------------------------------------------------------------------------
     def getLstCF(self, deep=0):
         "Returns list of all ComplexFields"
         
@@ -388,7 +397,54 @@ class ComplexField:
     #==========================================================================
     # API
     #--------------------------------------------------------------------------
+    def getData(self, cut=None):
+        "Returns dict of numpy arrays as a cut from ComplexField"
     
+        self.journal.I(f"{self.name}.getData: cut = {cut}")
+    
+        #----------------------------------------------------------------------
+        # Applying filter for cut
+        #----------------------------------------------------------------------
+        self.cut = cut
+        
+        #----------------------------------------------------------------------
+        # Prepare output
+        #----------------------------------------------------------------------
+        spaceDim = self.spaceDim()
+        data     = {}
+        
+        for i in range(spaceDim): data[f'x{i}'] = []
+        data['re'] = []
+        data['im'] = []
+        
+        #----------------------------------------------------------------------
+        # Iterate over cP in field
+        #----------------------------------------------------------------------
+        for obj in self:
+            
+            cP = obj['cP']
+            
+            # Add X for coordinates
+            i = 0
+            for coor in cP.pos: 
+                data[f'x{i}'].append(coor)
+                i += 1
+                
+            # Add values
+            data['re'].append(cP.c.real)
+            data['im'].append(cP.c.imag)
+
+        #----------------------------------------------------------------------
+        # Create toRet np-array
+        #----------------------------------------------------------------------
+        toRet = {}
+        for key, arr in data.items():
+            toRet[key] = np.array(arr)
+
+        #----------------------------------------------------------------------
+        self.journal.O()
+        return toRet
+
     #--------------------------------------------------------------------------
     #--------------------------------------------------------------------------
     def extend(self, count, offMin=None, offMax=None, spread=_LIN):
