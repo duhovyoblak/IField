@@ -15,7 +15,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import math
 import numpy             as np
 import matplotlib.pyplot as plt
+
 import tkinter           as tk
+from   tkinter           import ttk
+
 import inf_lib           as lib
 
 #==============================================================================
@@ -41,7 +44,7 @@ _BTN_DIS_H      = 0.025
 #==============================================================================
 # class IFieldGui
 #------------------------------------------------------------------------------
-class IFieldGui(tk.Tk):
+class IFieldGui():
     
     #==========================================================================
     # Static variables & methods
@@ -51,7 +54,7 @@ class IFieldGui(tk.Tk):
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, journal, name):
+    def __init__(self, journal, name, dat):
         "Create and show GUI for Information field"
 
         self.journal = journal
@@ -65,72 +68,35 @@ class IFieldGui(tk.Tk):
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
         #----------------------------------------------------------------------
-        super().__init__()
+        self.win = tk.Tk()
 
-        self.title(self.name)
-        self.geometry(_WIN)
-        self.resizable(False,False)
-        self.update()
+        self.win.title(self.name)
+        self.win.geometry(_WIN)
+        self.win.resizable(False,False)
+        self.win.update()
         
-        self.left = SiqoChart(self.journal, 'Left IField visualisation', container=self)
+        self.left = SiqoChart(self.journal, 'Left IField visualisation', container=self.win)
+        self.left.setData(dat)
 
 
 
-        self.journal.O( 'IFieldGui created for Object {}'.format(self.name))
-
-        self.mainloop()       # Start listening for events
-        return
 
         #----------------------------------------------------------------------
         # Create layout
+        
+        self.btn_refr = ttk.Button(self.win, text='Refresh', command=self.refresh)
+        self.btn_refr.pack(anchor=tk.NE, expand=True)
 
-        
-        #----------------------------------------------------------------------
-        # Object scatter
-        
-        self.axObj = self.fig.add_subplot(2,2,1)
-        self.axObj.set_title("Encoded values by rank", fontsize=14)
-        self.axObj.grid(False)
-        self.axObj.set_facecolor('black')
-#        self.axObj.set_xlabel( 'X label' )
-#        self.axObj.set_ylabel( 'Y label')
-        
-        #----------------------------------------------------------------------
-        # aidMatrix scatter
-        
-        self.axAim = self.fig.add_subplot(2,2,2)
-        self.axAim.set_title("Length of virt vs. delta by count", fontsize=14)
-        self.axAim.grid(False)
-        self.axAim.set_facecolor('black')
-        self.axAim.set_xlabel( 'Delta' )
-        self.axAim.set_ylabel( 'Length of virtual patrticle')
-        
-        #----------------------------------------------------------------------
-        # aidVector plot
-        
-        self.axAiv = self.fig.add_subplot(2,2,3)
-        self.axAiv.set_title("Aggregated autoidentity", fontsize=14)
-        self.axAiv.grid(True)
-        self.axAiv.set_xlabel( 'Delta' )
-        self.axAiv.set_ylabel( 'Ratio of Identities')
-        
-        #----------------------------------------------------------------------
-        # eimMatrix scatter
-        
-        self.axEim = self.fig.add_subplot(2,2,4)
-        self.axEim.set_title("asv", fontsize=14)
-        self.axEim.grid(False)
-        self.axEim.set_facecolor('black')
-        self.axEim.set_xlabel( 'Delta' )
-        self.axEim.set_ylabel( 'trticle')
-        
-        #----------------------------------------------------------------------
-        # Initialisation
         
         self.show()   # Initial drawing
+        self.win.mainloop()       # Start listening for events
         self.journal.O( 'IFieldGui created for Object {}'.format(self.name))
 
-        self.mainloop()       # Start listening for events
+    #--------------------------------------------------------------------------
+    def refresh(self):
+        
+        self.show()
+
 
     #--------------------------------------------------------------------------
     def setData(self, dat):
@@ -141,64 +107,6 @@ class IFieldGui(tk.Tk):
         
         
     #==========================================================================
-    # Tools for figure setting
-    #--------------------------------------------------------------------------
-    def getDataLabel(self, key):
-        "Return data label for given data's key"
-        
-        return "${}$ [{}{}]".format(key, self.meta[key]['unit'], 
-                                         self.meta[key]['dim' ])
-    
-    #--------------------------------------------------------------------------
-    def getValByGrid(self, gv, key):
-        "Return rescaled value for given grid's value and data's key"
-        
-        gl = self.meta['g'+key]['max'] - self.meta['g'+key]['min']
-        vl = self.meta[    key]['max'] - self.meta[    key]['min']
-        
-        return (gv/gl) * vl * self.meta[key]['coeff']
-    
-    #--------------------------------------------------------------------------
-    def getObjScatter(self):
-        "Returns plotable data for Object value"
-        
-        self.journal.M( f"{self.name}.getObjScatter" )
-
-#        return lib.squareData(baseObj=self.obj, vec=self.obj.prtLst)
-        return lib.spiralData(baseObj=self.obj, vec=self.obj.prtLst)
-        
-    #--------------------------------------------------------------------------
-    def getAimScatter(self):
-        "Returns plotable data for AutoIdentityMatrix"
-        
-        self.journal.I( f"{self.name}.getAimScatter" )
-
-        x = []
-        y = []
-        
-        rows = min(_MAX_ROWS, len(self.obj.aidMat))
-        
-        row = 0
-        for row in range(rows):
-            
-            aidVec = self.obj.aidMat[row]
-            
-            cols = min(_MAX_COLS, len(aidVec))
-            for col in range(cols):
-                
-                if aidVec[col]==1:
-                    y.append(col)
-                    x.append(row)
-                col+=1
-            row+=1
-
-        X = np.array(x)
-        Y = np.array(y)
-
-        self.journal.O( f"{self.name}.getAimScatter: ")
-        return (X, Y)
-        
-    #==========================================================================
     # GUI methods
     #--------------------------------------------------------------------------
     def show(self):
@@ -206,23 +114,8 @@ class IFieldGui(tk.Tk):
         
         self.journal.I( f'IFieldGui{self.name}.show' )
         
+        self.left.show()
 
-        (X, Y, U) = self.getObjScatter()
-        sctrObj = self.axObj.scatter( x=X, y=Y, c=U, marker="s", lw=0, s=(72./self.fig.dpi)**2, cmap='RdYlBu_r')
-        self.fig.colorbar(sctrObj, ax=self.axObj)
-            
-        (X, Y) = self.getAimScatter()
-        sctrAim = self.axAim.scatter( x=X, y=Y,color='white', marker='o', lw=0, s=(72./self.fig.dpi)**2)
-        
-#        (X, Y) = self.getAimScatter()
-        sctrAiv = self.axAiv.plot( np.array(self.obj.aidVec))
-
-        (X, Y) = self.getAimScatter()
-        sctrEim = self.axEim.scatter( x=X, y=Y, color='blue', marker='o', lw=0, s=(72./self.fig.dpi)**2)
-
-        # Vykreslenie noveho grafu
-        self.fig.tight_layout()
-        self.canvas.draw()
     
         self.journal.O( f'IFieldGui {self.name}.show done')
         

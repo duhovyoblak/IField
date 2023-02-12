@@ -35,19 +35,10 @@ if __name__ =='__main__':
     
     cF.rndBit(0.2)
     for obj in cF: print(obj['cP'])
-#    """
-#    cF.extend(count=5, offMin=8, offMax=16, spread=_LIN)
-#    print(cF)
-#    for obj in cF: print(obj['cP'])
-
-#    cF.extend(count=6, offMin=88, offMax=168, spread=_LOG)
-#    print(cF)
-#    for obj in cF: print(obj['cP'])
-#    """
     
     # Vytvorim GUI
-    gui = IFieldGui(journal, name='IField GUI')
-    gui.setData(cF)
+    gui = IFieldGui(journal, name='IField GUI', dat=cF)
+    
     
     journal.O('Main end')
 #==============================================================================

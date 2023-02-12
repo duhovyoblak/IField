@@ -86,8 +86,8 @@ class ComplexPoint:
 
         x = rnd.randint(0, 9999)
         
-        if x <= prob*10000: self.c = (1, 0)
-        else              : self.c = (0, 0)
+        if x <= prob*10000: self.c = complex(1, 0)
+        else              : self.c = complex(0, 0)
 
         return self.c
         
@@ -425,7 +425,10 @@ class ComplexField:
         spaceDim = self.spaceDim()
         data     = {}
         
-        for i in range(spaceDim): data[f'x{i}'] = []
+        # Prepare all coordinate series
+        for i in range(spaceDim): data[f'x{i+1}'] = []
+        
+        # Prepare value series
         data['re'] = []
         data['im'] = []
         
@@ -439,7 +442,7 @@ class ComplexField:
             # Add X for coordinates
             i = 0
             for coor in cP.pos: 
-                data[f'x{i}'].append(coor)
+                data[f'x{i+1}'].append(coor)
                 i += 1
                 
             # Add values
