@@ -59,26 +59,20 @@ class IFieldGui(tk.Tk):
         
         #----------------------------------------------------------------------
         # Internal data
-        
+        #----------------------------------------------------------------------
         self.name   = name
-#        self.obj   = obj
-#        self.name = self.obj.objId
         
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
         #----------------------------------------------------------------------
         super().__init__()
 
-#        win = tk.Tk()
         self.title(self.name)
         self.geometry(_WIN)
         self.resizable(False,False)
         self.update()
         
-#        self.w = win.winfo_width()
-#        self.h = win.winfo_height()
-        
-        self.chart = SiqoChart(self.journal, 'IField visualisation', container=self)
+        self.left = SiqoChart(self.journal, 'Left IField visualisation', container=self)
 
 
 
@@ -90,13 +84,6 @@ class IFieldGui(tk.Tk):
         #----------------------------------------------------------------------
         # Create layout
 
-        self.fig = plt.figure(figsize=(self.w*_FIG_W/100, self.h*_FIG_H/100), dpi=_DPI)
-
-        self.canvas = FigureCanvasTkAgg(self.fig, master=win)  # A tk.DrawingArea.
-        self.canvas.draw()
-        self.canvas.get_tk_widget().place(x=self.w*0.0, y=self.h*0.0)
-        
-        self.fig.canvas.callbacks.connect('button_press_event', self.on_click)
         
         #----------------------------------------------------------------------
         # Object scatter
@@ -143,8 +130,16 @@ class IFieldGui(tk.Tk):
         self.show()   # Initial drawing
         self.journal.O( 'IFieldGui created for Object {}'.format(self.name))
 
-        win.mainloop()       # Start listening for events
+        self.mainloop()       # Start listening for events
 
+    #--------------------------------------------------------------------------
+    def setData(self, dat):
+        "Clears data and set new data"
+        
+        self.left.setData(dat)
+        
+        
+        
     #==========================================================================
     # Tools for figure setting
     #--------------------------------------------------------------------------

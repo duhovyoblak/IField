@@ -6,6 +6,7 @@ sys.path.append('..\siqo_lib')
 
 import math
 import numpy                 as np
+import random                as rnd
 import siqo_general          as gen
 
 #==============================================================================
@@ -78,6 +79,17 @@ class ComplexPoint:
         toRet.c  = self.c
         
         return toRet
+        
+    #--------------------------------------------------------------------------
+    def rndBit(self, prob):
+        "Sets real value 0/1 with respective probability and imaginary value sets to 0"
+
+        x = rnd.randint(0, 9999)
+        
+        if x <= prob*10000: self.c = (1, 0)
+        else              : self.c = (0, 0)
+
+        return self.c
         
 #==============================================================================
 # ComplexField
@@ -483,6 +495,12 @@ class ComplexField:
         self.journal.O()
 
     #--------------------------------------------------------------------------
+    def rndBit(self, prob):
+        "Sets all values to random bit with respective probability"
+        
+        for obj in self:
+            obj['cP'].rndBit(prob)
+        
     #--------------------------------------------------------------------------
     def amp(self):
         "Returns amplitude of the Object"
