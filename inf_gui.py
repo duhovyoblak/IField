@@ -66,31 +66,67 @@ class IFieldGui():
         self.name   = name
         
         #----------------------------------------------------------------------
-        # Initialise original tkInter.Tk
+        # Initialise main window
         #----------------------------------------------------------------------
         self.win = tk.Tk()
 
         self.win.title(self.name)
         self.win.geometry(_WIN)
-        self.win.resizable(False,False)
-        self.win.update()
+        self.win.resizable(True,True)
+#        self.win.update()
+
+        self.style = ttk.Style(self.win)
+        self.style.theme_use('classic')
         
-        self.left = SiqoChart(self.journal, 'Left IField visualisation', container=self.win)
-        self.left.setData(dat)
-
-
+        #----------------------------------------------------------------------
+        # Staus bar
+        #----------------------------------------------------------------------
 
 
         #----------------------------------------------------------------------
-        # Create layout
+        # Right over bar
+        #----------------------------------------------------------------------
+        frm_over = ttk.Frame(self.win) #, width=100
+        frm_over.pack(fill=tk.Y, expand=True, side=tk.RIGHT, anchor=tk.E)
+
+        self.btn_refr = ttk.Button(frm_over, text='Refresh', command=self.refresh)
+        self.btn_refr.pack(ipadx=20, ipady=20, fill=tk.X, expand=True)
+
+        #----------------------------------------------------------------------
+        # Panned window with charts
+        #----------------------------------------------------------------------
+        pnw = ttk.PanedWindow(self.win, orient=tk.HORIZONTAL)
+
+        # Left Chart
         
-        self.btn_refr = ttk.Button(self.win, text='Refresh', command=self.refresh)
-        self.btn_refr.pack(anchor=tk.NE, expand=True)
+        
+        self.left = SiqoChart(self.journal, 'Left IField visualisation', container=self.win)
+        self.left.setData(dat)
+        self.left.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+        pnw.add(self.left)
+
+        # Right chart
+        self.right = SiqoChart(self.journal, 'Right IField visualisation', container=self.win)
+        self.right.setData(dat)
+        self.right.pack(fill=tk.BOTH, expand=True, side=tk.RIGHT)
+        pnw.add(self.right)
+
+        # place the panedwindow on the root window
+        pnw.pack(fill=tk.BOTH, expand=True)
+       
+
+
+
+
+
+
+        
 
         
         self.show()   # Initial drawing
-        self.win.mainloop()       # Start listening for events
         self.journal.O( 'IFieldGui created for Object {}'.format(self.name))
+
+        self.win.mainloop()       # Start listening for events
 
     #--------------------------------------------------------------------------
     def refresh(self):
@@ -103,6 +139,7 @@ class IFieldGui():
         "Clears data and set new data"
         
         self.left.setData(dat)
+        self.right.setData(dat)
         
         
         
@@ -115,6 +152,7 @@ class IFieldGui():
         self.journal.I( f'IFieldGui{self.name}.show' )
         
         self.left.show()
+        self.right.show()
 
     
         self.journal.O( f'IFieldGui {self.name}.show done')
