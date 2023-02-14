@@ -132,7 +132,7 @@ class ComplexField:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def gener(journal, name, count, dim, offMin, offMax, spread=_LIN, dimPrev=0, pos=[]):
+    def gener(journal, name, count, offMin, offMax, dim, dimPrev=0, spread=_LIN, pos=[]):
         "Creates ComplexField with respective settings"
         
         journal.I(f"ComplexField.gener: {name} dim={dim}, count={count}")
@@ -170,7 +170,6 @@ class ComplexField:
         #----------------------------------------------------------------------
         for i, offset in offs.items():
             
-            
             #------------------------------------------------------------------
             # Create copy of the <pos> list and add <offset> coordinate
             #------------------------------------------------------------------
@@ -183,7 +182,8 @@ class ComplexField:
             # Ak to nie je listie stromu vytvorim aj subField
             #------------------------------------------------------------------
             if toRet.leaf: subField = None
-            else         : subField = ComplexField.gener(journal, f"{name}_{i}", count, dim, offMin, offMax, spread, toRet.dim, actPos)
+            else         : subField = ComplexField.gener(journal, f"{name}_{i}", count=count, 
+                                      offMin=offMin, offMax=offMax, dim=dim, dimPrev=toRet.dim, spread=spread, pos=actPos)
 
             #------------------------------------------------------------------
             toRet.cF.append( {'cP':cP, 'cF':subField} )
@@ -223,7 +223,7 @@ class ComplexField:
         #----------------------------------------------------------------------
         self.itPos   = 0          # Iterator's position in self.cF list
         self.subIter = None       # Iterator over subField
-        self.cut     = None       # Definition of cut applied in iterator
+        self.cut     = {'dim':0, 'axs':[], 'flt':{}} # Definition of cut applied in iterator
 
         self.journal.O(f"{self.name}.constructor: done")
 
@@ -417,7 +417,7 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Applying filter for cut
         #----------------------------------------------------------------------
-        self.cut = cut
+        if cut is not None: self.cut = cut
         
         #----------------------------------------------------------------------
         # Prepare output

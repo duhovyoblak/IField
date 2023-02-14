@@ -86,10 +86,10 @@ class IFieldGui():
         #----------------------------------------------------------------------
         # Right over bar
         #----------------------------------------------------------------------
-        frm_over = ttk.Frame(self.win) #, width=100
-        frm_over.pack(fill=tk.Y, expand=True, side=tk.RIGHT, anchor=tk.E)
+        frmOver = ttk.Frame(self.win) #, width=100
+        frmOver.pack(fill=tk.Y, expand=True, side=tk.RIGHT, anchor=tk.E)
 
-        self.btn_refr = ttk.Button(frm_over, text='Refresh', command=self.refresh)
+        self.btn_refr = ttk.Button(frmOver, text='Refresh', command=self.refresh)
         self.btn_refr.pack(ipadx=20, ipady=20, fill=tk.X, expand=True)
 
         #----------------------------------------------------------------------
@@ -100,13 +100,13 @@ class IFieldGui():
         # Left Chart
         
         
-        self.left = SiqoChart(self.journal, 'Left IField visualisation', container=self.win)
+        self.left = SiqoChart(self.journal, 'Left IField visualisation', container=self.win, dim='1')
         self.left.setData(dat)
         self.left.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
         pnw.add(self.left)
 
         # Right chart
-        self.right = SiqoChart(self.journal, 'Right IField visualisation', container=self.win)
+        self.right = SiqoChart(self.journal, 'Right IField visualisation', container=self.win, dim='2')
         self.right.setData(dat)
         self.right.pack(fill=tk.BOTH, expand=True, side=tk.RIGHT)
         pnw.add(self.right)
