@@ -31,23 +31,17 @@ if __name__ =='__main__':
 
     datL = ComplexField.gener(journal, 'Test field', count=4, offMin=0.1, offMax=10, dim=3, spread=_LOG)
     print(datL)
-    print('a')
-    for obj in datL: print(obj['cP'])
 
-    print('b')
-    
+    datL.cut = [-1, -1, -1]
     datL.rndBit(0.5)
-    print('c')
+
+
+    datL.cut = [-1, 3, -1]
     for obj in datL: print(obj['cP'])
 
-    print('--------------')
 
-    cut = {}
-    cut['dim'] = 1
-    cut['axs'] = []
-    cut['flt'] = {}
-    
-    d = datL.getDat(cut)
+    d = datL.getData()
+    print(d)
     
     # Vytvorim GUI
 #    gui = IFieldGui(journal, name='IField GUI', dat=cF)

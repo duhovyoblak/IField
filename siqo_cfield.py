@@ -223,7 +223,7 @@ class ComplexField:
         #----------------------------------------------------------------------
         self.itPos   = 0          # Iterator's position in self.cF list
         self.subIter = None       # Iterator over subField
-        self.cut     = {'dim':0, 'axs':[], 'flt':{}} # Definition of cut applied in iterator
+        self.cut     = [-1]       # Definition of cut applied in iterator
 
         self.journal.O(f"{self.name}.constructor: done")
 
@@ -281,52 +281,93 @@ class ComplexField:
         "Returns next item in ongoing iteration"
         
         #----------------------------------------------------------------------
-        # Iterate over cF list until itPos < count
+        # If cut is defined (!=-1) then return respective cut only
         #----------------------------------------------------------------------
-        if self.itPos < self.count: 
+        if self.cut[0] != -1:
+
+            # Get desired cut e.g., object in cF list
+            obj = self.cF[self.cut[0]]
             
             #------------------------------------------------------------------
-            # If leaf the simply return ComplexPoint at itPos
+            # If there is cut definition left, start underlying iterator
             #------------------------------------------------------------------
-            if self.leaf:
-
-                obj = self.cF[self.itPos]
-                self.itPos += 1
-
-                return obj
-            
-            #------------------------------------------------------------------
-            # If not leaf then iterate over underlying ComplexFields
-            #------------------------------------------------------------------
-            else:
+            if len(self.cut)>1:
                 
                 #--------------------------------------------------------------
-                # If not yet initialised, initialise iterator over subField
+                # If not yet initialised, initialise iterator over subField with sub-cut
                 #--------------------------------------------------------------
                 if self.subIter is None:
                     
-                    subField     = self.cF[self.itPos]['cF']
+                    subField     = obj['cF']
+                    subField.cut = self.cut[1:]
                     self.subIter = iter(subField)
 
                 #--------------------------------------------------------------
-                # Return the next value from underlying ComplexFields
+                # Return the next value from underlying ComplexFields until exception
                 #--------------------------------------------------------------
-                try:
-                     return next(self.subIter)
-                    
-                except StopIteration:
-                    #----------------------------------------------------------
-                    # Reset subPosition and move to the next object in cF list
-                    #----------------------------------------------------------
-                    self.subIter = None
-                    self.itPos  += 1
-                    
-                    return next(self)
+                return next(self.subIter)
+            
+            #------------------------------------------------------------------
+            # If there is no cut definition left, return current object
+            #------------------------------------------------------------------
+            else:
+                #--------------------------------------------------------------
+                # Check if this was already returned
+                #--------------------------------------------------------------
+                if self.itPos == -1: raise StopIteration
+                else:
+                    self.itPos = -1
+                    return obj
         
         #----------------------------------------------------------------------
-        # There is no more object in Cf list left
+        # If cut is not defined then Iterate over cF list until itPos < count
         #----------------------------------------------------------------------
-        else: raise StopIteration
+        else:
+            
+            if self.itPos < self.count: 
+                
+                # Get current object in cF list
+                obj = self.cF[self.itPos]
+                
+                #--------------------------------------------------------------
+                # If there is cut definition left, start underlying iterator
+                #--------------------------------------------------------------
+                if len(self.cut)>1:
+                    
+                    #----------------------------------------------------------
+                    # If not yet initialised, initialise iterator over subField with sub-cut
+                    #----------------------------------------------------------
+                    if self.subIter is None:
+                    
+                        subField     = obj['cF']
+                        subField.cut = self.cut[1:]
+                        self.subIter = iter(subField)
+
+                    #----------------------------------------------------------
+                    # Return the next value from underlying ComplexFields
+                    #----------------------------------------------------------
+                    try:
+                        return next(self.subIter)
+
+                    except StopIteration:
+                        #------------------------------------------------------
+                        # Reset subIterator and move to the next object in cF list
+                        #------------------------------------------------------
+                        self.subIter = None
+                        self.itPos  += 1
+                        return next(self)
+                  
+                #--------------------------------------------------------------
+                # If there is no cut definition left, return Point and move to next point
+                #--------------------------------------------------------------
+                else: 
+                    self.itPos += 1
+                    return obj
+                    
+            #------------------------------------------------------------------
+            # There is no more object in Cf list left
+            #------------------------------------------------------------------
+            else: raise StopIteration
             
     #--------------------------------------------------------------------------
     def copy(self, name):
@@ -415,12 +456,12 @@ class ComplexField:
         self.journal.I(f"{self.name}.getData: cut = {cut}")
     
         #----------------------------------------------------------------------
-        # Applying filter for cut
+        # Applying cut
         #----------------------------------------------------------------------
         if cut is not None: self.cut = cut
         
         #----------------------------------------------------------------------
-        # Prepare output
+        # Prepare output for respective cut
         #----------------------------------------------------------------------
         spaceDim = self.spaceDim()
         data     = {}
@@ -450,11 +491,12 @@ class ComplexField:
             data['im'].append(cP.c.imag)
 
         #----------------------------------------------------------------------
-        # Create toRet np-array
+        # Create toRet np-array for populated data only
         #----------------------------------------------------------------------
         toRet = {}
         for key, arr in data.items():
-            toRet[key] = np.array(arr)
+            
+            if len(arr)>0: toRet[key] = np.array(arr)
 
         #----------------------------------------------------------------------
         self.journal.O()
