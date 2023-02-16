@@ -379,12 +379,27 @@ class ComplexField:
         self.journal.O()
         
     #--------------------------------------------------------------------------
-    def spaceDim(self, deep=0):
-        "Returns dimension of whole space"
+    def getDimMax(self, deep=0):
+        "Returns max dimension of whole space"
         
         if len(self.cF)==0 or self.cF[0]['cF'] is None: return deep+1
-        else                                          : return self.cF[0]['cF'].spaceDim(deep+1)
+        else                                          : return self.cF[0]['cF'].getDimMax(deep+1)
 
+    #--------------------------------------------------------------------------
+    def getDimCount(self, dim):
+        "Returns count of members for respective dimension"
+
+        if dim < 1: return None
+        
+        # Dimension of this cF is desired dimension
+        if self.dim == dim: 
+            
+            return self.count
+        
+        else: 
+            if self.cF[0]['cF'] is not None: return self.cF[0]['cF'].getDimCount(dim)
+            else                           : return None
+        
     #--------------------------------------------------------------------------
     def getLstCF(self, deep=0):
         "Returns list of all ComplexFields"
@@ -463,11 +478,11 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Prepare output for respective cut
         #----------------------------------------------------------------------
-        spaceDim = self.spaceDim()
+        dimMax = self.getDimMax()
         data     = {}
         
         # Prepare all coordinate series
-        for i in range(spaceDim): data[f'x{i+1}'] = []
+        for i in range(dimMax): data[f'x{i+1}'] = []
         
         # Prepare value series
         data['re'] = []

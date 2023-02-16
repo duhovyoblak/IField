@@ -29,22 +29,22 @@ if __name__ =='__main__':
     journal = SiqoJournal('IField', debug=3)
     journal.I('Main loop')
 
-    datL = ComplexField.gener(journal, 'Test field', count=4, offMin=0.1, offMax=10, dim=3, spread=_LOG)
-    print(datL)
+    dat = ComplexField.gener(journal, 'Test field', count=4, offMin=0.1, offMax=10, dim=3, spread=_LOG)
+    print(dat)
 
-    datL.cut = [-1, -1, -1]
-    datL.rndBit(0.5)
-
-
-    datL.cut = [-1, 3, -1]
-    for obj in datL: print(obj['cP'])
+    dat.cut = [-1, -1, -1]
+    dat.rndBit(0.5)
 
 
-    d = datL.getData()
+    dat.cut = [-1]
+    for obj in dat: print(obj['cP'])
+
+
+    d = dat.getData()
     print(d)
     
     # Vytvorim GUI
-#    gui = IFieldGui(journal, name='IField GUI', dat=cF)
+    gui = IFieldGui(journal, name='IField GUI', dat=dat)
     
     
     journal.O('Main end')

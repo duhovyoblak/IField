@@ -114,14 +114,6 @@ class IFieldGui():
         # place the panedwindow on the root window
         pnw.pack(fill=tk.BOTH, expand=True)
        
-
-
-
-
-
-
-        
-
         
         self.show()   # Initial drawing
         self.journal.O( 'IFieldGui created for Object {}'.format(self.name))
