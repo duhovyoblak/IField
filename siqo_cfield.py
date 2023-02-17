@@ -506,12 +506,12 @@ class ComplexField:
             data['im'].append(cP.c.imag)
 
         #----------------------------------------------------------------------
-        # Create toRet np-array for populated data only
+        # Create toRet np-array for populated data
         #----------------------------------------------------------------------
-        toRet = {}
+        toRet = []
         for key, arr in data.items():
             
-            if len(arr)>0: toRet[key] = np.array(arr)
+            toRet.append( {'key':key, 'arr':np.array(arr)} )
 
         #----------------------------------------------------------------------
         self.journal.O()

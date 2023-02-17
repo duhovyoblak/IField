@@ -2,7 +2,6 @@
 # Information field class GUI
 #------------------------------------------------------------------------------
 #
-
 #------------------------------------------------------------------------------
 import sys
 sys.path.append('..\siqo_lib')
@@ -98,15 +97,13 @@ class IFieldGui():
         pnw = ttk.PanedWindow(self.win, orient=tk.HORIZONTAL)
 
         # Left Chart
-        
-        
-        self.left = SiqoChart(self.journal, 'Left IField visualisation', container=self.win, dim='1')
+        self.left = SiqoChart(self.journal, 'Left IField visualisation', container=self.win, axX='0', axY='1', val='re')
         self.left.setData(dat)
         self.left.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
         pnw.add(self.left)
 
         # Right chart
-        self.right = SiqoChart(self.journal, 'Right IField visualisation', container=self.win, dim='2')
+        self.right = SiqoChart(self.journal, 'Right IField visualisation', container=self.win, axX='1', axY='2', val='re')
         self.right.setData(dat)
         self.right.pack(fill=tk.BOTH, expand=True, side=tk.RIGHT)
         pnw.add(self.right)
@@ -125,15 +122,12 @@ class IFieldGui():
         
         self.show()
 
-
     #--------------------------------------------------------------------------
     def setData(self, dat):
         "Clears data and set new data"
         
-        self.left.setData(dat)
+        self.left. setData(dat)
         self.right.setData(dat)
-        
-        
         
     #==========================================================================
     # GUI methods
@@ -145,7 +139,6 @@ class IFieldGui():
         
         self.left.show()
         self.right.show()
-
     
         self.journal.O( f'IFieldGui {self.name}.show done')
         
@@ -202,7 +195,6 @@ class IFieldGui():
             y = float(event.ydata)
             
             print(f'x={x},  y={y}, ax={ax}')
-
             
         else:
             print('Clicked ouside axes bounds but inside plot window')
