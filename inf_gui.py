@@ -97,14 +97,12 @@ class IFieldGui():
         pnw = ttk.PanedWindow(self.win, orient=tk.HORIZONTAL)
 
         # Left Chart
-        self.left = SiqoChart(self.journal, 'Left IField visualisation', container=self.win, axX='0', axY='1', val='re')
-        self.left.setData(dat)
+        self.left = SiqoChart(self.journal, 'Left IField visualisation', container=self.win, dat=dat, axX='0', axY='1', val='re')
         self.left.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
         pnw.add(self.left)
 
         # Right chart
-        self.right = SiqoChart(self.journal, 'Right IField visualisation', container=self.win, axX='1', axY='2', val='re')
-        self.right.setData(dat)
+        self.right = SiqoChart(self.journal, 'Right IField visualisation', container=self.win, dat=dat, axX='2', axY='1', val='re')
         self.right.pack(fill=tk.BOTH, expand=True, side=tk.RIGHT)
         pnw.add(self.right)
 

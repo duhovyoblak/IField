@@ -26,22 +26,15 @@ _VALS_MAX  = 100000
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
     
-    journal = SiqoJournal('IField', debug=5)
+    journal = SiqoJournal('IField', debug=4)
     journal.I('Main loop')
 
-    dat = ComplexField.gener(journal, 'Test field', count=7, offMin=0.1, offMax=10, dim=3, spread=_LIN)
+    dat = ComplexField.gener(journal, 'Test field', count=100, offMin=0.1, offMax=10, dim=3, spread=_LOG)
 #    print(dat)
 
     dat.cut = [-1, -1, -1]
     dat.rndBit(0.5)
 
-
-    dat.cut = [-1, 0]
-    for obj in dat: print(obj['cP'])
-
-
-    d = dat.getData()
-    print(d)
     
     # Vytvorim GUI
     gui = IFieldGui(journal, name='IField GUI', dat=dat)
