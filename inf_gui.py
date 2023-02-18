@@ -72,7 +72,6 @@ class IFieldGui():
         self.win.title(self.name)
         self.win.geometry(_WIN)
         self.win.resizable(True,True)
-#        self.win.update()
 
         self.style = ttk.Style(self.win)
         self.style.theme_use('classic')
@@ -108,7 +107,6 @@ class IFieldGui():
 
         # place the panedwindow on the root window
         pnw.pack(fill=tk.BOTH, expand=True)
-       
         
         self.show()   # Initial drawing
         self.journal.O( 'IFieldGui created for Object {}'.format(self.name))

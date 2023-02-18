@@ -263,7 +263,6 @@ class ComplexField:
         #----------------------------------------------------------------------
         # info
         #----------------------------------------------------------------------
-        
         for obj in self.cF:
         
             if self.leaf: subMsg = obj['cP'].info(indent+1)['msg']
@@ -415,6 +414,35 @@ class ComplexField:
             if self.cF[0]['cF'] is not None: return self.cF[0]['cF'].getDimCount(dim)
             else                           : return None
         
+    #--------------------------------------------------------------------------
+    def getObjByCoord(self, coord, deep=0):
+        "Returns object in field for respective coordinates"
+
+        last = -1e100
+        srch = coord[0]
+        
+
+        #----------------------------------------------------------------------
+        # Iterate over first dim and search nearest coorinate <srch>
+        #----------------------------------------------------------------------
+        i = 0
+        for obj in self.cF:
+            
+            # Distance from previous point
+            dltPrev = srch - obj['cP'].pos[deep]
+            
+            # If we past behind prev point
+            if dltPrev >= 0:
+                
+                # If there is next point left
+                if i < 
+                
+
+
+            #------------------------------------------------------------------
+            # There is no more object in Cf list left
+            #------------------------------------------------------------------
+      
     #--------------------------------------------------------------------------
     def getLstCF(self, deep=0):
         "Returns list of all ComplexFields"
