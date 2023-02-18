@@ -81,6 +81,21 @@ class ComplexPoint:
         return toRet
         
     #--------------------------------------------------------------------------
+    def real(self):
+        
+        return self.c.real
+
+    #--------------------------------------------------------------------------
+    def imag(self):
+        
+        return self.c.imag
+
+    #--------------------------------------------------------------------------
+    def abs(self):
+        
+        return abs(self.c)
+
+    #--------------------------------------------------------------------------
     def rndBit(self, prob):
         "Sets real value 0/1 with respective probability and imaginary value sets to 0"
 
@@ -485,8 +500,7 @@ class ComplexField:
         for i in range(dimMax): data[f'x{i+1}'] = []
         
         # Prepare value series
-        data['re'] = []
-        data['im'] = []
+        data['val'] = []
         
         #----------------------------------------------------------------------
         # Iterate over cP in field
@@ -502,16 +516,16 @@ class ComplexField:
                 i += 1
                 
             # Add values
-            data['re'].append(cP.c.real)
-            data['im'].append(cP.c.imag)
+            data['val'].append(cP)
 
         #----------------------------------------------------------------------
-        # Create toRet np-array for populated data
+        # Create toRet np-array for coordinates
         #----------------------------------------------------------------------
         toRet = []
         for key, arr in data.items():
             
-            toRet.append( {'key':key, 'arr':np.array(arr)} )
+            if key == 'val': toRet.append( {'key':key, 'arr':arr          } )
+            else           : toRet.append( {'key':key, 'arr':np.array(arr)} )
 
         #----------------------------------------------------------------------
         self.journal.O()
