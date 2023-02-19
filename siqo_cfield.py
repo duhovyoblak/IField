@@ -415,33 +415,79 @@ class ComplexField:
             else                           : return None
         
     #--------------------------------------------------------------------------
-    def getObjByCoord(self, coord, deep=0):
-        "Returns object in field for respective coordinates"
+    def getPointByCoord(self, coord, deep=0):
+        "Returns nearest Point in field for respective coordinates"
 
-        last = -1e100
-        srch = coord[0]
+        pos  = -1            # Indices of the nearest point
+        srch = coord[deep]   # Coordinate of the searched point in respective dimension
         
+        self.journal.I(f"{self.name}.getPointByCoord: coord={coord}, srch={srch}, deep={deep}")
 
         #----------------------------------------------------------------------
-        # Iterate over first dim and search nearest coorinate <srch>
+        # Initialise distance to previous point (e.g., first)
         #----------------------------------------------------------------------
         i = 0
-        for obj in self.cF:
-            
-            # Distance from previous point
-            dltPrev = srch - obj['cP'].pos[deep]
-            
-            # If we past behind prev point
-            if dltPrev >= 0:
-                
-                # If there is next point left
-                if i < 
-                
+        dltPrev = self.cF[i]['cP'].pos[deep] - srch
+        i += 1
 
+        #----------------------------------------------------------------------
+        # Iterate over all next points
+        #----------------------------------------------------------------------
+        while i < self.count:
+            
+            # Distance to actual (i-th) point
+            dltAct = self.cF[i]['cP'].pos[deep] - srch
 
             #------------------------------------------------------------------
-            # There is no more object in Cf list left
+            #  If the actual point has greater coord than <srch>
             #------------------------------------------------------------------
+            if dltAct >= 0:
+                
+                #--------------------------------------------------------------
+                # Return nearer point Previous or Actual
+                #--------------------------------------------------------------
+                if abs(dltAct) <= abs(dltPrev): pos = i
+                else                          : pos = i-1
+                
+                break
+
+            #------------------------------------------------------------------
+            # Move to the next point
+            #------------------------------------------------------------------
+            dltPrev = dltAct
+            i += 1
+
+        #----------------------------------------------------------------------
+        # If pos was not set then set it to last point
+        #----------------------------------------------------------------------
+        if pos == -1: pos = i-1
+        
+        #----------------------------------------------------------------------
+        # Prepare return value
+        #----------------------------------------------------------------------
+        lstPos = [pos]
+        
+        #----------------------------------------------------------------------
+        # If there are net-yet-resolved coordinates left then recursive
+        #----------------------------------------------------------------------
+        if len(coord) > (deep+1):
+            
+            # field to be searched 
+            sF = self.cF[pos]['cF']
+            
+            lstPos.extend( sF.getPointByCoord(coord, deep+1) )
+                    
+        self.journal.O()
+
+        #----------------------------------------------------------------------
+        # If deep == 0 the return point on position lstPos
+        #----------------------------------------------------------------------
+        if deep == 0: return self.getData(cut=lstPos)[-1]['arr'][0]
+        
+        #----------------------------------------------------------------------
+        # If deep != 0 the return list of indices of the nearest point
+        #----------------------------------------------------------------------
+        return lstPos
       
     #--------------------------------------------------------------------------
     def getLstCF(self, deep=0):
