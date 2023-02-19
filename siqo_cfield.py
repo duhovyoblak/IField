@@ -44,7 +44,7 @@ class ComplexPoint:
         
         i = 0
         for coor in self.pos:
-            toRet += "X[{}]={:10.2f} |".format(i+1, coor)
+            toRet += "X[{}]={:7.2f} |".format(i+1, coor)
             i += 1
 
         return toRet
@@ -71,6 +71,11 @@ class ComplexPoint:
         for line in self.info()['msg']: toRet += line
         return toRet
 
+    #--------------------------------------------------------------------------
+    def setVal(self, c):
+        
+        self.c = c
+        
     #--------------------------------------------------------------------------
     def copy(self):
         "Creates copy of this ComplexPoint"

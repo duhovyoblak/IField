@@ -28,6 +28,9 @@ _WIN            = '1400x800'
 _MAX_ROWS       = 250
 _MAX_COLS       = 500
 
+_PADX           = 5
+_PADY           = 5
+
 
 _SC_RED         = 1.4
 
@@ -84,11 +87,14 @@ class IFieldGui():
         #----------------------------------------------------------------------
         # Right over bar
         #----------------------------------------------------------------------
-        frmOver = ttk.Frame(self.win) #, width=100
+        frmOver = ttk.Frame(self.win, borderwidth = 5, relief = 'groove') #, width=100
         frmOver.pack(fill=tk.Y, expand=True, side=tk.RIGHT, anchor=tk.E)
 
         self.btn_refr = ttk.Button(frmOver, text='Refresh', command=self.refresh)
-        self.btn_refr.pack(ipadx=20, ipady=20, fill=tk.X, expand=True)
+        self.btn_refr.pack(padx=_PADX, pady=_PADX, fill=tk.X )
+
+        self.cbTorus = ttk.Checkbutton(frmOver, text='Torus topology', command=self.show)
+        self.cbTorus.pack(padx=_PADX, pady=_PADX, fill=tk.X)
 
         #----------------------------------------------------------------------
         # Panned window with charts
@@ -108,7 +114,7 @@ class IFieldGui():
         # place the panedwindow on the root window
         pnw.pack(fill=tk.BOTH, expand=True)
         
-        self.show()   # Initial drawing
+#        self.show()   # Initial drawing
         self.journal.O( 'IFieldGui created for Object {}'.format(self.name))
 
         self.win.mainloop()       # Start listening for events
