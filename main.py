@@ -29,7 +29,7 @@ if __name__ =='__main__':
     journal = SiqoJournal('IField', debug=4)
     journal.I('Main loop')
 
-    dat = ComplexField.gener(journal, 'Test field', count=50, offMin=0.1, offMax=10, dim=3, spread=_LOG)
+    dat = ComplexField.gener(journal, 'Test field', count=500, offMin=0.1, offMax=10, dim=2, spread=_LOG)
 #    print(dat)
 
 #    dat.cut = [-1, -1, -1]
@@ -37,10 +37,13 @@ if __name__ =='__main__':
 
     
     # Vytvorim GUI
-    gui = IFieldGui(journal, name='IField GUI', dat=dat)
+#    gui = IFieldGui(journal, name='IField GUI', dat=dat)
+
+    x = dat.getRays(1)
     
     
     journal.O('Main end')
+    
 #==============================================================================
 #                              END OF FILE
 #------------------------------------------------------------------------------

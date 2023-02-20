@@ -101,6 +101,25 @@ class ComplexPoint:
         return abs(self.c)
 
     #--------------------------------------------------------------------------
+    def deltasTo(self, toP):
+        
+        dlt = zip(self.pos, toP.pos)
+        
+        toRet = [pair[1] - pair[0] for pair in dlt]
+        
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def rSquare(self, toP):
+        
+        dlts  = self.deltasTo(toP)
+        toRet = 0
+        
+        for r in dlts: toRet += r*r
+        
+        return toRet
+
+    #--------------------------------------------------------------------------
     def rndBit(self, prob):
         "Sets real value 0/1 with respective probability and imaginary value sets to 0"
 
@@ -405,6 +424,15 @@ class ComplexField:
         else                                          : return self.cF[0]['cF'].getDimMax(deep+1)
 
     #--------------------------------------------------------------------------
+    def getDimSettings(self, dim):
+        "Returns ComplexField settings for respective dimension"
+
+        if dim < 0: return None
+        
+        if dim < 1: return self
+        else      : return self.cF[0]['cF'].getDimSettings(dim-1)
+
+    #--------------------------------------------------------------------------
     def getDimCount(self, dim):
         "Returns count of members for respective dimension"
 
@@ -494,6 +522,55 @@ class ComplexField:
         #----------------------------------------------------------------------
         return lstPos
       
+    #--------------------------------------------------------------------------
+    def getRays(self, dimStart, torus=False):
+        "Returns list of rays from <dimStart> to next one"
+        
+        self.journal.I(f"{self.name}.getRays: from dim {dimStart} with torus={torus}")
+        
+        #----------------------------------------------------------------------
+        # Prepare list of source points
+        #----------------------------------------------------------------------
+        dimStartSet = self.getDimSettings(dimStart)
+        dltOff = (dimStartSet.offMax - dimStartSet.offMin) * (dimStartSet.count +1) / dimStartSet.count
+
+        cut = [0 for i in range(dimStart)]
+        cut[-1] = -1
+        self.cut = cut
+
+        srcs = []
+        for obj in self: srcs.append(obj)
+        
+        #----------------------------------------------------------------------
+        # Prepare list of target points
+        #----------------------------------------------------------------------
+        self.cut.append(-1)
+
+        tgts = []
+        for obj in self: tgts.append(obj)
+        
+        #----------------------------------------------------------------------
+        # Iterate over srcs points
+        #----------------------------------------------------------------------
+        rays = []
+        for src in srcs:
+        
+            #------------------------------------------------------------------
+            # Iterate over points in tgts data
+            #------------------------------------------------------------------
+            for tgt in tgts:
+                
+                rSqr = src['cP'].rSquare(tgt['cP'])
+                rays.append({'src':src['cP'], 'tgt':tgt['cP'], 'rSqr':rSqr})
+                
+        #----------------------------------------------------------------------
+        # Sort rays by rSquare
+        #----------------------------------------------------------------------
+        toRet = gen.listSort(rays, 'rSqr')
+
+        self.journal.O(f"{self.name}.getRays: creates {len(toRet)} rays")
+        return toRet
+
     #--------------------------------------------------------------------------
     def getLstCF(self, deep=0):
         "Returns list of all ComplexFields"
