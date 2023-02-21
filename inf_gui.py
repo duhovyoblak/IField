@@ -6,19 +6,9 @@
 import sys
 sys.path.append('..\siqo_lib')
 
-from   siqo_tkchart        import SiqoChart
-
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-# from mpl_toolkits                      import mplot3d
-
-import math
-import numpy             as np
-import matplotlib.pyplot as plt
-
 import tkinter           as tk
 from   tkinter           import ttk
-
-import inf_lib           as lib
+from   siqo_tkchart        import SiqoChart
 
 #==============================================================================
 # package's constants
@@ -66,6 +56,7 @@ class IFieldGui():
         # Internal data
         #----------------------------------------------------------------------
         self.name   = name
+        self.dat    = dat
         
         #----------------------------------------------------------------------
         # Initialise main window
@@ -121,6 +112,9 @@ class IFieldGui():
 
     #--------------------------------------------------------------------------
     def refresh(self):
+        
+        rays = self.dat.getRays(1)
+        self.dat.applyRays(rays)
         
         self.show()
 

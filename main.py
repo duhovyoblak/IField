@@ -6,8 +6,6 @@ sys.path.append('..\siqo_lib')
 
 from   siqo_journal    import SiqoJournal
 
-import inf_lib         as lib
-from   inf_object      import IObject
 from   inf_gui         import IFieldGui
 from   siqo_cfield     import ComplexField, _LIN, _LOG
 
@@ -29,7 +27,7 @@ if __name__ =='__main__':
     journal = SiqoJournal('IField', debug=4)
     journal.I('Main loop')
 
-    dat = ComplexField.gener(journal, 'Test field', count=500, offMin=0.1, offMax=10, dim=2, spread=_LOG)
+    dat = ComplexField.gener(journal, 'Test field', count=150, offMin=0.1, offMax=20, dim=2, spread=_LIN)
 #    print(dat)
 
 #    dat.cut = [-1, -1, -1]
@@ -37,10 +35,7 @@ if __name__ =='__main__':
 
     
     # Vytvorim GUI
-#    gui = IFieldGui(journal, name='IField GUI', dat=dat)
-
-    x = dat.getRays(1)
-    
+    gui = IFieldGui(journal, name='IField GUI', dat=dat)
     
     journal.O('Main end')
     

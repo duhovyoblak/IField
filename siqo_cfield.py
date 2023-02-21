@@ -5,9 +5,10 @@ import sys
 sys.path.append('..\siqo_lib')
 
 import math
+import cmath
 import numpy                 as np
 import random                as rnd
-import siqo_general          as gen
+#import siqo_general          as gen
 
 #==============================================================================
 # package's constants
@@ -71,6 +72,11 @@ class ComplexPoint:
         for line in self.info()['msg']: toRet += line
         return toRet
 
+    #--------------------------------------------------------------------------
+    def clear(self):
+        
+        self.c = complex(0,0)
+        
     #--------------------------------------------------------------------------
     def setVal(self, c):
         
@@ -531,9 +537,6 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Prepare list of source points
         #----------------------------------------------------------------------
-        dimStartSet = self.getDimSettings(dimStart)
-        dltOff = (dimStartSet.offMax - dimStartSet.offMin) * (dimStartSet.count +1) / dimStartSet.count
-
         cut = [0 for i in range(dimStart)]
         cut[-1] = -1
         self.cut = cut
@@ -552,7 +555,7 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Iterate over srcs points
         #----------------------------------------------------------------------
-        rays = []
+        toRet = []
         for src in srcs:
         
             #------------------------------------------------------------------
@@ -560,16 +563,54 @@ class ComplexField:
             #------------------------------------------------------------------
             for tgt in tgts:
                 
-                rSqr = src['cP'].rSquare(tgt['cP'])
-                rays.append({'src':src['cP'], 'tgt':tgt['cP'], 'rSqr':rSqr})
+                dlts = src['cP'].deltasTo(tgt['cP'])
+                dx1  = dlts[0]
+                dx2  = tgt['cP'].pos[1]
                 
-        #----------------------------------------------------------------------
-        # Sort rays by rSquare
-        #----------------------------------------------------------------------
-        toRet = gen.listSort(rays, 'rSqr')
-
+                toRet.append({'src':src['cP'], 'tgt':tgt['cP'], 'dx1':dx1, 'dx2':dx2})
+                
         self.journal.O(f"{self.name}.getRays: creates {len(toRet)} rays")
         return toRet
+
+    #--------------------------------------------------------------------------
+    def applyRays(self, rays, forward=True):
+        "Computes amplitude for all rays"
+
+        self.journal.I(f"{self.name}.applyRays: with forward = {forward}")
+
+        #----------------------------------------------------------------------
+        # Iterate over rays and compute phase in radians
+        #----------------------------------------------------------------------
+        for ray in rays:
+            
+            # Distance in periods
+            r = math.sqrt( (ray['dx1']*ray['dx1']) + (ray['dx2']*ray['dx2']) )
+                            
+            # Periiod's fraction defines amplitude phase
+            phase = (r % 1) * 2 * math.pi
+            ray['phase'] = phase
+            
+        #----------------------------------------------------------------------
+        # Iterate over rays and evaluate amplitude
+        #----------------------------------------------------------------------
+        self.journal.M(f"{self.name}.applyRays: applying...")
+
+        if forward: rotDir = -1j
+        else      : rotDir =  1j
+        
+        for ray in rays:
+            
+            phase = ray['phase']
+            rot   = cmath.exp(rotDir * phase)
+            
+            #------------------------------------------------------------------
+            # Superpose srcP * rot to tgtP or backward
+            #------------------------------------------------------------------
+            if forward: ray['tgt'].c += ray['src'].c * rot
+            else      : ray['src'].c -= ray['tgt'].c * rot
+
+        #----------------------------------------------------------------------
+        self.journal.O()
 
     #--------------------------------------------------------------------------
     def getLstCF(self, deep=0):
