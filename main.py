@@ -27,7 +27,16 @@ if __name__ =='__main__':
     journal = SiqoJournal('IField', debug=4)
     journal.I('Main loop')
 
-    dat = ComplexField.gener(journal, 'Test field', count=150, offMin=0.1, offMax=20, dim=2, spread=_LIN)
+    dat = ComplexField(journal, 'Test field')
+
+#    dat.gener(count=200, offMin=0.1, offMax=20, dim=2, spread=_LIN)
+
+    dat.gener(count=100, offMin=0.0, offMax=20, dim=1, spread=_LIN)
+    dat.extend(count=500, offMin=0.1, offMax=50, spread=_LIN)
+
+
+#    dat = ComplexField.gener(journal, 'Test field', count=200, offMin=0.0, offMax=20, dim=1, spread=_LIN)
+#    dat.extend(count=200, offMin=0.1, offMax=20, spread=_LIN)
 #    print(dat)
 
 #    dat.cut = [-1, -1, -1]

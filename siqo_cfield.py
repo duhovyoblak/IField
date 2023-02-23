@@ -107,6 +107,16 @@ class ComplexPoint:
         return abs(self.c)
 
     #--------------------------------------------------------------------------
+    def phase(self):
+        
+        return cmath.phase(self.c)
+
+    #--------------------------------------------------------------------------
+    def sqr(self):
+        
+        return self.c * self.c.conjugate()
+
+    #--------------------------------------------------------------------------
     def deltasTo(self, toP):
         
         dlt = zip(self.pos, toP.pos)
@@ -175,72 +185,6 @@ class ComplexField:
         journal.O()
         return offs
 
-    #--------------------------------------------------------------------------
-    @staticmethod
-    def gener(journal, name, count, offMin, offMax, dim, dimPrev=0, spread=_LIN, pos=[]):
-        "Creates ComplexField with respective settings"
-        
-        journal.I(f"ComplexField.gener: {name} dim={dim}, count={count}")
-
-        #----------------------------------------------------------------------
-        # Creating ComplexField object
-        #----------------------------------------------------------------------
-        toRet = ComplexField(journal, name)
-        
-        toRet.dim    = dimPrev + 1
-        toRet.offMin = offMin
-        toRet.offMax = offMax
-        toRet.spread = spread
-        
-        #----------------------------------------------------------------------
-        # Correction if this is root dimension e.g., toRet.dim=1
-        #----------------------------------------------------------------------
-        if toRet.dim == 1:
-            toRet.offset = 0
-            toRet.spread = _LIN
-
-        #----------------------------------------------------------------------
-        # Set leaf if this is final dimension e.g., toRet.dim=dim
-        #----------------------------------------------------------------------
-        if toRet.dim == dim: toRet.leaf = True
-        else               : toRet.leaf = False
-        
-        #----------------------------------------------------------------------
-        # Creating offsets
-        #----------------------------------------------------------------------
-        offs = ComplexField.offsetLst(journal, count, toRet.offMin, toRet.offMax, toRet.spread)
-
-        #----------------------------------------------------------------------
-        # Generate <count> objects in cF
-        #----------------------------------------------------------------------
-        for i, offset in offs.items():
-            
-            #------------------------------------------------------------------
-            # Create copy of the <pos> list and add <offset> coordinate
-            #------------------------------------------------------------------
-            actPos = list(pos)
-            actPos.append(offset)
-            
-            cP = ComplexPoint(actPos)
-            
-            #------------------------------------------------------------------
-            # Ak to nie je listie stromu vytvorim aj subField
-            #------------------------------------------------------------------
-            if toRet.leaf: subField = None
-            else         : subField = ComplexField.gener(journal, f"{name}_{i}", count=count, 
-                                      offMin=offMin, offMax=offMax, dim=dim, dimPrev=toRet.dim, spread=spread, pos=actPos)
-
-            #------------------------------------------------------------------
-            toRet.cF.append( {'cP':cP, 'cF':subField} )
-            
-        #----------------------------------------------------------------------
-        # Final adjustments
-        #----------------------------------------------------------------------
-        toRet.count = len(toRet.cF)
-
-        journal.O()
-        return toRet
-        
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
@@ -529,10 +473,15 @@ class ComplexField:
         return lstPos
       
     #--------------------------------------------------------------------------
-    def getRays(self, dimStart, torus=False):
-        "Returns list of rays from <dimStart> to next one"
+    def applyRays(self, dimStart, start=0, stop=0, forward=True, torus=False):
+        "Apply rays from <dimStart> to next dimension"
         
         self.journal.I(f"{self.name}.getRays: from dim {dimStart} with torus={torus}")
+        
+        if forward: rotDir = -1j
+        else      : rotDir =  1j
+        
+        dltOff = (self.offMax-self.offMin) * (self.count+1)/self.count
         
         #----------------------------------------------------------------------
         # Prepare list of source points
@@ -545,72 +494,73 @@ class ComplexField:
         for obj in self: srcs.append(obj)
         
         #----------------------------------------------------------------------
-        # Prepare list of target points
+        # Prepare cut for target points
         #----------------------------------------------------------------------
         self.cut.append(-1)
 
-        tgts = []
-        for obj in self: tgts.append(obj)
-        
         #----------------------------------------------------------------------
         # Iterate over srcs points
         #----------------------------------------------------------------------
         toRet = []
         for src in srcs:
         
+            srcP = src['cP']
+        
             #------------------------------------------------------------------
-            # Iterate over points in tgts data
+            # Iterate over target points
             #------------------------------------------------------------------
-            for tgt in tgts:
+            for tgt in self:
                 
-                dlts = src['cP'].deltasTo(tgt['cP'])
+                tgtP = tgt['cP']
+                
+                # Get coordinates of source point and target point
+                dlts = srcP.deltasTo(tgtP)
                 dx1  = dlts[0]
-                dx2  = tgt['cP'].pos[1]
+                dx2  = tgtP.pos[1]
                 
+                # Compute distance in periods
+                r = math.sqrt( (dx1*dx1) + (dx2*dx2) )
+                            
+                # Period's fraction defines amplitude phase
+                phase = (r % 1) * 2 * math.pi
+                
+                # Phase defines rotation of amplitude
+                rot = cmath.exp(rotDir * phase)
+            
+                #--------------------------------------------------------------
+                # Superpose srcP * rot to tgtP or backward
+                #--------------------------------------------------------------
+                if forward: tgtP.c += srcP.c * rot
+                else      : srcP.c -= tgtP.c * rot
+                
+                #--------------------------------------------------------------
+                # If torus then superpose secondary ray
+                #--------------------------------------------------------------
+                if torus:
+                    
+                    if dx1 != 0:
+                        
+                        dx1 = dltOff - abs(dx1)
+                        
+                        # Compute distance in periods
+                        r = math.sqrt( (dx1*dx1) + (dx2*dx2) )
+                            
+                        # Period's fraction defines amplitude phase
+                        phase = (r % 1) * 2 * math.pi
+                
+                        # Phase defines rotation of amplitude
+                        rot = cmath.exp(rotDir * phase)
+            
+                        #--------------------------------------------------------------
+                        # Superpose srcP * rot to tgtP or backward
+                        #--------------------------------------------------------------
+                        if forward: tgtP.c += srcP.c * rot
+                        else      : srcP.c -= tgtP.c * rot
+
                 toRet.append({'src':src['cP'], 'tgt':tgt['cP'], 'dx1':dx1, 'dx2':dx2})
                 
         self.journal.O(f"{self.name}.getRays: creates {len(toRet)} rays")
         return toRet
-
-    #--------------------------------------------------------------------------
-    def applyRays(self, rays, forward=True):
-        "Computes amplitude for all rays"
-
-        self.journal.I(f"{self.name}.applyRays: with forward = {forward}")
-
-        #----------------------------------------------------------------------
-        # Iterate over rays and compute phase in radians
-        #----------------------------------------------------------------------
-        for ray in rays:
-            
-            # Distance in periods
-            r = math.sqrt( (ray['dx1']*ray['dx1']) + (ray['dx2']*ray['dx2']) )
-                            
-            # Periiod's fraction defines amplitude phase
-            phase = (r % 1) * 2 * math.pi
-            ray['phase'] = phase
-            
-        #----------------------------------------------------------------------
-        # Iterate over rays and evaluate amplitude
-        #----------------------------------------------------------------------
-        self.journal.M(f"{self.name}.applyRays: applying...")
-
-        if forward: rotDir = -1j
-        else      : rotDir =  1j
-        
-        for ray in rays:
-            
-            phase = ray['phase']
-            rot   = cmath.exp(rotDir * phase)
-            
-            #------------------------------------------------------------------
-            # Superpose srcP * rot to tgtP or backward
-            #------------------------------------------------------------------
-            if forward: ray['tgt'].c += ray['src'].c * rot
-            else      : ray['src'].c -= ray['tgt'].c * rot
-
-        #----------------------------------------------------------------------
-        self.journal.O()
 
     #--------------------------------------------------------------------------
     def getLstCF(self, deep=0):
@@ -730,6 +680,71 @@ class ComplexField:
 
     #--------------------------------------------------------------------------
     #--------------------------------------------------------------------------
+    def gener(self, count, offMin, offMax, dim, dimPrev=0, spread=_LIN, pos=[]):
+        "Creates ComplexField with respective settings"
+        
+        self.journal.I(f"{self.name}.gener: dim={dim}, count={count}")
+
+        self.cF.clear()
+
+        #----------------------------------------------------------------------
+        # ComplexField settings
+        #----------------------------------------------------------------------
+        self.dim    = dimPrev + 1
+        self.offMin = offMin
+        self.offMax = offMax
+        self.spread = spread
+        
+        #----------------------------------------------------------------------
+        # Correction if this is root dimension e.g., toRet.dim=1
+        #----------------------------------------------------------------------
+        if self.dim == 1:
+            self.offset = 0
+            self.spread = _LIN
+
+        #----------------------------------------------------------------------
+        # Set leaf if this is final dimension e.g., toRet.dim=dim
+        #----------------------------------------------------------------------
+        if self.dim == dim: self.leaf = True
+        else              : self.leaf = False
+        
+        #----------------------------------------------------------------------
+        # Creating offsets
+        #----------------------------------------------------------------------
+        offs = ComplexField.offsetLst(self.journal, count, self.offMin, self.offMax, self.spread)
+
+        #----------------------------------------------------------------------
+        # Generate <count> objects in cF
+        #----------------------------------------------------------------------
+        for i, offset in offs.items():
+            
+            #------------------------------------------------------------------
+            # Create copy of the <pos> list and add <offset> coordinate
+            #------------------------------------------------------------------
+            actPos = list(pos)
+            actPos.append(offset)
+            
+            cP = ComplexPoint(actPos)
+            
+            #------------------------------------------------------------------
+            # Ak to nie je listie stromu vytvorim aj subField
+            #------------------------------------------------------------------
+            if self.leaf: subField = None
+            else: 
+                subField = ComplexField(self.journal, f"{self.name}_gen{i}")
+                subField.gener(count=count, offMin=offMin, offMax=offMax, dim=dim, dimPrev=self.dim, spread=spread, pos=actPos)
+
+            #------------------------------------------------------------------
+            self.cF.append( {'cP':cP, 'cF':subField} )
+            
+        #----------------------------------------------------------------------
+        # Final adjustments
+        #----------------------------------------------------------------------
+        self.count = len(self.cF)
+
+        self.journal.O()
+        
+    #--------------------------------------------------------------------------
     def extend(self, count, offMin=None, offMax=None, spread=_LIN):
         "Generate new ComplexField with one more dimension based on this ComplexField"
         
@@ -738,21 +753,19 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Prepare all leaves objects of the tree
         #----------------------------------------------------------------------
-        leaves = []
-        for obj in self:
-            leaves.append(obj)
-            
-        origDim = len(leaves[0]['cP'].pos)
+        self.cut = [-1 for i in range(self.getDimMax())]
 
         #----------------------------------------------------------------------
         # Iterate through all leaves objects of the tree
         #----------------------------------------------------------------------
-        for obj in leaves:
+        i = 0
+        for obj in self:
             
-            name   = f"{self.name}_ex{origDim}"
             actPos = obj['cP'].pos
-            
-            subField = ComplexField.gener(self.journal, name, count, origDim+1, offMin, offMax, spread, origDim, actPos)
+
+            subField = ComplexField(self.journal, f"{self.name}_ext{i}")
+            subField.gener(count=count, offMin=offMin, offMax=offMax, dim=self.dim+1, dimPrev=self.dim, spread=spread, pos=actPos)
+
             obj['cF'] = subField
             
         #----------------------------------------------------------------------
@@ -761,7 +774,7 @@ class ComplexField:
         cfLst = self.getLstCF()
         
         for cf in cfLst:
-            if cf.dim==origDim: cf.leaf = False
+            if cf.dim == self.dim: cf.leaf = False
 
         self.journal.O()
 

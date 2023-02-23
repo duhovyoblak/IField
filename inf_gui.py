@@ -113,8 +113,11 @@ class IFieldGui():
     #--------------------------------------------------------------------------
     def refresh(self):
         
-        rays = self.dat.getRays(1)
-        self.dat.applyRays(rays)
+        
+        if 'selected' in self.cbTorus.state(): torus = True
+        else                                 : torus = False
+        
+        self.dat.applyRays(dimStart=1, start=0, stop=0, forward=True, torus=torus)
         
         self.show()
 
