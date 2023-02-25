@@ -32,7 +32,7 @@ if __name__ =='__main__':
 #    dat.gener(count=200, offMin=0.1, offMax=20, dim=2, spread=_LIN)
 
     dat.gener(count=100, offMin=0.0, offMax=20, dim=1, spread=_LIN)
-    dat.extend(count=500, offMin=0.1, offMax=50, spread=_LIN)
+    dat.extend(count=500, offMin=0.1, offMax=200, spread=_LOG)
 
 
 #    dat = ComplexField.gener(journal, 'Test field', count=200, offMin=0.0, offMax=20, dim=1, spread=_LIN)

@@ -531,7 +531,7 @@ class ComplexField:
                 # Superpose srcP * rot to tgtP or backward
                 #--------------------------------------------------------------
                 if forward: tgtP.c += srcP.c * rot
-                else      : srcP.c -= tgtP.c * rot
+                else      : srcP.c += tgtP.c * rot
                 
                 #--------------------------------------------------------------
                 # If torus then superpose secondary ray
@@ -555,12 +555,45 @@ class ComplexField:
                         # Superpose srcP * rot to tgtP or backward
                         #--------------------------------------------------------------
                         if forward: tgtP.c += srcP.c * rot
-                        else      : srcP.c -= tgtP.c * rot
+                        else      : srcP.c += tgtP.c * rot
 
                 toRet.append({'src':src['cP'], 'tgt':tgt['cP'], 'dx1':dx1, 'dx2':dx2})
                 
+        #----------------------------------------------------------------------
+        # Normalise
+        #----------------------------------------------------------------------
+        self.normalise(dimStart+1)
+
         self.journal.O(f"{self.name}.getRays: creates {len(toRet)} rays")
         return toRet
+
+    #--------------------------------------------------------------------------
+    def normalise(self, dim):
+        "Normalise values of the <dim> dimension"
+        
+        self.journal.I(f"{self.name}.normalise: dim {dim}")
+        
+        sumSqr = 0
+        
+        #----------------------------------------------------------------------
+        # Prepare list of all points in dimesion
+        #----------------------------------------------------------------------
+        cut = [-1 for i in range(dim)]
+        self.cut = cut
+        
+        #----------------------------------------------------------------------
+        # Iterate over points and accumulate sum of sqr's
+        #----------------------------------------------------------------------
+        for obj in self:
+            sumSqr += obj['cP'].sqr()
+
+        #----------------------------------------------------------------------
+        # Iterate over points and apply norm
+        #----------------------------------------------------------------------
+        for obj in self:
+            obj['cP'].c /= sumSqr
+
+        self.journal.O(f"{self.name}.normalise: sumSqr = {sumSqr}")
 
     #--------------------------------------------------------------------------
     def getLstCF(self, deep=0):
