@@ -32,14 +32,23 @@ class ComplexPoint:
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, pos=[]):
-        "Calls constructor of ComplexPoint"
+        "Calls constructor of ComplexPoint on respective position"
         
-        self.pos    = list(pos)      # Vector of real numbers for position in periods
-        self.c      = complex()      # Complex value
+        self.pos    = list(pos)   # Vector of real numbers for position coordinates
+        self.c      = complex()   # Complex value
 
     #--------------------------------------------------------------------------
+    def copy(self):
+        "Creates copy of this ComplexPoint"
+
+        toRet    = ComplexPoint(self.pos)
+        toRet.c  = self.c
+        
+        return toRet
+        
+    #--------------------------------------------------------------------------
     def posStr(self):
-        "Creates string representation of position"
+        "Creates string representation of the position of this ComplexPoint"
 
         toRet = '|'
         
@@ -72,69 +81,32 @@ class ComplexPoint:
         for line in self.info()['msg']: toRet += line
         return toRet
 
+    #==========================================================================
+    # Value modification
     #--------------------------------------------------------------------------
     def clear(self):
+        "Sets complex number to (0+0j)"
         
         self.c = complex(0,0)
         
     #--------------------------------------------------------------------------
-    def setVal(self, c):
+    def setComp(self, c):
+        "Sets complex number to respective complex value"
         
         self.c = c
         
     #--------------------------------------------------------------------------
-    def copy(self):
-        "Creates copy of this ComplexPoint"
-
-        toRet    = ComplexPoint(self.pos)
-        toRet.c  = self.c
+    def setRect(self, re, im):
+        "Sets complex number given by rectangular coordinates (real, imag)"
         
-        return toRet
+        self.c = complex(re, im)
         
     #--------------------------------------------------------------------------
-    def real(self):
+    def setPolar(self, mod, phi):
+        "Sets complex number given by polar coordinates (modulus, phase)"
         
-        return self.c.real
-
-    #--------------------------------------------------------------------------
-    def imag(self):
+        self.c = cmath.rect(mod, phi)
         
-        return self.c.imag
-
-    #--------------------------------------------------------------------------
-    def abs(self):
-        
-        return abs(self.c)
-
-    #--------------------------------------------------------------------------
-    def phase(self):
-        
-        return cmath.phase(self.c)
-
-    #--------------------------------------------------------------------------
-    def sqr(self):
-        
-        return self.c * self.c.conjugate()
-
-    #--------------------------------------------------------------------------
-    def deltasTo(self, toP):
-        
-        dlt = zip(self.pos, toP.pos)
-        
-        toRet = [pair[1] - pair[0] for pair in dlt]
-        
-        return toRet
-
-    #--------------------------------------------------------------------------
-    def rSquare(self, toP):
-        
-        dlts  = self.deltasTo(toP)
-        toRet = 0
-        
-        for r in dlts: toRet += r*r
-        
-        return toRet
-
     #--------------------------------------------------------------------------
     def rndBit(self, prob):
         "Sets real value 0/1 with respective probability and imaginary value sets to 0"
@@ -146,6 +118,91 @@ class ComplexPoint:
 
         return self.c
         
+    #--------------------------------------------------------------------------
+    def rndPhase(self, r=1):
+        "Sets random phase <0, 2PI> and radius r. If r==0 then r will be preserved"
+        
+        if r==0: r = self.c.abs()
+
+        phi = 2*cmath.pi*rnd.random()
+        
+        self.c = cmath.rect(r, phi)
+
+        return self.c
+
+    #==========================================================================
+    # Complex Value information
+    #--------------------------------------------------------------------------
+    def real(self):
+        "Returns real part of complex number"
+        
+        return self.c.real
+
+    #--------------------------------------------------------------------------
+    def imag(self):
+        "Returns imaginary part of complex number"
+        
+        return self.c.imag
+
+    #--------------------------------------------------------------------------
+    def polar(self):
+        "Returns polar coordinates of complex number as a tuple. Phase in <-pi, pi> from +x axis"
+        
+        return cmath.polar(self.c)
+
+    #--------------------------------------------------------------------------
+    def abs(self):
+        "Returns absolute value = modulus of complex number"
+        
+        return abs(self.c)
+
+    #--------------------------------------------------------------------------
+    def phase(self):
+        "Returns phase in <-pi, pi> from +x axis"
+        
+        return cmath.phase(self.c)
+
+    #--------------------------------------------------------------------------
+    def conjugate(self):
+        "Returns conjugate complex number"
+        
+        return self.c.conjugate()
+
+    #--------------------------------------------------------------------------
+    def sqrComp(self):
+        "Returns square of complex number"
+        
+        return self.c * self.c
+
+    #--------------------------------------------------------------------------
+    def sqrAbs(self):
+        "Returns square of the absolute value of complex value"
+        
+        return self.c * self.c.conjugate()
+
+    #==========================================================================
+    # Position information
+    #--------------------------------------------------------------------------
+    def deltasTo(self, toP):
+        "Returns list of differences between coordinates for respective ComplexPoint"
+        
+        dlt = zip(self.pos, toP.pos)
+        
+        toRet = [pair[1] - pair[0] for pair in dlt]
+        
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def distSqrTo(self, toP):
+        "Returns square of the distance to respective ComplexPoint"
+        
+        dlts  = self.deltasTo(toP)
+        toRet = 0
+        
+        for r in dlts: toRet += r*r
+        
+        return toRet
+
 #==============================================================================
 # ComplexField
 #------------------------------------------------------------------------------
@@ -844,7 +901,7 @@ class ComplexField:
         return toRet
 
 #------------------------------------------------------------------------------
-print('ComplexField ver 0.01')
+print('ComplexField ver 2.01')
 
 #==============================================================================
 #                              END OF FILE
