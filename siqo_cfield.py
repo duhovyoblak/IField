@@ -639,10 +639,10 @@ class ComplexField:
         self.cut = cut
         
         #----------------------------------------------------------------------
-        # Iterate over points and accumulate sum of sqr's
+        # Iterate over points and accumulate sum of abs's squares
         #----------------------------------------------------------------------
         for obj in self:
-            sumSqr += obj['cP'].sqr()
+            sumSqr += obj['cP'].sqrAbs()
 
         #----------------------------------------------------------------------
         # Iterate over points and apply norm
