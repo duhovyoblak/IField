@@ -15,7 +15,7 @@ import random                as rnd
 #------------------------------------------------------------------------------
 _IND    = '|  '       # Info indentation
 _DPL    = 10          # Default dots per lambda
-_LIN    = 'linear'    # Default spread of offsets
+_LIN    = 'linear'    # Default type of offsets
 _LOG    = 'log10'
 _LN2    = 'log2'
 
@@ -34,8 +34,8 @@ class ComplexPoint:
     def __init__(self, pos=[]):
         "Calls constructor of ComplexPoint on respective position"
         
-        self.pos    = list(pos)   # Vector of real numbers for position coordinates
-        self.c      = complex()   # Complex value
+        self.pos = list(pos)   # Vector of real numbers for position coordinates
+        self.c   = complex()   # Complex value
 
     #--------------------------------------------------------------------------
     def copy(self):
@@ -66,8 +66,8 @@ class ComplexPoint:
         dat = {}
         msg = []
 
-        dat['c'          ] = self.c
-        dat['pos'        ] = self.pos
+        dat['c'  ] = self.c
+        dat['pos'] = self.pos
 
         msg.append(f"{indent*_IND}{self.posStr()} : {self.c}")
 
@@ -124,8 +124,7 @@ class ComplexPoint:
         
         if r==0: r = self.c.abs()
 
-        phi = 2*cmath.pi*rnd.random()
-        
+        phi    = 2*cmath.pi*rnd.random()
         self.c = cmath.rect(r, phi)
 
         return self.c
@@ -212,19 +211,19 @@ class ComplexField:
     # Static variables & methods
     #--------------------------------------------------------------------------
     @staticmethod
-    def offsetLst(journal, count, offMin, offMax, spread):
-        "Creates dict of offsets for respective setting"
+    def genOffset(journal, count, offMin, offMax, offType):
+        "Generates offsets (coordinates from origin) for respective setting"
         
-        journal.I(f"ComplexField.offsetLst: {count} for <{offMin}, {offMax}> spreaded {spread}")
+        journal.I(f"ComplexField.genOffset: {count} for <{offMin}, {offMax}> offType {offType}")
 
         #----------------------------------------------------------------------
         # Creating parameters
         #----------------------------------------------------------------------
-        if spread==_LIN: 
+        if offType==_LIN: 
             lb = offMin
             lk = (           offMax  - lb) / (count-1)
         
-        elif spread==_LOG: 
+        elif offType==_LOG: 
             eb = math.log10(offMin)
             ek = (math.log10(offMax) - eb) / (count-1)
         
@@ -234,8 +233,8 @@ class ComplexField:
         offs = {}
         for i in range(count):
 
-            if   spread==_LIN: off =              (lb + lk * i)
-            elif spread==_LOG: off = math.pow(10, (eb + ek * i) )
+            if   offType==_LIN: off =              (lb + lk * i)
+            elif offType==_LOG: off = math.pow(10, (eb + ek * i) )
             
             offs[i] = off
 
@@ -256,11 +255,11 @@ class ComplexField:
         #----------------------------------------------------------------------
         self.name    = name       # Name of this complex field
         self.dim     = 1          # Dimension level of this field (Not dimension of the Space)
-        self.leaf    = True       # Flag if this is leaf object of the tree
+        self.leaf    = True       # Flag if this is leaf object of the InformationStructure
         self.offMin  = 0          # Min offset distance in lambda from mother dimension
         self.offMax  = 1          # Max offset distance in lambda from mother dimension
-        self.count   = 0          # Count of objects in this field
-        self.spread  = _LIN       # Spread of offsets of objects
+        self.offType = _LIN       # offType of offsets of objects
+        self.count   = 0          # Count of objects in this ComplexField
         
         self.cF      = []         # List of ComplexPoint/ComplexFields
         
@@ -273,6 +272,15 @@ class ComplexField:
 
         self.journal.O(f"{self.name}.constructor: done")
 
+    #--------------------------------------------------------------------------
+    def copy(self, name):
+        "Creates copy of this ComplexField"
+        
+        self.journal.I(f"{self.name}.copy: {name}")
+        
+
+        self.journal.O()
+        
     #--------------------------------------------------------------------------
     def info(self, indent=0):
         "Creates info about this ComplexField"
@@ -287,7 +295,7 @@ class ComplexField:
         dat['offMin'     ] = self.offMin
         dat['offMax'     ] = self.offMax
         dat['count'      ] = self.count
-        dat['spread'     ] = self.spread
+        dat['offType'    ] = self.offType
 
         for key, val in dat.items(): msg.append("{}{:<15}: {}".format(indent*_IND, key, val))
 
@@ -323,7 +331,7 @@ class ComplexField:
 
     #--------------------------------------------------------------------------
     def __next__(self):
-        "Returns next item in ongoing iteration"
+        "Returns next item in ongoing iteration for applied filters"
         
         #----------------------------------------------------------------------
         # If cut is defined (!=-1) then return respective cut only
@@ -414,46 +422,138 @@ class ComplexField:
             #------------------------------------------------------------------
             else: raise StopIteration
             
+    #==========================================================================
+    # Structure modification
     #--------------------------------------------------------------------------
-    def copy(self, name):
-        "Creates copy of this ComplexField"
+    def clear(self):
+        "Recursively clear content of cF of this ComplexField"
         
-        self.journal.I(f"{self.name}.copy: {name}")
+        self.journal.I(f"{self.name}.clear:")
         
+        #----------------------------------------------------------------------
+        # First recursive clearing to clear all underlying structures
+        #----------------------------------------------------------------------
+        if not self.leaf:
+            for obj in self.cF: obj['cF'].clear()
+
+        #----------------------------------------------------------------------
+        # Finally trivial clearing of this list
+        #----------------------------------------------------------------------
+        self.cF.clear()
+        self.count   = 0
+        
+        self.journal.O()
+        
+    #--------------------------------------------------------------------------
+    def reset(self, inset=None, offset=None, offType=None):
+        "Clears ComplexField and reset it to dimension=1"
+        
+        self.journal.I(f"{self.name}.reset:")
+        
+        self.clear()           # Clear of the context
+        self.dim     = 1       # Reset dimension of the field
+        self.offType = _LIN    # offType of offsets in underlying field
+        
+        if inset   is not None: self.inset   = inset
+        if offset  is not None: self.offset  = offset
+        if offType is not None: self.offType = offType
 
         self.journal.O()
         
     #--------------------------------------------------------------------------
-    def getDimMax(self, deep=0):
-        "Returns max dimension of whole space"
+    def gener(self, count, offMin, offMax, offType=_LIN, dimPrev=0, posPrev=[]):
+        "Creates ComplexField with respective settings"
         
-        if len(self.cF)==0 or self.cF[0]['cF'] is None: return deep+1
-        else                                          : return self.cF[0]['cF'].getDimMax(deep+1)
+        self.journal.I(f"{self.name}.gener: dim={dimPrev+1}, count={count}")
 
-    #--------------------------------------------------------------------------
-    def getDimSettings(self, dim):
-        "Returns ComplexField settings for respective dimension"
+        self.cF.clear()
 
-        if dim < 0: return None
+        #----------------------------------------------------------------------
+        # ComplexField settings
+        #----------------------------------------------------------------------
+        self.dim     = dimPrev + 1
+        self.offMin  = offMin
+        self.offMax  = offMax
+        self.offType = offType
         
-        if dim < 1: return self
-        else      : return self.cF[0]['cF'].getDimSettings(dim-1)
+        #----------------------------------------------------------------------
+        # Correction if this is root dimension e.g., toRet.dim=1
+        #----------------------------------------------------------------------
+        if self.dim == 1: self.offset  = 0
 
-    #--------------------------------------------------------------------------
-    def getDimCount(self, dim):
-        "Returns count of members for respective dimension"
-
-        if dim < 1: return None
+        #----------------------------------------------------------------------
+        # Set leaf flag to True
+        #----------------------------------------------------------------------
+        self.leaf = True
         
-        # Dimension of this cF is desired dimension
-        if self.dim == dim: 
+        #----------------------------------------------------------------------
+        # Creating offsets
+        #----------------------------------------------------------------------
+        offs = ComplexField.genOffset(self.journal, count, self.offMin, self.offMax, self.offType)
+
+        #----------------------------------------------------------------------
+        # Generate <count> objects in cF at position actPos = [posPrev, offset]
+        #----------------------------------------------------------------------
+        for i, offset in offs.items():
             
-            return self.count
+            #------------------------------------------------------------------
+            # Create copy of the <pos> list and add <offset> coordinate
+            #------------------------------------------------------------------
+            actPos = list(posPrev)
+            actPos.append(offset)
+            
+            cP = ComplexPoint(actPos)
+            
+            #------------------------------------------------------------------
+            # Pridam do ComplexFiled { complexPoint, subfield }
+            #------------------------------------------------------------------
+            self.cF.append( {'cP':cP, 'cF':None} )
+            
+        #----------------------------------------------------------------------
+        # Final adjustments
+        #----------------------------------------------------------------------
+        self.count = len(self.cF)
+
+        self.journal.O()
         
-        else: 
-            if self.cF[0]['cF'] is not None: return self.cF[0]['cF'].getDimCount(dim)
-            else                           : return None
+    #--------------------------------------------------------------------------
+    def extend(self, count, offMin=None, offMax=None, offType=_LIN):
+        "Assigns to each ComplexPoint of this ComplexField new ComplexField subfield"
         
+        self.journal.I(f"{self.name}.extend: {count} in offset <{offMin} - {offMax}> by {offType}")
+        
+        #----------------------------------------------------------------------
+        # Prepare all leaves objects of the tree
+        #----------------------------------------------------------------------
+        self.cut = [-1 for i in range(self.getDimMax())]
+
+        #----------------------------------------------------------------------
+        # Iterate through all leaves nodes of the tree
+        #----------------------------------------------------------------------
+        i = 0
+        for node in self:
+            
+            actPos = node['cP'].pos
+
+            subField = ComplexField(self.journal, f"{self.name}_ext{i}")
+            subField.gener(count=count, offMin=offMin, offMax=offMax, offType=offType, dimPrev=self.dim, posPrev=actPos)
+
+            # Assign subfield to respective ComplexPoint
+            node['cF'] = subField
+            
+        #----------------------------------------------------------------------
+        # Set leaf = False to all ComplexFields with cf.dim=dimPrev
+        #----------------------------------------------------------------------
+        cfLst = self.getLstCF()
+        
+        for cf in cfLst:
+            if cf.dim == self.dim: cf.leaf = False
+
+        #----------------------------------------------------------------------
+        self.journal.O()
+
+    #==========================================================================
+    # ComplexPoint value modification
     #--------------------------------------------------------------------------
     def getPointByCoord(self, coord, deep=0):
         "Returns nearest Point in field for respective coordinates"
@@ -484,7 +584,7 @@ class ComplexField:
             if dltAct >= 0:
                 
                 #--------------------------------------------------------------
-                # Return nearer point Previous or Actual
+                # Return nearer point: Previous or Actual
                 #--------------------------------------------------------------
                 if abs(dltAct) <= abs(dltPrev): pos = i
                 else                          : pos = i-1
@@ -508,7 +608,7 @@ class ComplexField:
         lstPos = [pos]
         
         #----------------------------------------------------------------------
-        # If there are net-yet-resolved coordinates left then recursive
+        # If there are not-yet-resolved coordinates left then recursive
         #----------------------------------------------------------------------
         if len(coord) > (deep+1):
             
@@ -525,10 +625,94 @@ class ComplexField:
         if deep == 0: return self.getData(cut=lstPos)[-1]['arr'][0]
         
         #----------------------------------------------------------------------
-        # If deep != 0 the return list of indices of the nearest point
+        # If deep != 0 then return list of indices of the nearest point
         #----------------------------------------------------------------------
         return lstPos
       
+    #==========================================================================
+    # Complex Field Information
+    #--------------------------------------------------------------------------
+    def getDimMax(self, deep=0):
+        "Returns max dimension of whole space"
+        
+        if len(self.cF)==0 or self.cF[0]['cF'] is None: return deep+1
+        else                                          : return self.cF[0]['cF'].getDimMax(deep+1)
+
+    #--------------------------------------------------------------------------
+    def XgetDimSettings(self, dim):
+        "Returns ComplexField settings for respective dimension"
+
+        if dim < 0: return None
+        
+        if dim < 1: return self
+        else      : return self.cF[0]['cF'].getDimSettings(dim-1)
+
+    #--------------------------------------------------------------------------
+    def getDimCount(self, dim):
+        "Returns count of members for respective dimension"
+
+        if dim < 1: return None
+        
+        # Dimension of this cF is desired dimension
+        if self.dim == dim: 
+            
+            return self.count
+        
+        else: 
+            if self.cF[0]['cF'] is not None: return self.cF[0]['cF'].getDimCount(dim)
+            else                           : return None
+        
+    #--------------------------------------------------------------------------
+    def Xamp(self):
+        "Returns amplitude of the Object"
+
+        if self.isBase(): return self.objVal
+        else            : return self.objVal.amp()
+
+    #--------------------------------------------------------------------------
+    def Xprob(self):
+        "Returns probability of the amplitude of the Object"
+
+        if self.isBase(): return self.objVal * self.objVal.conjugate()
+        else            : return self.objVal.prob()
+
+    #==========================================================================
+    # Methods application
+    #--------------------------------------------------------------------------
+    def rndBit(self, prob):
+        "Sets all values to random bit with respective probability"
+        
+        for obj in self:
+            obj['cP'].rndBit(prob)
+        
+    #--------------------------------------------------------------------------
+    def normalise(self, dim):
+        "Normalise values of the <dim> dimension"
+        
+        self.journal.I(f"{self.name}.normalise: dim {dim}")
+        
+        sumSqr = 0
+        
+        #----------------------------------------------------------------------
+        # Prepare list of all points in dimesion
+        #----------------------------------------------------------------------
+        cut = [-1 for i in range(dim)]
+        self.cut = cut
+        
+        #----------------------------------------------------------------------
+        # Iterate over points and accumulate sum of abs's squares
+        #----------------------------------------------------------------------
+        for obj in self:
+            sumSqr += obj['cP'].sqrAbs()
+
+        #----------------------------------------------------------------------
+        # Iterate over points and apply norm
+        #----------------------------------------------------------------------
+        for obj in self:
+            obj['cP'].c /= sumSqr
+
+        self.journal.O(f"{self.name}.normalise: sumSqr = {sumSqr}")
+
     #--------------------------------------------------------------------------
     def applyRays(self, dimStart, start=0, stop=0, forward=True, torus=False):
         "Apply rays from <dimStart> to next dimension"
@@ -625,34 +809,6 @@ class ComplexField:
         return toRet
 
     #--------------------------------------------------------------------------
-    def normalise(self, dim):
-        "Normalise values of the <dim> dimension"
-        
-        self.journal.I(f"{self.name}.normalise: dim {dim}")
-        
-        sumSqr = 0
-        
-        #----------------------------------------------------------------------
-        # Prepare list of all points in dimesion
-        #----------------------------------------------------------------------
-        cut = [-1 for i in range(dim)]
-        self.cut = cut
-        
-        #----------------------------------------------------------------------
-        # Iterate over points and accumulate sum of abs's squares
-        #----------------------------------------------------------------------
-        for obj in self:
-            sumSqr += obj['cP'].sqrAbs()
-
-        #----------------------------------------------------------------------
-        # Iterate over points and apply norm
-        #----------------------------------------------------------------------
-        for obj in self:
-            obj['cP'].c /= sumSqr
-
-        self.journal.O(f"{self.name}.normalise: sumSqr = {sumSqr}")
-
-    #--------------------------------------------------------------------------
     def getLstCF(self, deep=0):
         "Returns list of all ComplexFields"
         
@@ -677,42 +833,6 @@ class ComplexField:
         #----------------------------------------------------------------------
         self.journal.O()
         return toRet
-        
-    #--------------------------------------------------------------------------
-    def clear(self):
-        "Clears content of cF of this field"
-        
-        self.journal.I(f"{self.name}.clear:")
-        
-        #----------------------------------------------------------------------
-        # First recursive clearing to clear all underlying structures
-        #----------------------------------------------------------------------
-        if not self.leaf:
-            for obj in self.cF: obj['cF'].clear()
-
-        #----------------------------------------------------------------------
-        # Finally trivial clearing of this list
-        #----------------------------------------------------------------------
-        self.cF.clear()
-        self.count   = 0
-        
-        self.journal.O()
-        
-    #--------------------------------------------------------------------------
-    def reset(self, inset=None, offset=None, spread=None):
-        "Clears complex field and reset it to dimension=0"
-        
-        self.journal.I(f"{self.name}.reset:")
-        
-        self.dim     = 1            # Dimension of the field
-        self.spread  = _LIN         # Spread of offsets in underlying field
-        self.clear()                # Clear of the context
-        
-        if inset  is not None: self.inset  = inset
-        if offset is not None: self.offset = offset
-        if spread is not None: self.spread = spread
-
-        self.journal.O()
         
     #==========================================================================
     # API
@@ -769,126 +889,8 @@ class ComplexField:
         return toRet
 
     #--------------------------------------------------------------------------
-    #--------------------------------------------------------------------------
-    def gener(self, count, offMin, offMax, dim, dimPrev=0, spread=_LIN, pos=[]):
-        "Creates ComplexField with respective settings"
-        
-        self.journal.I(f"{self.name}.gener: dim={dim}, count={count}")
-
-        self.cF.clear()
-
-        #----------------------------------------------------------------------
-        # ComplexField settings
-        #----------------------------------------------------------------------
-        self.dim    = dimPrev + 1
-        self.offMin = offMin
-        self.offMax = offMax
-        self.spread = spread
-        
-        #----------------------------------------------------------------------
-        # Correction if this is root dimension e.g., toRet.dim=1
-        #----------------------------------------------------------------------
-        if self.dim == 1:
-            self.offset = 0
-            self.spread = _LIN
-
-        #----------------------------------------------------------------------
-        # Set leaf if this is final dimension e.g., toRet.dim=dim
-        #----------------------------------------------------------------------
-        if self.dim == dim: self.leaf = True
-        else              : self.leaf = False
-        
-        #----------------------------------------------------------------------
-        # Creating offsets
-        #----------------------------------------------------------------------
-        offs = ComplexField.offsetLst(self.journal, count, self.offMin, self.offMax, self.spread)
-
-        #----------------------------------------------------------------------
-        # Generate <count> objects in cF
-        #----------------------------------------------------------------------
-        for i, offset in offs.items():
-            
-            #------------------------------------------------------------------
-            # Create copy of the <pos> list and add <offset> coordinate
-            #------------------------------------------------------------------
-            actPos = list(pos)
-            actPos.append(offset)
-            
-            cP = ComplexPoint(actPos)
-            
-            #------------------------------------------------------------------
-            # Ak to nie je listie stromu vytvorim aj subField
-            #------------------------------------------------------------------
-            if self.leaf: subField = None
-            else: 
-                subField = ComplexField(self.journal, f"{self.name}_gen{i}")
-                subField.gener(count=count, offMin=offMin, offMax=offMax, dim=dim, dimPrev=self.dim, spread=spread, pos=actPos)
-
-            #------------------------------------------------------------------
-            self.cF.append( {'cP':cP, 'cF':subField} )
-            
-        #----------------------------------------------------------------------
-        # Final adjustments
-        #----------------------------------------------------------------------
-        self.count = len(self.cF)
-
-        self.journal.O()
-        
-    #--------------------------------------------------------------------------
-    def extend(self, count, offMin=None, offMax=None, spread=_LIN):
-        "Generate new ComplexField with one more dimension based on this ComplexField"
-        
-        self.journal.I(f"{self.name}.extend: {count} raster in <{offMin} - {offMax}> spread by {spread}")
-        
-        #----------------------------------------------------------------------
-        # Prepare all leaves objects of the tree
-        #----------------------------------------------------------------------
-        self.cut = [-1 for i in range(self.getDimMax())]
-
-        #----------------------------------------------------------------------
-        # Iterate through all leaves objects of the tree
-        #----------------------------------------------------------------------
-        i = 0
-        for obj in self:
-            
-            actPos = obj['cP'].pos
-
-            subField = ComplexField(self.journal, f"{self.name}_ext{i}")
-            subField.gener(count=count, offMin=offMin, offMax=offMax, dim=self.dim+1, dimPrev=self.dim, spread=spread, pos=actPos)
-
-            obj['cF'] = subField
-            
-        #----------------------------------------------------------------------
-        # Set leaf = False to all ComplexFields with dim=origDim
-        #----------------------------------------------------------------------
-        cfLst = self.getLstCF()
-        
-        for cf in cfLst:
-            if cf.dim == self.dim: cf.leaf = False
-
-        self.journal.O()
-
-    #--------------------------------------------------------------------------
-    def rndBit(self, prob):
-        "Sets all values to random bit with respective probability"
-        
-        for obj in self:
-            obj['cP'].rndBit(prob)
-        
-    #--------------------------------------------------------------------------
-    def amp(self):
-        "Returns amplitude of the Object"
-
-        if self.isBase(): return self.objVal
-        else            : return self.objVal.amp()
-
-    #--------------------------------------------------------------------------
-    def prob(self):
-        "Returns probability of the amplitude of the Object"
-
-        if self.isBase(): return self.objVal * self.objVal.conjugate()
-        else            : return self.objVal.prob()
-
+    #==========================================================================
+    # Persistency methods
     #--------------------------------------------------------------------------
     def toJson(self):
         "Converts Object into json structure"
