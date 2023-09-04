@@ -130,8 +130,7 @@ class IFieldGui():
         else:
             torus = False
 
-        self.dat.applyRays(dimStart=1, start=0, stop=0,
-                           forward=True, torus=torus)
+        self.dat.applyRays(dimLower=1, start=0, stop=0, forward=True, torus=torus)
         self.show()
 
     # --------------------------------------------------------------------------
@@ -142,8 +141,7 @@ class IFieldGui():
         else:
             torus = False
 
-        self.dat.applyRays(dimStart=1, start=0, stop=0,
-                           forward=False, torus=torus)
+        self.dat.applyRays(dimLower=1, start=0, stop=0, forward=False, torus=torus)
         self.show()
 
     # --------------------------------------------------------------------------
