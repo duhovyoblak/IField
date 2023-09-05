@@ -3,24 +3,21 @@
 # ------------------------------------------------------------------------------
 #
 # ------------------------------------------------------------------------------
-from siqo_tkchart import SiqoChart
-from tkinter import ttk
-import tkinter as tk
+from   siqo_tkchart import SiqoChart
+from   tkinter      import ttk
+import tkinter      as tk
 import sys
 sys.path.append('..\siqo_lib')
-
 
 # ==============================================================================
 # package's constants
 # ------------------------------------------------------------------------------
-
 _WIN = '1400x800'
 _MAX_ROWS = 250
 _MAX_COLS = 500
 
 _PADX = 5
 _PADY = 5
-
 
 _SC_RED = 1.4
 

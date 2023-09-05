@@ -426,6 +426,15 @@ class ComplexField:
     #==========================================================================
     # Named cuts settings
     #--------------------------------------------------------------------------
+    def cutAll(self):
+        "Returns cut's definition for all points"
+        
+        cut = [-1 for i in range(self.getDimMax())]
+ 
+        self.journal.M(f"{self.name}.cutAll: Cut is {cut}")
+        return cut
+        
+    #--------------------------------------------------------------------------
     def cutDimension(self, dim):
         "Returns cut's definition for all points in respective dimension"
         
@@ -456,39 +465,19 @@ class ComplexField:
     #==========================================================================
     # Structure modification
     #--------------------------------------------------------------------------
-    def clear(self):
-        "Recursively clear content of cF of this ComplexField"
-        
-        self.journal.I(f"{self.name}.clear:")
-        
-        #----------------------------------------------------------------------
-        # First recursive clearing to clear all underlying structures
-        #----------------------------------------------------------------------
-        if not self.leaf:
-            for node in self.nodes: node['cF'].clear()
-
-        #----------------------------------------------------------------------
-        # Finally trivial clearing of this list
-        #----------------------------------------------------------------------
-        self.nodes.clear()
-        self.count   = 0
-        
-        self.journal.O()
-        
-    #--------------------------------------------------------------------------
-    def reset(self, inset=None, offset=None, offType=None):
+    def reset(self):
         "Clears ComplexField and reset it to dimension=1"
         
         self.journal.I(f"{self.name}.reset:")
         
-        self.clear()           # Clear of the context
-        self.dim     = 1       # Reset dimension of the field
-        self.offType = _LIN    # offType of offsets in underlying field
-        
-        if inset   is not None: self.inset   = inset
-        if offset  is not None: self.offset  = offset
-        if offType is not None: self.offType = offType
+        self.nodes.clear()        # Odstranenie vsetkych poli
+        self.count   = 0          # Nastavenie poctu nodov
+        self.leaf    = True       # Flag if this is leaf node of the InformationStructure
 
+        self.dim     = 1          # Reset dimension of the field
+        self.offType = _LIN       # offType of offsets in underlying field
+        self.cut     = [-1]       # Definition of cut applied in iterator
+        
         self.journal.O()
         
     #--------------------------------------------------------------------------
@@ -710,11 +699,31 @@ class ComplexField:
     #==========================================================================
     # Methods application
     #--------------------------------------------------------------------------
+    def clear(self):
+        "Clear all values"
+        
+        self.cut = self.cutAll()
+        for node in self: node['cP'].clear()
+
+        self.journal.M(f"{self.name}.clear:")
+        
+    #--------------------------------------------------------------------------
     def rndBit(self, prob):
         "Sets all values to random bit with respective probability"
+
+        self.cut = self.cutAll()
+        for node in self: node['cP'].rndBit(prob)
+
+        self.journal.M(f"{self.name}.rndBit: prob={prob}")
         
-        for obj in self:
-            obj['cP'].rndBit(prob)
+    #--------------------------------------------------------------------------
+    def rndPhase(self, r=1):
+        "Sets all values to random phase with respective radius"
+
+        self.cut = self.cutAll()
+        for node in self: node['cP'].rndPhase(r)
+
+        self.journal.M(f"{self.name}.rndPhase: r={r}")
         
     #--------------------------------------------------------------------------
     def normalise(self, dim):
@@ -732,18 +741,25 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Iterate over points and accumulate sum of abs's squares
         #----------------------------------------------------------------------
+        i = 0
         for node in self:
-            sumSqr += node['cP'].sqrAbs()
+            sumSqr += node['cP'].abs()
+            i += 1
 
         #----------------------------------------------------------------------
         # Iterate over points and apply norm if possible
         #----------------------------------------------------------------------
         if sumSqr > 0:
             
-            for node in self: node['cP'].c /= sumSqr
+            norm = 1/sumSqr    #/i
+            norm =1
+            
+            for node in self: node['cP'].c *= norm
+            
+        else: norm = 1
 
         #----------------------------------------------------------------------
-        self.journal.O(f"{self.name}.normalise: sumSqr = {sumSqr}")
+        self.journal.O(f"{self.name}.normalise: norm = {norm} for {i} points")
 
     #--------------------------------------------------------------------------
     def applyRays(self, dimLower, start=0, stop=0, forward=True, torus=False):
@@ -833,8 +849,10 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Normalise
         #----------------------------------------------------------------------
-        self.normalise(dimLower+1)
+        if forward: self.normalise(dimLower+1)
+        else      : self.normalise(dimLower)
 
+        #----------------------------------------------------------------------
         self.journal.O(f"{self.name}.getRays: creates {len(toRet)} rays")
         return toRet
 
