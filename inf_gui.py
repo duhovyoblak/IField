@@ -3,7 +3,7 @@
 # ------------------------------------------------------------------------------
 #
 # ------------------------------------------------------------------------------
-from   siqo_tkchart import SiqoChart
+from   inf_tkchart  import InfoChart
 from   tkinter      import ttk
 import tkinter      as tk
 import sys
@@ -96,13 +96,13 @@ class IFieldGui():
         self.pnw = ttk.PanedWindow(self.win, orient=tk.HORIZONTAL)
 
         # Left Chart
-        self.left = SiqoChart(self.journal, 'Left IField visualisation',
+        self.left = InfoChart(self.journal, 'Left IField visualisation',
                               container=self.win, dat=dat, axX='0', axY='1', val='re')
         self.left.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
         self.pnw.add(self.left)
 
         # Right chart
-        self.right = SiqoChart(self.journal, 'Right IField visualisation',
+        self.right = InfoChart(self.journal, 'Right IField visualisation',
                                container=self.win, dat=dat, axX='2', axY='1', val='re')
         self.right.pack(fill=tk.BOTH, expand=True, side=tk.RIGHT)
         self.pnw.add(self.right)
