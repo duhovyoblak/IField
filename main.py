@@ -31,7 +31,7 @@ if __name__ =='__main__':
 
 #    dat.gener(count=200, offMin=0.1, offMax=20, dim=2, spread=_LIN)
 
-    dat.gener(count=100, offMin=0.0, offMax=20, offType=_LIN)
+    dat.gener (count=100, offMin=0.0, offMax=20, offType=_LIN)
     dat.extend(count=200, offMin=0.1, offMax=20, offType=_LIN)
 
 

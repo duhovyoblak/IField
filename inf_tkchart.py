@@ -39,46 +39,46 @@ class InfoChart(ttk.Frame):
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, journal, name, container, dat, **kwargs):
-        "Call constructor of InfoChart and initialise it"
+        "Call constructor of InfoChart and initialise it for respective data"
 
         journal.I(f'{name}.init:')
 
-        self.journal = journal
-        self.name    = name
-        self.dat     = dat
-        self.myCut   = []    # Cut for this GUI
-        self.w       = 1600
-        self.h       =  900
+        self.journal = journal         # Global journal
+        self.name    = name            # Name of this chart
+        self.dat     = dat             # ComplexField data
+        self.myCut   = []              # Cut of ComplexField data for this GUI
+        self.w       = 1600            # width of the chart
+        self.h       =  900            # Height of the chart
         
-        self.strVal = tk.StringVar()
-        self.strMet = tk.StringVar()
-        self.strX   = tk.StringVar()
-        self.strY   = tk.StringVar()
+        self.strVal = tk.StringVar()   # Name of the value to show in the chart
+        self.strMet = tk.StringVar()   # Name of the method to apply to the data
+        self.strX   = tk.StringVar()   # Name of the X-axis dimesion from ['0', '1', '2', etc.]
+                                       # '0' means No value to show if this axis
+        self.strY   = tk.StringVar()   # Name of the Y-axis dimesion from ['0', '1', '2', etc.]
         
         if 'val' in kwargs.keys(): self.strVal.set(kwargs['val'])
-        else                     : self.strVal.set('re')
+        else                     : self.strVal.set('re')          # Default is real part of points
 
         if 'axX' in kwargs.keys(): self.strX.set(kwargs['axX'])
-        else                     : self.strX.set('0')
+        else                     : self.strX.set('0')             # Default is No data to show on X 
 
         if 'axY' in kwargs.keys(): self.strY.set(kwargs['axY'])
-        else                     : self.strY.set('1')
+        else                     : self.strY.set('1')             # Default is 1-st dimension
 
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self.type     = '2D'     # Actual type of the chart
-        self.CPs      = []       # List of values (cP)
-        self.actPoint = None     # Actual working point
-
+        self.type     = '2D'           # Actual type of the chart
+        self.CPs      = []             # List of values (cP) to show
+        self.actPoint = None           # Actual working point (cP)
         
-        self.keyX     = ''       # Dimension name for coordinate X
-        self.X        = None     # np array for coordinate X
-        self.keyY     = ''       # Dimension name for coordinate Y
-        self.Y        = None     # np array for coordinate Y
-        self.C        = None     # np array for value color
-        self.U        = None     # np array for quiver re value
-        self.V        = None     # np array for quiver im value
+        self.keyX     = ''             # Dimension name for coordinate X
+        self.X        = None           # np array for coordinate X
+        self.keyY     = ''             # Dimension name for coordinate Y
+        self.Y        = None           # np array for coordinate Y
+        self.C        = None           # np array for value color
+        self.U        = None           # np array for quiver re value
+        self.V        = None           # np array for quiver im value
 
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
@@ -86,7 +86,7 @@ class InfoChart(ttk.Frame):
         super().__init__(container)
 
         #----------------------------------------------------------------------
-        # Create button bar
+        # Create head buttons bar
         #----------------------------------------------------------------------
         frmBtn = ttk.Frame(self)
         frmBtn.pack(fill=tk.X, expand=True, side=tk.TOP, anchor=tk.N)
@@ -101,7 +101,7 @@ class InfoChart(ttk.Frame):
         frmBtn.rowconfigure(1, weight=1)
         
         #----------------------------------------------------------------------
-        # Value
+        # Value to show selector
         #----------------------------------------------------------------------
         lblVal = ttk.Label(frmBtn, text="Value to show:")
         lblVal.grid(column=0, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -113,7 +113,7 @@ class InfoChart(ttk.Frame):
         self.cbVal.grid(column=0, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
         
         #----------------------------------------------------------------------
-        # X axis
+        # X axis dimension selector
         #----------------------------------------------------------------------
         lblX = ttk.Label(frmBtn, text="Dim for X axis:")
         lblX.grid(column=1, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -128,7 +128,7 @@ class InfoChart(ttk.Frame):
         self.cbLogX.grid(column=1, row=1, pady=_PADY)
         
         #----------------------------------------------------------------------
-        # Y axis
+        # Y axis dimension selector
         #----------------------------------------------------------------------
         lblY = ttk.Label(frmBtn, text="Dim for Y axis:")
         lblY.grid(column=2, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -143,7 +143,7 @@ class InfoChart(ttk.Frame):
         self.cbLogY.grid(column=2, row=1, pady=_PADY)
 
         #----------------------------------------------------------------------
-        # Method to apply
+        # Method to apply selector
         #----------------------------------------------------------------------
         lblMet = ttk.Label(frmBtn, text="Apply:")
         lblMet.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -155,7 +155,7 @@ class InfoChart(ttk.Frame):
         self.cbMet.grid(column=3, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
-        # Create a figure with the navigator bar and bind to mouse events
+        # Create a figure with the navigator bar and bind it to mouse events
         #----------------------------------------------------------------------
         self.figure = plt.figure(figsize=(self.w*_FIG_W/100, self.h*_FIG_H/100), dpi=_DPI)
         self.canvas = FigureCanvasTkAgg(self.figure, self)
@@ -185,6 +185,7 @@ class InfoChart(ttk.Frame):
 
     #--------------------------------------------------------------------------
     def is1D(self):
+        "Returns True if this chart is 1D otherwise returns False"
 
         # Only axis X can be void
         axX = int(self.strX.get())
@@ -194,23 +195,23 @@ class InfoChart(ttk.Frame):
         
     #--------------------------------------------------------------------------
     def dataChanged(self, event=None):
+        "Prepares cut of the dat and assignes self.CPs to show"
         
         #----------------------------------------------------------------------
         # Read actual settings
         #----------------------------------------------------------------------
-        axX = int(self.strX.get())
-        axY = int(self.strY.get())
+        axX = int(self.strX.get())    # Dimension number to show on X axis
+        axY = int(self.strY.get())    # Dimension number to show on Y axis
         
         self.journal.I(f'{self.name}.dataChanged: axX={axX}, axY={axY}')
 
         #----------------------------------------------------------------------
         # Default filter with placeholders for all dimensions
         #----------------------------------------------------------------------
-#        cut = [0 for i in range(self.dat.getDimMax())]
-        self.myCut = [0,0]
+        self.myCut = self.dat.cutZeros()
         
         #----------------------------------------------------------------------
-        # Set actual filter and get data
+        # Set actual filter according to user settings
         #----------------------------------------------------------------------
         if self.is1D(): self.myCut = [-1]
         else:
@@ -219,15 +220,26 @@ class InfoChart(ttk.Frame):
         
         self.journal.M(f'{self.name}.dataChanged: cut={self.myCut}')
 
+        #----------------------------------------------------------------------
+        # Get dat = [ {'key':'x1',  'val':np_array},     dim X1
+        #             {'key':'x2',  'val':np_array},     dim X2
+        #                .
+        #                .
+        #             {'key':'val', 'val':[cP]    }      values
+        #           ]
+        #----------------------------------------------------------------------
         dat = self.dat.getData(cut=self.myCut)
 
         #----------------------------------------------------------------------
-        # Assign coordinate arrays
+        # Assign coordinate arrays for Y axis
         #----------------------------------------------------------------------
         self.keyY = dat[axY-1]['key']
         self.Y    = dat[axY-1]['arr']
         self.journal.M(f'{self.name}.dataChanged: keyY={self.keyY}')
         
+        #----------------------------------------------------------------------
+        # Assign coordinate arrays for X axis
+        #----------------------------------------------------------------------
         if self.is1D():
             self.keyX = 'No dimension'
             self.X    = np.zeros(len(self.Y))
@@ -240,6 +252,7 @@ class InfoChart(ttk.Frame):
         
         #----------------------------------------------------------------------
         # Remember values (list of cP) for this dataset
+        # It is the last item in the dat list
         #----------------------------------------------------------------------
         self.CPs = dat[-1]['arr']
         
@@ -319,7 +332,7 @@ class InfoChart(ttk.Frame):
         self.journal.I(f'{self.name}.show:')
         
         #----------------------------------------------------------------------
-        # Assign value arrays
+        # Assign value array to show as a color array
         #----------------------------------------------------------------------
         val = self.strVal.get()
         arrC = []
@@ -336,7 +349,7 @@ class InfoChart(ttk.Frame):
         self.C = np.array(arrC)
         
         #----------------------------------------------------------------------
-        # Prepre the chart
+        # Prepare the chart
         #----------------------------------------------------------------------
         self.figure.clear() 
         self.chart = self.figure.add_subplot()
@@ -356,13 +369,16 @@ class InfoChart(ttk.Frame):
         #----------------------------------------------------------------------
         # Show the chart
         #----------------------------------------------------------------------
-#        sctrObj = self.chart.scatter( x=self.X, y=self.Y, c=self.C )
+        if self.is1D():
         
-        sctrObj = self.chart.scatter( x=self.X, y=self.Y, c=self.C, marker="s", cmap='RdYlBu_r')
-#        sctrObj = self.chart.scatter( x=self.X, y=self.Y, c=self.C, marker="s", lw=0, s=(72./self.figure.dpi)**2, cmap='RdYlBu_r')
-        self.figure.colorbar(sctrObj, ax=self.chart)
+#            chrtObj = self.chart.scatter( x=self.C, y=self.Y, linewidths=1 ) #, edgecolors='gray')
+            chrtObj = self.chart.plot( self.C, self.Y ) #, edgecolors='gray')
+        
+        else:
+            chrtObj = self.chart.scatter( x=self.X, y=self.Y, c=self.C, marker="s", cmap='RdYlBu_r')
+#            chrtObj = self.chart.scatter( x=self.X, y=self.Y, c=self.C, marker="s", lw=0, s=(72./self.figure.dpi)**2, cmap='RdYlBu_r')
+            self.figure.colorbar(chrtObj, ax=self.chart)
             
-
         # Vykreslenie noveho grafu
         self.figure.tight_layout()
         self.update()
@@ -387,7 +403,7 @@ class InfoChart(ttk.Frame):
             if self.is1D(): coord = [y   ]
             else          : coord = [y, x]
             
-            self.actPoint = self.dat.getPointByCoord(coord)
+            self.actPoint = self.dat.getPointByPos(coord)
             
             #------------------------------------------------------------------
             # Left button

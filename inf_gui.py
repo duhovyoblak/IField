@@ -90,6 +90,9 @@ class IFieldGui():
             frmOver, text='Torus topology', command=self.show)
         self.cbTorus.pack(padx=_PADX, pady=_PADX, fill=tk.X)
 
+        btn_evolve = ttk.Button(frmOver, text='Evolve', command=self.evolve)
+        btn_evolve.pack(padx=_PADX, pady=_PADX, fill=tk.X)
+
         # ----------------------------------------------------------------------
         # Panned window with charts
         # ----------------------------------------------------------------------
@@ -139,6 +142,12 @@ class IFieldGui():
             torus = False
 
         self.dat.applyRays(dimLower=1, start=0, stop=0, forward=False, torus=torus)
+        self.show()
+
+    # --------------------------------------------------------------------------
+    def evolve(self):
+
+        self.dat.evolve(cut=[-1], start=0, stop=0)
         self.show()
 
     # --------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 #==============================================================================
-# Siqo class ComplexPoint and CompplexField
+# Siqo class CompplexField
 #------------------------------------------------------------------------------
 import sys
 sys.path.append('..\siqo_lib')
@@ -8,7 +8,8 @@ import math
 import cmath
 import numpy                 as np
 import random                as rnd
-#import siqo_general          as gen
+
+from siqo_cpoint import ComplexPoint
 
 #==============================================================================
 # package's constants
@@ -23,184 +24,6 @@ _LN2    = 'log2'
 # package's variables
 #------------------------------------------------------------------------------
 
-#==============================================================================
-# ComplexPoint
-#------------------------------------------------------------------------------
-class ComplexPoint:
-
-    #==========================================================================
-    # Constructor & utilities
-    #--------------------------------------------------------------------------
-    def __init__(self, pos=[]):
-        "Calls constructor of ComplexPoint on respective position"
-        
-        self.pos = list(pos)   # Vector of real numbers for position coordinates
-        self.c   = complex()   # Complex value
-
-    #--------------------------------------------------------------------------
-    def copy(self):
-        "Creates copy of this ComplexPoint"
-
-        toRet    = ComplexPoint(self.pos)
-        toRet.c  = self.c
-        
-        return toRet
-        
-    #--------------------------------------------------------------------------
-    def posStr(self):
-        "Creates string representation of the position of this ComplexPoint"
-
-        toRet = '|'
-        
-        i = 0
-        for coor in self.pos:
-            toRet += "X[{}]={:7.2f} |".format(i+1, coor)
-            i += 1
-
-        return toRet
-    
-    #--------------------------------------------------------------------------
-    def info(self, indent=0):
-        "Creates info about this ComplexPoint"
-        
-        dat = {}
-        msg = []
-
-        dat['c'  ] = self.c
-        dat['pos'] = self.pos
-
-        msg.append(f"{indent*_IND}{self.posStr()} : {self.c}")
-
-        return {'res':'OK', 'dat':dat, 'msg':msg}
-        
-    #--------------------------------------------------------------------------
-    def __str__(self):
-        "Prints info about this ComplexPoint"
-
-        toRet = ''
-        for line in self.info()['msg']: toRet += line
-        return toRet
-
-    #==========================================================================
-    # Value modification
-    #--------------------------------------------------------------------------
-    def clear(self):
-        "Sets complex number to (0+0j)"
-        
-        self.c = complex(0,0)
-        
-    #--------------------------------------------------------------------------
-    def setComp(self, c):
-        "Sets complex number to respective complex value"
-        
-        self.c = c
-        
-    #--------------------------------------------------------------------------
-    def setRect(self, re, im):
-        "Sets complex number given by rectangular coordinates (real, imag)"
-        
-        self.c = complex(re, im)
-        
-    #--------------------------------------------------------------------------
-    def setPolar(self, mod, phi):
-        "Sets complex number given by polar coordinates (modulus, phase)"
-        
-        self.c = cmath.rect(mod, phi)
-        
-    #--------------------------------------------------------------------------
-    def rndBit(self, prob):
-        "Sets real value 0/1 with respective probability and imaginary value sets to 0"
-
-        x = rnd.randint(0, 9999)
-        
-        if x <= prob*10000: self.c = complex(1, 0)
-        else              : self.c = complex(0, 0)
-
-        return self.c
-        
-    #--------------------------------------------------------------------------
-    def rndPhase(self, r=1):
-        "Sets random phase <0, 2PI> and radius r. If r==0 then r will be preserved"
-        
-        if r==0: r = self.c.abs()
-
-        phi    = 2*cmath.pi*rnd.random()
-        self.c = cmath.rect(r, phi)
-
-        return self.c
-
-    #==========================================================================
-    # Complex Value information
-    #--------------------------------------------------------------------------
-    def real(self):
-        "Returns real part of complex number"
-        
-        return self.c.real
-
-    #--------------------------------------------------------------------------
-    def imag(self):
-        "Returns imaginary part of complex number"
-        
-        return self.c.imag
-
-    #--------------------------------------------------------------------------
-    def polar(self):
-        "Returns polar coordinates of complex number as a tuple. Phase in <-pi, pi> from +x axis"
-        
-        return cmath.polar(self.c)
-
-    #--------------------------------------------------------------------------
-    def abs(self):
-        "Returns absolute value = modulus of complex number"
-        
-        return abs(self.c)
-
-    #--------------------------------------------------------------------------
-    def phase(self):
-        "Returns phase in <-pi, pi> from +x axis"
-        
-        return cmath.phase(self.c)
-
-    #--------------------------------------------------------------------------
-    def conjugate(self):
-        "Returns conjugate complex number"
-        
-        return self.c.conjugate()
-
-    #--------------------------------------------------------------------------
-    def sqrComp(self):
-        "Returns square of complex number"
-        
-        return self.c * self.c
-
-    #--------------------------------------------------------------------------
-    def sqrAbs(self):
-        "Returns square of the absolute value of complex value"
-        
-        return (self.c.real * self.c.real) + (self.c.imag * self.c.imag )
-
-    #==========================================================================
-    # Position information
-    #--------------------------------------------------------------------------
-    def deltasTo(self, toP):
-        "Returns list of differences between coordinates for respective ComplexPoint"
-        
-        dlt = zip(self.pos, toP.pos)
-        
-        toRet = [pair[1] - pair[0] for pair in dlt]
-        
-        return toRet
-
-    #--------------------------------------------------------------------------
-    def distSqrTo(self, toP):
-        "Returns square of the distance to respective ComplexPoint"
-        
-        dlts  = self.deltasTo(toP)
-        toRet = 0
-        
-        for r in dlts: toRet += r*r
-        
-        return toRet
 
 #==============================================================================
 # ComplexField
@@ -254,24 +77,55 @@ class ComplexField:
         # Public datove polozky triedy
         #----------------------------------------------------------------------
         self.name    = name       # Name of this complex field
-        self.dim     = 1          # Dimension level of this field (Not dimension of the Space)
-        self.leaf    = True       # Flag if this is leaf node of the InformationStructure
+        self.origIdx = []         # list of indices of point, to which is attached this subfield
+        self.leafDim = True       # Flag if this is leaf dimension of the structure
+        
         self.offMin  = 0          # Min offset distance in lambda from mother dimension
         self.offMax  = 1          # Max offset distance in lambda from mother dimension
         self.offType = _LIN       # offType of offsets of nodes
-        self.count   = 0          # Count of nodes in this ComplexField
         
         self.nodes   = []         # List of nodes {ComplexPoint, ComplexFields}
         
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
-        self.nodePos = 0          # Iterator's position in self.nodes list
-        self.subIter = None       # Iterator over subField
-        self.cut     = [-1]       # Definition of cut applied in iterator e.g., desired positions in cF list
+        self.iterIdx = 0          # Iterator's position in self.nodes list
+        self.iterSub = None       # Iterator over subField
+        self.iterCut = []         # Definition of cut applied in iterator e.g., desired positions in cF list
                                   # If we want all nodes in cF list then cut for this dimensions is equal -1
 
         self.journal.O(f"{self.name}.constructor: done")
+
+    #--------------------------------------------------------------------------
+    def dim(self):
+        "Returns to which dimension belongs this ComplexField"
+        
+        return len(self.orig)+1
+
+    #--------------------------------------------------------------------------
+    def dimMax(self, deep=0):
+        "Returns max dimension of whole space"
+        
+        if self.leafDim: return deep+1
+        else           : return self.nodes[0]['cF'].dimMax(deep+1)
+
+    #--------------------------------------------------------------------------
+    def dimCount(self, dim):
+        "Returns count of nodes for respective dimension"
+
+        if dim < 1: return None
+        
+        # Dimension of this cF is desired dimension
+        if self.dim() == dim: return self.count()
+        else: 
+            if self.nodes[0]['cF'] is not None: return self.nodes[0]['cF'].dimCount(dim)
+            else                              : return None
+        
+    #--------------------------------------------------------------------------
+    def count(self):
+        "Returns Count of nodes in this ComplexField"
+        
+        return len(self.nodes)
 
     #--------------------------------------------------------------------------
     def copy(self, name):
@@ -291,12 +145,14 @@ class ComplexField:
 
         msg.append(f"{indent*_IND}{90*'='}")
         dat['name'       ] = self.name
-        dat['dim'        ] = self.dim
-        dat['leaf'       ] = self.leaf
+        dat['dim'        ] = self.dim()
+        dat['leafDim'    ] = self.leafDim
+        
+        dat['origIdx'    ] = self.origIdx
         dat['offMin'     ] = self.offMin
         dat['offMax'     ] = self.offMax
         dat['offType'    ] = self.offType
-        dat['count'      ] = self.count
+        dat['count'      ] = self.count()
 
         for key, val in dat.items(): msg.append("{}{:<15}: {}".format(indent*_IND, key, val))
 
@@ -305,8 +161,8 @@ class ComplexField:
         #----------------------------------------------------------------------
         for node in self.nodes:
         
-            if self.leaf: subMsg = node['cP'].info(indent+1)['msg']
-            else        : subMsg = node['cF'].info(indent+1)['msg']
+            if self.leafDim: subMsg = node['cP'].info(indent+1)['msg']
+            else           : subMsg = node['cF'].info(indent+1)['msg']
             msg.extend(subMsg)
         
         #----------------------------------------------------------------------
@@ -320,46 +176,48 @@ class ComplexField:
         for line in self.info()['msg']: toRet += line +'\n'
         return toRet
 
+    #==========================================================================
+    # Iterator based on cut[] definition
     #--------------------------------------------------------------------------
     def __iter__(self):
         "Creates iterator for this ComplexField"
         
         # Reset iterator's position
-        self.nodePos = 0
-        self.subIter = None
+        self.iterIdx = 0
+        self.iterSub = None
         
         return self
 
     #--------------------------------------------------------------------------
     def __next__(self):
-        "Returns next node in ongoing iteration for applied filters"
+        "Returns next (idx, node) in ongoing iteration for applied filters"
         
         #----------------------------------------------------------------------
         # If cut for this dimension is defined then return respective cut only
         #----------------------------------------------------------------------
-        if self.cut[0] != -1:
+        if self.iterCut[0] != -1:
 
             # Get desired cut e.g., node in list of nodes
-            node = self.nodes[self.cut[0]]
+            node = self.nodes[self.iterCut[0]]
             
             #------------------------------------------------------------------
-            # If there is cut definition left, start underlying iterator
+            # If there is cut definition left, start underlying iterator first
             #------------------------------------------------------------------
-            if len(self.cut)>1:
+            if len(self.iterCut)>1:
                 
                 #--------------------------------------------------------------
                 # If not yet initialised, initialise iterator over subField with sub-cut
                 #--------------------------------------------------------------
-                if self.subIter is None:
+                if self.iterSub is None:
                     
                     subField     = node['cF']
-                    subField.cut = self.cut[1:]     # Odovzdanie definicie cut-u do sub-Fieldu
-                    self.subIter = iter(subField)   # Inicializacia sub-iteracie
+                    subField.cut = self.iterCut[1:]     # Odovzdanie definicie cut-u do sub-Fieldu
+                    self.iterSub = iter(subField)   # Inicializacia sub-iteracie
 
                 #--------------------------------------------------------------
                 # Return the next value from underlying ComplexFields until exception
                 #--------------------------------------------------------------
-                return next(self.subIter)
+                return next(self.iterSub)
             
             #------------------------------------------------------------------
             # If there is no cut definition left, return current node
@@ -368,54 +226,54 @@ class ComplexField:
                 #--------------------------------------------------------------
                 # Check if this was already returned
                 #--------------------------------------------------------------
-                if self.nodePos == -1: raise StopIteration
+                if self.iterIdx == -1: raise StopIteration
                 else:
-                    self.nodePos = -1
-                    return node
+                    self.iterIdx = -1
+                    return (node)
         
         #----------------------------------------------------------------------
-        # If cut is not defined then Iterate over list of nodes until itPos < count
+        # If cut is not defined then Iterate over list of all nodes until itPos < count
         #----------------------------------------------------------------------
         else:
             
-            if self.nodePos < self.count: 
+            if self.iterIdx < self.count: 
                 
                 # Get current node in list of nodes
-                node = self.nodes[self.nodePos]
+                node = self.nodes[self.iterIdx]
                 
                 #--------------------------------------------------------------
-                # If there is cut definition left, start underlying iterator
+                # If there is cut definition left, start underlying iterator first
                 #--------------------------------------------------------------
-                if len(self.cut)>1:
+                if len(self.iterCut)>1:
                     
                     #----------------------------------------------------------
                     # If not yet initialised, initialise iterator over subField with sub-cut
                     #----------------------------------------------------------
-                    if self.subIter is None:
+                    if self.iterSub is None:
                     
                         subField     = node['cF']
-                        subField.cut = self.cut[1:]     # Odovzdanie definicie cut-u do sub-Fieldu
-                        self.subIter = iter(subField)   # Inicializacia sub-iteracie
+                        subField.cut = self.iterCut[1:]     # Odovzdanie definicie cut-u do sub-Fieldu
+                        self.iterSub = iter(subField)   # Inicializacia sub-iteracie
 
                     #----------------------------------------------------------
                     # Return the next value from underlying ComplexFields
                     #----------------------------------------------------------
                     try:
-                        return next(self.subIter)
+                        return next(self.iterSub)
 
                     except StopIteration:
                         #------------------------------------------------------
-                        # Reset subIterator and move to the next node in list of nodes
+                        # Reset iterator over subfield and move to the next node in list of nodes
                         #------------------------------------------------------
-                        self.subIter  = None
-                        self.nodePos += 1
+                        self.iterSub  = None
+                        self.iterIdx += 1
                         return next(self)
                   
                 #--------------------------------------------------------------
                 # If there is no cut definition left, return Point and move to next point
                 #--------------------------------------------------------------
                 else: 
-                    self.nodePos += 1
+                    self.iterIdx += 1
                     return node
                     
             #------------------------------------------------------------------
@@ -424,12 +282,21 @@ class ComplexField:
             else: raise StopIteration
             
     #==========================================================================
-    # Named cuts settings
+    # Iterator's named cuts settings
+    #--------------------------------------------------------------------------
+    def cutZeros(self):
+        "Returns cut's definition for pplaceholders 0 for all points"
+        
+        cut = [0 for i in range(self.dimMax())]
+ 
+        self.journal.M(f"{self.name}.cutZeros: Cut is {cut}")
+        return cut
+        
     #--------------------------------------------------------------------------
     def cutAll(self):
         "Returns cut's definition for all points"
         
-        cut = [-1 for i in range(self.getDimMax())]
+        cut = [-1 for i in range(self.dimMax())]
  
         self.journal.M(f"{self.name}.cutAll: Cut is {cut}")
         return cut
@@ -447,7 +314,7 @@ class ComplexField:
     def cutLeaves(self):
         "Returns cut's definition for all leave's points"
         
-        cut = [-1 for i in range(self.getDimMax())]
+        cut = [-1 for i in range(self.dimMax())]
  
         self.journal.M(f"{self.name}.cutLeaves: Cut is {cut}")
         return cut
@@ -471,56 +338,49 @@ class ComplexField:
         self.journal.I(f"{self.name}.reset:")
         
         self.nodes.clear()        # Odstranenie vsetkych poli
-        self.count   = 0          # Nastavenie poctu nodov
-        self.leaf    = True       # Flag if this is leaf node of the InformationStructure
+        self.leafDim = True       # Flag if this is leaf dimension of the InformationStructure
 
-        self.dim     = 1          # Reset dimension of the field
+        self.origIdx = []         # Reset of the origin point indices
+        self.offMin  =  0
+        self.offMax  =  1
         self.offType = _LIN       # offType of offsets in underlying field
-        self.cut     = [-1]       # Definition of cut applied in iterator
+        
+        self.iterCut     = []         # Definition of cut applied in iterator
         
         self.journal.O()
         
     #--------------------------------------------------------------------------
-    def gener(self, count, offMin, offMax, offType=_LIN, dimPrev=0, posPrev=[]):
-        "Creates ComplexField with respective settings"
+    def gener(self, count, offMin, offMax, offType=_LIN):
+        "Creates 1D ComplexField with respective settings"
         
-        self.journal.I(f"{self.name}.gener: dim={dimPrev+1}, count={count}")
+        self.journal.I(f"{self.name}.gener: {count} nodes between {offMin} - {offMax}")
 
         self.nodes.clear()
 
         #----------------------------------------------------------------------
         # ComplexField settings
         #----------------------------------------------------------------------
-        self.dim     = dimPrev + 1
+        self.origIdx = []
         self.offMin  = offMin
         self.offMax  = offMax
         self.offType = offType
+        self.leafDim = True
         
         #----------------------------------------------------------------------
-        # Correction if this is root dimension e.g., toRet.dim=1
+        # Creating dict of offsets positions
         #----------------------------------------------------------------------
-        if self.dim == 1: self.offset  = 0
+        offs   = ComplexField.genOffset(self.journal, count, self.offMin, self.offMax, self.offType)
+        actPos = [0]
 
         #----------------------------------------------------------------------
-        # Set leaf flag to True
-        #----------------------------------------------------------------------
-        self.leaf = True
-        
-        #----------------------------------------------------------------------
-        # Creating offsets
-        #----------------------------------------------------------------------
-        offs = ComplexField.genOffset(self.journal, count, self.offMin, self.offMax, self.offType)
-
-        #----------------------------------------------------------------------
-        # Generate <count> nodes in cF at position actPos = [posPrev, offset]
+        # Generate <count> nodes in cF at position actPos = [origPos, offset]
         #----------------------------------------------------------------------
         for i, offset in offs.items():
             
             #------------------------------------------------------------------
             # Create copy of the <pos> list and add <offset> coordinate
             #------------------------------------------------------------------
-            actPos = list(posPrev)
-            actPos.append(offset)
+            actPos[-1] = offset
             
             cP = ComplexPoint(actPos)
             
@@ -532,20 +392,18 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Final adjustments
         #----------------------------------------------------------------------
-        self.count = len(self.nodes)
-
         self.journal.O()
         
     #--------------------------------------------------------------------------
     def extend(self, count, offMin=None, offMax=None, offType=_LIN):
-        "Assigns to each ComplexPoint of this ComplexField new ComplexField subfield"
+        "Assigns to each node of this ComplexField new ComplexField subfield"
         
         self.journal.I(f"{self.name}.extend: {count} in offset <{offMin} - {offMax}> by {offType}")
         
         #----------------------------------------------------------------------
-        # Prepare all leaves nodes of the tree
+        # Select all leaves nodes of the tree
         #----------------------------------------------------------------------
-        self.cut = self.cutLeaves()
+        self.iterCut = self.cutLeaves()
 
         #----------------------------------------------------------------------
         # Iterate through all leaves nodes of the tree
@@ -575,13 +433,22 @@ class ComplexField:
     #==========================================================================
     # ComplexPoint value modification
     #--------------------------------------------------------------------------
-    def getPointByCoord(self, coord, deep=0):
+    def getPointByIdx(self, idx):
+        "Returns ComplexPoint in field at respective position"
+        
+        #idx = [x1, x2, x3, ...]
+        
+        if len(idx) > 1: return self.nodes[idx[0]].getPointByPos(idx[1:])
+        else           : return self.nodes[idx[0]]['cP']
+
+    #--------------------------------------------------------------------------
+    def getPointByPos(self, coord, deep=0):
         "Returns nearest Point in field for respective coordinates"
 
-        pos  = -1            # Indices of the nearest point
+        idx  = -1            # Indices of the nearest point
         srch = coord[deep]   # Coordinate of the searched point in respective dimension
         
-        self.journal.I(f"{self.name}.getPointByCoord: coord={coord}, srch={srch}, deep={deep}")
+        self.journal.I(f"{self.name}.getPointByPos: coord={coord}, srch={srch}, deep={deep}")
 
         #----------------------------------------------------------------------
         # Initialise distance to previous point (e.g., first)
@@ -606,8 +473,8 @@ class ComplexField:
                 #--------------------------------------------------------------
                 # Return nearer point: Previous or Actual
                 #--------------------------------------------------------------
-                if abs(dltAct) <= abs(dltPrev): pos = i
-                else                          : pos = i-1
+                if abs(dltAct) <= abs(dltPrev): idx = i
+                else                          : idx = i-1
                 
                 break
 
@@ -620,12 +487,12 @@ class ComplexField:
         #----------------------------------------------------------------------
         # If pos was not set then set it to last point
         #----------------------------------------------------------------------
-        if pos == -1: pos = i-1
+        if idx == -1: idx = i-1
         
         #----------------------------------------------------------------------
         # Prepare return value
         #----------------------------------------------------------------------
-        lstPos = [pos]
+        lstPos = [idx]
         
         #----------------------------------------------------------------------
         # If there are not-yet-resolved coordinates left then recursive
@@ -633,9 +500,9 @@ class ComplexField:
         if len(coord) > (deep+1):
             
             # field to be searched 
-            sF = self.nodes[pos]['cF']
+            sF = self.nodes[idx]['cF']
             
-            lstPos.extend( sF.getPointByCoord(coord, deep+1) )
+            lstPos.extend( sF.getPointByPos(coord, deep+1) )
                     
         self.journal.O()
 
@@ -651,37 +518,6 @@ class ComplexField:
       
     #==========================================================================
     # Complex Field Information
-    #--------------------------------------------------------------------------
-    def getDimMax(self, deep=0):
-        "Returns max dimension of whole space"
-        
-        if len(self.nodes)==0 or self.nodes[0]['cF'] is None: return deep+1
-        else                                                : return self.nodes[0]['cF'].getDimMax(deep+1)
-
-    #--------------------------------------------------------------------------
-    def XgetDimSettings(self, dim):
-        "Returns ComplexField settings for respective dimension"
-
-        if dim < 0: return None
-        
-        if dim < 1: return self
-        else      : return self.nodes[0]['cF'].getDimSettings(dim-1)
-
-    #--------------------------------------------------------------------------
-    def getDimCount(self, dim):
-        "Returns count of members for respective dimension"
-
-        if dim < 1: return None
-        
-        # Dimension of this cF is desired dimension
-        if self.dim == dim: 
-            
-            return self.count
-        
-        else: 
-            if self.nodes[0]['cF'] is not None: return self.nodes[0]['cF'].getDimCount(dim)
-            else                              : return None
-        
     #--------------------------------------------------------------------------
     def Xamp(self):
         "Returns amplitude of the node"
@@ -700,34 +536,68 @@ class ComplexField:
     # Methods application
     #--------------------------------------------------------------------------
     def clear(self):
-        "Clear all values"
+        "Clear all ComplexPoint values"
         
-        self.cut = self.cutAll()
+        self.iterCut = self.cutAll()
         for node in self: node['cP'].clear()
 
         self.journal.M(f"{self.name}.clear:")
         
     #--------------------------------------------------------------------------
-    def rndBit(self, prob):
-        "Sets all values to random bit with respective probability"
+    def copyTo(self, srcCut, cutPos):
+        "Copy ComplexPoint values from srcCut to next dimension at cutPos"
+        
+        self.journal.I(f"{self.name}.copyTo: from {srcCut} to position {cutPos}")
 
-        self.cut = self.cutAll()
-        for node in self: node['cP'].rndBit(prob)
+        #----------------------------------------------------------------------
+        # Iterate over srcCut nodes
+        #----------------------------------------------------------------------
+        self.iterCut = srcCut
+        i        = 0
 
-        self.journal.M(f"{self.name}.rndBit: prob={prob}")
+        for idx, node in self: 
+            
+            # Source complex value at position
+            srcVal = node['cP'].c
+            
+            # Target position is actPos with added cutPos
+            tgtPos = list(srcPos)
+            tgtPos.append(cutPos)
+            
+            self.journal.M(f"{self.name}.copyTo: From {srcPos} to {tgtPos}")
+            
+            # Assign value from source to the target value
+            self.getPointByPos(tgtPos).c = srcVal
+            
+            i += 1
+        
+        self.journal.O(f"{self.name}.copyTo: Copied {i} nodes")
         
     #--------------------------------------------------------------------------
-    def rndPhase(self, r=1):
-        "Sets all values to random phase with respective radius"
+    def rndBit(self, prob, srcCut=None):
+        "Sets all ComplexPoint values to random bit with respective probability"
 
-        self.cut = self.cutAll()
+        if srcCut==None: self.iterCut = self.cutAll()
+        else           : self.iterCut = srcCut
+        
+        for node in self: node['cP'].rndBit(prob)
+
+        self.journal.M(f"{self.name}.rndBit: Nodes in {self.iterCut} with prob={prob}")
+        
+    #--------------------------------------------------------------------------
+    def rndPhase(self, r=1, srcCut=None):
+        "Sets all ComplexPoint values to random phase with respective radius"
+
+        if srcCut==None: self.iterCut = self.cutAll()
+        else           : self.iterCut = srcCut
+        
         for node in self: node['cP'].rndPhase(r)
 
-        self.journal.M(f"{self.name}.rndPhase: r={r}")
+        self.journal.M(f"{self.name}.rndPhase: Nodes in {self.iterCut} with r={r}")
         
     #--------------------------------------------------------------------------
     def normalise(self, dim):
-        "Normalise values of the <dim> dimension"
+        "Normalise ComplexPoint values of the <dim> dimension"
         
         self.journal.I(f"{self.name}.normalise: dim {dim}")
         
@@ -736,7 +606,7 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Prepare list of all points in dimesion
         #----------------------------------------------------------------------
-        self.cut = self.cutDimension(dim)
+        self.iterCut = self.cutDimension(dim)
         
         #----------------------------------------------------------------------
         # Iterate over points and accumulate sum of abs's squares
@@ -777,13 +647,13 @@ class ComplexField:
         # Prepare list of source points
         #----------------------------------------------------------------------
         srcs = []
-        self.cut = self.cutSources(dimLower)
+        self.iterCut = self.cutSources(dimLower)
         for node in self: srcs.append(node)
         
         #----------------------------------------------------------------------
         # Prepare cut for target points
         #----------------------------------------------------------------------
-        self.cut.append(-1)
+        self.iterCut.append(-1)
 
         #----------------------------------------------------------------------
         # Iterate over srcs points
@@ -857,6 +727,36 @@ class ComplexField:
         return toRet
 
     #--------------------------------------------------------------------------
+    def evolve(self, cut, start=0, stop=0):
+        "Evolve state in <cut> and historise it in nex dimension"
+        
+        srcDim = len(cut)
+        tgtCnt = self.dimCount(srcDim+1)
+        self.journal.I(f"{self.name}.evolve: cut={cut} {tgtCnt} times")
+        
+        #----------------------------------------------------------------------
+        # Prepare list of source points
+        #----------------------------------------------------------------------
+        srcs = []
+        self.iterCut = cut
+        for node in self: srcs.append(node)
+        
+        #----------------------------------------------------------------------
+        # Iterate evolving for dimNext.count times
+        #----------------------------------------------------------------------
+        for tgtPos in range(tgtCnt):
+            
+            #------------------------------------------------------------------
+            # Historise actual state of dimLower to dimNext at coord j
+            #------------------------------------------------------------------
+            self.copyTo(cut, tgtPos)
+            
+
+
+        #----------------------------------------------------------------------
+        self.journal.O(f"{self.name}.evolve: evolved ")
+
+    #--------------------------------------------------------------------------
     def getLstCF(self, deep=0):
         "Returns list of all ComplexFields"
         
@@ -893,12 +793,12 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Applying cut
         #----------------------------------------------------------------------
-        if cut is not None: self.cut = cut
+        if cut is not None: self.iterCut = cut
         
         #----------------------------------------------------------------------
         # Prepare output for respective cut
         #----------------------------------------------------------------------
-        dimMax = self.getDimMax()
+        dimMax = self.dimMax()
         data     = {}
         
         # Prepare all coordinate series
