@@ -45,14 +45,24 @@ class ComplexPoint:
     def posStr(self):
         "Creates string representation of the position of this ComplexPoint"
 
-        toRet = '|'
+        toRet = 'X['
         
         i = 0
         for coor in self.pos:
-            toRet += "X[{}]={:7.2f} |".format(i+1, coor)
+            
+            if i == 0: toRet +=   f"{coor:7.2f}"
+            else     : toRet += f" |{coor:7.2f}"
             i += 1
 
+        toRet += ']'
+
         return toRet
+    
+    #--------------------------------------------------------------------------
+    def cStr(self):
+        "Creates string representation of the complex value of this ComplexPoint"
+
+        return f"{self.c.real:7.3f} {self.c.imag:7.3f}j"
     
     #--------------------------------------------------------------------------
     def info(self, indent=0):
@@ -64,7 +74,7 @@ class ComplexPoint:
         dat['c'  ] = self.c
         dat['pos'] = self.pos
 
-        msg.append(f"{indent*_IND}{self.posStr()} : {self.c}")
+        msg.append(f"{indent*_IND}{self.posStr()} : {self.cStr()}")
 
         return {'res':'OK', 'dat':dat, 'msg':msg}
         
