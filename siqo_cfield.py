@@ -189,15 +189,15 @@ class ComplexField:
         if cut is None:
             
             self.journal.I(f"{self.name}.cutToNodes: Cut is {self.iterCut}")
-            self.iterNodes = []
             root = True
             cut  = self.iterCut
             
         else: root = False
         
         #----------------------------------------------------------------------
-        # Pripravim si cut left for next recursion
+        # Vycistim zoznam iter Nodes a pripravim si cut left for next recursion
         #----------------------------------------------------------------------
+        self.iterNodes = []
         cutLeft = list(cut[1:])
 
         #----------------------------------------------------------------------
@@ -228,8 +228,7 @@ class ComplexField:
         # Finalizacia
         #----------------------------------------------------------------------
         if root:
-            lst = [node['cP'].posStr() for node in self.iterNodes]
-            self.journal.O(f"{self.name}.cutToNodes: iterNodes are {lst}")
+            self.journal.O(f"{self.name}.cutToNodes: iterNodes are {len(self.iterNodes)}")
         
         #----------------------------------------------------------------------
         return self.iterNodes
@@ -253,12 +252,12 @@ class ComplexField:
         return self.iterCut
         
     #--------------------------------------------------------------------------
-    def cutDimension(self, dim):
+    def cutDim(self, dim):
         "Returns cut's definition for all points in respective dimension"
         
         self.iterCut  = [-1 for i in range(dim)]
 
-        self.journal.M(f"{self.name}.cutDimension: For dim={dim} is {self.iterCut}")
+        self.journal.M(f"{self.name}.cutDim: For dim={dim} is {self.iterCut}")
         return self.iterCut
         
     #==========================================================================
@@ -417,7 +416,7 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Iterate over all next points
         #----------------------------------------------------------------------
-        while i < self.count:
+        while i < self.count():
             
             # Distance to actual (i-th) point
             dltAct = self.nodes[i]['cP'].pos[deep] - srch
@@ -563,7 +562,7 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Prepare list of all points in dimesion
         #----------------------------------------------------------------------
-        self.cutDimension(dim)
+        self.cutDim(dim)
         
         #----------------------------------------------------------------------
         # Iterate over points and accumulate sum of abs's squares
@@ -598,13 +597,15 @@ class ComplexField:
         else      : rotDir =  1j
         
         # Compute constant length of torus-like dimension
-        dltOff = (self.offMax-self.offMin) * (self.count+1)/self.count
+        count = self.count()
+        
+        dltOff = (self.offMax-self.offMin) * (count+1)/count
         
         #----------------------------------------------------------------------
         # Prepare list of source points
         #----------------------------------------------------------------------
         srcs = []
-        self.cutSources(dimLower)
+        self.cutDim(dimLower)
         for node in self: srcs.append(node)
         
         #----------------------------------------------------------------------
