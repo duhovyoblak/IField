@@ -15,7 +15,7 @@ from siqo_cpoint import ComplexPoint
 # package's constants
 #------------------------------------------------------------------------------
 _IND    = '|  '       # Info indentation
-_DPL    = 10          # Default dots per lambda
+_UPP    = 10          # distance units per period
 _LIN    = 'linear'    # Default type of offsets
 _LOG    = 'log10'
 _LN2    = 'log2'
@@ -500,34 +500,38 @@ class ComplexField:
         self.journal.M(f"{self.name}.clear:")
         
     #--------------------------------------------------------------------------
-    def copyTo(self, srcCut, cutPos):
-        "Copy ComplexPoint values from srcCut to next dimension at cutPos"
+    def copyValues(self, srcs, tgts):
+        "Copy node's values from srcs to tgts nodes"
         
-        self.journal.I(f"{self.name}.copyTo: from {srcCut} to position {cutPos}")
+        self.journal.I(f"{self.name}.copyValues: from {len(srcs)} nodes to {len(tgts)} nodes")
 
         #----------------------------------------------------------------------
-        # Iterate over srcCut nodes
+        # Iterate over src nodes
         #----------------------------------------------------------------------
-        self.iterCut = srcCut
-        i        = 0
+        pos    = 0
+        tgtLen = len(tgts)
 
-        for idx, node in self: 
+        for srcNode in srcs: 
             
-            # Source complex value at position
-            srcVal = node['cP'].c
-            
-            # Target position is actPos with added cutPos
-            tgtPos = list(srcPos)
-            tgtPos.append(cutPos)
-            
-            self.journal.M(f"{self.name}.copyTo: From {srcPos} to {tgtPos}")
-            
-            # Assign value from source to the target value
-            self.getPointByPos(tgtPos).c = srcVal
-            
-            i += 1
-        
-        self.journal.O(f"{self.name}.copyTo: Copied {i} nodes")
+            # Trying retrieve target node
+            if pos < tgtLen:
+                
+                tgtNode = tgts[pos]
+                tgtNode['cP'].c = srcNode['cP'].c
+                pos += 1
+                
+            else:
+                self.journal.M(f"{self.name}.copyValues: WARNING Not enough target nodes", True)
+                break
+                
+        #----------------------------------------------------------------------
+        # Check if there are some tgtNodes left
+        #----------------------------------------------------------------------
+        if pos < tgtLen:
+            self.journal.M(f"{self.name}.copyValues: WARNING Not enough source nodes", True)
+
+        #----------------------------------------------------------------------
+        self.journal.O(f"{self.name}.copyValues: Copied {pos} nodes")
         
     #--------------------------------------------------------------------------
     def rndBit(self, prob, srcCut=None):
@@ -628,16 +632,20 @@ class ComplexField:
                 
                 tgtP = tgt['cP']
                 
+                #--------------------------------------------------------------
                 # Get coordinates of source point and target point
+                #--------------------------------------------------------------
                 dlts = srcP.deltasTo(tgtP)
-                dx1  = dlts[0]
-                dx2  = tgtP.pos[1]
+                dx1  = dlts[0]              # Rozdiel 1 suradnic bodov srcP a tgtP
+                dx2  = tgtP.pos[1]          # Bod srcP nema 2 suradnicu, povazujeme ju za 0
                 
+                #--------------------------------------------------------------
                 # Compute distance in periods
-                r = math.sqrt( (dx1*dx1) + (dx2*dx2) )
+                #--------------------------------------------------------------
+                r = math.sqrt( (dx1*dx1) + (dx2*dx2) )  # in distance units
                             
-                # Period's fraction defines amplitude phase
-                phase = (r % 1) * 2 * math.pi
+                # phase shift
+                phase = (r / _UPP) * 2 * math.pi        # in radians
                 
                 # Phase defines rotation of amplitude
                 rot = cmath.exp(rotDir * phase)
@@ -658,10 +666,10 @@ class ComplexField:
                         dx1 = dltOff - abs(dx1)
                         
                         # Compute distance in periods
-                        r = math.sqrt( (dx1*dx1) + (dx2*dx2) )
+                        r = math.sqrt( (dx1*dx1) + (dx2*dx2) )   # in distance units
                             
-                        # Period's fraction defines amplitude phase
-                        phase = (r % 1) * 2 * math.pi
+                        # phase shift
+                        phase = (r / _UPP) * 2 * math.pi        # in radians
                 
                         # Phase defines rotation of amplitude
                         rot = cmath.exp(rotDir * phase)
@@ -685,34 +693,146 @@ class ComplexField:
         return toRet
 
     #--------------------------------------------------------------------------
-    def evolve(self, cut, start=0, stop=0):
-        "Evolve state in <cut> and historise it in nex dimension"
+    def evolve(self, srcCut, start=0, stop=0):
+        "Evolve state in <srcCut> and historise it in nex dimension"
         
-        srcDim = len(cut)
-        tgtCnt = self.dimCount(srcDim+1)
-        self.journal.I(f"{self.name}.evolve: cut={cut} {tgtCnt} times")
+        self.journal.I(f"{self.name}.evolve: srcCut={srcCut} from {start} to {stop}")
         
         #----------------------------------------------------------------------
-        # Prepare list of source points
+        # Prepare list of nodes for evolution
         #----------------------------------------------------------------------
-        srcs = []
-        self.iterCut = cut
-        for node in self: srcs.append(node)
+        srcs = self.cutToNodes(srcCut)
         
         #----------------------------------------------------------------------
-        # Iterate evolving for dimNext.count times
+        # Prepare definition of the target cut
         #----------------------------------------------------------------------
-        for tgtPos in range(tgtCnt):
+        tgtCut = list(srcCut)
+        tgtCut.append(start)
+        
+        #----------------------------------------------------------------------
+        # Iterate over states from <start> to <stop>
+        #----------------------------------------------------------------------
+        i = 0
+        for time in range(start, stop+1):
             
             #------------------------------------------------------------------
-            # Historise actual state of dimLower to dimNext at coord j
+            # Retrieve list of target nodes
             #------------------------------------------------------------------
-            self.copyTo(cut, tgtPos)
+            tgtCut[-1] = time
+            tgts = self.cutToNodes(tgtCut)
+    
+            #------------------------------------------------------------------
+            # Evolve one state
+            #------------------------------------------------------------------
+            self.evolveState(srcs, tgts)
             
+            #------------------------------------------------------------------
+            # Copy evolved state into srcs
+            #------------------------------------------------------------------
+            self.copyValues(tgts, srcs)
+            
+            i += 0
+            
+        #----------------------------------------------------------------------
+        self.journal.O(f"{self.name}.evolve: evolved {i} states")
 
+    #--------------------------------------------------------------------------
+    def evolveState(self, srcs, tgts):
+        "Evolve state of the srcs nodes into tgts nodes"
+        
+        self.journal.I(f"{self.name}.evolveState:")
 
         #----------------------------------------------------------------------
-        self.journal.O(f"{self.name}.evolve: evolved ")
+        # Phase rotation between two points - static data
+        #----------------------------------------------------------------------
+        rotDist  = (self.offMax - self.offMin) / (self.count()-1)  # distance in units
+        rotPhase = (rotDist/_UPP) * 2 * math.pi                    # distance in radians
+        self.journal.M(f"{self.name}.evolveState: Phase between two points: {rotPhase} rad")
+
+        #----------------------------------------------------------------------
+        # Iteration over tgts from left
+        #----------------------------------------------------------------------
+        rotDir   = -1j                              # Direction of amplitude's rotation
+        rotCoeff = cmath.exp(rotDir * rotPhase)     # rotation coefficient
+        self.journal.M(f"{self.name}.evolveState: Rot coeff: {rotCoeff}, abs = {abs(rotCoeff)}")
+        
+        cumAmp   = complex(0,0)                     # Cumulative amplitude
+
+        #----------------------------------------------------------------------
+        # Iteration over tgts from left
+        #----------------------------------------------------------------------
+        pos = 0
+        for tgtNode in tgts:
+            
+            #------------------------------------------------------------------
+            # Rotate cumulative amplitude by rotPhase angle (multiple by rotCoeff)
+            #------------------------------------------------------------------
+            cumAmp *= rotCoeff
+            
+            #------------------------------------------------------------------
+            # Retrieve current source's amplitude
+            #------------------------------------------------------------------
+            srcAmp = srcs[pos]['cP'].c
+            
+            #------------------------------------------------------------------
+            # Accumulate srcAmp to cumAmp
+            #------------------------------------------------------------------
+            cumAmp += srcAmp
+
+            #------------------------------------------------------------------
+            # Set target amplitude - ORIGINAL TARGET VALUE IS (0,0)
+            #------------------------------------------------------------------
+            tgtNode['cP'].c = cumAmp
+            print(f"{pos:3} cum {cumAmp.real:7.3f} {cumAmp.imag:7.3f}j   src {srcAmp.real:7.3f} {srcAmp.imag:7.3f}j")
+            
+            #------------------------------------------------------------------
+            # Move to the next right node
+            #------------------------------------------------------------------
+            pos += 1
+
+        #----------------------------------------------------------------------
+        # Iteration over tgts from right
+        #----------------------------------------------------------------------
+        print()
+        rotDir   = -1j                              # Direction of amplitude's rotation
+        rotCoeff = cmath.exp(rotDir * rotPhase)     # rotation coefficient
+        
+        cumAmp   = complex(0,0)                     # Cumulative amplitude
+        
+        #----------------------------------------------------------------------
+        # Iteration over tgts from right
+        #----------------------------------------------------------------------
+        pos = len(tgts)-1
+        for tgtNode in reversed(tgts):
+            
+            #------------------------------------------------------------------
+            # Rotate cumulative amplitude by rotPhase angle (multiple by rotCoeff)
+            #------------------------------------------------------------------
+            cumAmp *= rotCoeff
+            
+            #------------------------------------------------------------------
+            # Retrieve current source's amplitude
+            #------------------------------------------------------------------
+            srcAmp = srcs[pos]['cP'].c
+            
+            #------------------------------------------------------------------
+            # Accumulate srcAmp to cumAmp
+            #------------------------------------------------------------------
+            cumAmp += srcAmp
+
+            #------------------------------------------------------------------
+            # Set target amplitude - ORIGINAL TARGET VALUE IS SETTED FROM LEFT ITERATION
+            #------------------------------------------------------------------
+            tgtNode['cP'].c += cumAmp
+            print(f"{pos:3} cum {cumAmp.real:7.3f} {cumAmp.imag:7.3f}j   src {srcAmp.real:7.3f} {srcAmp.imag:7.3f}j")
+            
+            #------------------------------------------------------------------
+            # Move to the next left node
+            #------------------------------------------------------------------
+            pos -= 1
+
+        #----------------------------------------------------------------------
+        self.journal.O()
 
     #--------------------------------------------------------------------------
     def getLstCF(self, deep=0):
