@@ -556,42 +556,6 @@ class ComplexField:
         self.journal.M(f"{self.name}.rndPhase: Nodes in {self.iterCut} with r={r}")
         
     #--------------------------------------------------------------------------
-    def normalise(self, dim):
-        "Normalise ComplexPoint values of the <dim> dimension"
-        
-        self.journal.I(f"{self.name}.normalise: dim {dim}")
-        
-        sumSqr = 0
-        
-        #----------------------------------------------------------------------
-        # Prepare list of all points in dimesion
-        #----------------------------------------------------------------------
-        self.cutDim(dim)
-        
-        #----------------------------------------------------------------------
-        # Iterate over points and accumulate sum of abs's squares
-        #----------------------------------------------------------------------
-        i = 0
-        for node in self:
-            sumSqr += node['cP'].abs()
-            i += 1
-
-        #----------------------------------------------------------------------
-        # Iterate over points and apply norm if possible
-        #----------------------------------------------------------------------
-        if sumSqr > 0:
-            
-            norm = 1/sumSqr    #/i
-            norm =1
-            
-            for node in self: node['cP'].c *= norm
-            
-        else: norm = 1
-
-        #----------------------------------------------------------------------
-        self.journal.O(f"{self.name}.normalise: norm = {norm} for {i} points")
-
-    #--------------------------------------------------------------------------
     def applyRays(self, dimLower, start=0, stop=0, forward=True, torus=False):
         "Apply rays from <dimLower> to next higher dimension"
         
@@ -608,14 +572,14 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Prepare list of source points
         #----------------------------------------------------------------------
-        srcs = []
-        self.cutDim(dimLower)
-        for node in self: srcs.append(node)
+        actCut = self.cutDim(dimLower)
+        srcs = self.cutToNodes()
         
         #----------------------------------------------------------------------
-        # Prepare cut for target points
+        # Prepare of target points
         #----------------------------------------------------------------------
-        self.iterCut.append(-1)
+        actCut.append(-1)
+        tgts = self.cutToNodes(actCut)
 
         #----------------------------------------------------------------------
         # Iterate over srcs points
@@ -628,7 +592,7 @@ class ComplexField:
             #------------------------------------------------------------------
             # Iterate over target points
             #------------------------------------------------------------------
-            for tgt in self:
+            for tgt in tgts:
                 
                 tgtP = tgt['cP']
                 
@@ -683,10 +647,10 @@ class ComplexField:
                 toRet.append({'src':src['cP'], 'tgt':tgt['cP'], 'dx1':dx1, 'dx2':dx2})
                 
         #----------------------------------------------------------------------
-        # Normalise
+        # Normalisation
         #----------------------------------------------------------------------
-        if forward: self.normalise(dimLower+1)
-        else      : self.normalise(dimLower)
+        if forward: self.normAbs(nods=tgts)
+        else      : self.normAbs(nods=srcs)
 
         #----------------------------------------------------------------------
         self.journal.O(f"{self.name}.getRays: creates {len(toRet)} rays")
@@ -724,7 +688,7 @@ class ComplexField:
             #------------------------------------------------------------------
             # Evolve one state
             #------------------------------------------------------------------
-            self.evolveState(srcs, tgts)
+            self.evolveStateBase(srcs, tgts)
             
             #------------------------------------------------------------------
             # Copy evolved state into srcs
@@ -735,6 +699,67 @@ class ComplexField:
             
         #----------------------------------------------------------------------
         self.journal.O(f"{self.name}.evolve: evolved {i} states")
+
+    #--------------------------------------------------------------------------
+    def evolveStateBase(self, srcs, tgts):
+        "Evolve state of the srcs nodes into tgts nodes"
+        
+        self.journal.I(f"{self.name}.evolveStateBase:")
+
+        #----------------------------------------------------------------------
+        # Phase rotation between two points - static data
+        #----------------------------------------------------------------------
+        rotDist  = (self.offMax - self.offMin) / (self.count()-1)  # distance in units
+        rotPhase = (rotDist/_UPP) * 2 * math.pi                    # distance in radians
+        self.journal.M(f"{self.name}.evolveStateBase: Phase between two points: {rotPhase} rad")
+
+        #----------------------------------------------------------------------
+        # Iteration prep
+        #----------------------------------------------------------------------
+        rotDir   = -1j                              # Direction of amplitude's rotation
+        rotCoeff = cmath.exp(rotDir * rotPhase)     # rotation coefficient
+        self.journal.M(f"{self.name}.evolveStateBase: Rot coeff: {rotCoeff}, abs = {abs(rotCoeff)}")
+        
+        #----------------------------------------------------------------------
+        # Iteration over tgts
+        #----------------------------------------------------------------------
+        posT = 0
+        for tgtNode in tgts:
+            
+            #------------------------------------------------------------------
+            # Iteration over srcs
+            #------------------------------------------------------------------
+            posS = 0
+            for srcNode in srcs:
+
+                #--------------------------------------------------------------
+                # Rotate srcAmp by abs(posT-posS)*rotPhase
+                #--------------------------------------------------------------
+                rot    = cmath.exp(rotDir * abs(posT-posS) * rotPhase)
+                srcAmp = srcNode['cP'].c * rot
+
+                #--------------------------------------------------------------
+                # Add rotated srcAmp to tgtAmp
+                #--------------------------------------------------------------
+                tgtNode['cP'].c += srcAmp
+                
+                #--------------------------------------------------------------
+                # Move to the next src node
+                #--------------------------------------------------------------
+                posS += 1
+            
+            #------------------------------------------------------------------
+            # Move to the next tgt node
+            #------------------------------------------------------------------
+            posT += 1
+            
+        #----------------------------------------------------------------------
+        # Normalisation
+        #----------------------------------------------------------------------
+        self.normAbs(nods=tgts)
+
+        #----------------------------------------------------------------------
+        self.journal.O()
 
     #--------------------------------------------------------------------------
     def evolveState(self, srcs, tgts):
@@ -833,6 +858,34 @@ class ComplexField:
 
         #----------------------------------------------------------------------
         self.journal.O()
+
+    #==========================================================================
+    # Normalisation methods
+    #--------------------------------------------------------------------------
+    def normAbs(self, nods, norm=None):
+        "Normalise set of the nodes by sum of absolute values"
+        
+        self.journal.I(f"{self.name}.normAbs: ")
+        
+        #----------------------------------------------------------------------
+        # Check if norm does exists
+        #----------------------------------------------------------------------
+        if norm is None:
+            
+            norm = 0
+            for node in nods: norm += node['cP'].abs()
+
+        #----------------------------------------------------------------------
+        # Iterate over nodes and apply norm if possible
+        #----------------------------------------------------------------------
+        if norm > 0:
+            
+            for node in nods: node['cP'].c /= norm
+            
+        else: norm = 1
+
+        #----------------------------------------------------------------------
+        self.journal.O(f"{self.name}.normAbs: norm = {norm} for {len(nods)} points")
 
     #--------------------------------------------------------------------------
     def getLstCF(self, deep=0):
