@@ -206,17 +206,10 @@ class InfoChart(ttk.Frame):
         self.journal.I(f'{self.name}.dataChanged: axX={axX}, axY={axY}')
 
         #----------------------------------------------------------------------
-        # Default filter with placeholders for all dimensions
-        #----------------------------------------------------------------------
-        self.myCut = self.dat.cutZeros()
-        
-        #----------------------------------------------------------------------
         # Set actual filter according to user settings
         #----------------------------------------------------------------------
-        if self.is1D(): self.myCut = [-1]
-        else:
-            self.myCut[axX-1] = -1
-            self.myCut[axY-1] = -1
+        if self.is1D(): self.myCut = self.dat.cutDim(1)
+        else          : self.myCut = self.dat.cutDim(2)
         
         self.journal.M(f'{self.name}.dataChanged: cut={self.myCut}')
 
@@ -268,7 +261,7 @@ class InfoChart(ttk.Frame):
         met = self.strMet.get()
         self.journal.I(f'{self.name}.method: {met} with cut = {self.myCut}')
 
-        self.dat.cut = self.myCut
+        self.dat.cutSet(self.myCut)
 
         if   met == 'Clear Data'    : self.clear()
         elif met == 'Random Bit 10%': self.rndBit(0.1)

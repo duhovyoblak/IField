@@ -93,7 +93,7 @@ class ComplexField:
         self.iterPos   = 0       # Iterator's position in self.iterNodes[]
         self.iterCut   = []      # Definition of cut applied in iterator
                                  # as list <1..dimMax> of selected indices <0..count-1>
-                                 # indice's value -1 means ALL nodes selected for respective dimension
+                                 # indice's value '*' means ALL nodes selected for respective dimension
 
         self.journal.O(f"{self.name}.constructor: done")
 
@@ -180,19 +180,14 @@ class ComplexField:
     #==========================================================================
     # Iterator's node's generator and named cuts settings
     #--------------------------------------------------------------------------
-    def cutToNodes(self, cut=None):
+    def cutToNodes(self, cut=None, root=True):
         "Creates list of nodes for respective cut's definition for iteration"
         
         #----------------------------------------------------------------------
         # Inicializacia
         #----------------------------------------------------------------------
-        if cut is None:
-            
-            self.journal.I(f"{self.name}.cutToNodes: Cut is {self.iterCut}")
-            root = True
-            cut  = self.iterCut
-            
-        else: root = False
+        if cut is None: cut = self.iterCut
+        if root       : self.journal.I(f"{self.name}.cutToNodes: Cut is {cut}")
         
         #----------------------------------------------------------------------
         # Vycistim zoznam iter Nodes a pripravim si cut left for next recursion
@@ -206,47 +201,52 @@ class ComplexField:
         for pos in range(self.count()):
             
             #------------------------------------------------------------------
-            # Skontrolujem, ci je pozicia selected v cut definicii
+            # Skontrolujem, ci cut[0] potencialne patri do iterNodes
             #------------------------------------------------------------------
-            if  (cut[0] == -1) or (cut[0] == pos):
+            if  (cut[0] == '*') or (cut[0] == pos):
                 
-                #--------------------------------------------------------------
-                # Vyberiem node na pos pozicii
-                #--------------------------------------------------------------
                 node = self.nodes[pos]
-
+                
                 #--------------------------------------------------------------
                 # Ak zostala este dalsia dimenzia v cut, vnorim sa hlbsie do rekurzie
                 #--------------------------------------------------------------
-                if len(cutLeft) > 0: self.iterNodes.extend( node['cF'].cutToNodes(cutLeft) )
+                if len(cutLeft) > 0:
+                    self.iterNodes.extend( node['cF'].cutToNodes(cut=cutLeft, root=False) )
                 
-                # Ak nezostala ziadna cutLeft, trivialne riesenie je vlozit tento node do iterNodes
-                else               : self.iterNodes.append(node)
+                #--------------------------------------------------------------
+                # Ak nezostala ziadna cutLeft, skontolujem tento Node[pos]
+                #--------------------------------------------------------------
+                else:
+                    #----------------------------------------------------------
+                    # Ak je cut[0] == '*' alebo pos, potom vlozim tento Node do iterNodes
+                    #----------------------------------------------------------
+                    self.iterNodes.append(node)
+                
             #------------------------------------------------------------------
         
         #----------------------------------------------------------------------
         # Finalizacia
         #----------------------------------------------------------------------
         if root:
-            self.journal.O(f"{self.name}.cutToNodes: iterNodes are {len(self.iterNodes)}")
+            self.journal.O(f"{self.name}.cutToNodes: Identified {len(self.iterNodes)} iterNodes")
         
         #----------------------------------------------------------------------
         return self.iterNodes
         
     #--------------------------------------------------------------------------
-    def cutZeros(self):
-        "Returns cut's definition for pplaceholders 0 for all points"
+    def cutSet(self, cut):
+        "Sets user-defined cut"
         
-        self.iterCut  = [0 for i in range(self.dimMax())]
-        
-        self.journal.M(f"{self.name}.cutZeros: Cut is {self.iterCut}")
+        self.iterCut  = cut
+ 
+        self.journal.M(f"{self.name}.cutSet: Cut is {self.iterCut}")
         return self.iterCut
         
     #--------------------------------------------------------------------------
     def cutAll(self):
-        "Returns cut's definition for all points in max dimension"
+        "Returns cut's definition for all points in the max dimension"
         
-        self.iterCut  = [-1 for i in range(self.dimMax())]
+        self.iterCut  = ['*' for i in range(self.dimMax())]
  
         self.journal.M(f"{self.name}.cutAll: Cut is {self.iterCut}")
         return self.iterCut
@@ -255,13 +255,13 @@ class ComplexField:
     def cutDim(self, dim):
         "Returns cut's definition for all points in respective dimension"
         
-        self.iterCut  = [-1 for i in range(dim)]
+        self.iterCut  = ['*' for i in range(dim)]
 
         self.journal.M(f"{self.name}.cutDim: For dim={dim} is {self.iterCut}")
         return self.iterCut
         
     #==========================================================================
-    # Iterator based on cut[[]] definition
+    # Iterator based on cut[] definition
     #--------------------------------------------------------------------------
     def __iter__(self):
         "Creates iterator for this ComplexField"
@@ -578,7 +578,7 @@ class ComplexField:
         #----------------------------------------------------------------------
         # Prepare of target points
         #----------------------------------------------------------------------
-        actCut.append(-1)
+        actCut.append('*')
         tgts = self.cutToNodes(actCut)
 
         #----------------------------------------------------------------------
@@ -674,10 +674,16 @@ class ComplexField:
         tgtCut.append(start)
         
         #----------------------------------------------------------------------
+        # Copy original srcs into tgts
+        #----------------------------------------------------------------------
+        tgts = self.cutToNodes(tgtCut)
+        self.copyValues(srcs, tgts)
+
+        #----------------------------------------------------------------------
         # Iterate over states from <start> to <stop>
         #----------------------------------------------------------------------
         i = 0
-        for time in range(start, stop+1):
+        for time in range(start+1, stop+1):
             
             #------------------------------------------------------------------
             # Retrieve list of target nodes
@@ -695,7 +701,7 @@ class ComplexField:
             #------------------------------------------------------------------
             self.copyValues(tgts, srcs)
             
-            i += 0
+            i += 1
             
         #----------------------------------------------------------------------
         self.journal.O(f"{self.name}.evolve: evolved {i} states")
@@ -711,25 +717,30 @@ class ComplexField:
         #----------------------------------------------------------------------
         rotDist  = (self.offMax - self.offMin) / (self.count()-1)  # distance in units
         rotPhase = (rotDist/_UPP) * 2 * math.pi                    # distance in radians
-        self.journal.M(f"{self.name}.evolveStateBase: Phase between two points: {rotPhase} rad")
+        self.journal.M(f"{self.name}.evolveStateBase: Phase between two points: {rotPhase:5.4} rad")
 
         #----------------------------------------------------------------------
         # Iteration prep
         #----------------------------------------------------------------------
         rotDir   = -1j                              # Direction of amplitude's rotation
         rotCoeff = cmath.exp(rotDir * rotPhase)     # rotation coefficient
-        self.journal.M(f"{self.name}.evolveStateBase: Rot coeff: {rotCoeff}, abs = {abs(rotCoeff)}")
+        self.journal.M(f"{self.name}.evolveStateBase: Rot coeff: {rotCoeff:5.4}, abs = {abs(rotCoeff):5.4}")
         
         #----------------------------------------------------------------------
         # Iteration over tgts
         #----------------------------------------------------------------------
-        posT = 0
+        posT       = 0
+        srcsSumAbs = 0
+        for src in srcs: srcsSumAbs += src['cP'].abs()
+        
         for tgtNode in tgts:
             
             #------------------------------------------------------------------
             # Iteration over srcs
             #------------------------------------------------------------------
-            posS = 0
+            posS   = 0
+            cumAmp = complex(0,0)
+            
             for srcNode in srcs:
 
                 #--------------------------------------------------------------
@@ -739,9 +750,10 @@ class ComplexField:
                 srcAmp = srcNode['cP'].c * rot
 
                 #--------------------------------------------------------------
-                # Add rotated srcAmp to tgtAmp
+                # Cumulate rotated srcAmp to cumAmp
                 #--------------------------------------------------------------
-                tgtNode['cP'].c += srcAmp
+                if posT != posS:
+                    cumAmp += srcAmp
                 
                 #--------------------------------------------------------------
                 # Move to the next src node
@@ -749,14 +761,21 @@ class ComplexField:
                 posS += 1
             
             #------------------------------------------------------------------
+            # Set target node value
+            #------------------------------------------------------------------
+            tgtNode['cP'].c = cumAmp
+
+            #------------------------------------------------------------------
             # Move to the next tgt node
             #------------------------------------------------------------------
             posT += 1
             
+        self.journal.M(f"{self.name}.evolveStateBase: srcsSumAbs: {srcsSumAbs:5.2}")
+
         #----------------------------------------------------------------------
         # Normalisation
         #----------------------------------------------------------------------
-        self.normAbs(nods=tgts)
+        self.normAbs(nods=tgts, norm=srcsSumAbs)
 
         #----------------------------------------------------------------------
         self.journal.O()
@@ -868,12 +887,15 @@ class ComplexField:
         self.journal.I(f"{self.name}.normAbs: ")
         
         #----------------------------------------------------------------------
-        # Check if norm does exists
+        # Initialisation
         #----------------------------------------------------------------------
-        if norm is None:
-            
-            norm = 0
-            for node in nods: norm += node['cP'].abs()
+        sumAbs = 0
+        for node in nods: sumAbs += node['cP'].abs()
+
+        #----------------------------------------------------------------------
+        # If norm does exists will be sumAbs
+        #----------------------------------------------------------------------
+        if norm is None: norm = sumAbs
 
         #----------------------------------------------------------------------
         # Iterate over nodes and apply norm if possible

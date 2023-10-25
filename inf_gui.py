@@ -33,8 +33,6 @@ _BTN_DIS_H = 0.025
 # ==============================================================================
 # class IFieldGui
 # ------------------------------------------------------------------------------
-
-
 class IFieldGui():
 
     # ==========================================================================
@@ -98,18 +96,21 @@ class IFieldGui():
         # ----------------------------------------------------------------------
         self.pnw = ttk.PanedWindow(self.win, orient=tk.HORIZONTAL)
 
+        # ----------------------------------------------------------------------
         # Left Chart
         self.left = InfoChart(self.journal, 'Left IField visualisation',
                               container=self.win, dat=dat, axX='0', axY='1', val='re')
         self.left.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
         self.pnw.add(self.left)
 
+        # ----------------------------------------------------------------------
         # Right chart
         self.right = InfoChart(self.journal, 'Right IField visualisation',
                                container=self.win, dat=dat, axX='2', axY='1', val='re')
         self.right.pack(fill=tk.BOTH, expand=True, side=tk.RIGHT)
         self.pnw.add(self.right)
 
+        # ----------------------------------------------------------------------
         # place the panedwindow on the root window
         self.pnw.pack(fill=tk.BOTH, expand=True)
 
@@ -147,7 +148,7 @@ class IFieldGui():
     # --------------------------------------------------------------------------
     def evolve(self):
 
-        self.dat.evolve(srcCut=[-1], start=0, stop=100)
+        self.dat.evolve(srcCut=['*'], start=0, stop=100)
         self.show()
 
     # --------------------------------------------------------------------------
