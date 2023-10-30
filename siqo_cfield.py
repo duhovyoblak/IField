@@ -532,6 +532,34 @@ class ComplexField:
 
         #----------------------------------------------------------------------
         self.journal.O(f"{self.name}.copyValues: Copied {pos} nodes")
+        return pos
+        
+    #--------------------------------------------------------------------------
+    def copySlice(self, dim, pos):
+        "Copy values from higher dimension's slice to the lower dimension"
+        
+        self.journal.I(f"{self.name}.copySlice: from {dim} D[{pos}]")
+
+        #----------------------------------------------------------------------
+        # Target set
+        #----------------------------------------------------------------------
+        tgtCut = self.cutDim(dim-1)
+        tgts   = self.cutToNodes(tgtCut)
+        
+        #----------------------------------------------------------------------
+        # Source set
+        #----------------------------------------------------------------------
+        srcCut = list(tgtCut)
+        srcCut.append(pos)
+        srcs = self.cutToNodes(srcCut)
+        
+        #----------------------------------------------------------------------
+        # Copy srcs into tgts
+        #----------------------------------------------------------------------
+        copied = self.copyValues(srcs, tgts)
+
+        #----------------------------------------------------------------------
+        self.journal.O(f"{self.name}.copySlice: Copied {copied} nodes")
         
     #--------------------------------------------------------------------------
     def rndBit(self, prob, srcCut=None):
@@ -657,7 +685,7 @@ class ComplexField:
         return toRet
 
     #--------------------------------------------------------------------------
-    def evolve(self, srcCut, start=0, stop=0):
+    def evolve(self, srcCut, inf=0, start=0, stop=0):
         "Evolve state in <srcCut> and historise it in nex dimension"
         
         self.journal.I(f"{self.name}.evolve: srcCut={srcCut} from {start} to {stop}")
@@ -694,7 +722,7 @@ class ComplexField:
             #------------------------------------------------------------------
             # Evolve one state
             #------------------------------------------------------------------
-            self.evolveStateBase(srcs, tgts)
+            self.evolveStateBase(srcs, tgts, a=time, b=time+inf)
             
             #------------------------------------------------------------------
             # Copy evolved state into srcs
@@ -707,10 +735,19 @@ class ComplexField:
         self.journal.O(f"{self.name}.evolve: evolved {i} states")
 
     #--------------------------------------------------------------------------
-    def evolveStateBase(self, srcs, tgts):
+    def evolveStateBase(self, srcs, tgts, a, b=None):
         "Evolve state of the srcs nodes into tgts nodes"
         
-        self.journal.I(f"{self.name}.evolveStateBase:")
+        if b is None: b = a
+        self.journal.I(f"{self.name}.evolveStateBase: For Sources relative to the target {a}..{b}")
+
+        #----------------------------------------------------------------------
+        # Doability check
+        #----------------------------------------------------------------------
+        if a > b: 
+            self.journal.M(f"{self.name}.evolveStateBase: Bounadries ERROR: {a} > {b}", True)
+            self.journal.O()
+            return
 
         #----------------------------------------------------------------------
         # Phase rotation between two points - static data
@@ -727,22 +764,30 @@ class ComplexField:
         self.journal.M(f"{self.name}.evolveStateBase: Rot coeff: {rotCoeff:5.4}, abs = {abs(rotCoeff):5.4}")
         
         #----------------------------------------------------------------------
-        # Iteration over tgts
+        # Preprae global aggregates
         #----------------------------------------------------------------------
-        posT       = 0
         srcsSumAbs = 0
         for src in srcs: srcsSumAbs += src['cP'].abs()
         
+        #----------------------------------------------------------------------
+        # Iteration over tgts
+        #----------------------------------------------------------------------
+        posT = 0
         for tgtNode in tgts:
             
-            #------------------------------------------------------------------
-            # Iteration over srcs
-            #------------------------------------------------------------------
-            posS   = 0
             cumAmp = complex(0,0)
-            
-            for srcNode in srcs:
 
+            #------------------------------------------------------------------
+            # Accumulation over srcs LEFT
+            #------------------------------------------------------------------
+            xL = posT - b
+            yL = posT - a
+            if xL  < 0   : xL  = 0  # pretecenie pred zaciatok
+            
+            for posS in range(xL, yL+1):
+
+                srcNode = srcs[posS]
+                
                 #--------------------------------------------------------------
                 # Rotate srcAmp by abs(posT-posS)*rotPhase
                 #--------------------------------------------------------------
@@ -752,13 +797,35 @@ class ComplexField:
                 #--------------------------------------------------------------
                 # Cumulate rotated srcAmp to cumAmp
                 #--------------------------------------------------------------
-                if posT != posS:
+                if True:          # Dvojite zapocitanie srcs[posT]
+                
                     cumAmp += srcAmp
+                    self.journal.M(f"{self.name}.evolveStateBase: Accumulation LEFT: {posS} -> {posT}")
+            
+            #------------------------------------------------------------------
+            # Accumulation over srcs RIGHT
+            #------------------------------------------------------------------
+            xL = posT + a
+            yL = posT + b
+            if yL >= len(srcs): yL = len(srcs)-1  # pretecenie za koniec
+            
+            for posS in range(xL, yL+1):
+
+                srcNode = srcs[posS]
                 
                 #--------------------------------------------------------------
-                # Move to the next src node
+                # Rotate srcAmp by abs(posT-posS)*rotPhase
                 #--------------------------------------------------------------
-                posS += 1
+                rot    = cmath.exp(rotDir * abs(posT-posS) * rotPhase)
+                srcAmp = srcNode['cP'].c * rot
+
+                #--------------------------------------------------------------
+                # Cumulate rotated srcAmp to cumAmp
+                #--------------------------------------------------------------
+                if posT != posS:          # Dvojite zapocitanie srcs[posT]
+                
+                    cumAmp += srcAmp
+                    self.journal.M(f"{self.name}.evolveStateBase: Accumulation RIGHT: {posT} <- {posS}")
             
             #------------------------------------------------------------------
             # Set target node value

@@ -53,7 +53,8 @@ class IFieldGui():
         # Internal data
         # ----------------------------------------------------------------------
         self.name = name
-        self.dat = dat
+        self.dat  = dat
+        self.time = 0      # Global time, e.g., state of the structure in simulation
 
         # ----------------------------------------------------------------------
         # Initialise main window
@@ -66,6 +67,8 @@ class IFieldGui():
 
         self.style = ttk.Style(self.win)
         self.style.theme_use('classic')
+
+        self.str_time = tk.StringVar()   # Time in right chart to show in left chart
 
         # ----------------------------------------------------------------------
         # Staus bar
@@ -90,6 +93,17 @@ class IFieldGui():
 
         btn_evolve = ttk.Button(frmOver, text='Evolve', command=self.evolve)
         btn_evolve.pack(padx=_PADX, pady=_PADX, fill=tk.X)
+
+        #----------------------------------------------------------------------
+        lbl_time = ttk.Label(frmOver, relief=tk.FLAT, text='I will edit Time:' )
+        lbl_time.pack(padx=_PADX, pady=_PADX, fill=tk.X)
+
+        self.str_time.set(self.time)
+        str_time = ttk.Spinbox(frmOver, from_=0, to=99999, textvariable=self.str_time, width=3)
+        str_time.pack(padx=_PADX, pady=_PADX, fill=tk.X)
+
+        btn_showMe = ttk.Button(frmOver, text='Show me the Time', command=self.showMe)
+        btn_showMe.pack(padx=_PADX, pady=_PADX, fill=tk.X)
 
         # ----------------------------------------------------------------------
         # Panned window with charts
@@ -148,7 +162,7 @@ class IFieldGui():
     # --------------------------------------------------------------------------
     def evolve(self):
 
-        self.dat.evolve(srcCut=['*'], start=0, stop=100)
+        self.dat.evolve(srcCut=['*'], inf=0, start=0, stop=400)
         self.show()
 
     # --------------------------------------------------------------------------
@@ -158,6 +172,44 @@ class IFieldGui():
         self.left. setData(dat)
         self.right.setData(dat)
 
+    # --------------------------------------------------------------------------
+    def showMe(self):
+        "Copy time slice from the right pane to the left"
+
+        if self.str_time.get() != '': self.time = int(self.str_time.get())
+        
+        self.dat.copySlice(dim=2, pos=self.time)
+        self.left.show()
+        
+        self.setTime(self.time+1)
+
+    # --------------------------------------------------------------------------
+    def setTime(self, time):
+        "Sets new value for global time"
+        
+        self.time = time
+        self.str_time.set(self.time)
+
+    #--------------------------------------------------------------------------
+    def timeChanged(self, widget, blank, mode):
+        
+        if self.str_time.get() != '': tmpTime = int(self.str_time.get())
+        else                        : tmpTime = 0
+        
+        # Ak nastala zmena periody
+        if tmpTime != self.time:
+            
+            self.time = tmpTime
+        
+            # Ak je perioda vacsia ako maximalna perioda v historii planety
+#            if self.period > self.planet.getMaxPeriod():
+#                self.period = self.planet.getMaxPeriod()
+#                self.str_period.set(self.period)
+                
+#            # Vykreslim zmenenu periodu
+#            self.setStatus(f'Selected period is {self.period}')
+#            self.mapShow()
+        
     # ==========================================================================
     # GUI methods
     # --------------------------------------------------------------------------

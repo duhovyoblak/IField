@@ -32,7 +32,7 @@ if __name__ =='__main__':
 #    dat.gener(count=200, offMin=0.1, offMax=20, dim=2, spread=_LIN)
 
     dat.gener ('x', count=400, offMin=0.0, offMax=100, offType=_LIN)
-    dat.extend('y', count=100, offMin=0.1, offMax=100, offType=_LIN)
+    dat.extend('y', count=400, offMin=0.1, offMax=100, offType=_LIN)
 #    print(dat)
 #    dat = ComplexField.gener(journal, 'Test field', count=200, offMin=0.0, offMax=20, dim=1, spread=_LIN)
 #    dat.extend(count=200, offMin=0.1, offMax=20, spread=_LIN)
@@ -43,7 +43,7 @@ if __name__ =='__main__':
 
     
     # Vytvorim GUI
-    journal.setDepth(5)
+    journal.setDepth(3)
     gui = IFieldGui(journal, name='IField GUI', dat=dat)
     
     journal.O('Main end')
