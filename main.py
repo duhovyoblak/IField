@@ -4,10 +4,10 @@
 import sys
 sys.path.append('..\siqo_lib')
 
-from   siqo_journal    import SiqoJournal
+from   siqolib.journal          import SiqoJournal
 
-from   inf_gui         import IFieldGui
-from   siqo_cfield     import ComplexField, _LIN, _LOG
+from   inf_gui                  import IFieldGui
+from   siqo_cfield              import ComplexField, _LIN, _LOG
 
 #==============================================================================
 # package's constants
