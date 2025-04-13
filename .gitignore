@@ -1,0 +1,13 @@
+__pycache__/
+.pytest_cache/
+.spyproject/
+
+venv/
+instance/
+backup/
+dist/
+build/
+
+*.pyc
+*.egg-info/
+*.journal
