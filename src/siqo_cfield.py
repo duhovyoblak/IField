@@ -1,9 +1,6 @@
 #==============================================================================
-# Siqo class CompplexField
+# Siqo class ComplexField
 #------------------------------------------------------------------------------
-import sys
-sys.path.append('..\siqo_lib')
-
 import math
 import cmath
 import numpy                 as np

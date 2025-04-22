@@ -1,9 +1,6 @@
 #==============================================================================
 # Siqo class ComplexPoint and CompplexField
 #------------------------------------------------------------------------------
-import sys
-sys.path.append(r'..\siqo_lib')
-
 #import math
 import cmath
 import random                as rnd
@@ -37,7 +34,7 @@ class ComplexPoint:
         "Creates copy of this ComplexPoint"
 
         toRet    = ComplexPoint(self.pos)
-        toRet.c  = self.c
+        toRet.c  = complex(self.c)
         
         return toRet
         

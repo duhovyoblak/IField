@@ -1,9 +1,6 @@
 #==============================================================================
 # Info tkChart library
 #------------------------------------------------------------------------------
-import sys
-sys.path.append('..\siqo_lib')
-
 import tkinter                as tk
 from   tkinter                import (ttk, font, PanedWindow)
 from   tkinter.messagebox     import showinfo
@@ -45,8 +42,8 @@ class InfoChart(ttk.Frame):
 
         self.journal = journal         # Global journal
         self.name    = name            # Name of this chart
-        self.dat     = dat             # ComplexField data
-        self.myCut   = []              # Cut of ComplexField data for this GUI
+        self.dat     = dat             # InfoField data
+        self.myCut   = []              # Cut of InfoField data for this GUI
         self.w       = 1600            # width of the chart
         self.h       =  900            # Height of the chart
         

@@ -6,8 +6,6 @@
 from   inf_tkchart  import InfoChart
 from   tkinter      import ttk
 import tkinter      as tk
-import sys
-sys.path.append('..\siqo_lib')
 
 # ==============================================================================
 # package's constants
