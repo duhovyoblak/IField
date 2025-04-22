@@ -30,41 +30,11 @@ class ComplexMatrix:
     #==========================================================================
     # Static variables & methods
     #--------------------------------------------------------------------------
-    @staticmethod
-    def genOffset(journal, count, offMin, offMax, offType):
-        "Generates offsets (coordinates from origin) for respective setting"
-        
-        journal.I(f"ComplexMatrix.genOffset: {count} for <{offMin:7.2f}...{offMax:7.2f}> offType {offType}")
-
-        #----------------------------------------------------------------------
-        # Creating parameters
-        #----------------------------------------------------------------------
-        if offType==_LIN: 
-            lb = offMin
-            lk = (           offMax  - lb) / (count-1)
-        
-        elif offType==_LOG: 
-            eb = math.log10(offMin)
-            ek = (math.log10(offMax) - eb) / (count-1)
-        
-        #----------------------------------------------------------------------
-        # Creating offsets using parameters
-        #----------------------------------------------------------------------
-        offs = {}
-        for i in range(count):
-
-            if   offType==_LIN: off =              (lb + lk * i)
-            elif offType==_LOG: off = math.pow(10, (eb + ek * i) )
-            
-            offs[i] = off
-
-        journal.O()
-        return offs
 
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, journal, name):
+    def __init__(self, journal, name, nameX='X', nameY='Y'):
         "Calls constructor of ComplexMatrix"
 
         self.journal = journal
@@ -73,40 +43,32 @@ class ComplexMatrix:
         #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
-        self.name      = name    # Name of the whole structure
-        self.dimName   = ''      # Name of this dimension
-        
-        self.origPos   = []      # point's position to which is attached this subfield
-        self.offMin    = 0       # Min offset distance in lambda from mother dimension
-        self.offMax    = 1       # Max offset distance in lambda from mother dimension
+        self.name      = name    # Name of the ComplexMatrix
+        self.nameX     = nameX   # Name of the X axis = rows
+        self.nameY     = nameY   # Name of the Y axis = columns
         self.offType   = _LIN    # offType of offsets of nodes
         
-        self.nodes     = []      # List of nodes {ComplexPoint, ComplexMatrixs}
+        self.nodes     = [[]]    # List of rows of complex vectors {ComplexPoint}
         
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
-        self.iterNodes = []      # List of nodes for iteration
-        self.iterPos   = 0       # Iterator's position in self.iterNodes[]
-        self.iterCut   = []      # Definition of cut applied in iterator
-                                 # as list <1..dimMax> of selected indices <0..count-1>
-                                 # indice's value '*' means ALL nodes selected for respective dimension
 
         self.journal.O(f"{self.name}.constructor: done")
 
     #--------------------------------------------------------------------------
-    def dim(self):
-        "Returns to which dimension belongs this ComplexMatrix"
-        
-        return len(self.origPos)+1
+    def __str__(self):
+        "Prints info about this ComplexMatrix"
+
+        toRet = ''
+        for line in self.info()['msg']: toRet += line +'\n'
+        return toRet
 
     #--------------------------------------------------------------------------
-    def dimMax(self, deep=0):
-        "Returns max dimension of whole structure"
-        
-        # Ak prvy node neobsahuje dalsie cF ukoncim pocitanie dimenzii
-        if self.nodes[0]['cF'] is None: return deep+1
-        else                          : return self.nodes[0]['cF'].dimMax(deep+1)
+    def __array__(self):
+        "Returns ComplexMatrix as 2D numpy array"
+
+        return np.array(self.nodes, dtype=complex)
 
     #--------------------------------------------------------------------------
     def count(self):
@@ -131,7 +93,7 @@ class ComplexMatrix:
         msg = []
 
         #----------------------------------------------------------------------
-        # info o cele strukture
+        # info o celej strukture
         #----------------------------------------------------------------------
         if indent == 0:
             msg.append(f"{indent*_IND}{90*'='}")
@@ -166,14 +128,6 @@ class ComplexMatrix:
         #----------------------------------------------------------------------
         return {'res':'OK', 'dat':dat, 'msg':msg}
         
-    #--------------------------------------------------------------------------
-    def __str__(self):
-        "Prints info about this ComplexMatrix"
-
-        toRet = ''
-        for line in self.info()['msg']: toRet += line +'\n'
-        return toRet
-
     #==========================================================================
     # Iterator's node's generator and named cuts settings
     #--------------------------------------------------------------------------
@@ -356,33 +310,6 @@ class ComplexMatrix:
         #----------------------------------------------------------------------
         self.journal.O()
         
-    #--------------------------------------------------------------------------
-    def extend(self, dimName, count, offMin=None, offMax=None, offType=_LIN):
-        "Assigns to each node of this ComplexMatrix new ComplexMatrix subfield"
-        
-        self.journal.I(f"{self.name}.extend: {dimName}: {count} in offset <{offMin} - {offMax}> by {offType}")
-        
-        #----------------------------------------------------------------------
-        # Select all leaves nodes of the tree
-        #----------------------------------------------------------------------
-        self.cutAll()
-
-        #----------------------------------------------------------------------
-        # Iterate through all leaves nodes of the tree and add ComplexMatrix to them
-        #----------------------------------------------------------------------
-        for node in self:
-            
-            actPos = node['cP'].pos
-            
-            subField = ComplexMatrix(self.journal, f"{self.name}_sub")
-            subField.gener(dimName=dimName, count=count, offMin=offMin, offMax=offMax, offType=offType, origPos=actPos)
-
-            # Assign subfield to respective node
-            node['cF'] = subField
-            
-        #----------------------------------------------------------------------
-        self.journal.O()
-
     #==========================================================================
     # ComplexPoint value modification
     #--------------------------------------------------------------------------
@@ -973,32 +900,6 @@ class ComplexMatrix:
         #----------------------------------------------------------------------
         self.journal.O(f"{self.name}.normAbs: norm = {norm} for {len(nods)} points")
 
-    #--------------------------------------------------------------------------
-    def getLstCF(self, deep=0):
-        "Returns list of all ComplexMatrixs"
-        
-        self.journal.I(f"{self.name}.getLstCF: {deep}")
-        
-        toRet = []
-        #----------------------------------------------------------------------
-        # Add self
-        #----------------------------------------------------------------------
-        if deep==0: toRet.append(self)
-        
-        #----------------------------------------------------------------------
-        # Add all underlying ComplexMatrixs
-        #----------------------------------------------------------------------
-        for node in self.nodes:
-            
-            if node['cF'] is not None:
-                
-                toRet.append( node['cF']                  )
-                toRet.extend( node['cF'].getLstCF(deep+1) )
-        
-        #----------------------------------------------------------------------
-        self.journal.O()
-        return toRet
-        
     #==========================================================================
     # API
     #--------------------------------------------------------------------------
@@ -1068,7 +969,7 @@ class ComplexMatrix:
         return toRet
 
 #------------------------------------------------------------------------------
-print('ComplexMatrix ver 2.03')
+print('ComplexMatrix ver 3.01')
 
 #==============================================================================
 #                              END OF FILE
