@@ -282,7 +282,7 @@ class ComplexMatrix:
     # Structure modification
     #--------------------------------------------------------------------------
     def reset(self):
-        "Clears ComplexMatrix and reset it to dimension=1"
+        "Clears all ComplexMatrix's data. Count of nodes = 0"
         
         self.journal.I(f"{self.name}.reset:")
         
@@ -348,7 +348,7 @@ class ComplexMatrix:
     # Value modification
     #--------------------------------------------------------------------------
     def clear(self, c=complex(0,0)):
-        "Set all ComplexPoint values to default value"
+        "Set all ComplexPoint's values to default value"
         
         for node in self:
             node.clear(c)           
