@@ -1,12 +1,12 @@
 #==============================================================================
-# Siqo class ComplexMatrix
+# Siqo class InfoMatrix
 #------------------------------------------------------------------------------
 import math
 import cmath
 import numpy                 as np
 import random                as rnd
 
-from siqo_cpoint import InfoPoint
+from siqo_ipoint import InfoPoint
 
 #==============================================================================
 # package's constants
@@ -20,9 +20,9 @@ _UPP    = 10          # distance units per period
 
 
 #==============================================================================
-# ComplexMatrix
+# InfoMatrix
 #------------------------------------------------------------------------------
-class ComplexMatrix:
+class InfoMatrix:
 
     #==========================================================================
     # Static variables & methods
@@ -32,34 +32,34 @@ class ComplexMatrix:
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, journal, name):
-        "Calls constructor of ComplexMatrix"
+        "Calls constructor of InfoMatrix"
 
         self.journal = journal
-        self.journal.I(f"ComplexMatrix.constructor: {name}")
+        self.journal.I(f"InfoMatrix.constructor: {name}")
         
         #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
-        self.name       = name        # Name of the ComplexMatrix
-        self.dims       = ['x', 'y']  # List of dimensions of the ComplexMatrix
-        self.orig       = [0, 0]      # List of origin's coordinates of the ComplexMatrix in lambda units
+        self.name       = name        # Name of the InfoMatrix
+        self.dims       = ['x', 'y']  # List of dimensions of the InfoMatrix
+        self.orig       = [0, 0]      # List of origin's coordinates of the InfoMatrix in lambda units
         self.nodes      = [[]]        # List of rows of complex vectors {InfoPoint}
         self.staticEdge = False       # Static edge means value of the edge nodes is fixed
         
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
-        self._rows      = 0           # Number of rows in the ComplexMatrix
-        self._cols      = 0           # Number of columns in the ComplexMatrix
+        self._rows      = 0           # Number of rows in the InfoMatrix
+        self._cols      = 0           # Number of columns in the InfoMatrix
         self._dx        = 0           # Distance between two points on axis X in lambda units
         self._dy        = 0           # Distance between two points on axis Y in lambda units
-        self._iterPos   = 0           # Iterator's position in the ComplexMatrix
+        self._iterPos   = 0           # Iterator's position in the InfoMatrix
 
         self.journal.O(f"{self.name}.constructor: done")
 
     #--------------------------------------------------------------------------
     def __str__(self):
-        "Prints info about this ComplexMatrix"
+        "Prints info about this InfoMatrix"
 
         toRet = ''
         for line in self.info()['msg']: toRet += line +'\n'
@@ -67,7 +67,7 @@ class ComplexMatrix:
 
     #--------------------------------------------------------------------------
     def __array__(self):
-        "Returns ComplexMatrix as 2D numpy array"
+        "Returns InfoMatrix as 2D numpy array"
  
         c2D = [[]]
 
@@ -94,7 +94,7 @@ class ComplexMatrix:
 
     #--------------------------------------------------------------------------
     def info(self, indent=0):
-        "Creates info about this ComplexMatrix"
+        "Creates info about this InfoMatrix"
         
         dat = {}
         msg = []
@@ -129,32 +129,32 @@ class ComplexMatrix:
         
     #--------------------------------------------------------------------------
     def count(self):
-        "Returns Count of nodes in this ComplexMatrix"
+        "Returns Count of nodes in this InfoMatrix"
         
         return self._rows * self._cols
 
     #--------------------------------------------------------------------------
     def copy(self, name):
-        "Creates copy of this ComplexMatrix"
+        "Creates copy of this InfoMatrix"
         
         self.journal.I(f"{self.name}.copy: to {name}")
 
         #----------------------------------------------------------------------
-        # Create new ComplexMatrix with the same dimensions
+        # Create new InfoMatrix with the same dimensions
         #----------------------------------------------------------------------
-        toRet = ComplexMatrix(self.journal, name)
+        toRet = InfoMatrix(self.journal, name)
 
-        toRet.dims       = self.dims.copy()  # List of dimensions of the ComplexMatrix
-        toRet.orig       = self.orig.copy()  # List of origin's coordinates of the ComplexMatrix 
+        toRet.dims       = self.dims.copy()  # List of dimensions of the InfoMatrix
+        toRet.orig       = self.orig.copy()  # List of origin's coordinates of the InfoMatrix 
         toRet.nodes      = [[]]              # List of rows of complex vectors {InfoPoint}
-        toRet.rows       = self._rows        # Number of rows in the ComplexMatrix
-        toRet.cols       = self._cols        # Number of columns in the ComplexMatrix
+        toRet.rows       = self._rows        # Number of rows in the InfoMatrix
+        toRet.cols       = self._cols        # Number of columns in the InfoMatrix
         toRet.dx         = self._dx          # Distance between two points on axis X in lambda units
         toRet.dy         = self._dy          # Distance between two points on axis Y in lambda units
         toRet.staticEdge = self.staticEdge   # Static edge means value of the edge nodes is fixed
 
         #----------------------------------------------------------------------
-        # Copy all nodes from this ComplexMatrix to the new one
+        # Copy all nodes from this InfoMatrix to the new one
         #----------------------------------------------------------------------
         for row in self.nodes:
             
@@ -170,10 +170,10 @@ class ComplexMatrix:
         return toRet
         
     #==========================================================================
-    # Iterator for all nodes in ComplexMatrix
+    # Iterator for all nodes in InfoMatrix
     #--------------------------------------------------------------------------
     def __iter__(self):
-        "Creates iterator for this ComplexMatrix"
+        "Creates iterator for this InfoMatrix"
         
         # Reset iterator's position
         self._iterPos = 0
@@ -209,13 +209,13 @@ class ComplexMatrix:
             
     #--------------------------------------------------------------------------
     def iterByIdx(self, row, col):
-        "Returns iter position of the node in ComplexMatrix by index"
+        "Returns iter position of the node in InfoMatrix by index"
         
         return (row * self._cols) + col
 
     #--------------------------------------------------------------------------
     def idxByIter(self, pos):
-        "Returns index of the node in ComplexMatrix by iter position"
+        "Returns index of the node in InfoMatrix by iter position"
 
         row = pos // self._cols
         col = pos  % self._cols
@@ -282,36 +282,36 @@ class ComplexMatrix:
     # Structure modification
     #--------------------------------------------------------------------------
     def reset(self):
-        "Clears all ComplexMatrix's data. Count of nodes = 0"
+        "Clears all InfoMatrix's data. Count of nodes = 0"
         
         self.journal.I(f"{self.name}.reset:")
         
-        self.dims      = ['x', 'y']  # List of dimensions of the ComplexMatrix
-        self.orig      = [0, 0]      # List of origin's coordinates of the ComplexMatrix 
+        self.dims      = ['x', 'y']  # List of dimensions of the InfoMatrix
+        self.orig      = [0, 0]      # List of origin's coordinates of the InfoMatrix 
         self.nodes     = [[]]        # List of rows of complex vectors {InfoPoint}
 
-        self._rows     = 0           # Number of rows in the ComplexMatrix
-        self._cols     = 0           # Number of columns in the ComplexMatrix
+        self._rows     = 0           # Number of rows in the InfoMatrix
+        self._cols     = 0           # Number of columns in the InfoMatrix
         self._dx       = 0           # Distance between two points on axis X in lambda units
         self._dy       = 0           # Distance between two points on axis Y in lambda units
-        self._iterPos  = 0           # Iterator's position in the ComplexMatrix
+        self._iterPos  = 0           # Iterator's position in the InfoMatrix
 
         self.journal.O()
         
     #--------------------------------------------------------------------------
     def gener(self, nRow, nCol, c=complex(0,0), xMin=0, xMax=1, yMin=0, yMax=1, orig=[0, 0]):
-        "Creates ComplexMatrix with respective settings"
+        "Creates InfoMatrix with respective settings"
         
         self.journal.I(f"{self.name}.gener: {nRow}*{nCol} nodes ({xMin}...{xMax}) x ({yMin}...{yMax}) from {orig}")
 
         self.reset()
 
         #----------------------------------------------------------------------
-        # ComplexMatrix settings
+        # InfoMatrix settings
         #----------------------------------------------------------------------
-        self.orig      = orig.copy()           # List of origin's coordinates of the ComplexMatrix
-        self._rows     = nRow                  # Number of rows in the ComplexMatrix       
-        self._cols     = nCol                  # Number of columns in the ComplexMatrix
+        self.orig      = orig.copy()           # List of origin's coordinates of the InfoMatrix
+        self._rows     = nRow                  # Number of rows in the InfoMatrix       
+        self._cols     = nCol                  # Number of columns in the InfoMatrix
         self._dx       = (xMax-xMin)/(nRow-1)  # Distance between two points on axis X in lambda units
         self._dy       = (yMax-yMin)/(nCol-1)  # Distance between two points on axis Y in lambda units
         
@@ -856,7 +856,7 @@ class ComplexMatrix:
     # API
     #--------------------------------------------------------------------------
     def getData(self, cut=None):
-        "Returns dict of numpy arrays as a cut from ComplexMatrix"
+        "Returns dict of numpy arrays as a cut from InfoMatrix"
     
         self.journal.I(f"{self.name}.getData: cut = {cut}")
     
@@ -921,7 +921,7 @@ class ComplexMatrix:
         return toRet
 
 #------------------------------------------------------------------------------
-print('ComplexMatrix ver 3.01')
+print('InfoMatrix ver 3.01')
 
 #==============================================================================
 #                              END OF FILE
