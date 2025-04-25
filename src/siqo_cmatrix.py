@@ -13,9 +13,6 @@ from siqo_cpoint import ComplexPoint
 #------------------------------------------------------------------------------
 _IND    = '|  '       # Info indentation
 _UPP    = 10          # distance units per period
-_LIN    = 'linear'    # Default type of offsets
-_LOG    = 'log10'
-_LN2    = 'log2'
 
 #==============================================================================
 # package's variables
@@ -34,7 +31,7 @@ class ComplexMatrix:
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, journal, name, nameX='X', nameY='Y'):
+    def __init__(self, journal, name):
         "Calls constructor of ComplexMatrix"
 
         self.journal = journal
@@ -43,16 +40,20 @@ class ComplexMatrix:
         #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
-        self.name      = name    # Name of the ComplexMatrix
-        self.nameX     = nameX   # Name of the X axis = rows
-        self.nameY     = nameY   # Name of the Y axis = columns
-        self.offType   = _LIN    # offType of offsets of nodes
-        
-        self.nodes     = [[]]    # List of rows of complex vectors {ComplexPoint}
+        self.name       = name        # Name of the ComplexMatrix
+        self.dims       = ['x', 'y']  # List of dimensions of the ComplexMatrix
+        self.orig       = [0, 0]      # List of origin's coordinates of the ComplexMatrix in lambda units
+        self.nodes      = [[]]        # List of rows of complex vectors {ComplexPoint}
+        self.staticEdge = False       # Static edge means value of the edge nodes is fixed
         
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
+        self._rows      = 0           # Number of rows in the ComplexMatrix
+        self._cols      = 0           # Number of columns in the ComplexMatrix
+        self._dx        = 0           # Distance between two points on axis X in lambda units
+        self._dy        = 0           # Distance between two points on axis Y in lambda units
+        self._iterPos   = 0           # Iterator's position in the ComplexMatrix
 
         self.journal.O(f"{self.name}.constructor: done")
 
@@ -67,24 +68,30 @@ class ComplexMatrix:
     #--------------------------------------------------------------------------
     def __array__(self):
         "Returns ComplexMatrix as 2D numpy array"
+ 
+        c2D = [[]]
 
-        return np.array(self.nodes, dtype=complex)
+        #----------------------------------------------------------------------
+        # Prejdem vsetky riadky
+        #----------------------------------------------------------------------
+        for row in self.nodes:
 
-    #--------------------------------------------------------------------------
-    def count(self):
-        "Returns Count of nodes in this ComplexMatrix"
-        
-        return len(self.nodes)
+            cRow = []
 
-    #--------------------------------------------------------------------------
-    def copy(self, name):
-        "Creates copy of this ComplexMatrix"
-        
-        self.journal.I(f"{self.name}.copy: {name}")
-        
+            #------------------------------------------------------------------
+            # Prejdem vsetky body v riadku
+            #------------------------------------------------------------------
+            for point in row:
+                cRow.append(point.c)
 
-        self.journal.O()
-        
+            #------------------------------------------------------------------
+            # Vlozim riadok do c2D
+            #------------------------------------------------------------------
+            c2D.append(cRow)
+
+        #----------------------------------------------------------------------
+        return np.array(c2D, dtype=complex)
+
     #--------------------------------------------------------------------------
     def info(self, indent=0):
         "Creates info about this ComplexMatrix"
@@ -98,128 +105,78 @@ class ComplexMatrix:
         if indent == 0:
             msg.append(f"{indent*_IND}{90*'='}")
             dat['name'       ] = self.name
-            dat['dimensions' ] = self.dimMax()
-    
-        #----------------------------------------------------------------------
-        # info o dimenzii
-        #----------------------------------------------------------------------
-        msg.append(f"{indent*_IND}{90*'-'}")
-        
-        dat['dim'        ] = self.dim()
-        dat['dimName'    ] = self.dimName
-        dat['count'      ] = self.count()
-        dat['origPos'    ] = self.origPos
-        dat['offMin'     ] = self.offMin
-        dat['offMax'     ] = self.offMax
-        dat['offType'    ] = self.offType
-        dat['iterCut'    ] = self.iterCut
+            dat['dimensions' ] = self.dims
+            dat['rows'       ] = self._rows
+            dat['cols'       ] = self._cols
+            dat['dx'         ] = self._dx
+            dat['dy'         ] = self._dy
+            dat['count'      ] = self.count()
+            dat['orig'       ] = self.orig
+            dat['staticEdge' ] = self.staticEdge
 
-        for key, val in dat.items(): msg.append("{}{:<15}: {}".format(indent*_IND, key, val))
+        for key, val in dat.items(): msg.append(f"{indent*_IND}{key:<15}: {val}")
 
         #----------------------------------------------------------------------
-        # info
+        # info o riadkoch
         #----------------------------------------------------------------------
-        for node in self.nodes:
-        
-            if node['cF'] is None: subMsg = node['cP'].info(indent+1)['msg']
-            else                 : subMsg = node['cF'].info(indent+1)['msg']
-            msg.extend(subMsg)
+        for node in self:
+
+            row, col = self.idxByIter(self._iterPos)
+            msg.append(f"Point[{row},{col}] {node.info()}")
         
         #----------------------------------------------------------------------
         return {'res':'OK', 'dat':dat, 'msg':msg}
         
-    #==========================================================================
-    # Iterator's node's generator and named cuts settings
     #--------------------------------------------------------------------------
-    def cutToNodes(self, cut=None, root=True):
-        "Creates list of nodes for respective cut's definition for iteration"
+    def count(self):
+        "Returns Count of nodes in this ComplexMatrix"
         
-        #----------------------------------------------------------------------
-        # Inicializacia
-        #----------------------------------------------------------------------
-        if cut is None: cut = self.iterCut
-        if root       : self.journal.I(f"{self.name}.cutToNodes: Cut is {cut}")
+        return self._rows * self._cols
+
+    #--------------------------------------------------------------------------
+    def copy(self, name):
+        "Creates copy of this ComplexMatrix"
         
-        #----------------------------------------------------------------------
-        # Vycistim zoznam iter Nodes a pripravim si cut left for next recursion
-        #----------------------------------------------------------------------
-        self.iterNodes = []
-        cutLeft = list(cut[1:])
+        self.journal.I(f"{self.name}.copy: to {name}")
 
         #----------------------------------------------------------------------
-        # Prejdem vsetky pozicie v cF
+        # Create new ComplexMatrix with the same dimensions
         #----------------------------------------------------------------------
-        for pos in range(self.count()):
+        toRet = ComplexMatrix(self.journal, name)
+
+        toRet.dims       = self.dims.copy()  # List of dimensions of the ComplexMatrix
+        toRet.orig       = self.orig.copy()  # List of origin's coordinates of the ComplexMatrix 
+        toRet.nodes      = [[]]              # List of rows of complex vectors {ComplexPoint}
+        toRet.rows       = self._rows        # Number of rows in the ComplexMatrix
+        toRet.cols       = self._cols        # Number of columns in the ComplexMatrix
+        toRet.dx         = self._dx          # Distance between two points on axis X in lambda units
+        toRet.dy         = self._dy          # Distance between two points on axis Y in lambda units
+        toRet.staticEdge = self.staticEdge   # Static edge means value of the edge nodes is fixed
+
+        #----------------------------------------------------------------------
+        # Copy all nodes from this ComplexMatrix to the new one
+        #----------------------------------------------------------------------
+        for row in self.nodes:
             
-            #------------------------------------------------------------------
-            # Skontrolujem, ci cut[0] potencialne patri do iterNodes
-            #------------------------------------------------------------------
-            if  (cut[0] == '*') or (cut[0] == pos):
-                
-                node = self.nodes[pos]
-                
-                #--------------------------------------------------------------
-                # Ak zostala este dalsia dimenzia v cut, vnorim sa hlbsie do rekurzie
-                #--------------------------------------------------------------
-                if len(cutLeft) > 0:
-                    self.iterNodes.extend( node['cF'].cutToNodes(cut=cutLeft, root=False) )
-                
-                #--------------------------------------------------------------
-                # Ak nezostala ziadna cutLeft, skontolujem tento Node[pos]
-                #--------------------------------------------------------------
-                else:
-                    #----------------------------------------------------------
-                    # Ak je cut[0] == '*' alebo pos, potom vlozim tento Node do iterNodes
-                    #----------------------------------------------------------
-                    self.iterNodes.append(node)
-                
-            #------------------------------------------------------------------
-        
-        #----------------------------------------------------------------------
-        # Finalizacia
-        #----------------------------------------------------------------------
-        if root:
-            self.journal.O(f"{self.name}.cutToNodes: Identified {len(self.iterNodes)} iterNodes")
-        
-        #----------------------------------------------------------------------
-        return self.iterNodes
-        
-    #--------------------------------------------------------------------------
-    def cutSet(self, cut):
-        "Sets user-defined cut"
-        
-        self.iterCut  = cut
- 
-        self.journal.M(f"{self.name}.cutSet: Cut is {self.iterCut}")
-        return self.iterCut
-        
-    #--------------------------------------------------------------------------
-    def cutAll(self):
-        "Returns cut's definition for all points in the max dimension"
-        
-        self.iterCut  = ['*' for i in range(self.dimMax())]
- 
-        self.journal.M(f"{self.name}.cutAll: Cut is {self.iterCut}")
-        return self.iterCut
-        
-    #--------------------------------------------------------------------------
-    def cutDim(self, dim):
-        "Returns cut's definition for all points in respective dimension"
-        
-        self.iterCut  = ['*' for i in range(dim)]
+            copyRow = []
 
-        self.journal.M(f"{self.name}.cutDim: For dim={dim} is {self.iterCut}")
-        return self.iterCut
+            for point in row:
+                copyRow.append(point.copy())
+
+            toRet.nodes.append(copyRow)
+
+        #----------------------------------------------------------------------
+        self.journal.O()
+        return toRet
         
     #==========================================================================
-    # Iterator based on cut[] definition
+    # Iterator for all nodes in ComplexMatrix
     #--------------------------------------------------------------------------
     def __iter__(self):
         "Creates iterator for this ComplexMatrix"
         
-        # Reset iterator's position and generate list of nodes for iteration
-        self.iterPos = 0
-        self.cutToNodes()
+        # Reset iterator's position
+        self._iterPos = 0
         
         return self
 
@@ -230,13 +187,18 @@ class ComplexMatrix:
         #----------------------------------------------------------------------
         # If there is one more node in list of nodes left
         #----------------------------------------------------------------------
-        if self.iterPos < len(self.iterNodes):
+        if self._iterPos < self.count():
                 
+            #------------------------------------------------------------------
             # Get current node in list of nodes
-            node = self.iterNodes[self.iterPos]
+            #------------------------------------------------------------------
+            row, col = self.idxByIter(self._iterPos)
+            node = self.nodes[row][col]
             
+            #------------------------------------------------------------------
             # Move to the next node
-            self.iterPos += 1
+            #------------------------------------------------------------------
+            self._iterPos += 1
             
             return node
 
@@ -245,6 +207,77 @@ class ComplexMatrix:
         #----------------------------------------------------------------------
         else: raise StopIteration
             
+    #--------------------------------------------------------------------------
+    def iterByIdx(self, row, col):
+        "Returns iter position of the node in ComplexMatrix by index"
+        
+        return (row * self._cols) + col
+
+    #--------------------------------------------------------------------------
+    def idxByIter(self, pos):
+        "Returns index of the node in ComplexMatrix by iter position"
+
+        row = pos // self._cols
+        col = pos  % self._cols
+
+        return (row, col)
+
+    #==========================================================================
+    # Point retrieval
+    #--------------------------------------------------------------------------
+    def pointByIdx(self, row, col):
+        "Returns ComplexPoint in field at respective indexes"
+        
+        try: toRet = self.nodes[row][col]
+        except IndexError:
+            self.journal.M(f"{self.name}.pointByIdx: ERROR: [{row},{col}] is out of range", True)
+            return None
+        
+        return toRet
+        
+    #--------------------------------------------------------------------------
+    def pointByPos(self, x, y):
+        "Returns nearest Point in field for respective position"
+
+        self.journal.I(f"{self.name}.pointByPos: x={x}, y={y}")
+
+        #----------------------------------------------------------------------
+        # Searching for the row index for respective x
+        #----------------------------------------------------------------------
+        for row in range(self._rows):
+
+            lstRow = row
+            if self.nodes[row][0].pos[0] >= x: break
+
+        #----------------------------------------------------------------------
+        # Row index before or after x ?
+        #----------------------------------------------------------------------
+        if lstRow < self._rows-1:
+
+            if abs(self.nodes[lstRow][0].pos[0]-x) > abs(self.nodes[lstRow+1][0].pos[0]-x):
+                lstRow += 1
+
+        #----------------------------------------------------------------------
+        # Searching for the col index for respective y
+        #----------------------------------------------------------------------
+        for col in range(self._cols):
+
+            lstCol = col
+            if self.nodes[0][col].pos[1] >= y: break
+        
+        #----------------------------------------------------------------------
+        # Col index before or after y ? 
+        #----------------------------------------------------------------------
+        if lstCol < self._cols-1:
+
+            if abs(self.nodes[0][lstCol].pos[1]-y) > abs(self.nodes[0][lstCol+1].pos[1]-y):
+                lstCol += 1
+
+        #----------------------------------------------------------------------
+        # Final 
+        #----------------------------------------------------------------------
+        return self.nodes[lstRow][lstCol]
+      
     #==========================================================================
     # Structure modification
     #--------------------------------------------------------------------------
@@ -253,57 +286,58 @@ class ComplexMatrix:
         
         self.journal.I(f"{self.name}.reset:")
         
-        self.nodes.clear()        # Odstranenie vsetkych poli
+        self.dims      = ['x', 'y']  # List of dimensions of the ComplexMatrix
+        self.orig      = [0, 0]      # List of origin's coordinates of the ComplexMatrix 
+        self.nodes     = [[]]        # List of rows of complex vectors {ComplexPoint}
 
-        self.origIdx = []         # Reset of the origin point indices
-        self.offMin  =  0
-        self.offMax  =  1
-        self.offType = _LIN       # offType of offsets in underlying field
-        
-        self.iterCut = []         # Definition of cut applied in iterator
-        
+        self._rows     = 0           # Number of rows in the ComplexMatrix
+        self._cols     = 0           # Number of columns in the ComplexMatrix
+        self._dx       = 0           # Distance between two points on axis X in lambda units
+        self._dy       = 0           # Distance between two points on axis Y in lambda units
+        self._iterPos  = 0           # Iterator's position in the ComplexMatrix
+
         self.journal.O()
         
     #--------------------------------------------------------------------------
-    def gener(self, dimName, count, offMin, offMax, offType=_LIN, origPos=[]):
-        "Creates 1D ComplexMatrix with respective settings"
+    def gener(self, nRow, nCol, c=complex(0,0), xMin=0, xMax=1, yMin=0, yMax=1, orig=[0, 0]):
+        "Creates ComplexMatrix with respective settings"
         
-        self.journal.I(f"{self.name}.gener: '{dimName}': {count} nodes between {offMin}...{offMax} from {origPos}")
+        self.journal.I(f"{self.name}.gener: {nRow}*{nCol} nodes ({xMin}...{xMax}) x ({yMin}...{yMax}) from {orig}")
 
-        self.nodes.clear()
+        self.reset()
 
         #----------------------------------------------------------------------
         # ComplexMatrix settings
         #----------------------------------------------------------------------
-        self.dimName = dimName
-        self.origPos = origPos
-        self.offMin  = offMin
-        self.offMax  = offMax
-        self.offType = offType
+        self.orig      = orig.copy()           # List of origin's coordinates of the ComplexMatrix
+        self._rows     = nRow                  # Number of rows in the ComplexMatrix       
+        self._cols     = nCol                  # Number of columns in the ComplexMatrix
+        self._dx       = (xMax-xMin)/(nRow-1)  # Distance between two points on axis X in lambda units
+        self._dy       = (yMax-yMin)/(nCol-1)  # Distance between two points on axis Y in lambda units
         
         #----------------------------------------------------------------------
-        # Creating dict of offsets positions and add one dimension to origPos
+        # Generate nRow x nCol nodes at respective positions
         #----------------------------------------------------------------------
-        offs   = ComplexMatrix.genOffset(self.journal, count, self.offMin, self.offMax, self.offType)
-        actPos = list(origPos)
-        actPos.append(0)
+        for row in range(nRow):
 
-        #----------------------------------------------------------------------
-        # Generate <count> nodes in cF at position actPos = [origPos, offset]
-        #----------------------------------------------------------------------
-        for i, offset in offs.items():
+            #------------------------------------------------------------------
+            # Create new row of ComplexPoint at respective position
+            #------------------------------------------------------------------
+            self.nodes.append([])
+            x = xMin + (row * self._dx)
             
-            #------------------------------------------------------------------
-            # Create copy of the <pos> list and add <offset> coordinate
-            #------------------------------------------------------------------
-            actPos[-1] = offset
-            
-            cP = ComplexPoint(actPos)
-            
-            #------------------------------------------------------------------
-            # Pridam do ComplexFiled { complexPoint, None subfield }
-            #------------------------------------------------------------------
-            self.nodes.append( {'cP':cP, 'cF':None} )
+            for col in range(nCol):
+                
+                #--------------------------------------------------------------
+                # Create new ComplexPoint at respective position
+                #--------------------------------------------------------------
+                y = yMin + (col * self._dy)
+                c = ComplexPoint(pos=[x,y], c=c)
+                
+                #--------------------------------------------------------------
+                # Append new ComplexPoint to the list of nodes
+                #--------------------------------------------------------------
+                self.nodes[row].append(c)
             
         #----------------------------------------------------------------------
         # Final adjustments
@@ -311,91 +345,18 @@ class ComplexMatrix:
         self.journal.O()
         
     #==========================================================================
-    # ComplexPoint value modification
+    # Value modification
     #--------------------------------------------------------------------------
-    def getPointByIdx(self, idx):
-        "Returns ComplexPoint in field at respective position"
+    def clear(self, c=complex(0,0)):
+        "Set all ComplexPoint values to default value"
         
-        #idx = [x1, x2, x3, ...]
-        
-        if len(idx) > 1: return self.nodes[idx[0]]['cF'].getPointByIdx(idx[1:])
-        else           : return self.nodes[idx[0]]['cP']
+        for node in self:
+            node.clear(c)           
 
+        self.journal.M(f"{self.name}.clear:")
+        
     #--------------------------------------------------------------------------
-    def getPointByPos(self, coord, deep=0):
-        "Returns nearest Point in field for respective coordinates"
 
-        idx  = -1            # Indices of the nearest point
-        srch = coord[deep]   # Coordinate of the searched point in respective dimension
-        
-        self.journal.I(f"{self.name}.getPointByPos: coord={coord}, srch={srch}, deep={deep}")
-
-        #----------------------------------------------------------------------
-        # Initialise distance to previous point (e.g., first)
-        #----------------------------------------------------------------------
-        i = 0
-        dltPrev = self.nodes[i]['cP'].pos[deep] - srch
-        i += 1
-
-        #----------------------------------------------------------------------
-        # Iterate over all next points
-        #----------------------------------------------------------------------
-        while i < self.count():
-            
-            # Distance to actual (i-th) point
-            dltAct = self.nodes[i]['cP'].pos[deep] - srch
-
-            #------------------------------------------------------------------
-            #  If the actual point has greater coord than <srch>
-            #------------------------------------------------------------------
-            if dltAct >= 0:
-                
-                #--------------------------------------------------------------
-                # Return nearer point: Previous or Actual
-                #--------------------------------------------------------------
-                if abs(dltAct) <= abs(dltPrev): idx = i
-                else                          : idx = i-1
-                
-                break
-
-            #------------------------------------------------------------------
-            # Move to the next point
-            #------------------------------------------------------------------
-            dltPrev = dltAct
-            i += 1
-
-        #----------------------------------------------------------------------
-        # If pos was not set then set it to last point
-        #----------------------------------------------------------------------
-        if idx == -1: idx = i-1
-        
-        #----------------------------------------------------------------------
-        # Prepare return value
-        #----------------------------------------------------------------------
-        lstPos = [idx]
-        
-        #----------------------------------------------------------------------
-        # If there are not-yet-resolved coordinates left then recursive
-        #----------------------------------------------------------------------
-        if len(coord) > (deep+1):
-            
-            # field to be searched 
-            sF = self.nodes[idx]['cF']
-            
-            lstPos.extend( sF.getPointByPos(coord, deep+1) )
-                    
-        self.journal.O()
-
-        #----------------------------------------------------------------------
-        # If deep == 0 the return point on position lstPos
-        #----------------------------------------------------------------------
-        if deep == 0: return self.getData(cut=lstPos)[-1]['arr'][0]
-        
-        #----------------------------------------------------------------------
-        # If deep != 0 then return list of indices of the nearest point
-        #----------------------------------------------------------------------
-        return lstPos
-      
     #==========================================================================
     # Complex Field Information
     #--------------------------------------------------------------------------
@@ -414,15 +375,6 @@ class ComplexMatrix:
 
     #==========================================================================
     # Methods application
-    #--------------------------------------------------------------------------
-    def clear(self):
-        "Clear all ComplexPoint values"
-        
-        self.cutAll()
-        for node in self: node['cP'].clear()
-
-        self.journal.M(f"{self.name}.clear:")
-        
     #--------------------------------------------------------------------------
     def copyValues(self, srcs, tgts):
         "Copy node's values from srcs to tgts nodes"

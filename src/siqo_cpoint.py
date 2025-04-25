@@ -91,12 +91,12 @@ class ComplexPoint:
     #==========================================================================
     # Value modification
     #--------------------------------------------------------------------------
-    def clear(self):
-        "Sets complex number to (0+0j)"
+    def clear(self, c=complex(0,0)):
+        "Sets complex number to default value and clears state variables"
         
-        self.c   = complex(0,0)
-        self.omg = 0            # Omega uhlova rychlost [rad/s]
-        self.phs = 0            # Total faza [rad]
+        self.c   = c
+        self.omg = 0   # Omega uhlova rychlost [rad/s]
+        self.phs = 0   # Total faza [rad]
 
         return self
 
