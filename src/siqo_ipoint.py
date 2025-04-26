@@ -9,7 +9,10 @@ import random                 as rnd
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-_IND    = '|  '       # Info indentation
+_IND      = '|  '                      # Info indentation
+_F_TOTAL  = 5                          # Total number of digits in float number
+_F_DECIM  = 3                          # Number of digits after decimal point in float number
+_F_FORMAT = f"{_F_TOTAL}.{_F_DECIM}f"  # Format for float number
 
 #==============================================================================
 # package's variables
@@ -21,15 +24,25 @@ _IND    = '|  '       # Info indentation
 class InfoPoint:
 
     #==========================================================================
+    # Static variables & methods
+    #--------------------------------------------------------------------------
+    _journal = None                # Journal for logging
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def journal(msg, force=False):
+        ""
+        if InfoPoint._journal is not None:
+            InfoPoint._journal.M(msg, force)
+
+    #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, *, pos=[], c=complex(0,0)):
+    def __init__(self, *, pos={}, dat={}):
         "Calls constructor of InfoPoint on respective position"
         
-        self.c   = c              # Complex value of this InfoPoint
-        self.pos = list(pos)      # Vector of real numbers for position coordinates
-        self.omg = 0              # Omega uhlova rychlost [rad/s] 
-        self.phs = 0              # Total faza [rad]              
+        self.pos = pos         # Dict of real numbers for position coordinates
+        self.dat = dat         # Dict of values of this InfoPoint
 
     #--------------------------------------------------------------------------
     def __str__(self):
@@ -43,84 +56,76 @@ class InfoPoint:
     def info(self, indent=0):
         "Creates info about this InfoPoint"
         
-        dat = {}
         msg = []
 
-        dat['c'  ] = self.c
-        dat['pos'] = self.pos
-        dat['omg'] = self.omg
-        dat['phs'] = self.phs
+        msg.append(f"{indent*_IND}{self.posStr()}: {self.datStr()}\n")
 
-        msg.append(f"{indent*_IND}{self.posStr()}: {self.cStr()} ({self.phs:5.3f} rad @ {self.omg:5.3f} rad/s)")
-
-        return {'res':'OK', 'dat':dat, 'msg':msg}
+        return {'res':'OK', 'dat':self.dat, 'msg':msg}
         
     #--------------------------------------------------------------------------
-    def posStr(self):
-        "Creates string representation of the position of this InfoPoint"
+    def format(self, val):
+        "Creates string representation of the value for respective format settings"
 
-        toRet = 'X['
-        
-        i = 0
-        for coor in self.pos:
-            
-            if i == 0: toRet +=   f"{coor:5.2f}"
-            else     : toRet += f" |{coor:5.2f}"
-            i += 1
-
-        toRet += ']'
+        if   type(val) == int    : toRet = f"{val:#{_F_TOTAL}}"
+        elif type(val) == float  : toRet = f"{val:#{_F_TOTAL}.{_F_DECIM}f}"
+        elif type(val) == complex: toRet = f"({val.real:#{_F_TOTAL}.{_F_DECIM}f} {val.imag:#{_F_TOTAL}.{_F_DECIM}f}j)"
+        else                     : toRet = f"{val:<{_F_TOTAL}}"
 
         return toRet
     
     #--------------------------------------------------------------------------
-    def cStr(self):
-        "Creates string representation of the complex value of this InfoPoint"
+    def posStr(self):
+        "Creates string representation of the position of this InfoPoint"
 
-        return f"({self.c.real:6.3f} {self.c.imag:6.3f}j)"
+        toRet = '['
+        
+        i = 0
+        for key, val in self.pos.items():
+            
+            if i == 0: toRet +=  f"{key}={self.format(val)}"
+            else     : toRet += f"|{key}={self.format(val)}"
+            i += 1
+
+        toRet += ']'
+        return toRet
+    
+    #--------------------------------------------------------------------------
+    def datStr(self):
+        "Creates string representation of the data of this InfoPoint"
+
+        toRet = '{'
+        
+        i = 0
+        for key, val in self.dat.items():
+
+            if i == 0: toRet +=  f"{key}={self.format(val)}"
+            else     : toRet += f"|{key}={self.format(val)}"
+            i += 1  
+
+        toRet += '}'
+        return toRet
     
     #--------------------------------------------------------------------------
     def copy(self):
         "Creates copy of this InfoPoint"
 
-        toRet = InfoPoint(pos=self.pos, c=self.c)
-        toRet.omg = self.omg
-        toRet.phs = self.phs
+        toRet = InfoPoint()
+
+        toRet.pos = self.pos.copy()
+        toRet.dat = self.dat.copy()
 
         return toRet
         
     #==========================================================================
-    # Value modification
+    # Dat Value modification
     #--------------------------------------------------------------------------
-    def clear(self, c=complex(0,0)):
+    def clear(self):
         "Sets complex number to default value and clears state variables"
         
-        self.c   = c
-        self.omg = 0   # Omega uhlova rychlost [rad/s]
-        self.phs = 0   # Total faza [rad]
+        self.dat.clear()
 
         return self
 
-    #--------------------------------------------------------------------------
-    def setComp(self, c:complex):
-        "Sets complex number to respective complex value"
-        
-        self.c = c
-        return self
-        
-    #--------------------------------------------------------------------------
-    def setRect(self, re:float, im:float):
-        "Sets complex number given by rectangular coordinates (real, imag)"
-        
-        self.c = complex(re, im)
-        return self
-        
-    #--------------------------------------------------------------------------
-    def setPolar(self, mod:float, phi:float):
-        "Sets complex number given by polar coordinates (modulus, phase)"
-        
-        self.c = cmath.rect(mod, phi)
-        return self
-        
     #--------------------------------------------------------------------------
     def rndBit(self, prob:float):
         "Sets real value 0/1 with respective probability and imaginary value sets to 0"
@@ -144,65 +149,99 @@ class InfoPoint:
         return self
 
     #==========================================================================
-    # Complex Value information
+    # Complex Value methods; expects complex value with key 'c' in dat dict
+    #--------------------------------------------------------------------------
+    def setCompVal(self, c:complex):
+        "Sets complex number to respective complex value"
+        
+        self.dat['c'] = c
+        return self
+        
+    #--------------------------------------------------------------------------
+    def setCompRect(self, re:float, im:float):
+        "Sets complex number given by rectangular coordinates (real, imag)"
+        
+        self.dat['c'] = complex(re, im)
+        return self
+        
+    #--------------------------------------------------------------------------
+    def setCompPolar(self, mod:float, phi:float):
+        "Sets complex number given by polar coordinates (modulus, phase)"
+        
+        self.dat['c'] = cmath.rect(mod, phi)
+        return self
+        
     #--------------------------------------------------------------------------
     def real(self):
         "Returns real part of complex number"
         
-        return self.c.real
+        return self.dat['c'].real
 
     #--------------------------------------------------------------------------
     def imag(self):
         "Returns imaginary part of complex number"
         
-        return self.c.imag
+        return self.dat['c'].imag
 
     #--------------------------------------------------------------------------
     def polar(self):
         "Returns polar coordinates of complex number as a tuple. Phase in <-pi, pi> from +x axis"
         
-        return cmath.polar(self.c)
+        return cmath.polar(self.dat['c'])
 
     #--------------------------------------------------------------------------
     def abs(self):
         "Returns absolute value = modulus of complex number"
         
-        return abs(self.c)
+        return abs(self.dat['c'])
 
     #--------------------------------------------------------------------------
     def phase(self):
         "Returns phase in <-pi, pi> from +x axis"
         
-        return cmath.phase(self.c)
+        return cmath.phase(self.dat['c'])
 
     #--------------------------------------------------------------------------
     def conjugate(self):
         "Returns conjugate complex number"
         
-        return self.c.conjugate()
+        return self.dat['c'].conjugate()
 
     #--------------------------------------------------------------------------
     def sqrComp(self):
         "Returns square of complex number"
         
-        return self.c * self.c
+        return self.dat['c'] * self.dat['c']
 
     #--------------------------------------------------------------------------
     def sqrAbs(self):
         "Returns square of the absolute value of complex value"
         
-        return (self.c.real * self.c.real) + (self.c.imag * self.c.imag )
+        return (self.dat['c'].real * self.dat['c'].real) + (self.dat['c'].imag * self.dat['c'].imag )
 
     #==========================================================================
-    # Position information
+    # Two-points methods
     #--------------------------------------------------------------------------
     def deltasTo(self, toP):
         "Returns list of differences between coordinates for respective InfoPoint"
         
-        dlt = zip(self.pos, toP.pos)
-        
-        toRet = [pair[1] - pair[0] for pair in dlt]
-        
+        #----------------------------------------------------------------------
+        # Check if both InfoPoints have the same number of coordinates and create pairs of them
+        #----------------------------------------------------------------------
+        pairs = []
+
+        try:
+            for key, val in self.pos.items():
+                pairs.append( (val, toP.pos[key]) )
+
+        except KeyError:
+            self.journal(f"Error: InfoPoints have different number of coordinates!", True)
+            return None
+            
+        #----------------------------------------------------------------------
+        # Cretess list of differences between coordinates for respective InfoPoint
+        #----------------------------------------------------------------------
+        toRet = [pair[1] - pair[0] for pair in pairs]
         return toRet
 
     #--------------------------------------------------------------------------
@@ -212,7 +251,7 @@ class InfoPoint:
         dlts  = self.deltasTo(toP)
         toRet = 0
         
-        for r in dlts: toRet += r*r
+        for dlt in dlts: toRet += dlt*dlt
         
         return toRet
 
@@ -223,28 +262,22 @@ class InfoPoint:
         sqrDist = self.distSqrTo(toP)
         return math.sqrt(sqrDist)
     
-
 #------------------------------------------------------------------------------
 print('InfoPoint ver 3.01')
 
 if __name__ == '__main__':
 
     print('Test of InfoPoint class')
+    print('_IND      =', _IND) 
 
-    # Test of InfoPoint class
     p1 = InfoPoint()
     print(p1)
 
-    p2 = InfoPoint(c=complex(3, 4))
+    p2 = InfoPoint(pos={'x':1, 'y':1.2}, dat={'a':3, 'b':4.567891234})
     print(p2)
     
-    p1.setComp(complex(1, 2))
-    p2.setComp(complex(3, 4))
-
-    print(p1)
-    print(p2)
-
-    print(p1.distSqrTo(p2))
+    p3 = InfoPoint(pos={'x':1, 'y':2}, dat={'a':3, 'b':4.567891234, 'c':complex(1,-2.3456789)})
+    print(p3)
 
 #==============================================================================
 #                              END OF FILE
