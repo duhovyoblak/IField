@@ -30,6 +30,13 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
+    def setJournal(journal):
+        "Sets journal for logging"
+        
+        InfoPoint._journal = journal
+
+    #--------------------------------------------------------------------------
+    @staticmethod
     def journal(msg, force=False):
         ""
         if InfoPoint._journal is not None:
@@ -119,10 +126,10 @@ class InfoPoint:
     #==========================================================================
     # Dat Value modification
     #--------------------------------------------------------------------------
-    def clear(self):
+    def clear(self, *, dat={}):
         "Sets complex number to default value and clears state variables"
         
-        self.dat.clear()
+        self.dat = dat
 
         return self
 
