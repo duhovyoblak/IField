@@ -40,22 +40,21 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
-        self.name       = name        # Name of the InfoMatrix
-        self.dims       = ['x', 'y']  # List of dimensions of the InfoMatrix
-        self.orig       = [0, 0]      # List of origin's coordinates of the InfoMatrix in lambda units
-        self.nodes      = [[]]        # List of rows of complex vectors {InfoPoint}
-        self.nodeKey    = None        # Key of the InfoPoint's dat value
-        self.nodeType   = float       # Type of the InfoPoint's dat value
-        self.staticEdge = False       # Static edge means value of the edge nodes is fixed
+        self.name       = name            # Name of the InfoMatrix
+        self.orig       = {'x':0, 'y':0}  # List of origin's coordinates of the InfoMatrix in lambda units
+        self.nodes      = [[]]            # List of rows of complex vectors {InfoPoint}
+        self.nodeKey    = None            # Key of the InfoPoint's dat value
+        self.nodeType   = float           # Type of the InfoPoint's dat value
+        self.staticEdge = False           # Static edge means value of the edge nodes is fixed
         
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
-        self._rows      = 0           # Number of rows in the InfoMatrix
-        self._cols      = 0           # Number of columns in the InfoMatrix
-        self._dx        = 0           # Distance between two points on axis X in lambda units
-        self._dy        = 0           # Distance between two points on axis Y in lambda units
-        self._iterPos   = 0           # Iterator's position in the InfoMatrix
+        self._rows      = 0               # Number of rows in the InfoMatrix
+        self._cols      = 0               # Number of columns in the InfoMatrix
+        self._dx        = 0               # Distance between two points on axis X in lambda units
+        self._dy        = 0               # Distance between two points on axis Y in lambda units
+        self._iterPos   = 0               # Iterator's position in the InfoMatrix
 
         self.journal.O(f"{self.name}.constructor: done")
 
@@ -113,13 +112,12 @@ class InfoMatrix:
         if indent == 0:
             msg.append(f"{indent*_IND}{90*'='}")
             dat['name'       ] = self.name
-            dat['dimensions' ] = self.dims
+            dat['orig'       ] = self.orig
             dat['rows'       ] = self._rows
             dat['cols'       ] = self._cols
             dat['dx'         ] = self._dx
             dat['dy'         ] = self._dy
             dat['count'      ] = self.count()
-            dat['orig'       ] = self.orig
             dat['staticEdge' ] = self.staticEdge
 
         for key, val in dat.items(): msg.append(f"{indent*_IND}{key:<15}: {val}")
@@ -129,8 +127,8 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         for node in self:
 
-            row, col = self.idxByIter(self._iterPos)
-            msg.append(f"Point[{row},{col}] {node.info()}")
+            row, col = self.idxByIter(self._iterPos-1)
+            msg.append(f"Point[{row:2},{col:2}] {node.info()['msg']}")
         
         #----------------------------------------------------------------------
         return {'res':'OK', 'dat':dat, 'msg':msg}
@@ -152,7 +150,6 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         toRet = InfoMatrix(self.journal, name)
 
-        toRet.dims       = self.dims.copy()  # List of dimensions of the InfoMatrix
         toRet.orig       = self.orig.copy()  # List of origin's coordinates of the InfoMatrix 
         toRet.nodes      = [[]]              # List of rows of complex vectors {InfoPoint}
         toRet.nodeKey    = self.nodeKey     # Key of the InfoPoint's dat value
@@ -297,28 +294,32 @@ class InfoMatrix:
         
         self.journal.I(f"{self.name}.reset:")
         
-        self.dims       = ['x', 'y']   # List of dimensions of the InfoMatrix
-        self.orig       = [0, 0]       # List of origin's coordinates of the InfoMatrix 
-        self.nodes      = [[]]         # List of rows of complex vectors {InfoPoint}
-        self.nodeKey    = None         # Key of the InfoPoint's dat value
-        self.nodeType   = float        # Type of the InfoPoint's dat value
-        self.staticEdge = False        # Static edge means value of the edge nodes is fixed        
+        self.orig       = {'x':0, 'y':0}  # List of origin's coordinates of the InfoMatrix 
+        self.nodes      = [[]]            # List of rows of complex vectors {InfoPoint}
+        self.nodeKey    = None            # Key of the InfoPoint's dat value
+        self.nodeType   = float           # Type of the InfoPoint's dat value
+        self.staticEdge = False           # Static edge means value of the edge nodes is fixed        
 
-        self._rows      = 0            # Number of rows in the InfoMatrix
-        self._cols      = 0            # Number of columns in the InfoMatrix
-        self._dx        = 0            # Distance between two points on axis X in lambda units
-        self._dy        = 0            # Distance between two points on axis Y in lambda units
-        self._iterPos   = 0            # Iterator's position in the InfoMatrix
+        self._rows      = 0               # Number of rows in the InfoMatrix
+        self._cols      = 0               # Number of columns in the InfoMatrix
+        self._dx        = 0               # Distance between two points on axis X in lambda units
+        self._dy        = 0               # Distance between two points on axis Y in lambda units
+        self._iterPos   = 0               # Iterator's position in the InfoMatrix
 
         self.journal.O()
         
     #--------------------------------------------------------------------------
-    def gener(self, nRow, nCol, *, val=0, nodeKey='val', nodeType=float, xMin=0, xMax=1, yMin=0, yMax=1, orig=[0, 0]):
+    def gener(self, nRow, nCol, *, val=0, nodeKey='val', nodeType=float, xLen=1, yLen=1, orig={'x':0, 'y':0}):
         "Creates InfoMatrix with respective settings"
         
-        self.journal.I(f"{self.name}.gener: {nRow}*{nCol} nodes ({xMin}...{xMax}) x ({yMin}...{yMax}) from {orig}")
-
+        self.journal.I(f"{self.name}.gener: {nRow}*{nCol} nodes {xLen}*{yLen}) from {orig}")
         self.reset()
+
+        xDim = list(orig.keys()  )[0]
+        xMin = list(orig.values())[0]
+
+        yDim = list(orig.keys()  )[1]
+        yMin = list(orig.values())[1]
 
         #----------------------------------------------------------------------
         # InfoMatrix settings
@@ -326,8 +327,8 @@ class InfoMatrix:
         self.orig      = orig.copy()           # List of origin's coordinates of the InfoMatrix
         self._rows     = nRow                  # Number of rows in the InfoMatrix       
         self._cols     = nCol                  # Number of columns in the InfoMatrix
-        self._dx       = (xMax-xMin)/(nRow-1)  # Distance between two points on axis X in lambda units
-        self._dy       = (yMax-yMin)/(nCol-1)  # Distance between two points on axis Y in lambda units
+        self._dx       = (xLen)/(nRow-1)       # Distance between two points on axis X in lambda units
+        self._dy       = (yLen)/(nCol-1)       # Distance between two points on axis Y in lambda units
         
         self.nodeKey   = nodeKey               # Key of the InfoPoint's dat value
         self.nodeType  = nodeType              # Type of the InfoPoint's dat value
@@ -351,7 +352,7 @@ class InfoMatrix:
                 # Create new InfoPoint at respective position
                 #--------------------------------------------------------------
                 y = yMin + (col * self._dy)
-                p = InfoPoint(pos=[x,y], dat={nodeKey:val})
+                p = InfoPoint(pos={xDim:x, yDim:y}, dat={nodeKey:val})
                 
                 #--------------------------------------------------------------
                 # Append new InfoPoint to the list of nodes
@@ -410,7 +411,7 @@ class InfoMatrix:
     def copyValues(self, src, *, tgtSlice=(0,0,0,0), srcFrom=(0,0)):
         "Copy node's values from srcs to tgts nodes"
         
-        self.journal.I(f"{self.name}.copyValues: from {len(srcs)} nodes to {len(tgts)} nodes")
+        self.journal.I(f"{self.name}.copyValues: From {src.name} starting at {srcFrom} to nodes {tgtSlice}")
 
         #----------------------------------------------------------------------
         # Slice settings
@@ -422,6 +423,8 @@ class InfoMatrix:
         
         srcRowFrom = srcFrom[0]
         srcColFrom = srcFrom[1]
+
+        i = 0
 
         #----------------------------------------------------------------------
         # Target rows from tgtRowFrom to tgtRowTo
@@ -453,45 +456,54 @@ class InfoMatrix:
                 #--------------------------------------------------------------
                 # Copy value from source to target node
                 #--------------------------------------------------------------
-                tgtNode['cP'].c = srcNode['cP'].c
+                tgtNode.dat = srcNode.dat.copy()
+                i += 1
 
-            # Trying retrieve target node
-            if pos < tgtLen:
-                
-                tgtNode = tgts[pos]
-                tgtNode['cP'].c = srcNode['cP'].c
-                pos += 1
-                
-            else:
-                self.journal.M(f"{self.name}.copyValues: WARNING Not enough target nodes", True)
-                break
-                
         #----------------------------------------------------------------------
-        self.journal.O(f"{self.name}.copyValues: Copied {pos} nodes")
-        return pos
+        self.journal.O(f"{self.name}.copyValues: Copied {i} nodes")
+        return self
         
     #--------------------------------------------------------------------------
-    def rndBit(self, prob, srcCut=None):
-        "Sets all InfoPoint values to random bit with respective probability"
+    def applyPointFunction(self, function, par={}, slice=(0,0,0,0)):
+        "Apply respective function for all nodes in slices"
 
-        if srcCut==None: self.cutAll()
-        else           : self.iterCut = srcCut
+        #----------------------------------------------------------------------
+        # Slice settings
+        #----------------------------------------------------------------------
+        rowFrom = slice[0]
+        colFrom = slice[1]
+        rowTo   = slice[2] if slice[2] > 0 else self._rows-1
+        colTo   = slice[3] if slice[3] > 0 else self._cols-1
         
-        for node in self: node['cP'].rndBit(prob)
+        self.journal.I(f"{self.name}.applyPointFunction: {function.__name__}({par}) from [{rowFrom}]:{colFrom}] to [{rowTo}:{colTo}]")
+        i = 0
 
-        self.journal.M(f"{self.name}.rndBit: Nodes in {self.iterCut} with prob={prob}")
-        
-    #--------------------------------------------------------------------------
-    def rndPhase(self, r=1, srcCut=None):
-        "Sets all InfoPoint values to random phase with respective radius"
+        #----------------------------------------------------------------------
+        # rows from rowFrom to rowTo
+        #----------------------------------------------------------------------
+        for row in range(rowFrom, rowTo+1): 
+            
+            #------------------------------------------------------------------
+            # columns from colFrom to colTo
+            #------------------------------------------------------------------
+            for col in range(colFrom, colTo+1):
+                
+                #--------------------------------------------------------------
+                # Get node to apply function
+                #--------------------------------------------------------------
+                node = self.pointByIdx(row, col)
+                if node is None:
+                    self.journal.M(f"{self.name}.applyPointFunction: ERROR Target point[{row},{col}] does not exists", True)
+                    break
 
-        if srcCut==None: self.cutAll()
-        else           : self.iterCut = srcCut
-        
-        for node in self: node['cP'].rndPhase(r)
+                #--------------------------------------------------------------
+                # Apply function to point
+                #--------------------------------------------------------------
+                if function(point=node, par=par): cnt += 1
 
-        self.journal.M(f"{self.name}.rndPhase: Nodes in {self.iterCut} with r={r}")
-        
+        #----------------------------------------------------------------------
+        self.journal.O(f"{self.name}.applyPointFunction: {function.__name__} was applied to {i} nodes")
+
     #--------------------------------------------------------------------------
     def applyRays(self, dimLower, start=0, stop=0, forward=True, torus=False):
         "Apply rays from <dimLower> to next higher dimension"
@@ -955,6 +967,23 @@ class InfoMatrix:
 
 #------------------------------------------------------------------------------
 print('InfoMatrix ver 3.01')
+
+if __name__ == '__main__':
+
+    from   siqolib.journal          import SiqoJournal
+    journal = SiqoJournal('IMatrix component test', debug=3)
+
+    #--------------------------------------------------------------------------
+    # Test of the InfoMatrix class
+    #--------------------------------------------------------------------------
+    journal.M('Test of InfoMatrix class')
+
+    im = InfoMatrix(journal, 'Test matrix')
+    print(im)
+
+    im.gener(nRow=4, nCol=5, val=5, nodeKey='val', nodeType=float, xLen=1, yLen=1, orig={'a':5, 'b':7})
+    print(im)
+     
 
 #==============================================================================
 #                              END OF FILE

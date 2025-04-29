@@ -63,9 +63,7 @@ class InfoPoint:
     def info(self, indent=0):
         "Creates info about this InfoPoint"
         
-        msg = []
-
-        msg.append(f"{indent*_IND}{self.posStr()}: {self.datStr()}\n")
+        msg = (f"{indent*_IND}{self.posStr()}: {self.datStr()}")
 
         return {'res':'OK', 'dat':self.dat, 'msg':msg}
         
