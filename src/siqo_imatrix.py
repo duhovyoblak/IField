@@ -6,7 +6,8 @@ import cmath
 import numpy                 as np
 import random                as rnd
 
-from siqo_ipoint import InfoPoint
+import siqo_ipoint            as ip
+from   siqo_ipoint import InfoPoint
 
 #==============================================================================
 # package's constants
@@ -312,7 +313,7 @@ class InfoMatrix:
     def gener(self, nRow, nCol, *, val=0, nodeKey='val', nodeType=float, xLen=1, yLen=1, orig={'x':0, 'y':0}):
         "Creates InfoMatrix with respective settings"
         
-        self.journal.I(f"{self.name}.gener: {nRow}*{nCol} nodes {xLen}*{yLen}) from {orig}")
+        self.journal.I(f"{self.name}.gener: {nRow}x{nCol} nodes on rect {xLen}x{yLen} from {orig}")
         self.reset()
 
         xDim = list(orig.keys()  )[0]
@@ -475,8 +476,10 @@ class InfoMatrix:
         rowTo   = slice[2] if slice[2] > 0 else self._rows-1
         colTo   = slice[3] if slice[3] > 0 else self._cols-1
         
-        self.journal.I(f"{self.name}.applyPointFunction: {function.__name__}({par}) from [{rowFrom}]:{colFrom}] to [{rowTo}:{colTo}]")
-        i = 0
+        self.journal.I(f"{self.name}.applyPointFunction: {function.__name__}({par}) from [{rowFrom}:{colFrom}] to [{rowTo}:{colTo}]")
+        
+        pts = 0
+        aps = 0
 
         #----------------------------------------------------------------------
         # rows from rowFrom to rowTo
@@ -496,13 +499,16 @@ class InfoMatrix:
                     self.journal.M(f"{self.name}.applyPointFunction: ERROR Target point[{row},{col}] does not exists", True)
                     break
 
+                pts += 1
+
                 #--------------------------------------------------------------
                 # Apply function to point
                 #--------------------------------------------------------------
-                if function(point=node, par=par): cnt += 1
+                if function(point=node, par=par): aps += 1
+                elif aps == (pts-1             ): self.journal.M(f"{self.name}.applyPointFunction: ERROR: function {function.__name__} failed for point[{row},{col}]", True)
 
         #----------------------------------------------------------------------
-        self.journal.O(f"{self.name}.applyPointFunction: {function.__name__} was applied to {i} nodes")
+        self.journal.O(f"{self.name}.applyPointFunction: {function.__name__} was applied to {aps}/{pts} nodes")
 
     #--------------------------------------------------------------------------
     def applyRays(self, dimLower, start=0, stop=0, forward=True, torus=False):
@@ -981,9 +987,11 @@ if __name__ == '__main__':
     im = InfoMatrix(journal, 'Test matrix')
     print(im)
 
-    im.gener(nRow=4, nCol=5, val=5, nodeKey='val', nodeType=float, xLen=1, yLen=1, orig={'a':5, 'b':7})
+    im.gener(nRow=4, nCol=5, val=-5, nodeKey='val', nodeType=float, xLen=1, yLen=1, orig={'a':5, 'b':7})
     print(im)
-     
+
+    im.applyPointFunction(ip.abs, par={'valKey':'val'})
+    print(im)
 
 #==============================================================================
 #                              END OF FILE

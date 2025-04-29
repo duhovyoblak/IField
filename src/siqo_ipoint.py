@@ -267,6 +267,26 @@ class InfoPoint:
         sqrDist = self.distSqrTo(toP)
         return math.sqrt(sqrDist)
     
+#==============================================================================
+# One-Point associated methods
+#------------------------------------------------------------------------------
+def abs(point:InfoPoint, par:dict):
+    "Returns the absolute value of the value on the position valKey"
+
+    #--------------------------------------------------------------------------
+    # Parameters checking
+    #--------------------------------------------------------------------------
+    if 'valKey' in par.keys(): valKey = par['valKey']
+    else:
+        p.journal(f"abs : Error Key '{valKey}' not found in parameters", True)
+        return False 
+    
+    #--------------------------------------------------------------------------
+    # Apply function
+    #--------------------------------------------------------------------------
+    point.dat[valKey] = math.fabs(point.dat[valKey])
+    return True
+ 
 #------------------------------------------------------------------------------
 print('InfoPoint ver 3.01')
 
@@ -281,7 +301,10 @@ if __name__ == '__main__':
     p2 = InfoPoint(pos={'x':1, 'y':1.2}, dat={'a':3, 'b':4.567891234})
     print(p2)
     
-    p3 = InfoPoint(pos={'x':1, 'y':2}, dat={'a':3, 'b':4.567891234, 'c':complex(1,-2.3456789)})
+    p3 = InfoPoint(pos={'x':1, 'y':2}, dat={'a':-3, 'b':4.567891234, 'c':complex(1,-2.3456789)})
+    print(p3)
+
+    abs(p3, par={'valKey':'a'})
     print(p3)
 
 #==============================================================================
