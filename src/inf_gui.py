@@ -1,11 +1,20 @@
 # ==============================================================================
 # Information field class GUI
 # ------------------------------------------------------------------------------
-#
+import os
+import sys
+import time
+
 # ------------------------------------------------------------------------------
 from   inf_tkchart  import InfoChart
 from   tkinter      import ttk
 import tkinter      as tk
+
+#------------------------------------------------------------------------------
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for .py and for exe """
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
 
 # ==============================================================================
 # package's constants
@@ -31,12 +40,11 @@ _BTN_DIS_H = 0.025
 # ==============================================================================
 # class IFieldGui
 # ------------------------------------------------------------------------------
-class IFieldGui():
+class IFieldGui(tk.Tk):
 
     # ==========================================================================
     # Static variables & methods
     # --------------------------------------------------------------------------
-    journal = None   # Pointer to global journal
 
     # ==========================================================================
     # Constructor & utilities
@@ -47,30 +55,325 @@ class IFieldGui():
         self.journal = journal
         self.journal.I('IFieldGui constructor...')
 
+        #----------------------------------------------------------------------
+        # inicializacia tk.Tk
+        #----------------------------------------------------------------------
+        super().__init__()
+
         # ----------------------------------------------------------------------
         # Internal data
         # ----------------------------------------------------------------------
-        self.name = name
-        self.dat  = dat
-        self.time = 0      # Global time, e.g., state of the structure in simulation
+        self.name        = name
+        self.model       = False                          # Model name
+        self.dat         = dat
 
         # ----------------------------------------------------------------------
-        # Initialise main window
+        # State data
         # ----------------------------------------------------------------------
-        self.win = tk.Tk()
+        self.tabSelected    = None                        # Identifikacia vybranej zalozky
+        self.time           = 0                           # Global time, e.g., state of the structure in simulation
+        self.str_time       = tk.StringVar()              # Time in right chart to show in left chart
 
-        self.win.title(self.name)
-        self.win.geometry(_WIN)
-        self.win.resizable(True, True)
+        self.str_status_bar = tk.StringVar(value = '')    # Message in status bar
+        self.str_status_mod = tk.StringVar(value = '')    # Active model
 
-        self.style = ttk.Style(self.win)
-        self.style.theme_use('classic')
+        #----------------------------------------------------------------------
+        # Start GUI
+        #----------------------------------------------------------------------
+        self.journal.M(f"{self.name}.init: Start application")
+        self.show()
 
-        self.str_time = tk.StringVar()   # Time in right chart to show in left chart
+        self.journal.O()
 
-        # ----------------------------------------------------------------------
-        # Staus bar
-        # ----------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+    def closeAdmin(self):
+        "disconnect and close GUI"
+
+        self.destroy()
+
+    #--------------------------------------------------------------------------
+    def show(self):
+
+        self.journal.I(f"{self.name}.show:")
+
+        #----------------------------------------------------------------------
+        # Nastavenia root window
+        #----------------------------------------------------------------------
+        self.geometry('1435x780')
+        self.minsize(1050,500)
+        self.title('Information field')
+        self.icon_path = resource_path('IField.ico')
+        #self.iconbitmap(self.icon_path)
+        self.protocol("WM_DELETE_WINDOW", self.closeGui)
+
+        #----------------------------------------------------------------------
+        # Nastavenia style
+        #----------------------------------------------------------------------
+        self.style = ttk.Style()
+        self.style.theme_use('clam')
+        
+        self.style.configure('Treeview', background='grey98', foreground='black', rowheight=16, fieldbackground='grey',borderwidth=0 )
+        self.style.configure('TNotebook', bordercolor='gray')
+
+        self.style.map('TNotebook.Tab', background=[('selected', 'lightgray')])
+        self.style.map('Treeview', background=[('selected','green')] )
+
+        #----------------------------------------------------------------------
+        # Status bar
+        #----------------------------------------------------------------------
+        self.statusBarShow()
+
+        #----------------------------------------------------------------------
+        # TABS as ttk.Notebook
+        #----------------------------------------------------------------------
+        self.tabSelected = 0
+
+        self.tabs = ttk.Notebook(self, style='TNotebook')
+        self.tabs.pack(expand=True, fill='both')
+        self.tabs.enable_traversal()
+
+        # Vytkreslenie jednotlivych tabs
+        self.tabInfShow()
+
+        self.tabs.bind('<<NotebookTabChanged>>', self.tabChanged)
+        self.tabs.select(self.tabSelected)
+
+        # self binds
+#        self.bind("<F1>"        , lambda x: self.menuHelp())
+#        self.bind('<F5>'        , lambda x: self.refresh())
+#        self.bind("<F12>"       , lambda x: self.menuAbout())
+        self.bind('<Alt-Key-F4>', lambda x: self.closeGui())
+        
+        self.journal.O()
+
+    #--------------------------------------------------------------------------
+    def tabChanged(self, event):
+
+        self.refresh()
+
+    #--------------------------------------------------------------------------
+    def refresh(self):
+
+        #----------------------------------------------------------------------
+        # get selected tab name
+        #----------------------------------------------------------------------
+        selected_tab_name = self.tabs.tab(self.tabs.select(), 'text')
+        self.journal.I(f"{self.name}.refresh: tabSelected = {selected_tab_name}")
+
+        #----------------------------------------------------------------------
+        # Refreshnem aktivny tab v notebooku podla nazvu zalozky
+        #----------------------------------------------------------------------
+        if   selected_tab_name == 'Information'     : self.tabInfRefresh()
+        elif selected_tab_name == 'SpaceTime'       : self.tabSptRefresh()
+
+        #----------------------------------------------------------------------
+        self.journal.O()
+
+    #==========================================================================
+    # Status bar
+    #--------------------------------------------------------------------------
+    def statusBarShow(self):
+
+        self.journal.I(f"{self.name}.statusBarShow:")
+
+        frame_status_bar = tk.Frame(self, relief=tk.RAISED, borderwidth=2, bg='silver')
+        frame_status_bar.pack(side='bottom', anchor='s', fill='x')
+
+        frame_status_bar.columnconfigure(0, weight=1)
+
+        status_bar_txt = tk.Label(frame_status_bar, relief=tk.RAISED, bd=0, textvariable=self.str_status_bar, cursor='hand2',bg='silver', anchor= 'w')
+        status_bar_txt.grid(row = 0, column = 0, sticky = 'we' )
+
+        self.status_bar_mod = tk.Label(frame_status_bar, relief=tk.RAISED, width=20, textvariable=self.str_status_mod, font = "Verdana 10 bold", bg='silver', anchor= 'e')
+        self.status_bar_mod.bind("<Button-1>", lambda x: self.changeModel())
+        self.status_bar_mod.grid(row = 0, column = 1, sticky = 'e' )
+
+        self.journal.O()
+
+    #--------------------------------------------------------------------------
+    def setStatus(self, mess):
+
+        self.journal.M(f"{self.name}.setStatus: {mess}")
+        self.str_status_bar.set(mess)
+
+    #--------------------------------------------------------------------------
+    def changeModel(self):
+
+        self.journal.I(f"{self.name}.changeModel:")
+
+        #----------------------------------------------------------------------
+        # Odpojenie od aktualneho modelu
+        #----------------------------------------------------------------------
+        self.model = False
+
+        #----------------------------------------------------------------------
+        # Nastavenie noveho modelu
+        #----------------------------------------------------------------------
+
+        # Refresh
+        self.setStatus(f'Model changed to {self.model}')
+        self.refresh()
+
+        #----------------------------------------------------------------------
+        self.journal.O()
+        return
+
+    #==========================================================================
+    # Tab Information
+    #--------------------------------------------------------------------------
+    def tabInfShow(self):
+
+        self.journal.I(f"{self.name}.tabInfShow:")
+
+        #----------------------------------------------------------------------
+        # Vytvorim frame a skonfigurujem grid
+        #----------------------------------------------------------------------
+        frm = ttk.Frame(self.tabs)
+        frm.columnconfigure(0, weight=40)
+
+        frm.columnconfigure(1, weight=1)
+        frm.columnconfigure(2, weight=5)
+
+        frm.rowconfigure   (0, weight=1)
+        frm.rowconfigure   (1, weight=1)
+        frm.rowconfigure   (2, weight=1)
+        frm.rowconfigure   (3, weight=1)
+        frm.rowconfigure   (4, weight=1)
+        frm.rowconfigure   (5, weight=1)
+        frm.rowconfigure   (6, weight=1)
+        frm.rowconfigure   (7, weight=1)
+        frm.rowconfigure   (8, weight=1)
+
+        # Vlozim frame do Tabs
+        self.tabs.add(frm,    text='Information'   )
+
+        #----------------------------------------------------------------------
+        # Lavy stlpec - Information evolution
+        #----------------------------------------------------------------------
+        self.stv_srvs = SiqoTreeView(journal=self.journal, name='Services', frame=frm, cursor='hand2')
+        self.stv_srvs.bind('<<SiqoTreeView-DoubleLeftClick>>', self.tabSrvLogRefresh )
+        self.stv_srvs.grid(row=0, column=0, rowspan=4, sticky='nswe')
+
+        self.stv_srvLog = SiqoTreeView(journal=self.journal, name='Service Log (Double-click on Service header above)', frame=frm, cursor='hand2')
+        self.stv_srvLog.grid(row=4, column=0, rowspan=5, sticky='nswe')
+
+        #----------------------------------------------------------------------
+        # Pravy stlpec
+        #----------------------------------------------------------------------
+        lbl_srv = ttk.Label(frm, relief=tk.FLAT, text='I will work with service:' )
+        lbl_srv.grid(row=0, column=2, sticky='ws', padx=_PADX, pady=_PADY)
+
+        self.cb_srv  = ttk.Combobox(frm, textvariable=self.str_srv, width=20)
+        self.cb_srv.grid(row=1, column=2, sticky='wen', padx=_PADX, pady=_PADY)
+
+        sep = ttk.Separator(frm, orient='horizontal')
+        sep.grid(row=2, column=2, columnspan=2, sticky='we')
+
+        #----------------------------------------------------------------------
+        # Btn Service reconnect
+        btn_srv_reconn = ttk.Button(frm, text='Service reconnect', command=self.srvReconn, width=20 )
+        btn_srv_reconn.grid(row=3, column=2, sticky='we', padx=_PADX, pady=_PADY)
+
+        #----------------------------------------------------------------------
+        # Btn Service start
+        btn_srv_start = ttk.Button(frm, text='Service start', command=self.srvStart, width=20)
+        btn_srv_start.grid(row=4, column=2, sticky='we', padx=_PADX, pady=_PADY)
+
+        #----------------------------------------------------------------------
+        # Btn Service stop
+        btn_srv_stop = ttk.Button(frm, text='Service stop', command=self.srvStop, width=20)
+        btn_srv_stop.grid(row=5, column=2, sticky='we', padx=_PADX, pady=_PADY)
+
+        #----------------------------------------------------------------------
+        # Btn Service sessions
+        spin_sess = ttk.Spinbox(frm, from_=1, to=64,  textvariable=self.str_srv_sess, width=5)
+        spin_sess.grid(row=6, column=1, sticky='e', padx=_PADX, pady=_PADY)
+
+        btn_srv_sess = ttk.Button(frm, text='Set max session', command=self.srvSess , width=20)
+        btn_srv_sess.grid(row=6, column=2, sticky='we', padx=_PADX, pady=_PADY)
+
+        self.journal.O()
+
+    #--------------------------------------------------------------------------
+    def tabSrvLogRefresh(self, event=None):
+
+        self.journal.I(f"{self.name}.tabSrvLogRefresh:")
+
+        self.stv_srvLog.clear()
+
+        #----------------------------------------------------------------------
+        # Ziskam selektovanu servisu
+        #----------------------------------------------------------------------
+        val = self.stv_srvs.selected['val']
+
+        #----------------------------------------------------------------------
+        # Ak je selekcia platna, ziskam a zobrazim udaje
+        #----------------------------------------------------------------------
+        if val and (val[0] == '[') and (val[-1] == ']'):
+
+            srv = val[1:-1]
+
+            #------------------------------------------------------------------
+            # Prepare request for Meta Table
+            #------------------------------------------------------------------
+            hours  = int(self.str_last.get()) * 24
+
+            args = {"hours":hours, "who_meta":srv, "ent_sys":srv, "etl_sys":srv}
+            resp = self.apiPost(method="metaTab", args=args)
+
+            self.setStatus(f"Log for service '{srv}' in last {hours} hours was refreshed")
+
+            # dočasna bulharska konštanta, pojde preč po doplneni enginu responsu o WORK_TIME
+            i = 1 if (resp['dat'] and 'WORK_TIME' in resp['dat'][0]) else 0
+            lights = [ {'colId':7+i, 'test':'not starts', 'val':'OK', 'tags':['TableCell', 'RedRow'    ]}
+                      ,{'colId':3+i, 'test':'starts',     'val':'!',  'tags':['TableCell', 'YellowRow' ]}
+                     ]
+
+            self.stv_srvLog.datToTab(resp['dat'], lights=lights)
+
+        self.journal.O()
+
+    #--------------------------------------------------------------------------
+    def tabSrvRefresh(self):
+
+        self.journal.I(f"{self.name}.tabSrvRefresh:")
+
+        self.stv_srvs.clear()
+        self.stv_srvLog.clear()
+
+        #----------------------------------------------------------------------
+        resp = self.apiPost(method="srvsInfo", args={})
+
+        #----------------------------------------------------------------------
+        # Kontrola response
+        #----------------------------------------------------------------------
+        if resp['res'] != 'OK':
+            self.journal.O()
+            return False
+
+        #----------------------------------------------------------------------
+        # Tab Refresh
+        #----------------------------------------------------------------------
+        self.setStatus("Services info was refreshed")
+
+        lights = [ {'key':'initialised', 'test':'is', 'val':False, 'tags':['RedRow'   ]}
+                  ,{'key':'func',        'test':'is', 'val':'N',   'tags':['RedRow'   ]}
+                  ,{'key':'system',      'test':'is', 'val':False, 'tags':['YellowRow']}
+                 ]
+
+        self.stv_srvs.datToTree(resp['dat'], openLvl=0, lights=lights)
+
+        #----------------------------------------------------------------------
+        # Combo box
+        #----------------------------------------------------------------------
+        self.cb_srv['values'] = list(resp['dat'].keys())
+        self.cb_srv.set(self.cb_srv['values'][0])
+
+        self.journal.O()
+        return True
+
+    #--------------------------------------------------------------------------
+    #==========================================================================
 
         # ----------------------------------------------------------------------
         # Right over bar
