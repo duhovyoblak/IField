@@ -202,50 +202,6 @@ class InfoChart(ttk.Frame):
         
         self.journal.I(f'{self.name}.dataChanged: axX={axX}, axY={axY}')
 
-        #----------------------------------------------------------------------
-        # Set actual filter according to user settings
-        #----------------------------------------------------------------------
-        if self.is1D(): self.myCut = self.dat.cutDim(1)
-        else          : self.myCut = self.dat.cutDim(2)
-        
-        self.journal.M(f'{self.name}.dataChanged: cut={self.myCut}')
-
-        #----------------------------------------------------------------------
-        # Get dat = [ {'key':'x1',  'val':np_array},     dim X1
-        #             {'key':'x2',  'val':np_array},     dim X2
-        #                .
-        #                .
-        #             {'key':'val', 'val':[cP]    }      values
-        #           ]
-        #----------------------------------------------------------------------
-        dat = self.dat.getData(cut=self.myCut)
-
-        #----------------------------------------------------------------------
-        # Assign coordinate arrays for Y axis
-        #----------------------------------------------------------------------
-        self.keyY = dat[axY-1]['key']
-        self.Y    = dat[axY-1]['arr']
-        self.journal.M(f'{self.name}.dataChanged: keyY={self.keyY}')
-        
-        #----------------------------------------------------------------------
-        # Assign coordinate arrays for X axis
-        #----------------------------------------------------------------------
-        if self.is1D():
-            self.keyX = 'No dimension'
-            self.X    = np.zeros(len(self.Y))
-            
-        else:
-            self.keyX = dat[axX-1]['key']
-            self.X    = dat[axX-1]['arr']
-
-        self.journal.M(f'{self.name}.dataChanged: keyX={self.keyX}')
-        
-        #----------------------------------------------------------------------
-        # Remember values (list of cP) for this dataset
-        # It is the last item in the dat list
-        #----------------------------------------------------------------------
-        self.CPs = dat[-1]['arr']
-        
         self.journal.O()
         self.show()
         
@@ -321,6 +277,8 @@ class InfoChart(ttk.Frame):
 
         self.journal.I(f'{self.name}.show:')
         
+        self.journal.O()
+        return
         #----------------------------------------------------------------------
         # Assign value array to show as a color array
         #----------------------------------------------------------------------

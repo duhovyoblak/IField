@@ -4,7 +4,8 @@
 from   siqolib.journal          import SiqoJournal
 
 from   inf_gui                  import IFieldGui
-from   siqo_ifield              import InfoField, _LIN, _LOG
+#from   siqo_ifield              import InfoField, _LIN, _LOG
+from   siqo_imatrix             import InfoMatrix
 
 #==============================================================================
 # package's constants
@@ -24,12 +25,10 @@ if __name__ =='__main__':
     journal = SiqoJournal('IField', debug=3)
     journal.I('Main loop')
 
-    dat = InfoField(journal, 'Test field')
+    dat = InfoMatrix(journal, 'Test field')
 
 #    dat.gener(count=200, offMin=0.1, offMax=20, dim=2, spread=_LIN)
 
-    dat.gener ('x', count=400, offMin=0.0, offMax=100, offType=_LIN)
-    dat.extend('y', count=400, offMin=0.1, offMax=100, offType=_LIN)
 #    print(dat)
 #    dat = InfoField.gener(journal, 'Test field', count=200, offMin=0.0, offMax=20, dim=1, spread=_LIN)
 #    dat.extend(count=200, offMin=0.1, offMax=20, spread=_LIN)

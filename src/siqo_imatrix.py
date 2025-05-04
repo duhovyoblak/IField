@@ -291,7 +291,7 @@ class InfoMatrix:
     # Structure modification
     #--------------------------------------------------------------------------
     def reset(self):
-        "Clears all InfoMatrix's data. Count of nodes = 0"
+        "Resets all InfoMatrix's data and destroys all nodes. Count of nodes will be 0"
         
         self.journal.I(f"{self.name}.reset:")
         
@@ -393,19 +393,6 @@ class InfoMatrix:
     #==========================================================================
     # Complex Field Information
     #--------------------------------------------------------------------------
-    def Xamp(self):
-        "Returns amplitude of the node"
-
-        if self.isBase(): return self.objVal
-        else            : return self.objVal.amp()
-
-    #--------------------------------------------------------------------------
-    def Xprob(self):
-        "Returns probability of the amplitude of the node"
-
-        if self.isBase(): return self.objVal * self.objVal.conjugate()
-        else            : return self.objVal.prob()
-
     #==========================================================================
     # Methods application
     #--------------------------------------------------------------------------
@@ -907,51 +894,10 @@ class InfoMatrix:
     # API
     #--------------------------------------------------------------------------
     def getData(self, cut=None):
-        "Returns dict of numpy arrays as a cut from InfoMatrix"
+        "Returns numpy arrays as a cut from InfoMatrix"
     
         self.journal.I(f"{self.name}.getData: cut = {cut}")
     
-        #----------------------------------------------------------------------
-        # Applying cut
-        #----------------------------------------------------------------------
-        if cut is not None: self.iterCut = cut
-        
-        #----------------------------------------------------------------------
-        # Prepare output for respective cut
-        #----------------------------------------------------------------------
-        dimMax = self.dimMax()
-        data     = {}
-        
-        # Prepare all coordinate series
-        for i in range(dimMax): data[f'x{i+1}'] = []
-        
-        # Prepare value series
-        data['val'] = []
-        
-        #----------------------------------------------------------------------
-        # Iterate over cP in field
-        #----------------------------------------------------------------------
-        for node in self:
-            
-            cP = node['cP']
-            
-            # Add X for coordinates
-            i = 0
-            for coor in cP.pos: 
-                data[f'x{i+1}'].append(coor)
-                i += 1
-                
-            # Add values
-            data['val'].append(cP)
-
-        #----------------------------------------------------------------------
-        # Create toRet np-array for coordinates
-        #----------------------------------------------------------------------
-        toRet = []
-        for key, arr in data.items():
-            
-            if key == 'val': toRet.append( {'key':key, 'arr':arr          } )
-            else           : toRet.append( {'key':key, 'arr':np.array(arr)} )
 
         #----------------------------------------------------------------------
         self.journal.O()
