@@ -11,7 +11,8 @@ import random                as rnd
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-
+_NAME     = 'No model defined'
+_FNAME    = 'InfoModel.ifm'
 
 #==============================================================================
 # package's variables
@@ -30,16 +31,17 @@ class InfoModel:
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, journal, name=''):
+    def __init__(self, journal):
         "Calls constructor of InfoModel"
 
         self.journal = journal
-        self.journal.I(f"InfoModel.constructor: {name}")
+        self.journal.I("InfoModel.constructor:")
         
         #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
-        self.name      = name    # FileName of the model
+        self.name      = _NAME            # Name of the model
+        self.fName     = _FNAME           # FileName of the model
         
         self.journal.O(f"{self.name}.constructor: done")
 
@@ -63,6 +65,7 @@ class InfoModel:
         # info o cele strukture
         #----------------------------------------------------------------------
         dat['name'       ] = self.name
+        dat['fName'      ] = self.fName
     
         #----------------------------------------------------------------------
         # info o dimenzii
@@ -115,7 +118,7 @@ class InfoModel:
         return toRet
 
 #------------------------------------------------------------------------------
-print('InfoModel ver 2.03')
+print('InfoModel ver 1.00')
 
 #==============================================================================
 #                              END OF FILE

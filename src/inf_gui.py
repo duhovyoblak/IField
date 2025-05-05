@@ -6,9 +6,11 @@ import sys
 import time
 
 # ------------------------------------------------------------------------------
-from   inf_tkchart  import InfoChart
-from   tkinter      import ttk
-import tkinter      as tk
+import tkinter        as tk
+from   tkinter        import ttk
+
+from   inf_tkchart    import InfoChart
+from   siqo_imodel    import InfoModel
 
 #------------------------------------------------------------------------------
 def resource_path(relative_path):
@@ -49,7 +51,7 @@ class IFieldGui(tk.Tk):
     # ==========================================================================
     # Constructor & utilities
     # --------------------------------------------------------------------------
-    def __init__(self, journal, name, model=None):
+    def __init__(self, journal, name):
         "Create and show GUI for Information field"
 
         self.journal = journal
@@ -64,7 +66,7 @@ class IFieldGui(tk.Tk):
         # Internal data
         # ----------------------------------------------------------------------
         self.name        = name                           # Name of the GUI
-        self.model       = None                           # Model name
+        self.model       = InfoModel(journal)             # Model object
 
         # ----------------------------------------------------------------------
         # State data
@@ -481,7 +483,8 @@ class IFieldGui(tk.Tk):
 
 
 # ------------------------------------------------------------------------------
-print('Information field class GUI ver 0.30')
+print('Information field class GUI ver 1.00')
+
 # ==============================================================================
 #                              END OF FILE
 # ------------------------------------------------------------------------------

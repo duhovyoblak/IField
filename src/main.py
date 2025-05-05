@@ -40,7 +40,7 @@ if __name__ =='__main__':
     
     # Vytvorim GUI
     journal.setDepth(3)
-    gui = IFieldGui(journal, name='IField GUI', model=None)
+    gui = IFieldGui(journal, name='IField GUI')
     gui.mainloop()
     
     journal.O('Main end')
