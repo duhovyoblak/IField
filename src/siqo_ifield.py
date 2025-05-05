@@ -6,7 +6,7 @@ import cmath
 import numpy                 as np
 import random                as rnd
 
-from siqo_cpoint import ComplexPoint
+#from siqo_cpoint import ComplexPoint
 
 #==============================================================================
 # package's constants

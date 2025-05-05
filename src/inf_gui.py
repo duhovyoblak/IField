@@ -49,7 +49,7 @@ class IFieldGui(tk.Tk):
     # ==========================================================================
     # Constructor & utilities
     # --------------------------------------------------------------------------
-    def __init__(self, journal, name, dat):
+    def __init__(self, journal, name, model=None):
         "Create and show GUI for Information field"
 
         self.journal = journal
@@ -63,9 +63,8 @@ class IFieldGui(tk.Tk):
         # ----------------------------------------------------------------------
         # Internal data
         # ----------------------------------------------------------------------
-        self.name        = name
-        self.model       = False                          # Model name
-        self.dat         = dat
+        self.name        = name                           # Name of the GUI
+        self.model       = None                           # Model name
 
         # ----------------------------------------------------------------------
         # State data
@@ -86,7 +85,7 @@ class IFieldGui(tk.Tk):
         self.journal.O()
 
     #--------------------------------------------------------------------------
-    def closeAdmin(self):
+    def closeGui(self):
         "disconnect and close GUI"
 
         self.destroy()
@@ -134,6 +133,7 @@ class IFieldGui(tk.Tk):
 
         # Vytkreslenie jednotlivych tabs
         self.tabInfShow()
+        self.tabSptShow()
 
         self.tabs.bind('<<NotebookTabChanged>>', self.tabChanged)
         self.tabs.select(self.tabSelected)
@@ -250,12 +250,12 @@ class IFieldGui(tk.Tk):
         #----------------------------------------------------------------------
         # Lavy stlpec - Information evolution
         #----------------------------------------------------------------------
-        self.stv_srvs = SiqoTreeView(journal=self.journal, name='Services', frame=frm, cursor='hand2')
-        self.stv_srvs.bind('<<SiqoTreeView-DoubleLeftClick>>', self.tabSrvLogRefresh )
-        self.stv_srvs.grid(row=0, column=0, rowspan=4, sticky='nswe')
+#        self.stv_srvs = SiqoTreeView(journal=self.journal, name='Services', frame=frm, cursor='hand2')
+#        self.stv_srvs.bind('<<SiqoTreeView-DoubleLeftClick>>', self.tabSrvLogRefresh )
+#        self.stv_srvs.grid(row=0, column=0, rowspan=4, sticky='nswe')
 
-        self.stv_srvLog = SiqoTreeView(journal=self.journal, name='Service Log (Double-click on Service header above)', frame=frm, cursor='hand2')
-        self.stv_srvLog.grid(row=4, column=0, rowspan=5, sticky='nswe')
+#        self.stv_srvLog = SiqoTreeView(journal=self.journal, name='Service Log (Double-click on Service header above)', frame=frm, cursor='hand2')
+#        self.stv_srvLog.grid(row=4, column=0, rowspan=5, sticky='nswe')
 
         #----------------------------------------------------------------------
         # Pravy stlpec
@@ -263,111 +263,74 @@ class IFieldGui(tk.Tk):
         lbl_srv = ttk.Label(frm, relief=tk.FLAT, text='I will work with service:' )
         lbl_srv.grid(row=0, column=2, sticky='ws', padx=_PADX, pady=_PADY)
 
-        self.cb_srv  = ttk.Combobox(frm, textvariable=self.str_srv, width=20)
-        self.cb_srv.grid(row=1, column=2, sticky='wen', padx=_PADX, pady=_PADY)
 
         sep = ttk.Separator(frm, orient='horizontal')
         sep.grid(row=2, column=2, columnspan=2, sticky='we')
 
-        #----------------------------------------------------------------------
-        # Btn Service reconnect
-        btn_srv_reconn = ttk.Button(frm, text='Service reconnect', command=self.srvReconn, width=20 )
-        btn_srv_reconn.grid(row=3, column=2, sticky='we', padx=_PADX, pady=_PADY)
-
-        #----------------------------------------------------------------------
-        # Btn Service start
-        btn_srv_start = ttk.Button(frm, text='Service start', command=self.srvStart, width=20)
-        btn_srv_start.grid(row=4, column=2, sticky='we', padx=_PADX, pady=_PADY)
-
-        #----------------------------------------------------------------------
-        # Btn Service stop
-        btn_srv_stop = ttk.Button(frm, text='Service stop', command=self.srvStop, width=20)
-        btn_srv_stop.grid(row=5, column=2, sticky='we', padx=_PADX, pady=_PADY)
-
-        #----------------------------------------------------------------------
-        # Btn Service sessions
-        spin_sess = ttk.Spinbox(frm, from_=1, to=64,  textvariable=self.str_srv_sess, width=5)
-        spin_sess.grid(row=6, column=1, sticky='e', padx=_PADX, pady=_PADY)
-
-        btn_srv_sess = ttk.Button(frm, text='Set max session', command=self.srvSess , width=20)
-        btn_srv_sess.grid(row=6, column=2, sticky='we', padx=_PADX, pady=_PADY)
 
         self.journal.O()
 
     #--------------------------------------------------------------------------
-    def tabSrvLogRefresh(self, event=None):
+    def tabInfRefresh(self, event=None):
 
-        self.journal.I(f"{self.name}.tabSrvLogRefresh:")
+        self.journal.I(f"{self.name}.tabInfRefresh:")
 
-        self.stv_srvLog.clear()
+
+
+        self.journal.O()
+
+    #==========================================================================
+    # Tab SpaceTime
+    #--------------------------------------------------------------------------
+    def tabSptShow(self):
+
+        self.journal.I(f"{self.name}.tabSptShow:")
 
         #----------------------------------------------------------------------
-        # Ziskam selektovanu servisu
+        # Vytvorim frame a skonfigurujem grid
         #----------------------------------------------------------------------
-        val = self.stv_srvs.selected['val']
+        frm = ttk.Frame(self.tabs)
+        frm.columnconfigure(0, weight=40)
+
+        frm.columnconfigure(1, weight=1)
+        frm.columnconfigure(2, weight=5)
+
+        frm.rowconfigure   (0, weight=1)
+        frm.rowconfigure   (1, weight=1)
+        frm.rowconfigure   (2, weight=1)
+        frm.rowconfigure   (3, weight=1)
+        frm.rowconfigure   (4, weight=1)
+        frm.rowconfigure   (5, weight=1)
+        frm.rowconfigure   (6, weight=1)
+        frm.rowconfigure   (7, weight=1)
+        frm.rowconfigure   (8, weight=1)
+
+        # Vlozim frame do Tabs
+        self.tabs.add(frm,    text='SpaceTime'   )
 
         #----------------------------------------------------------------------
-        # Ak je selekcia platna, ziskam a zobrazim udaje
+        # Lavy stlpec - Information evolution
         #----------------------------------------------------------------------
-        if val and (val[0] == '[') and (val[-1] == ']'):
+#        self.stv_srvs = SiqoTreeView(journal=self.journal, name='Services', frame=frm, cursor='hand2')
+#        self.stv_srvs.bind('<<SiqoTreeView-DoubleLeftClick>>', self.tabSrvLogRefresh )
+#        self.stv_srvs.grid(row=0, column=0, rowspan=4, sticky='nswe')
 
-            srv = val[1:-1]
+#        self.stv_srvLog = SiqoTreeView(journal=self.journal, name='Service Log (Double-click on Service header above)', frame=frm, cursor='hand2')
+#        self.stv_srvLog.grid(row=4, column=0, rowspan=5, sticky='nswe')
 
-            #------------------------------------------------------------------
-            # Prepare request for Meta Table
-            #------------------------------------------------------------------
-            hours  = int(self.str_last.get()) * 24
+        #----------------------------------------------------------------------
+        # Pravy stlpec
+        #----------------------------------------------------------------------
 
-            args = {"hours":hours, "who_meta":srv, "ent_sys":srv, "etl_sys":srv}
-            resp = self.apiPost(method="metaTab", args=args)
 
-            self.setStatus(f"Log for service '{srv}' in last {hours} hours was refreshed")
-
-            # dočasna bulharska konštanta, pojde preč po doplneni enginu responsu o WORK_TIME
-            i = 1 if (resp['dat'] and 'WORK_TIME' in resp['dat'][0]) else 0
-            lights = [ {'colId':7+i, 'test':'not starts', 'val':'OK', 'tags':['TableCell', 'RedRow'    ]}
-                      ,{'colId':3+i, 'test':'starts',     'val':'!',  'tags':['TableCell', 'YellowRow' ]}
-                     ]
-
-            self.stv_srvLog.datToTab(resp['dat'], lights=lights)
 
         self.journal.O()
 
     #--------------------------------------------------------------------------
-    def tabSrvRefresh(self):
+    def tabSptRefresh(self):
 
-        self.journal.I(f"{self.name}.tabSrvRefresh:")
+        self.journal.I(f"{self.name}.tabSptRefresh:")
 
-        self.stv_srvs.clear()
-        self.stv_srvLog.clear()
-
-        #----------------------------------------------------------------------
-        resp = self.apiPost(method="srvsInfo", args={})
-
-        #----------------------------------------------------------------------
-        # Kontrola response
-        #----------------------------------------------------------------------
-        if resp['res'] != 'OK':
-            self.journal.O()
-            return False
-
-        #----------------------------------------------------------------------
-        # Tab Refresh
-        #----------------------------------------------------------------------
-        self.setStatus("Services info was refreshed")
-
-        lights = [ {'key':'initialised', 'test':'is', 'val':False, 'tags':['RedRow'   ]}
-                  ,{'key':'func',        'test':'is', 'val':'N',   'tags':['RedRow'   ]}
-                  ,{'key':'system',      'test':'is', 'val':False, 'tags':['YellowRow']}
-                 ]
-
-        self.stv_srvs.datToTree(resp['dat'], openLvl=0, lights=lights)
-
-        #----------------------------------------------------------------------
-        # Combo box
-        #----------------------------------------------------------------------
-        self.cb_srv['values'] = list(resp['dat'].keys())
-        self.cb_srv.set(self.cb_srv['values'][0])
 
         self.journal.O()
         return True
@@ -514,16 +477,6 @@ class IFieldGui(tk.Tk):
     # ==========================================================================
     # GUI methods
     # --------------------------------------------------------------------------
-    def show(self):
-        "Show Information field "
-
-        self.journal.I(f'IFieldGui{self.name}.show')
-
-        self.left.show()
-        self.right.show()
-
-        self.journal.O(f'IFieldGui {self.name}.show done')
-
     # --------------------------------------------------------------------------
 
 

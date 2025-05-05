@@ -25,7 +25,7 @@ if __name__ =='__main__':
     journal = SiqoJournal('IField', debug=3)
     journal.I('Main loop')
 
-    dat = InfoMatrix(journal, 'Test field')
+#    dat = InfoMatrix(journal, 'Test field')
 
 #    dat.gener(count=200, offMin=0.1, offMax=20, dim=2, spread=_LIN)
 
@@ -40,7 +40,8 @@ if __name__ =='__main__':
     
     # Vytvorim GUI
     journal.setDepth(3)
-    gui = IFieldGui(journal, name='IField GUI', dat=dat)
+    gui = IFieldGui(journal, name='IField GUI', model=None)
+    gui.mainloop()
     
     journal.O('Main end')
     
