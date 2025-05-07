@@ -71,9 +71,7 @@ class InfoModel:
         # info o dimenzii
         #----------------------------------------------------------------------
         msg.append(f"{90*'-'}")
-        
-
-        for key, val in dat.items(): msg.append("{}{:<15}: {}".format(indent*_IND, key, val))
+        for key, val in dat.items(): msg.append("{key}{:<15}: {val}")
 
         #----------------------------------------------------------------------
         # info

@@ -75,8 +75,8 @@ class IFieldGui(tk.Tk):
         self.time           = 0                           # Global time, e.g., state of the structure in simulation
         self.str_time       = tk.StringVar()              # Time in right chart to show in left chart
 
-        self.str_status_bar = tk.StringVar(value = '')    # Message in status bar
-        self.str_status_mod = tk.StringVar(value = '')    # Active model
+        self.str_status_msg = tk.StringVar(value='')              # Message in status bar
+        self.str_status_mod = tk.StringVar(value=self.model.name) # Active model
 
         #----------------------------------------------------------------------
         # Start GUI
@@ -180,23 +180,22 @@ class IFieldGui(tk.Tk):
 
         frame_status_bar = tk.Frame(self, relief=tk.RAISED, borderwidth=2, bg='silver')
         frame_status_bar.pack(side='bottom', anchor='s', fill='x')
-
         frame_status_bar.columnconfigure(0, weight=1)
 
-        status_bar_txt = tk.Label(frame_status_bar, relief=tk.RAISED, bd=0, textvariable=self.str_status_bar, cursor='hand2',bg='silver', anchor= 'w')
-        status_bar_txt.grid(row = 0, column = 0, sticky = 'we' )
+        status_bar_msg = tk.Label(frame_status_bar, relief=tk.RAISED, bd=0,     textvariable=self.str_status_msg, bg='silver', anchor= 'w')
+        status_bar_msg.grid(row = 0, column = 0, sticky = 'we' )
 
-        self.status_bar_mod = tk.Label(frame_status_bar, relief=tk.RAISED, width=20, textvariable=self.str_status_mod, font = "Verdana 10 bold", bg='silver', anchor= 'e')
-        self.status_bar_mod.bind("<Button-1>", lambda x: self.changeModel())
-        self.status_bar_mod.grid(row = 0, column = 1, sticky = 'e' )
+        status_bar_mod = tk.Label(frame_status_bar, relief=tk.RAISED, width=20, textvariable=self.str_status_mod, cursor="hand2", font = "Verdana 10 bold", bg='silver', anchor= 'e')
+        status_bar_mod.grid(row = 0, column = 1, sticky = 'e' )
+        status_bar_mod.bind("<Button-1>", lambda x: self.changeModel())
 
         self.journal.O()
 
     #--------------------------------------------------------------------------
-    def setStatus(self, mess):
+    def setStatus(self, msg):
 
-        self.journal.M(f"{self.name}.setStatus: {mess}")
-        self.str_status_bar.set(mess)
+        self.journal.M(f"{self.name}.setStatus: {msg}")
+        self.str_status_msg.set(msg)
 
     #--------------------------------------------------------------------------
     def changeModel(self):
@@ -206,14 +205,15 @@ class IFieldGui(tk.Tk):
         #----------------------------------------------------------------------
         # Odpojenie od aktualneho modelu
         #----------------------------------------------------------------------
-        self.model = False
+
+
 
         #----------------------------------------------------------------------
         # Nastavenie noveho modelu
         #----------------------------------------------------------------------
 
         # Refresh
-        self.setStatus(f'Model changed to {self.model}')
+        self.setStatus(f'Model changed to {self.model.name}')
         self.refresh()
 
         #----------------------------------------------------------------------
