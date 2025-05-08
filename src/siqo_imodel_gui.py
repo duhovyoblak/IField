@@ -120,6 +120,46 @@ class InfoModelGui:
 #------------------------------------------------------------------------------
 print('SIQO InfoModelGui library ver 1.00')
 
+if __name__ == '__main__':
+
+    from   siqolib.journal          import SiqoJournal
+    journal = SiqoJournal('IModelGui component test', debug=4)
+
+    #--------------------------------------------------------------------------
+    # Test of the InfoModelGui class
+    #--------------------------------------------------------------------------
+    journal.I('Test of InfoMatrix class')
+
+
+
+
+
+    win = tk.Toplevel(bg='silver',highlightthickness=2,highlightcolor='green')
+    win.title('Import Json metadata')
+
+    win.maxsize(width=1200, height=800)
+    win.minsize(width=600, height=300)
+    win.config(highlightbackground = "green", highlightcolor= "green")
+    #win.bind('<Escape>', close_popup)
+    win.focus()
+    win.grab_set()
+
+    modelGui = InfoModelGui(journal, parent=win)
+
+    btn_load = tk.Button(win, text = 'Load'        , width=10, command = modelGui.load)
+
+    #grid
+    tk.Grid.columnconfigure(win, 1, weight=1)
+    tk.Grid.rowconfigure(win, 2, weight=1)
+
+    btn_load.grid(row=1, column=0, sticky='nw', padx=5, pady=5)
+
+    win.mainloop()
+
+    journal.O()
+
+
+
 #==============================================================================
 #                              END OF FILE
 #------------------------------------------------------------------------------
