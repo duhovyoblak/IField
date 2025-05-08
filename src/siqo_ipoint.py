@@ -26,7 +26,8 @@ class InfoPoint:
     #==========================================================================
     # Static variables & methods
     #--------------------------------------------------------------------------
-    _journal = None                # Journal for logging
+    _journal = None                       # Journal for logging
+    _schema  = {'axes':{}, 'vals':{}}     # Schema for InfoPoint
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -42,14 +43,44 @@ class InfoPoint:
         if InfoPoint._journal is not None:
             InfoPoint._journal.M(msg, force)
 
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def setAxe(key, name):
+        "Sets axe key and name"
+        
+        InfoPoint._schema['axes'][key] = name
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def setVal(key, name):
+        "Sets value key and name"
+        
+        InfoPoint._schema['vals'][key] = name
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def getAxes():
+        "Returns axes keys and names"
+        
+        return InfoPoint._schema['axes'].copy()
+    
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def getVals():
+        "Returns values keys and names"
+        
+        return InfoPoint._schema['vals'].copy()  
+
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, *, pos={}, dat={}):
+    def __init__(self, *, pos=None, dat=None):
         "Calls constructor of InfoPoint on respective position"
         
-        self.pos = pos         # Dict of real numbers for position coordinates
-        self.dat = dat         # Dict of values of this InfoPoint
+        self._pos = {}   # Dict of real numbers for position coordinates {'row':5, 'col':6, ...} defined by schema
+        self._dat = {}   # Dict of values of this InfoPoint defined by schema
+
+        self.set(pos=pos, dat=dat)
 
     #--------------------------------------------------------------------------
     def __str__(self):
@@ -65,13 +96,14 @@ class InfoPoint:
         
         msg = (f"{indent*_IND}{self.posStr()}: {self.datStr()}")
 
-        return {'res':'OK', 'dat':self.dat, 'msg':msg}
+        return {'res':'OK', 'dat':self._dat, 'msg':msg}
         
     #--------------------------------------------------------------------------
     def format(self, val):
         "Creates string representation of the value for respective format settings"
 
-        if   type(val) == int    : toRet = f"{val:#{_F_TOTAL}}"
+        if   val is None         : toRet = 'None'.ljust(_F_TOTAL)
+        elif type(val) == int    : toRet = f"{val:#{_F_TOTAL}}"
         elif type(val) == float  : toRet = f"{val:#{_F_TOTAL}.{_F_DECIM}f}"
         elif type(val) == complex: toRet = f"({val.real:#{_F_TOTAL}.{_F_DECIM}f} {val.imag:#{_F_TOTAL}.{_F_DECIM}f}j)"
         else                     : toRet = f"{val:<{_F_TOTAL}}"
@@ -85,12 +117,18 @@ class InfoPoint:
         toRet = '['
         
         i = 0
-        for key, val in self.pos.items():
-            
-            if i == 0: toRet +=  f"{key}={self.format(val)}"
-            else     : toRet += f"|{key}={self.format(val)}"
-            i += 1
+        for axe, axeName in InfoPoint._schema['axes'].items():
 
+            if axe in self._pos.keys(): val = self._pos[axe]
+            else                      : val = None
+
+            #----------------------------------------------------------------------
+            # Create string representation of the position of this InfoPoint
+            #----------------------------------------------------------------------
+            if i == 0: toRet +=  f"{axeName}={self.format(val)}"
+            else     : toRet += f"|{axeName}={self.format(val)}"
+            i += 1
+ 
         toRet += ']'
         return toRet
     
@@ -101,10 +139,16 @@ class InfoPoint:
         toRet = '{'
         
         i = 0
-        for key, val in self.dat.items():
+        for valKey, valName in InfoPoint._schema['vals'].items():
+            
+            if valKey in self._dat.keys(): val = self._dat[valKey]
+            else                         : val = None
 
-            if i == 0: toRet +=  f"{key}={self.format(val)}"
-            else     : toRet += f"|{key}={self.format(val)}"
+            #----------------------------------------------------------------------
+            # Create string representation of the data of this InfoPoint
+            #----------------------------------------------------------------------
+            if i == 0: toRet +=  f"{valKey}={self.format(val)}"
+            else     : toRet += f"|{valKey}={self.format(val)}"
             i += 1  
 
         toRet += '}'
@@ -116,13 +160,47 @@ class InfoPoint:
 
         toRet = InfoPoint()
 
-        toRet.pos = self.pos.copy()
-        toRet.dat = self.dat.copy()
+        toRet._pos = self._pos.copy()
+        toRet._dat = self._dat.copy()
 
         return toRet
         
     #==========================================================================
     # Dat Value modification
+    #--------------------------------------------------------------------------
+    def set(self, *, pos=None, dat=None):
+        "Sets position and data of this InfoPoint"
+        
+        #----------------------------------------------------------------------
+        # Set position of this InfoPoint
+        #----------------------------------------------------------------------
+        if pos is not None:
+
+            try:
+                for key in InfoPoint._schema['axes'].keys():
+                    self._pos[key] = pos[key]
+
+            except KeyError:
+                self.journal(f"InfoPoint.set: Key '{key}' not found in position {pos} ERROR", True)
+                return False
+            
+        #----------------------------------------------------------------------
+        # Set values of this InfoPoint
+        #----------------------------------------------------------------------
+        if dat is not None:
+
+            for key, val in dat.items():
+
+                if key in InfoPoint._schema['vals'].keys():
+                    self._dat[key] = val    
+
+                else:
+                    self.journal(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema['vals']}", True)
+                    return False
+                
+        #----------------------------------------------------------------------
+        return True
+    
     #--------------------------------------------------------------------------
     def clear(self, *, dat={}):
         "Sets complex number to default value and clears state variables"
@@ -276,15 +354,15 @@ def abs(point:InfoPoint, par:dict):
     #--------------------------------------------------------------------------
     # Parameters checking
     #--------------------------------------------------------------------------
-    if 'valKey' in par.keys(): valKey = par['valKey']
+    if 'key' in par.keys(): key = par['key']
     else:
-        p.journal(f"abs : Error Key '{valKey}' not found in parameters", True)
+        point.journal(f"abs(InfoPoint): Key '{key}' is not found in parameters", True)
         return False 
     
     #--------------------------------------------------------------------------
     # Apply function
     #--------------------------------------------------------------------------
-    point.dat[valKey] = math.fabs(point.dat[valKey])
+    point._dat[key] = math.fabs(point._dat[key])
     return True
  
 #------------------------------------------------------------------------------
@@ -292,20 +370,32 @@ print('InfoPoint ver 3.01')
 
 if __name__ == '__main__':
 
+    from   siqolib.journal          import SiqoJournal
+    journal = SiqoJournal('InfoPoint component test', debug=3)
+
+    journal.I('InfoPoint test')
+
+    InfoPoint.setJournal(journal)
+
+    InfoPoint.setAxe('x', 'os X')    
+    InfoPoint.setAxe('y', 'os Y')    
+    InfoPoint.setVal('m', 'hmotnost')
+    InfoPoint.setVal('v', 'rychlost')
+
     print('Test of InfoPoint class')
-    print('_IND      =', _IND) 
+    print('_IND      =', _IND)
+    print('schema    =', InfoPoint._schema)
+    print('axes      =', InfoPoint.getAxes())   
+    print('vals      =', InfoPoint.getVals()) 
 
     p1 = InfoPoint()
     print(p1)
 
-    p2 = InfoPoint(pos={'x':1, 'y':1.2}, dat={'a':3, 'b':4.567891234})
+    p2 = InfoPoint(pos={'x':1, 'y':1.2}, dat={'m':3, 'v':-4.567891234})
     print(p2)
     
-    p3 = InfoPoint(pos={'x':1, 'y':2}, dat={'a':-3, 'b':4.567891234, 'c':complex(1,-2.3456789)})
-    print(p3)
-
-    abs(p3, par={'valKey':'a'})
-    print(p3)
+    abs(p2, par={'key':'v'})
+    print(p2)
 
 #==============================================================================
 #                              END OF FILE
