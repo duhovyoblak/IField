@@ -28,15 +28,15 @@ _PADY           = 5
 #------------------------------------------------------------------------------
 
 #==============================================================================
-# Class InfoChart
+# Class InfoMarixGui
 #------------------------------------------------------------------------------
-class InfoChart(ttk.Frame):
+class InfoMarixGui(ttk.Frame):
     
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, journal, name, container, dat, **kwargs):
-        "Call constructor of InfoChart and initialise it for respective data"
+        "Call constructor of InfoMarixGui and initialise it for respective data"
 
         journal.I(f'{name}.init:')
 
@@ -412,7 +412,42 @@ class InfoChart(ttk.Frame):
 #==============================================================================
 #   Inicializacia kniznice
 #------------------------------------------------------------------------------
-print('SIQO InfoChart library ver 1.01')
+print('SIQO InfoMarixGui library ver 1.01')
+
+if __name__ == '__main__':
+
+    from   siqolib.journal          import SiqoJournal
+    from   siqo_imatrix             import InfoMatrix
+
+    journal = SiqoJournal('InfoMarixGui component test', debug=4)
+
+    #--------------------------------------------------------------------------
+    # Test of the InfoMarixGui class
+    #--------------------------------------------------------------------------
+    journal.I('Test of InfoMarixGui class')
+
+    win = tk.Tk()
+    win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
+    win.title('Test of InfoModelGui class')
+    win.maxsize(width=1200, height=800)
+    win.minsize(width=600, height=300)
+    win.config(highlightbackground = "green", highlightcolor= "green")
+
+    #tk.Grid.columnconfigure(win, 1, weight=1)
+    #tk.Grid.rowconfigure   (win, 2, weight=1)
+
+    #--------------------------------------------------------------------------
+    # Zaciatok testu 
+    #--------------------------------------------------------------------------
+    matrix = InfoMatrix(journal, 'Test field')
+    matrix.gener(nRow=4, nCol=5, val=-5, nodeKey='val', nodeType=float, xLen=1, yLen=1, orig={'a':5, 'b':7})
+
+    matrixGui = InfoMarixGui(journal, name='Test of InfoModelGui class', container=win, dat=matrix)
+    matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
+
+    win.mainloop()
+
+    journal.O()
 
 #==============================================================================
 #                              END OF FILE

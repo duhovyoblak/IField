@@ -9,7 +9,7 @@ import time
 import tkinter        as tk
 from   tkinter        import ttk
 
-from   inf_tkchart    import InfoChart
+from   siqo_imatrix_gui    import InfoMarixGui
 from   siqo_imodel    import InfoModel
 
 #------------------------------------------------------------------------------
@@ -378,14 +378,14 @@ class IFieldGui(tk.Tk):
 
         # ----------------------------------------------------------------------
         # Left Chart
-        self.left = InfoChart(self.journal, 'Left IField visualisation',
+        self.left = InfoMarixGui(self.journal, 'Left IField visualisation',
                               container=self.win, dat=dat, axX='0', axY='1', val='re')
         self.left.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
         self.pnw.add(self.left)
 
         # ----------------------------------------------------------------------
         # Right chart
-        self.right = InfoChart(self.journal, 'Right IField visualisation',
+        self.right = InfoMarixGui(self.journal, 'Right IField visualisation',
                                container=self.win, dat=dat, axX='2', axY='1', val='re')
         self.right.pack(fill=tk.BOTH, expand=True, side=tk.RIGHT)
         self.pnw.add(self.right)

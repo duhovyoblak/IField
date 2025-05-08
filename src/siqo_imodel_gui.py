@@ -36,7 +36,7 @@ class InfoModelGui:
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, journal, parent):
-        "Call constructor of InfoChart and initialise it for respective data"
+        "Call constructor of InfoMarixGui and initialise it for respective data"
 
         journal.I('InfoModelGui.init:')
 
@@ -74,7 +74,7 @@ class InfoModelGui:
 
         self.journal.I(f"{self.model.name}.load:")
 
-        fileName = filedialog.askopenfilename(parent=self.parent, title='Select IMF file', initialdir=self.importDir, 
+        fileName = filedialog.askopenfilename(parent=self.parent, title='Select IMF file', initialdir=self.cwd, 
                                               filetypes=(('IModel files', '*.imf'), ('All files', '*.*')) )
 
         if not fileName:
@@ -128,29 +128,28 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Test of the InfoModelGui class
     #--------------------------------------------------------------------------
-    journal.I('Test of InfoMatrix class')
+    journal.I('Test of InfoModelGui class')
 
-
-
-
-
-    win = tk.Toplevel(bg='silver',highlightthickness=2,highlightcolor='green')
-    win.title('Import Json metadata')
-
+    win = tk.Tk()
+    win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
+    win.title('Test of InfoModelGui class')
     win.maxsize(width=1200, height=800)
     win.minsize(width=600, height=300)
     win.config(highlightbackground = "green", highlightcolor= "green")
-    #win.bind('<Escape>', close_popup)
-    win.focus()
-    win.grab_set()
 
+    tk.Grid.columnconfigure(win, 1, weight=1)
+    tk.Grid.rowconfigure   (win, 2, weight=1)
+
+    #--------------------------------------------------------------------------
+    # Zaciatok testu IModelGui
+    #--------------------------------------------------------------------------
     modelGui = InfoModelGui(journal, parent=win)
 
-    btn_load = tk.Button(win, text = 'Load'        , width=10, command = modelGui.load)
+    btn_load = tk.Button(win, text = 'Load model', width=10, command = modelGui.load)
 
+    #--------------------------------------------------------------------------
     #grid
-    tk.Grid.columnconfigure(win, 1, weight=1)
-    tk.Grid.rowconfigure(win, 2, weight=1)
+    #--------------------------------------------------------------------------
 
     btn_load.grid(row=1, column=0, sticky='nw', padx=5, pady=5)
 
