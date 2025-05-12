@@ -45,6 +45,13 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
+    def clearSchema():
+        "Clears schema of InfoPoint"
+        
+        InfoPoint._schema = {'axes':{}, 'vals':{}}
+
+    #--------------------------------------------------------------------------
+    @staticmethod
     def setAxe(key, name):
         "Sets axe key and name"
         
@@ -165,6 +172,33 @@ class InfoPoint:
 
         return toRet
         
+    #==========================================================================
+    # Dat Value retrieval
+    #--------------------------------------------------------------------------
+    def get(self, key:str=None):
+        "Returns value of this InfoPoint for respective key"
+        
+        #----------------------------------------------------------------------
+        # Return all values of this InfoPoint for key is None
+        #----------------------------------------------------------------------
+        if key is None:
+            toRet = {}
+            for key in InfoPoint._schema['vals'].keys():
+                toRet[key] = self._dat[key].copy()
+            return toRet
+
+        #----------------------------------------------------------------------
+        # Key check
+        #----------------------------------------------------------------------
+        if key not in InfoPoint._schema['vals'].keys():
+            self.journal(f"InfoPoint.get: Key '{key}' not found in values {InfoPoint._schema['vals']}", True)
+            return None
+
+        #----------------------------------------------------------------------
+        # Return value of this InfoPoint for respective key
+        #----------------------------------------------------------------------
+        return self._dat[key].copy()
+
     #==========================================================================
     # Dat Value modification
     #--------------------------------------------------------------------------
@@ -348,17 +382,16 @@ class InfoPoint:
 #==============================================================================
 # One-Point associated methods
 #------------------------------------------------------------------------------
-def abs(point:InfoPoint, par:dict):
+def abs(point:InfoPoint, key:str, par:dict=None):
     "Returns the absolute value of the value on the position valKey"
 
     #--------------------------------------------------------------------------
-    # Parameters checking
+    # Key check
     #--------------------------------------------------------------------------
-    if 'key' in par.keys(): key = par['key']
-    else:
-        point.journal(f"abs(InfoPoint): Key '{key}' is not found in parameters", True)
-        return False 
-    
+    if key not in InfoPoint._schema['vals'].keys():
+        InfoPoint.journal(f"abs: Key '{key}' not found in values {InfoPoint._schema['vals']}", True)
+        return False
+
     #--------------------------------------------------------------------------
     # Apply function
     #--------------------------------------------------------------------------
@@ -393,8 +426,11 @@ if __name__ == '__main__':
 
     p2 = InfoPoint(pos={'x':1, 'y':1.2}, dat={'m':3, 'v':-4.567891234})
     print(p2)
+
+    print(p2.get('m'))
+    print(p2.get('v2'))  
     
-    abs(p2, par={'key':'v'})
+    abs(p2, key='v')
     print(p2)
 
 #==============================================================================
