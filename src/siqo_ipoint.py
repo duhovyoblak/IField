@@ -268,7 +268,7 @@ class InfoPoint:
     def clear(self, *, dat:dict=None):
         "Sets data to default values"
         
-        if dat is not None:
+        if (dat is not None) and (len(dat) > 0):
 
             for key, val in dat.items():
 
@@ -475,6 +475,18 @@ if __name__ == '__main__':
 
     pc = p2.copy()
     print('Copied ', pc)
+
+    pc = pc.clear()
+    print('Cleared ', pc)
+
+    pc = pc.clear(dat={'m':3})
+    print('Cleared ', pc)
+
+    pc = pc.clear(dat={})
+    print('Cleared ', pc)
+
+    pc = pc.clear(dat={'r':4})
+    print('Cleared ', pc)
 
 #==============================================================================
 #                              END OF FILE

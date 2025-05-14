@@ -32,7 +32,7 @@ class InfoMatrix:
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, journal, name):
+    def __init__(self, journal, name, ipType):
         "Calls constructor of InfoMatrix"
 
         self.journal = journal
@@ -42,6 +42,7 @@ class InfoMatrix:
         # Public datove polozky triedy
         #----------------------------------------------------------------------
         self.name       = name            # Name of the InfoMatrix
+        self.ipType     = ipType          # Type of the InfoPoint in this InfoMatrix
         self.orig       = {'x':0, 'y':0}  # Origin's coordinates of the InfoMatrix in lambda units
         self.points     = [[]]            # List of rows of lists of InfoPoints
         self.actKey     = None            # Key of the current InfoPoint's dat value
@@ -118,6 +119,7 @@ class InfoMatrix:
         if indent == 0:
             msg.append(f"{indent*_IND}{90*'='}")
             dat['name'       ] = self.name
+            dat['ipType'     ] = self.ipType
             dat['orig'       ] = self.orig
             dat['rows'       ] = self._rows
             dat['cols'       ] = self._cols
@@ -133,7 +135,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         for point in self:
 
-            row, col = self.idxByIter(self._iterPos-1)
+            row, col = self._idxByIter(self._iterPos-1)
             msg.append(f"Point[{row:2},{col:2}] {point.info()['msg']}")
         
         #----------------------------------------------------------------------
@@ -154,7 +156,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Create new InfoMatrix with the same dimensions
         #----------------------------------------------------------------------
-        toRet = InfoMatrix(self.journal, name)
+        toRet = InfoMatrix(self.journal, name, self.ipType)
 
         toRet.orig       = self.orig.copy()  # Origin's coordinates of the InfoMatrix 
         toRet.points     = [[]]              # List of rows of complex vectors {InfoPoint}
@@ -167,7 +169,7 @@ class InfoMatrix:
         toRet._dy        = self._dy          # Distance between two points on axis Y in lambda units
 
         #----------------------------------------------------------------------
-        # Copy all nodes from this InfoMatrix to the new one
+        # Copy all points from this InfoMatrix to the new one
         #----------------------------------------------------------------------
         for row in self.points:
             
@@ -183,7 +185,7 @@ class InfoMatrix:
         return toRet
         
     #==========================================================================
-    # Iterator for all nodes in InfoMatrix
+    # Iterator for all points in InfoMatrix
     #--------------------------------------------------------------------------
     def __iter__(self):
         "Creates iterator for this InfoMatrix"
@@ -195,7 +197,7 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def __next__(self):
-        "Returns next node in ongoing iteration"
+        "Returns next point in ongoing iteration"
         
         #----------------------------------------------------------------------
         # If there is one more node in list of nodes left
@@ -205,7 +207,7 @@ class InfoMatrix:
             #------------------------------------------------------------------
             # Get current node in list of nodes
             #------------------------------------------------------------------
-            row, col = self.idxByIter(self._iterPos)
+            row, col = self._idxByIter(self._iterPos)
             point = self.points[row][col]
             
             #------------------------------------------------------------------
@@ -221,13 +223,13 @@ class InfoMatrix:
         else: raise StopIteration
             
     #--------------------------------------------------------------------------
-    def iterByIdx(self, row, col):
+    def _iterByIdx(self, row, col):
         "Returns iter position of the node in InfoMatrix by index"
         
         return (row * self._cols) + col
 
     #--------------------------------------------------------------------------
-    def idxByIter(self, pos):
+    def _idxByIter(self, pos):
         "Returns index of the node in InfoMatrix by iter position"
 
         row = pos // self._cols
@@ -294,11 +296,13 @@ class InfoMatrix:
     #==========================================================================
     # Structure modification
     #--------------------------------------------------------------------------
-    def reset(self):
+    def reset(self, ipType=None):
         "Resets all InfoMatrix's data and destroys all points. Count of points will be 0"
         
-        self.journal.I(f"{self.name}.reset:")
+        self.journal.I(f"{self.name}.reset: ipType={ipType}")
         
+        if ipType is not None: self.ipType = ipType
+
         self.orig       = {'x':0, 'y':0}  # Origin's coordinates of the InfoMatrix 
         self.points     = [[]]            # List of rows of lists of InfoPoints
         self.actKey     = None            # Key of the InfoPoint's current dat value
@@ -313,11 +317,11 @@ class InfoMatrix:
         self.journal.O()
         
     #--------------------------------------------------------------------------
-    def gener(self, nRow:int, nCol:int, *, vals:dict, defs:dict, orig:dict={'x':0, 'y':0}, rect:tuple=(1,1) ):
+    def gener(self, nRow:int, nCol:int, *, ipType=None, vals:dict, defs:dict={}, orig:dict={'x':0, 'y':0}, rect:tuple=(1,1) ):
         "Creates InfoMatrix with respective settings"
         
-        self.journal.I(f"{self.name}.gener: {nRow}x{nCol} nodes on rect {rect[0]}x{rect[1]} from {orig}")
-        self.reset()
+        self.journal.I(f"{self.name}.gener: {nRow}x{nCol} points on rect {rect[0]}x{rect[1]} from {orig}")
+        self.reset(ipType=ipType)
 
         xDim = list(orig.keys()  )[0]
         xMin = list(orig.values())[0]
@@ -339,13 +343,13 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Set InfoPoint's schema 
         #----------------------------------------------------------------------
-        InfoPoint.clearSchema()
+        InfoPoint.clearSchema(self.ipType)     # Clear schema for this InfoPoint type
        
-        InfoPoint.setAxe(xDim, 'os X')    
-        InfoPoint.setAxe(yDim, 'os Y')   
+        InfoPoint.setAxe(self.ipType, xDim, 'osa X')    
+        InfoPoint.setAxe(self.ipType, yDim, 'osa Y')   
 
         for key, name in vals.items():
-            InfoPoint.setVal(key, name) 
+            InfoPoint.setVal(self.ipType, key, name) 
 
         #----------------------------------------------------------------------
         # Generate nRow x nCol nodes at respective positions
@@ -365,7 +369,7 @@ class InfoMatrix:
                 # Create new InfoPoint at respective position
                 #--------------------------------------------------------------
                 y = yMin + (col * self._dy)
-                point = InfoPoint(pos={xDim:x, yDim:y}, dat=defs)
+                point = InfoPoint(self.ipType, pos={xDim:x, yDim:y}, dat=defs)
                 
                 #--------------------------------------------------------------
                 # Append new InfoPoint to the list of nodes
@@ -381,7 +385,7 @@ class InfoMatrix:
     #==========================================================================
     # Value modification
     #--------------------------------------------------------------------------
-    def clear(self, *, key=None, val=0):
+    def clear(self, *, key=None, defs:dict={}):
         "Set all InfoPoint's values to default value"
         
         #----------------------------------------------------------------------
@@ -390,7 +394,7 @@ class InfoMatrix:
         for point in self:
 
             if key is None: point.clear()
-            else          : point.clear(dat={key:val})
+            else          : point.clear(dat=defs)
 
         #----------------------------------------------------------------------
         # Clear InfoMatrix's settings
