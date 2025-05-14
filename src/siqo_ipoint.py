@@ -10,9 +10,18 @@ import random                 as rnd
 # package's constants
 #------------------------------------------------------------------------------
 _IND      = '|  '                      # Info indentation
+_F_SCHEMA = 1                          # Format for ipType
 _F_TOTAL  = 5                          # Total number of digits in float number
 _F_DECIM  = 3                          # Number of digits after decimal point in float number
 _F_FORMAT = f"{_F_TOTAL}.{_F_DECIM}f"  # Format for float number
+
+_SCHEMA   = {'ipReal   ':{'axes':{'x':'os X', 'y':'os Y'}
+                         ,'vals':{'c':'complex Value'}
+                         }
+            ,'ipComplex':{'axes':{'x':'os X', 'y':'os Y'}
+                         ,'vals':{'r':'real Value'}
+                         }
+            }                          # Default built-in Schema for InfoPoint
 
 #==============================================================================
 # package's variables
@@ -26,8 +35,8 @@ class InfoPoint:
     #==========================================================================
     # Static variables & methods
     #--------------------------------------------------------------------------
-    _journal = None                       # Journal for logging
-    _schema  = {'axes':{}, 'vals':{}}     # Schema for InfoPoint
+    _journal = None                                # Journal for logging
+    _schema  = _SCHEMA.copy()                      # Schema for InfoPoint
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -45,47 +54,67 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def clearSchema():
-        "Clears schema of InfoPoint"
+    def resetSchema():
+        "Resets schema of InfoPoint to default values"
         
-        InfoPoint._schema = {'axes':{}, 'vals':{}}
+        InfoPoint._schema = _SCHEMA.copy()
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def setAxe(key, name):
+    def clearSchema(ipType):
+        "Clears schema of InfoPoint for respective ipType"
+        
+        InfoPoint._schema[ipType] = {'axes':{}, 'vals':{}}
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def setAxe(ipType, key, name):
         "Sets axe key and name"
         
-        InfoPoint._schema['axes'][key] = name
+        if ipType not in InfoPoint._schema.keys(): InfoPoint._schema[ipType] = {'axes':{}, 'vals':{}} 
+
+        InfoPoint._schema[ipType]['axes'][key] = name
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def setVal(key, name):
+    def setVal(ipType, key, name):
         "Sets value key and name"
         
-        InfoPoint._schema['vals'][key] = name
+        if ipType not in InfoPoint._schema.keys(): InfoPoint._schema[ipType] = {'axes':{}, 'vals':{}} 
+
+        InfoPoint._schema[ipType]['vals'][key] = name
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def getAxes():
+    def getAxes(ipType):
         "Returns axes keys and names"
         
-        return InfoPoint._schema['axes'].copy()
+        if ipType not in InfoPoint._schema.keys():
+            InfoPoint.journal(f"InfoPoint.getAxes: ipType '{ipType}' is not defined InfoPoint type", True)
+            return None 
+
+        return InfoPoint._schema[ipType]['axes'].copy()
     
     #--------------------------------------------------------------------------
     @staticmethod
-    def getVals():
+    def getVals(ipType):
         "Returns values keys and names"
+
+        if ipType not in InfoPoint._schema.keys():
+            InfoPoint.journal(f"InfoPoint.getVals: ipType '{ipType}' is not defined InfoPoint type", True)
+            return None
         
-        return InfoPoint._schema['vals'].copy()  
+        return InfoPoint._schema[ipType]['vals'].copy()  
 
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, *, pos=None, dat=None):
+    def __init__(self, ipType:str, *, pos=None, dat=None):
         "Calls constructor of InfoPoint on respective position"
         
-        self._pos = {}   # Dict of real numbers for position coordinates {'row':5, 'col':6, ...} defined by schema
-        self._dat = {}   # Dict of values of this InfoPoint defined by schema
+        self._ipType = ipType # Type of InfoPoint (ipReal, ipComplex, ...)
+        self._pos    = {}     # Dict of real numbers for position coordinates {'row':5, 'col':6, ...} defined by schema
+        self._dat    = {}     # Dict of values of this InfoPoint defined by schema
 
         self.set(pos=pos, dat=dat)
 
@@ -98,33 +127,25 @@ class InfoPoint:
         return toRet
 
     #--------------------------------------------------------------------------
-    def info(self, indent=0):
-        "Creates info about this InfoPoint"
-        
-        msg = (f"{indent*_IND}{self.posStr()}: {self.datStr()}")
-
-        return {'res':'OK', 'dat':self._dat, 'msg':msg}
-        
-    #--------------------------------------------------------------------------
-    def format(self, val):
+    def _format(self, val):
         "Creates string representation of the value for respective format settings"
 
         if   val is None         : toRet = 'None'.ljust(_F_TOTAL)
         elif type(val) == int    : toRet = f"{val:#{_F_TOTAL}}"
         elif type(val) == float  : toRet = f"{val:#{_F_TOTAL}.{_F_DECIM}f}"
         elif type(val) == complex: toRet = f"({val.real:#{_F_TOTAL}.{_F_DECIM}f} {val.imag:#{_F_TOTAL}.{_F_DECIM}f}j)"
-        else                     : toRet = f"{val:<{_F_TOTAL}}"
+        else                     : toRet = f"{val:{_F_TOTAL}}"
 
         return toRet
     
     #--------------------------------------------------------------------------
-    def posStr(self):
+    def _posStr(self):
         "Creates string representation of the position of this InfoPoint"
 
         toRet = '['
         
         i = 0
-        for axe, axeName in InfoPoint._schema['axes'].items():
+        for axe, axeName in InfoPoint._schema[self._ipType]['axes'].items():
 
             if axe in self._pos.keys(): val = self._pos[axe]
             else                      : val = None
@@ -132,21 +153,21 @@ class InfoPoint:
             #----------------------------------------------------------------------
             # Create string representation of the position of this InfoPoint
             #----------------------------------------------------------------------
-            if i == 0: toRet +=  f"{axeName}={self.format(val)}"
-            else     : toRet += f"|{axeName}={self.format(val)}"
+            if i == 0: toRet +=  f"{axeName}={self._format(val)}"
+            else     : toRet += f"|{axeName}={self._format(val)}"
             i += 1
  
         toRet += ']'
         return toRet
     
     #--------------------------------------------------------------------------
-    def datStr(self):
+    def _datStr(self):
         "Creates string representation of the data of this InfoPoint"
 
         toRet = '{'
         
         i = 0
-        for valKey, valName in InfoPoint._schema['vals'].items():
+        for valKey, valName in InfoPoint._schema[self._ipType]['vals'].items():
             
             if valKey in self._dat.keys(): val = self._dat[valKey]
             else                         : val = None
@@ -154,18 +175,26 @@ class InfoPoint:
             #----------------------------------------------------------------------
             # Create string representation of the data of this InfoPoint
             #----------------------------------------------------------------------
-            if i == 0: toRet +=  f"{valKey}={self.format(val)}"
-            else     : toRet += f"|{valKey}={self.format(val)}"
+            if i == 0: toRet +=  f"{valKey}={self._format(val)}"
+            else     : toRet += f"|{valKey}={self._format(val)}"
             i += 1  
 
         toRet += '}'
         return toRet
     
     #--------------------------------------------------------------------------
+    def info(self, indent=0):
+        "Creates info about this InfoPoint"
+        
+        msg = f"{indent*_IND}{self._ipType:{_F_SCHEMA}}{self._posStr()}: {self._datStr()}"
+
+        return {'res':'OK', 'dat':self._dat, 'msg':msg}
+        
+    #--------------------------------------------------------------------------
     def copy(self):
         "Creates copy of this InfoPoint"
 
-        toRet = InfoPoint()
+        toRet = InfoPoint(self._ipType)
 
         toRet._pos = self._pos.copy()
         toRet._dat = self._dat.copy()
@@ -183,21 +212,21 @@ class InfoPoint:
         #----------------------------------------------------------------------
         if key is None:
             toRet = {}
-            for key in InfoPoint._schema['vals'].keys():
+            for key in InfoPoint._schema[self._ipType]['vals'].keys():
                 toRet[key] = self._dat[key].copy()
             return toRet
 
         #----------------------------------------------------------------------
         # Key check
         #----------------------------------------------------------------------
-        if key not in InfoPoint._schema['vals'].keys():
-            self.journal(f"InfoPoint.get: Key '{key}' not found in values {InfoPoint._schema['vals']}", True)
+        if key not in InfoPoint._schema[self._ipType]['vals'].keys():
+            self.journal(f"InfoPoint.get: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}", True)
             return None
 
         #----------------------------------------------------------------------
         # Return value of this InfoPoint for respective key
         #----------------------------------------------------------------------
-        return self._dat[key].copy()
+        return self._dat[key]
 
     #==========================================================================
     # Dat Value modification
@@ -211,11 +240,11 @@ class InfoPoint:
         if pos is not None:
 
             try:
-                for key in InfoPoint._schema['axes'].keys():
+                for key in InfoPoint._schema[self._ipType]['axes'].keys():
                     self._pos[key] = pos[key]
 
             except KeyError:
-                self.journal(f"InfoPoint.set: Key '{key}' not found in position {pos} ERROR", True)
+                self.journal(f"InfoPoint.set: Key '{key}' not found in positions {pos} ERROR", True)
                 return False
             
         #----------------------------------------------------------------------
@@ -225,21 +254,32 @@ class InfoPoint:
 
             for key, val in dat.items():
 
-                if key in InfoPoint._schema['vals'].keys():
+                if key in InfoPoint._schema[self._ipType]['vals'].keys():
                     self._dat[key] = val    
 
                 else:
-                    self.journal(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema['vals']}", True)
+                    self.journal(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}", True)
                     return False
                 
         #----------------------------------------------------------------------
         return True
     
     #--------------------------------------------------------------------------
-    def clear(self, *, dat={}):
-        "Sets complex number to default value and clears state variables"
+    def clear(self, *, dat:dict=None):
+        "Sets data to default values"
         
-        self.dat = dat
+        if dat is not None:
+
+            for key, val in dat.items():
+
+                if key in InfoPoint._schema[self._ipType]['vals'].keys():
+                    self._dat[key] = val    
+
+                else:
+                    self.journal(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}", True)
+                    return False
+
+        else: self._dat = {}
 
         return self
 
@@ -348,8 +388,8 @@ class InfoPoint:
         pairs = []
 
         try:
-            for key, val in self.pos.items():
-                pairs.append( (val, toP.pos[key]) )
+            for key, val in self._pos.items():
+                pairs.append( (val, toP._pos[key]) )
 
         except KeyError:
             self.journal(f"Error: InfoPoints have different number of coordinates!", True)
@@ -388,8 +428,8 @@ def abs(point:InfoPoint, key:str, par:dict=None):
     #--------------------------------------------------------------------------
     # Key check
     #--------------------------------------------------------------------------
-    if key not in InfoPoint._schema['vals'].keys():
-        InfoPoint.journal(f"abs: Key '{key}' not found in values {InfoPoint._schema['vals']}", True)
+    if key not in InfoPoint._schema[point._ipType]['vals'].keys():
+        InfoPoint.journal(f"abs: Key '{key}' was not found in values {InfoPoint._schema[point._ipType]['vals']}", True)
         return False
 
     #--------------------------------------------------------------------------
@@ -410,28 +450,31 @@ if __name__ == '__main__':
 
     InfoPoint.setJournal(journal)
 
-    InfoPoint.setAxe('x', 'os X')    
-    InfoPoint.setAxe('y', 'os Y')    
-    InfoPoint.setVal('m', 'hmotnost')
-    InfoPoint.setVal('v', 'rychlost')
+    InfoPoint.setAxe('ipTest', 'x', 'os X')    
+    InfoPoint.setAxe('ipTest', 'y', 'os Y')    
+    InfoPoint.setVal('ipTest', 'm', 'hmotnost')
+    InfoPoint.setVal('ipTest', 'v', 'rychlost')
 
     print('Test of InfoPoint class')
     print('_IND      =', _IND)
     print('schema    =', InfoPoint._schema)
-    print('axes      =', InfoPoint.getAxes())   
-    print('vals      =', InfoPoint.getVals()) 
+    print('axes      =', InfoPoint.getAxes('ipTest'))   
+    print('vals      =', InfoPoint.getVals('ipTest')) 
 
-    p1 = InfoPoint()
+    p1 = InfoPoint('ipTest')
     print(p1)
 
-    p2 = InfoPoint(pos={'x':1, 'y':1.2}, dat={'m':3, 'v':-4.567891234})
+    p2 = InfoPoint('ipTest', pos={'x':1, 'y':1.2}, dat={'m':3, 'v':-4.567891234})
     print(p2)
 
-    print(p2.get('m'))
-    print(p2.get('v2'))  
+    print('m =', p2.get('m'))
+    print('v2 =', p2.get('v2'))  
     
     abs(p2, key='v')
-    print(p2)
+    print('abs v ', p2)
+
+    pc = p2.copy()
+    print('Copied ', pc)
 
 #==============================================================================
 #                              END OF FILE
