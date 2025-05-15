@@ -86,6 +86,15 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
+    def getSchema(ipType):
+        "Returns schema for respective InfoPoint type"
+        
+        if ipType not in InfoPoint._schema.keys(): InfoPoint._schema[ipType] = {'axes':{}, 'vals':{}}
+
+        return InfoPoint._schema[ipType].copy()
+    
+    #--------------------------------------------------------------------------
+    @staticmethod
     def getAxes(ipType):
         "Returns axes keys and names"
         

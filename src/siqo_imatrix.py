@@ -15,6 +15,8 @@ from   siqo_ipoint import InfoPoint
 _IND    = '|  '       # Info indentation
 _UPP    = 10          # distance units per period
 
+_F_POS  =  8          # Format for position
+
 #==============================================================================
 # package's variables
 #------------------------------------------------------------------------------
@@ -43,19 +45,23 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         self.name       = name            # Name of the InfoMatrix
         self.ipType     = ipType          # Type of the InfoPoint in this InfoMatrix
-        self.orig       = {'x':0, 'y':0}  # Origin's coordinates of the InfoMatrix in lambda units
-        self.points     = [[]]            # List of rows of lists of InfoPoints
+        self.points     = []              # List of InfoPoints
+        self.actRow     = None            # Current axes in role of the rows for 2D matrix
+        self.actCol     = None            # Current axes in role of the columns for 2D matrix
         self.actKey     = None            # Key of the current InfoPoint's dat value
         self.staticEdge = False           # Static edge means value of the edge points is fixed in some methods
         
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
-        self._rows      = 0               # Number of rows in the InfoMatrix
-        self._cols      = 0               # Number of columns in the InfoMatrix
-        self._dx        = 0               # Distance between two points on axis X in lambda units
-        self._dy        = 0               # Distance between two points on axis Y in lambda units
-        self._iterPos   = 0               # Iterator's position in the InfoMatrix
+        self._origs     = {}              # Origin's coordinates of the InfoMatrix for respective axes in lambda units
+        self._cnts      = {}              # Number of InfoPoints in respective axes
+        self._diffs     = {}              # Distance between two points in respective axes in lambda units
+
+        #----------------------------------------------------------------------
+        # Inicializacia
+        #----------------------------------------------------------------------
+        InfoPoint.setJournal(self.journal)
 
         self.journal.O(f"{self.name}.constructor: done")
 
@@ -72,7 +78,21 @@ class InfoMatrix:
         "Returns InfoMatrix as 2D numpy array"
  
         #----------------------------------------------------------------------
-        # Prejdem vsetky riadky
+        # Kontrola nastavenia vybranej osi pre row
+        #----------------------------------------------------------------------
+        if self.actRow is None:    
+            self.journal.M(f"{self.name}.__array__: ERROR: actRow is None", True)
+            return None
+
+        #----------------------------------------------------------------------
+        # Kontrola nastavenia vybranej osi pre col
+        #----------------------------------------------------------------------
+        if self.actCol is None:    
+            self.journal.M(f"{self.name}.__array__: ERROR: actCol is None", True)
+            return None
+
+        #----------------------------------------------------------------------
+        # Kontrola nastavenia vybranej hodnoty
         #----------------------------------------------------------------------
         if self.actKey is None:    
             self.journal.M(f"{self.name}.__array__: ERROR: actKey is None", True)
@@ -117,35 +137,44 @@ class InfoMatrix:
         # info o celej strukture
         #----------------------------------------------------------------------
         if indent == 0:
-            msg.append(f"{indent*_IND}{90*'='}")
+            msg.append(f"{indent*_IND}{60*'='}")
             dat['name'       ] = self.name
             dat['ipType'     ] = self.ipType
-            dat['orig'       ] = self.orig
-            dat['rows'       ] = self._rows
-            dat['cols'       ] = self._cols
-            dat['dx'         ] = self._dx
-            dat['dy'         ] = self._dy
-            dat['count'      ] = self.count()
+            dat['schema'     ] = InfoPoint.getSchema(self.ipType)
+            dat['actRow'     ] = self.actRow
+            dat['actCol'     ] = self.actCol
+            dat['actKey'     ] = self.actKey
             dat['staticEdge' ] = self.staticEdge
+
+            dat['origs'      ] = self._origs
+            dat['cnts'       ] = self._cnts
+            dat['len'        ] = len(self.points)
+            dat['count'      ] = self.count()
+            dat['subProducts'] = self._subProducts()
+            dat['diffs'      ] = self._diffs
 
         for key, val in dat.items(): msg.append(f"{indent*_IND}{key:<15}: {val}")
 
         #----------------------------------------------------------------------
-        # info o riadkoch
+        # info o vsetkych bodoch
         #----------------------------------------------------------------------
-        for point in self:
-
-            row, col = self._idxByIter(self._iterPos-1)
-            msg.append(f"Point[{row:2},{col:2}] {point.info()['msg']}")
+        for pos, point in enumerate(self.points):
+            msg.append(f"{pos:{_F_POS}} {str(point)}")
         
         #----------------------------------------------------------------------
         return {'res':'OK', 'dat':dat, 'msg':msg}
         
     #--------------------------------------------------------------------------
     def count(self):
-        "Returns Count of nodes in this InfoMatrix"
+        "Returns Count of points in this InfoMatrix"
         
-        return self._rows * self._cols
+        if len(self._cnts) == 0: return 0
+
+        toRet = 1
+        for cnt in self._cnts.values():
+            toRet *= cnt
+
+        return toRet
 
     #--------------------------------------------------------------------------
     def copy(self, name):
@@ -158,84 +187,85 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         toRet = InfoMatrix(self.journal, name, self.ipType)
 
-        toRet.orig       = self.orig.copy()  # Origin's coordinates of the InfoMatrix 
-        toRet.points     = [[]]              # List of rows of complex vectors {InfoPoint}
-        toRet.actKey     = self.actKey       # Key of the InfoPoint's dat value
-        toRet.staticEdge = self.staticEdge   # Static edge means value of the edge nodes is fixed
+        toRet.points     = []                  # List of InfoPoints
+        toRet.ipType     = self.ipType         # Type of the InfoPoint in this InfoMatrix
+        toRet.actRow     = self.actRow         # Current axes in role of the rows for 2D matrix
+        toRet.actCol     = self.actCol         # Current axes in role of the columns for 2D matrix
+        toRet.actKey     = self.actKey         # Key of the InfoPoint's dat value
+        toRet.staticEdge = self.staticEdge     # Static edge means value of the edge nodes is fixed
 
-        toRet._rows      = self._rows        # Number of rows in the InfoMatrix
-        toRet._cols      = self._cols        # Number of columns in the InfoMatrix
-        toRet._dx        = self._dx          # Distance between two points on axis X in lambda units
-        toRet._dy        = self._dy          # Distance between two points on axis Y in lambda units
+        toRet._origs     = self._origs.copy()  # Origin's coordinates of the InfoMatrix 
+        toRet._cnts      = self._cnts.copy()   # Number of InfoPoints in respective axes
+        toRet._diffs     = self._diffs.copy()  # Distance between two points in respective axes in lambda units
 
         #----------------------------------------------------------------------
         # Copy all points from this InfoMatrix to the new one
         #----------------------------------------------------------------------
-        for row in self.points:
-            
-            copyRow = []
-
-            for point in row:
-                copyRow.append(point.copy())
-
-            toRet.points.append(copyRow)
+        for point in self.points:
+            toRet.points.append(self.copy())
 
         #----------------------------------------------------------------------
         self.journal.O()
         return toRet
         
     #==========================================================================
-    # Iterator for all points in InfoMatrix
+    # Position and indices tools
     #--------------------------------------------------------------------------
-    def __iter__(self):
-        "Creates iterator for this InfoMatrix"
-        
-        # Reset iterator's position
-        self._iterPos = 0
-        
-        return self
+    def _subProducts(self):
+        "Returns list of subproducts of _cnts [1, A, AB, ABC, ...]"
+
+        toRet = [1]
+
+        for cnt in self._cnts.values():
+            toRet.append( cnt * toRet[-1] )
+
+        #----------------------------------------------------------------------
+        # Remove last element which is the product of all dimensions
+        #----------------------------------------------------------------------
+        toRet.pop()
+
+        return toRet
 
     #--------------------------------------------------------------------------
-    def __next__(self):
-        "Returns next point in ongoing iteration"
-        
+    def _posByIdx(self, idxs:list):
+        "Returns position of the InfoPoint in the list for respective indices"
+
+        subProd = self._subProducts()
+
+        pos = 0
+        for i, idx in enumerate(idxs):
+            pos += idx * subProd[i]
+
+        return pos
+
+    #--------------------------------------------------------------------------
+    def _idxByPos(self, pos:int):
+        "Returns indices of the InfoPoint for respective position in the list"
+
         #----------------------------------------------------------------------
-        # If there is one more node in list of nodes left
+        # Inicializacia
         #----------------------------------------------------------------------
-        if self._iterPos < self.count():
-                
+        toRet = []
+        cnts  = list(self._cnts.values())
+        subs  = self._subProducts()
+
+        #----------------------------------------------------------------------
+        # Prechadzam reverzne vsetky dimenzie
+        #----------------------------------------------------------------------
+        for sub in reversed(subs):
+
             #------------------------------------------------------------------
-            # Get current node in list of nodes
+            # Zistim index a novu poziciu ako zostatok pre danu dimenziu
             #------------------------------------------------------------------
-            row, col = self._idxByIter(self._iterPos)
-            point = self.points[row][col]
+            idx = pos // sub
+            pos = pos %  sub
             
             #------------------------------------------------------------------
-            # Move to the next node
+            # Vlozim index na zaciatok zoznamu idxs
             #------------------------------------------------------------------
-            self._iterPos += 1
-            
-            return point
+            toRet.insert(0, idx)
 
-        #----------------------------------------------------------------------
-        # There is no more node in list of nodes left
-        #----------------------------------------------------------------------
-        else: raise StopIteration
-            
-    #--------------------------------------------------------------------------
-    def _iterByIdx(self, row, col):
-        "Returns iter position of the node in InfoMatrix by index"
-        
-        return (row * self._cols) + col
-
-    #--------------------------------------------------------------------------
-    def _idxByIter(self, pos):
-        "Returns index of the node in InfoMatrix by iter position"
-
-        row = pos // self._cols
-        col = pos  % self._cols
-
-        return (row, col)
+        return toRet
 
     #==========================================================================
     # Point retrieval
@@ -303,83 +333,80 @@ class InfoMatrix:
         
         if ipType is not None: self.ipType = ipType
 
-        self.orig       = {'x':0, 'y':0}  # Origin's coordinates of the InfoMatrix 
-        self.points     = [[]]            # List of rows of lists of InfoPoints
+        self.points     = []              # List of rows of lists of InfoPoints
+        self.actRow     = None            # Current axes in role of the rows for 2D matrix
+        self.actCol     = None            # Current axes in role of the columns for 2D matrix
         self.actKey     = None            # Key of the InfoPoint's current dat value
         self.staticEdge = False           # Static edge means value of the edge nodes is fixed        
 
-        self._rows      = 0               # Number of rows in the InfoMatrix
-        self._cols      = 0               # Number of columns in the InfoMatrix
-        self._dx        = 0               # Distance between two points on axis X in lambda units
-        self._dy        = 0               # Distance between two points on axis Y in lambda units
-        self._iterPos   = 0               # Iterator's position in the InfoMatrix
-
+        self._origs     = {}              # Origin's coordinates of the InfoMatrix
+        self._cnts      = {}              # Number of InfoPoints in respective axes
+        self._diffs     = {}              # Distance between two points in respective axes in lambda units
+        
         self.journal.O()
         
     #--------------------------------------------------------------------------
-    def gener(self, nRow:int, nCol:int, *, ipType=None, vals:dict, defs:dict={}, orig:dict={'x':0, 'y':0}, rect:tuple=(1,1) ):
+    def gener(self, *, cnts:dict, origs:dict, rect:dict, ipType:str=None, vals:dict=None, defs:dict={} ):
         "Creates InfoMatrix with respective settings"
         
-        self.journal.I(f"{self.name}.gener: {nRow}x{nCol} points on rect {rect[0]}x{rect[1]} from {orig}")
-        self.reset(ipType=ipType)
+        if ipType is not None: self.ipType = ipType
+        self.journal.I(f"{self.name}.gener: {cnts} points of type {self.ipType} on rect {rect} from {origs}")
 
-        xDim = list(orig.keys()  )[0]
-        xMin = list(orig.values())[0]
+        self.points.clear()                # Clear all points in the InfoMatrix
 
-        yDim = list(orig.keys()  )[1]
-        yMin = list(orig.values())[1]
+        #----------------------------------------------------------------------
+        # Set InfoPoint's schema Axes
+        #----------------------------------------------------------------------
+        InfoPoint.clearSchema(self.ipType)     # Clear schema for this InfoPoint type
+        mins = []                              # List of minimum values for respective axes
+
+        for key, val in cnts.items():
+
+            InfoPoint.setAxe(self.ipType, key, f"os {key}")    
+            mins.append(val)
+
+        #----------------------------------------------------------------------
+        # Set InfoPoint's schema Values if vals is not None 
+        #----------------------------------------------------------------------
+        if vals is not None:
+
+            for key, name in vals.items():
+                InfoPoint.setVal(self.ipType, key, name)
 
         #----------------------------------------------------------------------
         # InfoMatrix settings
         #----------------------------------------------------------------------
-        self.orig      = orig.copy()           # List of origin's coordinates of the InfoMatrix
-        self._rows     = nRow                  # Number of rows in the InfoMatrix       
-        self._cols     = nCol                  # Number of columns in the InfoMatrix
-        self._dx       = rect[0]/(nRow-1)      # Distance between two points on axis X in lambda units
-        self._dy       = rect[1]/(nCol-1)      # Distance between two points on axis Y in lambda units
+        self._cnts     = cnts.copy()              # List of number of InfoPoints in respective axes     
+        self._origs    = origs.copy()             # List of origin's coordinates of the InfoMatrix
+        self._diffs    = {}                       # List of distances between two points in respective axes in lambda units
         
-        self.actKey    = key                   # Key of the InfoPoint's current dat value
-
+        for key, cnt in self._cnts.items():
+            self._diffs[key] = rect[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
+                
         #----------------------------------------------------------------------
-        # Set InfoPoint's schema 
-        #----------------------------------------------------------------------
-        InfoPoint.clearSchema(self.ipType)     # Clear schema for this InfoPoint type
-       
-        InfoPoint.setAxe(self.ipType, xDim, 'osa X')    
-        InfoPoint.setAxe(self.ipType, yDim, 'osa Y')   
-
-        for key, name in vals.items():
-            InfoPoint.setVal(self.ipType, key, name) 
-
-        #----------------------------------------------------------------------
-        # Generate nRow x nCol nodes at respective positions
+        # Generate InfoPoints at respective positions
         #----------------------------------------------------------------------
         point = None
-        for row in range(nRow):
+        for pos in range(self.count()):
 
             #------------------------------------------------------------------
-            # Create new row of InfoPoint at respective position
+            # Compute coordinates of the InfoPoint for respective position and indices
             #------------------------------------------------------------------
-            self.points.append([])
-            x = xMin + (row * self._dx)
-            
-            for col in range(nCol):
-                
-                #--------------------------------------------------------------
-                # Create new InfoPoint at respective position
-                #--------------------------------------------------------------
-                y = yMin + (col * self._dy)
-                point = InfoPoint(self.ipType, pos={xDim:x, yDim:y}, dat=defs)
-                
-                #--------------------------------------------------------------
-                # Append new InfoPoint to the list of nodes
-                #--------------------------------------------------------------
-                self.points[row].append(point)
+            idxs = self._idxByPos(pos)          # Get indices of the InfoPoint for respective position
+            coos = {}
+
+            for i, key in enumerate(self._cnts.keys()):
+                coos[key] = self._origs[key] + (idxs[i] * self._diffs[key])
+
+            #------------------------------------------------------------------
+            # Create new row of InfoPoint at respective coordinates
+            #------------------------------------------------------------------
+            point = InfoPoint(self.ipType, pos=coos, dat=defs)
+            self.points.append(point)
             
         #----------------------------------------------------------------------
         # Final adjustments
         #----------------------------------------------------------------------
-        if point is not None: point.setJournal(self.journal)
         self.journal.O()
         
     #==========================================================================
@@ -954,14 +981,28 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     journal.M('Test of InfoMatrix class')
 
-    im = InfoMatrix(journal, 'Test matrix')
-    print(im)
+    im1 = InfoMatrix(journal, 'Test matrix', ipType='ipTest')
+    print(im1)
 
-    im.gener(nRow=4, nCol=5, key='val', val=-5, xLen=1, yLen=1, orig={'a':5, 'b':7})
-    print(im)
+    im1.gener(cnts={'a':5}, origs={'a':0.0}, rect={'a':1.0})
+    print(im1)
 
-    im.applyPointFunction(ip.abs, key='v')
-    print(im)
+    im1.gener(cnts={'a':4}, origs={'a':0.0}, rect={'a':1.0}, vals={'v':'Value'})
+    print(im1)
+
+    im1.gener(cnts={'a':3}, origs={'a':0.0}, rect={'a':1.0}, vals={'v':'Value'}, defs={'v':0.0})
+    print(im1)
+
+    im2 = InfoMatrix(journal, 'Test matrix', ipType='ipTest')
+    im2.gener(cnts={'a':3, 'b':4}, origs={'a':0.0, 'b':1}, rect={'a':1.0, 'b':2}, vals={'v':'Value'}, defs={'v':0.0})
+    print(im2)
+
+    im3 = InfoMatrix(journal, 'Test matrix', ipType='ipTest')
+    im3.gener(cnts={'a':3, 'b':4, 'c':5}, origs={'a':0.0, 'b':0, 'c':0}, rect={'a':1.0, 'b':2, 'c':3}, vals={'v':'Value'}, defs={'v':0.0})
+    print(im3)
+
+#    im1.applyPointFunction(ip.abs, key='v')
+#    print(im1)
 
 #==============================================================================
 #                              END OF FILE
