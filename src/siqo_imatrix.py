@@ -505,24 +505,13 @@ class InfoMatrix:
     #==========================================================================
     # Value modification
     #--------------------------------------------------------------------------
-    def clear(self, *, key=None, defs:dict={}):
+    def clear(self, *, defs:dict={}):
         "Set all InfoPoint's values to default value"
         
-        #----------------------------------------------------------------------
-        # Clear all InfoPoint's values
-        #----------------------------------------------------------------------
-        for point in self:
+        self.journal.M(f"{self.name}.clear: defs={defs}")
 
-            if key is None: point.clear()
-            else          : point.clear(dat=defs)
+        for point in self.points: point.clear(dat=defs)
 
-        #----------------------------------------------------------------------
-        # Clear InfoMatrix's settings
-        #----------------------------------------------------------------------
-        self.actVal   = key         # Key of the InfoPoint's current dat value
-
-        self.journal.M(f"{self.name}.clear: key={key}, val={val}")
-        
     #--------------------------------------------------------------------------
     def gener(self, *, cnts:dict, origs:dict, rect:dict, ipType:str=None, vals:dict=None, defs:dict={} ):
         "Creates InfoMatrix with respective settings"
