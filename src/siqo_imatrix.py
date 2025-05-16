@@ -588,10 +588,10 @@ class InfoMatrix:
     #==========================================================================
     # Methods application
     #--------------------------------------------------------------------------
-    def copyValues(self, src, *, key=None, tgtSlice=(0,0,0,0), srcFrom=(0,0)):
-        "Copy point's values from srcs to tgts points"
+    def copyFrom(self, src, *, key=None, tgtSlice=(0,0,0,0), srcFrom=(0,0)):
+        "Copy point's values from srcs 2D matrix into tgts 2D matrix"
         
-        self.journal.I(f"{self.name}.copyValues: From {src.name} starting at {srcFrom} to nodes {tgtSlice} for key={key}")
+        self.journal.I(f"{self.name}.copyFrom: From {src.name} starting at {srcFrom} to nodes {tgtSlice} for key={key}")
 
         #----------------------------------------------------------------------
         # Slice settings
@@ -619,18 +619,18 @@ class InfoMatrix:
                 #--------------------------------------------------------------
                 # Get target node
                 #--------------------------------------------------------------
-                tgtPoint = self.pointByIdx(tgtRow, tgtCol)
+                tgtPoint = self.pointByIdx([tgtRow, tgtCol])
                 if tgtPoint is None:
-                    self.journal.M(f"{self.name}.copyValues: ERROR Target point[{tgtRow},{tgtCol}] does not exists", True)
+                    self.journal.M(f"{self.name}.copyFrom: ERROR Target point[{tgtRow},{tgtCol}] does not exists", True)
                     break
                 
                 #--------------------------------------------------------------
                 # Trying to get source node
                 #--------------------------------------------------------------
                 try:
-                    srcPoint = src[srcRowFrom+tgtRow-tgtRowFrom][srcColFrom+tgtCol-tgtColFrom]
+                    srcPoint = src.pointByIdx([srcRowFrom+tgtRow-tgtRowFrom, srcColFrom+tgtCol-tgtColFrom])
                 except IndexError:
-                    self.journal.M(f"{self.name}.copyValues: ERROR Source point[{srcRowFrom+tgtRow-tgtRowFrom}][{srcColFrom+tgtCol-tgtColFrom}] does not exists", True)
+                    self.journal.M(f"{self.name}.copyFrom: ERROR Source point[{srcRowFrom+tgtRow-tgtRowFrom}, {srcColFrom+tgtCol-tgtColFrom}] does not exists", True)
                     break   
                 
                 #--------------------------------------------------------------
@@ -641,7 +641,7 @@ class InfoMatrix:
                 i += 1
 
         #----------------------------------------------------------------------
-        self.journal.O(f"{self.name}.copyValues: Copied {i} points")
+        self.journal.O(f"{self.name}.copyFrom: Copied {i} points")
         return self
         
     #--------------------------------------------------------------------------
@@ -674,7 +674,7 @@ class InfoMatrix:
                 #--------------------------------------------------------------
                 # Get node to apply function
                 #--------------------------------------------------------------
-                point = self.pointByIdx(row, col)
+                point = self.pointByIdx([row, col])
                 if point is None:
                     self.journal.M(f"{self.name}.applyPointFunction: ERROR Target point[{row},{col}] does not exists", True)
                     break
