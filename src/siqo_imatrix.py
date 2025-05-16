@@ -159,7 +159,8 @@ class InfoMatrix:
         # info o vsetkych bodoch
         #----------------------------------------------------------------------
         for pos, point in enumerate(self.points):
-            msg.append(f"{pos:{_F_POS}} {str(point)}")
+            idxs = self._idxByPos(pos)
+            msg.append(f"{pos:{_F_POS}} {idxs} {str(point)}")
         
         #----------------------------------------------------------------------
         return {'res':'OK', 'dat':dat, 'msg':msg}
@@ -265,6 +266,52 @@ class InfoMatrix:
             #------------------------------------------------------------------
             toRet.insert(0, idx)
 
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def _vectorPosByIdx(self, idxs:list):
+        """Returns list of pos for vector of respective indices. [a, b, '?', 'c']"
+           Question means all values in this dimension."""
+
+        self.journal.I(f"{self.name}._vectorPosByIdx: idxs={idxs}")
+        toRet = []
+
+        #----------------------------------------------------------------------
+        # Prvy InfoPoint je urceny idxs kde '?' je nahradeny 0
+        #----------------------------------------------------------------------
+        startIdxs = []
+
+        for i, idx in enumerate(idxs):
+
+            if idx != '?': startIdxs.append(idx)
+            else:
+                startIdxs.append(0)
+                vecDim = i
+
+        #----------------------------------------------------------------------
+        # Zistim pocet bodov v hladanom vektore 
+        #----------------------------------------------------------------------
+        vecCnt = list(self._cnts.values())[vecDim]
+
+        #----------------------------------------------------------------------
+        # Zistim pos pre prvy InfoPoint v hladanom vektore
+        #----------------------------------------------------------------------
+        startPos = self._posByIdx(startIdxs)
+
+        #----------------------------------------------------------------------
+        # Zistim krok od startPos pre vsetky dalsie InfoPointy v hladanom vektore
+        #----------------------------------------------------------------------
+        step = self._subProducts()[vecDim]
+        self.journal.M(f"{self.name}._vectorPosByIdx: startPos={startPos}, vecCnt={vecCnt} and step={step}")
+
+        #----------------------------------------------------------------------
+        # Vytvorim vsetky pozicie v hladanom vektore        
+        #----------------------------------------------------------------------
+        for pos in range(startPos, startPos + (vecCnt * step), step):
+            toRet.append(pos)
+
+        #----------------------------------------------------------------------
+        self.journal.O(f"{self.name}._vectorPosByIdx: toRet={toRet}")
         return toRet
 
     #==========================================================================
@@ -994,12 +1041,22 @@ if __name__ == '__main__':
     print(im1)
 
     im2 = InfoMatrix(journal, 'Test matrix', ipType='ipTest')
-    im2.gener(cnts={'a':3, 'b':4}, origs={'a':0.0, 'b':1}, rect={'a':1.0, 'b':2}, vals={'v':'Value'}, defs={'v':0.0})
+    im2.gener(cnts={'a':3, 'b':4}, origs={'a':0.0, 'b':0}, rect={'a':1.0, 'b':2}, vals={'v':'Value'}, defs={'v':3.0})
     print(im2)
 
     im3 = InfoMatrix(journal, 'Test matrix', ipType='ipTest')
-    im3.gener(cnts={'a':3, 'b':4, 'c':5}, origs={'a':0.0, 'b':0, 'c':0}, rect={'a':1.0, 'b':2, 'c':3}, vals={'v':'Value'}, defs={'v':0.0})
+    im3.gener(cnts={'a':3, 'b':4, 'c':2}, origs={'a':0.0, 'b':0, 'c':0}, rect={'a':1.0, 'b':2, 'c':3}, vals={'v':'Value'}, defs={'v':0.0})
     print(im3)
+
+    print(im3._vectorPosByIdx(['?', 0, 0]))
+    print(im3._vectorPosByIdx(['?', 2, 1]))
+
+    print(im3._vectorPosByIdx([ 0, '?', 0]))
+    print(im3._vectorPosByIdx([ 2, '?', 1]))
+
+    print(im3._vectorPosByIdx([ 0, 0, '?']))
+    print(im3._vectorPosByIdx([ 1, 0, '?']))
+
 
 #    im1.applyPointFunction(ip.abs, key='v')
 #    print(im1)
