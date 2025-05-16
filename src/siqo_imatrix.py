@@ -48,7 +48,7 @@ class InfoMatrix:
         self.points     = []              # List of InfoPoints
         self.actRow     = None            # Current axes in role of the rows for 2D matrix
         self.actCol     = None            # Current axes in role of the columns for 2D matrix
-        self.actKey     = None            # Key of the current InfoPoint's dat value
+        self.actVal     = None            # Key of the current InfoPoint's dat value
         self.staticEdge = False           # Static edge means value of the edge points is fixed in some methods
         
         #----------------------------------------------------------------------
@@ -94,8 +94,8 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Kontrola nastavenia vybranej hodnoty
         #----------------------------------------------------------------------
-        if self.actKey is None:    
-            self.journal.M(f"{self.name}.__array__: ERROR: actKey is None", True)
+        if self.actVal is None:    
+            self.journal.M(f"{self.name}.__array__: ERROR: actVal is None", True)
             return None
 
         #----------------------------------------------------------------------
@@ -111,9 +111,9 @@ class InfoMatrix:
             #------------------------------------------------------------------
             for point in row:
 
-                val = point.dat[self.actKey]
+                val = point.dat[self.actVal]
                 if val is None:
-                    self.journal.M(f"{self.name}.__array__: ERROR: point.dat[{self.actKey}] is None", True)
+                    self.journal.M(f"{self.name}.__array__: ERROR: point.dat[{self.actVal}] is None", True)
                     return None
                 
                 arrayRow.append(val)
@@ -126,6 +126,26 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         return np.array(array2D)
 
+    #--------------------------------------------------------------------------
+    def reset(self, ipType=None):
+        "Resets all InfoMatrix's data and destroys all points. Count of points will be 0"
+        
+        self.journal.I(f"{self.name}.reset: ipType={ipType}")
+        
+        if ipType is not None: self.ipType = ipType
+
+        self.points     = []              # List of rows of lists of InfoPoints
+        self.actRow     = None            # Current axes in role of the rows for 2D matrix
+        self.actCol     = None            # Current axes in role of the columns for 2D matrix
+        self.actVal     = None            # Key of the InfoPoint's current dat value
+        self.staticEdge = False           # Static edge means value of the edge nodes is fixed        
+
+        self._origs     = {}              # Origin's coordinates of the InfoMatrix
+        self._cnts      = {}              # Number of InfoPoints in respective axes
+        self._diffs     = {}              # Distance between two points in respective axes in lambda units
+        
+        self.journal.O()
+        
     #--------------------------------------------------------------------------
     def info(self, indent=0):
         "Creates info about this InfoMatrix"
@@ -143,7 +163,7 @@ class InfoMatrix:
             dat['schema'     ] = InfoPoint.getSchema(self.ipType)
             dat['actRow'     ] = self.actRow
             dat['actCol'     ] = self.actCol
-            dat['actKey'     ] = self.actKey
+            dat['actVal'     ] = self.actVal
             dat['staticEdge' ] = self.staticEdge
 
             dat['origs'      ] = self._origs
@@ -192,7 +212,7 @@ class InfoMatrix:
         toRet.ipType     = self.ipType         # Type of the InfoPoint in this InfoMatrix
         toRet.actRow     = self.actRow         # Current axes in role of the rows for 2D matrix
         toRet.actCol     = self.actCol         # Current axes in role of the columns for 2D matrix
-        toRet.actKey     = self.actKey         # Key of the InfoPoint's dat value
+        toRet.actVal     = self.actVal         # Key of the InfoPoint's dat value
         toRet.staticEdge = self.staticEdge     # Static edge means value of the edge nodes is fixed
 
         toRet._origs     = self._origs.copy()  # Origin's coordinates of the InfoMatrix 
@@ -270,8 +290,9 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def _vectorPosByIdx(self, idxs:list):
-        """Returns list of pos for vector of respective indices. [a, b, '?', 'c']"
-           Question means all values in this dimension."""
+        """Returns list of pos for vector of respective indices with one
+           question mark in yhe list [a, b, '?', 'c'].
+           Question mark means all values in this dimension and defines vector."""
 
         self.journal.I(f"{self.name}._vectorPosByIdx: idxs={idxs}")
         toRet = []
@@ -289,7 +310,7 @@ class InfoMatrix:
                 vecDim = i
 
         #----------------------------------------------------------------------
-        # Zistim pocet bodov v hladanom vektore 
+        # Zistim pocet hodnot v hladanom vektore 
         #----------------------------------------------------------------------
         vecCnt = list(self._cnts.values())[vecDim]
 
@@ -314,22 +335,77 @@ class InfoMatrix:
         self.journal.O(f"{self.name}._vectorPosByIdx: toRet={toRet}")
         return toRet
 
-    #==========================================================================
-    # Point retrieval
     #--------------------------------------------------------------------------
-    def pointByIdx(self, row, col):
+    def _matrixPosByIdx(self, idxs:list):
+        """Returns positons of InfoPoints for respective indices with two
+           question marks in the list ['?', b, '?', 'c'].
+           Question marks means all values in this dimension and  defines 
+           the matrix. Positions are returned in the list of vector's positions list
+           [ [a, b, c], [d, e, f], ... ].
+           """
+
+        self.journal.I(f"{self.name}._matrixPosByIdx: idxs={idxs}")
+        toRet = []
+
+        #----------------------------------------------------------------------
+        # Zistim poziciu prveho '?' v idxs
+        #----------------------------------------------------------------------
+        rowDim = None
+        for i, idx in enumerate(idxs):
+            if idx == '?':
+                rowDim = i
+                break
+
+        #----------------------------------------------------------------------
+        # Zistim pocet hodnot v dimenzii rowDim
+        #----------------------------------------------------------------------
+        rowCnt = list(self._cnts.values())[rowDim]
+
+        #----------------------------------------------------------------------
+        # Vygenerujem idxs pre row-vektory
+        #----------------------------------------------------------------------
+        for i in range(rowCnt):
+
+            #------------------------------------------------------------------
+            # Vytvorim idxs pre row-vektor
+            #------------------------------------------------------------------
+            rowIdxs = list(idxs)
+            rowIdxs[rowDim] = i
+
+            #------------------------------------------------------------------
+            # Vygenerujem pozicie pre row-vektor
+            #------------------------------------------------------------------
+            rowPos = self._vectorPosByIdx(rowIdxs)
+
+            #------------------------------------------------------------------
+            # Vlozim rowPos do matice pozicii toRet
+            #------------------------------------------------------------------
+            toRet.append(rowPos)       
+
+        #----------------------------------------------------------------------
+        self.journal.O(f"{self.name}._matrixPosByIdx: toRet={toRet}")
+        return toRet
+
+    #==========================================================================
+    # InfoPoint retrieval
+    #--------------------------------------------------------------------------
+    def pointByPos(self, pos:int):
+        "Returns InfoPoint in field for respective position"
+
+        toRet = self.points[pos]
+
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def pointByIdx(self, idxs:list):
         "Returns InfoPoint in field at respective indexes"
         
-        try: toRet = self.points[row][col]
-        except IndexError:
-            self.journal.M(f"{self.name}.pointByIdx: ERROR: [{row},{col}] is out of range", True)
-            return None
-        
-        return toRet
+        pos = self._posByIdx(idxs)
+        return self.pointByPos(pos)
         
     #--------------------------------------------------------------------------
-    def pointByPos(self, x, y):
-        "Returns nearest Point in field for respective position"
+    def pointByCoords(self, coos:list):
+        "Returns nearest InfoPoint in field for respective coordinates"
 
         self.journal.I(f"{self.name}.pointByPos: x={x}, y={y}")
 
@@ -371,26 +447,81 @@ class InfoMatrix:
         return self.points[lstRow][lstCol]
       
     #==========================================================================
-    # Structure modification
+    # Substructure retrieval
     #--------------------------------------------------------------------------
-    def reset(self, ipType=None):
-        "Resets all InfoMatrix's data and destroys all points. Count of points will be 0"
+    def vectorByIdx(self, idxs:list, keyVal:str=None):
+        """Returns vector of InfoPoints in field for respective indexes with 
+           one '?' in the list.
+           If keyVal is not None then returns vector of keyed values.
+           If keyVal is     None then returns vector of InfoPoints."""
         
-        self.journal.I(f"{self.name}.reset: ipType={ipType}")
+        #----------------------------------------------------------------------
+        # Get list of positions for respective indices
+        #----------------------------------------------------------------------
+        poss = self._vectorPosByIdx(idxs)
         
-        if ipType is not None: self.ipType = ipType
+        #----------------------------------------------------------------------
+        # Create vector of InfoPoints/Values for respective positions
+        #----------------------------------------------------------------------
+        toRet = []
+        for pos in poss:
+            toRet.append(self.pointByPos(pos).get(key=keyVal))
 
-        self.points     = []              # List of rows of lists of InfoPoints
-        self.actRow     = None            # Current axes in role of the rows for 2D matrix
-        self.actCol     = None            # Current axes in role of the columns for 2D matrix
-        self.actKey     = None            # Key of the InfoPoint's current dat value
-        self.staticEdge = False           # Static edge means value of the edge nodes is fixed        
+        return toRet    
+    
+    #--------------------------------------------------------------------------
+    def matrixByIdx(self, idxs:list, keyVal:str=None):
+        """Returns matrix of InfoPoints in field for respective indexes with 
+           two '?' in the list.
+           If keyVal is not None then returns matrix of keyed values.
+           If keyVal is     None then returns matrix of InfoPoints."""
 
-        self._origs     = {}              # Origin's coordinates of the InfoMatrix
-        self._cnts      = {}              # Number of InfoPoints in respective axes
-        self._diffs     = {}              # Distance between two points in respective axes in lambda units
+        #----------------------------------------------------------------------
+        # Get matrix of positions for respective indices
+        #----------------------------------------------------------------------
+        mtrx = self._matrixPosByIdx(idxs)
         
-        self.journal.O()
+        #----------------------------------------------------------------------
+        # Create marix of InfoPoints for respective positions
+        #----------------------------------------------------------------------
+        toRet = []
+        for row in mtrx:
+
+            rowVec = []
+
+            #------------------------------------------------------------------
+            # Create row-vector of InfoPoints/Values for respective positions
+            #------------------------------------------------------------------
+            for pos in row:
+                rowVec.append(self.pointByPos(pos).get(key=keyVal))
+
+            #------------------------------------------------------------------
+            # Vlozim riadok do matice
+            #------------------------------------------------------------------
+            toRet.append(rowVec)
+
+        return toRet    
+
+    #==========================================================================
+    # Value modification
+    #--------------------------------------------------------------------------
+    def clear(self, *, key=None, defs:dict={}):
+        "Set all InfoPoint's values to default value"
+        
+        #----------------------------------------------------------------------
+        # Clear all InfoPoint's values
+        #----------------------------------------------------------------------
+        for point in self:
+
+            if key is None: point.clear()
+            else          : point.clear(dat=defs)
+
+        #----------------------------------------------------------------------
+        # Clear InfoMatrix's settings
+        #----------------------------------------------------------------------
+        self.actVal   = key         # Key of the InfoPoint's current dat value
+
+        self.journal.M(f"{self.name}.clear: key={key}, val={val}")
         
     #--------------------------------------------------------------------------
     def gener(self, *, cnts:dict, origs:dict, rect:dict, ipType:str=None, vals:dict=None, defs:dict={} ):
@@ -399,7 +530,7 @@ class InfoMatrix:
         if ipType is not None: self.ipType = ipType
         self.journal.I(f"{self.name}.gener: {cnts} points of type {self.ipType} on rect {rect} from {origs}")
 
-        self.points.clear()                # Clear all points in the InfoMatrix
+        self.points.clear()                    # Clear all points in the InfoMatrix
 
         #----------------------------------------------------------------------
         # Set InfoPoint's schema Axes
@@ -420,16 +551,23 @@ class InfoMatrix:
             for key, name in vals.items():
                 InfoPoint.setVal(self.ipType, key, name)
 
+            if len(vals) == 1: self.actVal = list(vals.keys())[0]
+
         #----------------------------------------------------------------------
         # InfoMatrix settings
         #----------------------------------------------------------------------
         self._cnts     = cnts.copy()              # List of number of InfoPoints in respective axes     
         self._origs    = origs.copy()             # List of origin's coordinates of the InfoMatrix
+
         self._diffs    = {}                       # List of distances between two points in respective axes in lambda units
-        
         for key, cnt in self._cnts.items():
             self._diffs[key] = rect[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
                 
+        self.actCol    = None                     # Current axes in role of the columns for 2D matrix
+        self.actRow    = None                     # Current axes in role of the rows for 2D matrix
+        if len(self._cnts) <= 1: self.actRow = list(self._cnts.keys())[0]
+        if len(self._cnts) == 2: self.actCol = list(self._cnts.keys())[1]   
+
         #----------------------------------------------------------------------
         # Generate InfoPoints at respective positions
         #----------------------------------------------------------------------
@@ -456,32 +594,8 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         self.journal.O()
         
-    #==========================================================================
-    # Value modification
-    #--------------------------------------------------------------------------
-    def clear(self, *, key=None, defs:dict={}):
-        "Set all InfoPoint's values to default value"
-        
-        #----------------------------------------------------------------------
-        # Clear all InfoPoint's values
-        #----------------------------------------------------------------------
-        for point in self:
-
-            if key is None: point.clear()
-            else          : point.clear(dat=defs)
-
-        #----------------------------------------------------------------------
-        # Clear InfoMatrix's settings
-        #----------------------------------------------------------------------
-        self.actKey   = key         # Key of the InfoPoint's current dat value
-
-        self.journal.M(f"{self.name}.clear: key={key}, val={val}")
-        
     #--------------------------------------------------------------------------
 
-    #==========================================================================
-    # Complex Field Information
-    #--------------------------------------------------------------------------
     #==========================================================================
     # Methods application
     #--------------------------------------------------------------------------
@@ -1048,13 +1162,25 @@ if __name__ == '__main__':
     im3.gener(cnts={'a':3, 'b':4, 'c':2}, origs={'a':0.0, 'b':0, 'c':0}, rect={'a':1.0, 'b':2, 'c':3}, vals={'v':'Value'}, defs={'v':0.0})
     print(im3)
 
-    print(im3._vectorPosByIdx(['?', 0, 0]))
+    print('pos=16 ', im3.pointByPos(16))
+    print()
+
+    print('[1, 3, 0] ', im3.pointByIdx([1, 3, 0]))
+    print()
+
+    print('vector')
     print(im3._vectorPosByIdx(['?', 2, 1]))
+    vecs = im3.vectorByIdx(['?', 2, 1])
+    for vec in vecs: print(vec)  
+    print()
 
-    print(im3._vectorPosByIdx([ 0, '?', 0]))
+    print(im3._matrixPosByIdx([ 0, '?', '?']))
+    print()
+
+
+
+
     print(im3._vectorPosByIdx([ 2, '?', 1]))
-
-    print(im3._vectorPosByIdx([ 0, 0, '?']))
     print(im3._vectorPosByIdx([ 1, 0, '?']))
 
 

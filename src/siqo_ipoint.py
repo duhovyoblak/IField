@@ -217,13 +217,9 @@ class InfoPoint:
         "Returns value of this InfoPoint for respective key"
         
         #----------------------------------------------------------------------
-        # Return all values of this InfoPoint for key is None
+        # Return this InfoPoint for key is None
         #----------------------------------------------------------------------
-        if key is None:
-            toRet = {}
-            for key in InfoPoint._schema[self._ipType]['vals'].keys():
-                toRet[key] = self._dat[key].copy()
-            return toRet
+        if key is None: return self
 
         #----------------------------------------------------------------------
         # Key check
@@ -478,6 +474,8 @@ if __name__ == '__main__':
 
     print('m =', p2.get('m'))
     print('v2 =', p2.get('v2'))  
+    print('no key', p2.get())  
+    print()
     
     abs(p2, key='v')
     print('abs v ', p2)
