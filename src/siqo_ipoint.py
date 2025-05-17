@@ -77,6 +77,30 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
+    def getAxeIdx(ipType, key):
+        "Returns axe's idx for respective key"
+
+        #----------------------------------------------------------------------
+        # Check if ipType is defined    
+        #----------------------------------------------------------------------        
+        if ipType not in InfoPoint._schema.keys(): 
+            InfoPoint.journal(f"InfoPoint.getAxeIdx: ipType '{ipType}' is not defined InfoPoint type", True)
+            return None 
+
+        #----------------------------------------------------------------------
+        # Find index of the axe's key  
+        #----------------------------------------------------------------------
+        for i, keyAxe in enumerate(InfoPoint._schema[ipType]['axes'].keys()):
+            if key==keyAxe: return i
+
+        #----------------------------------------------------------------------
+        # Key not found     
+        #----------------------------------------------------------------------
+        InfoPoint.journal(f"InfoPoint.getAxeIdx: Key '{key}' not found in axes {InfoPoint._schema[ipType]['axes']}", True)
+        return None
+    
+    #--------------------------------------------------------------------------
+    @staticmethod
     def setVal(ipType, key, name):
         "Sets value key and name"
         
@@ -479,6 +503,11 @@ if __name__ == '__main__':
     
     abs(p2, key='v')
     print('abs v ', p2)
+
+    print('idx for keyAxe x =', InfoPoint.getAxeIdx('ipTest', 'x'))
+    print('idx for keyAxe y =', InfoPoint.getAxeIdx('ipTest', 'y'))
+    print('idx for keyAxe z =', InfoPoint.getAxeIdx('ipTest', 'z'))
+    print('idx for keyVal x =', InfoPoint.getAxeIdx('ipXest', 'x'))
 
     pc = p2.copy()
     print('Copied ', pc)
