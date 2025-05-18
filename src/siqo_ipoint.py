@@ -62,7 +62,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def clearSchema(ipType):
-        "Clears schema of InfoPoint for respective ipType"
+        "Clears schema of InfoPoint for respective ipType to {'axes':{}, 'vals':{}}"
         
         InfoPoint._schema[ipType] = {'axes':{}, 'vals':{}}
 
@@ -78,7 +78,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getAxeIdx(ipType, key):
-        "Returns axe's idx for respective key"
+        "Returns axe's idx for respective key as position in the list of axes othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
@@ -102,7 +102,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getAxeName(ipType, key):
-        "Returns axe's Name for respective key"
+        "Returns axe's Name for respective key as string othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
@@ -133,7 +133,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getValIdx(ipType, key):
-        "Returns value's idx for respective key"
+        "Returns value's idx for respective key as position in the list of axes othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
@@ -157,7 +157,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getValName(ipType, key):
-        "Returns value's Name for respective key"
+        "Returns value's Name for respective key as string othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
@@ -179,7 +179,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getSchema(ipType):
-        "Returns schema for respective InfoPoint type"
+        "Returns schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
         
         if ipType not in InfoPoint._schema.keys(): InfoPoint._schema[ipType] = {'axes':{}, 'vals':{}}
 
@@ -188,7 +188,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getAxes(ipType):
-        "Returns axes keys and names"
+        "Returns axes keys and names as dict {key: name}"
         
         if ipType not in InfoPoint._schema.keys():
             InfoPoint.journal(f"InfoPoint.getAxes: ipType '{ipType}' is not defined InfoPoint type", True)
@@ -199,7 +199,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getVals(ipType):
-        "Returns values keys and names"
+        "Returns values keys and names as dict {key: name}"
 
         if ipType not in InfoPoint._schema.keys():
             InfoPoint.journal(f"InfoPoint.getVals: ipType '{ipType}' is not defined InfoPoint type", True)

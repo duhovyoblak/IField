@@ -200,58 +200,54 @@ class InfoMatrix:
     #==========================================================================
     # Proxy tools for InfoPoint schema
     #--------------------------------------------------------------------------
-    def resetSchema(self):
-        "Resets schema of InfoPoint to default values"
-        return InfoPoint.resetSchema()
-
-    #--------------------------------------------------------------------------
-    def clearSchema(self, ipType):
-        return InfoPoint.clearSchema(ipType)
+    def clearSchema(self):
+        "Clears schema of InfoPoint for respective ipType to {'axes':{}, 'vals':{}}"
+        return InfoPoint.clearSchema(self.ipType)
     
     #--------------------------------------------------------------------------
-    def setAxe(self, ipType, key, name):
+    def setAxe(self, key, name):
         "Sets axe key and name"
-        return InfoPoint.setAxe(ipType, key, name)
+        return InfoPoint.setAxe(self.ipType, key, name)
     
     #--------------------------------------------------------------------------
-    def getAxeIdx(self, ipType, key):
-        "Returns axe's idx for respective key"
-        return InfoPoint.getAxeIdx(ipType, key)
+    def getAxeIdx(self, key):
+        "Returns axe's idx for respective key as position in the list of axes othewise None"
+        return InfoPoint.getAxeIdx(self.ipType, key)
     
     #--------------------------------------------------------------------------
-    def getAxeName(self, ipType, key):
-        "Returns axe's Name for respective key"
-        return InfoPoint.getAxeName(ipType, key)
+    def getAxeName(self, key):
+        "Returns axe's Name for respective key as string othewise None"
+        return InfoPoint.getAxeName(self.ipType, key)
     
     #--------------------------------------------------------------------------
-    def setVal(self, ipType, key, name):
+    def setVal(self, key, name):
         "Sets value key and name"
-        return InfoPoint.setVal(ipType, key, name)
+        return InfoPoint.setVal(self.ipType, key, name)
 
     #--------------------------------------------------------------------------
-    def getValIdx(self, ipType, key):
-        "Returns value's idx for respective key"
-        return InfoPoint.getValIdx(ipType, key)
+    def getValIdx(self, key):
+        "Returns value's idx for respective key as position in the list of axes othewise None"
+        return InfoPoint.getValIdx(self.ipType, key)
     
     #--------------------------------------------------------------------------
-    def getValName(self, ipType, key):
-        "Returns value's Name for respective key"
-        return InfoPoint.getValName(ipType, key)
+    def getValName(self, key):
+        "Returns value's Name for respective key as string othewise None"
+        return InfoPoint.getValName(self.ipType, key)
     
     #--------------------------------------------------------------------------
-    def getSchema(self, ipType):
-        "Returns schema for respective InfoPoint type"
-        return InfoPoint.getSchema(ipType)
+    def getSchema(self):
+        "Returns schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
+        return InfoPoint.getSchema(self.ipType)
     
     #--------------------------------------------------------------------------
-    def getAxes(self, ipType):
-        "Returns axes keys and names"
-        return InfoPoint.getAxes(ipType)
+    def getAxes(self):
+        "Returns axes keys and names as dict {key: name}"
+        return InfoPoint.getAxes(self.ipType)
     
     #--------------------------------------------------------------------------
-    def getVals(self, ipType):
-        "Returns values keys and names"
-        return InfoPoint.getVals(ipType)
+    def getVals(self):
+        "Returns values keys and names as dict {key: name}"
+        return InfoPoint.getVals(self.ipType)
 
     #==========================================================================
     # Position and indices tools

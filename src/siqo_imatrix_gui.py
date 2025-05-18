@@ -8,8 +8,10 @@ from   tkinter.messagebox     import showinfo
 from   matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 #from   mpl_toolkits                      import mplot3d
 
-import numpy             as np
-import matplotlib.pyplot as plt
+import numpy                  as np
+import matplotlib.pyplot      as plt
+
+from   siqo_imatrix           import InfoMatrix
 
 #==============================================================================
 # package's constants
@@ -47,15 +49,6 @@ class InfoMarixGui(ttk.Frame):
         self.w       = 1600                # Width of the chart in px
         self.h       =  900                # Height of the chart in px
         
-        self.strVal = tk.StringVar('None') # Name of the value to show in the chart
-        self.strX   = tk.StringVar('None') # Name of the X-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
-        self.strY   = tk.StringVar('None') # Name of the Y-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
-        self.strMet = tk.StringVar('None') # Name of the method to apply to the data
-        
-        if 'keyVal' in kwargs.keys(): self.strVal.set(kwargs['val'])
-        if 'keyX'   in kwargs.keys(): self.strX.  set(kwargs['axX'])
-        if 'keyY'   in kwargs.keys(): self.strY.  set(kwargs['axY'])
-
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
@@ -63,9 +56,15 @@ class InfoMarixGui(ttk.Frame):
         self.CPs      = []             # List of values (cP) to show
         self.actPoint = None           # Actual working point (cP)
         
-        self.keyX     = ''             # Dimension name for coordinate X
+        self.keyX     = ''             # key for Axis X to show
+        self.keyY     = ''             # key for Axis Y to show
+        self.keyV     = ''             # key for value to show
+
+        if 'keyV' in kwargs.keys(): self.keyV = kwargs['keyV']
+        if 'keyX' in kwargs.keys(): self.keyX = kwargs['keyX']
+        if 'keyY' in kwargs.keys(): self.keyY = kwargs['keyY']
+
         self.X        = None           # np array for coordinate X
-        self.keyY     = ''             # Dimension name for coordinate Y
         self.Y        = None           # np array for coordinate Y
         self.C        = None           # np array for value color
         self.U        = None           # np array for quiver re value
@@ -75,6 +74,15 @@ class InfoMarixGui(ttk.Frame):
         # Initialise original tkInter.Tk
         #----------------------------------------------------------------------
         super().__init__(container)
+
+        self.strVal = tk.StringVar(value='None') # Name of the value to show in the chart
+        self.strX   = tk.StringVar(value='None') # Name of the X-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
+        self.strY   = tk.StringVar(value='None') # Name of the Y-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
+        self.strMet = tk.StringVar(value='None') # Name of the method to apply to the data
+        
+        if 'keyVal' in kwargs.keys(): self.strVal.set(kwargs['val'])
+        if 'keyX'   in kwargs.keys(): self.strX.  set(kwargs['axX'])
+        if 'keyY'   in kwargs.keys(): self.strY.  set(kwargs['axY'])
 
         #----------------------------------------------------------------------
         # Create head buttons bar
@@ -94,11 +102,14 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Value to show selector
         #----------------------------------------------------------------------
+        self.strV = tk.StringVar(value='None') # Name of the value to show in the chart
+
+
         lblVal = ttk.Label(frmBtn, text="Value to show:")
         lblVal.grid(column=0, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        self.cbVal = ttk.Combobox(frmBtn, textvariable=self.strVal, width=5)
-        self.cbVal['values'] = ['re', 'im', 'phase', 'abs', 'sqr']
+        self.cbVal = ttk.Combobox(frmBtn, textvariable=self.strV, width=5)
+        self.cbVal['values'] = self.dat.getVals()
         self.cbVal['state' ] = 'readonly'
         self.cbVal.bind('<<ComboboxSelected>>', self.show)
         self.cbVal.grid(column=0, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
