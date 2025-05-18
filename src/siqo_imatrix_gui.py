@@ -53,12 +53,12 @@ class InfoMarixGui(ttk.Frame):
         # Internal objects
         #----------------------------------------------------------------------
         self.type     = '2D'               # Actual type of the chart
-        self.CPs      = []                 # List of values (cP) to show
-        self.actPoint = None               # Actual working point (cP)
+        self.IPs      = []                 # List of InfoPoints to show
+        self.actPoint = None               # Actual working InfoPoint
         
+        self.keyV     = ''                 # key for value to show
         self.keyX     = ''                 # key for Axis X to show
         self.keyY     = ''                 # key for Axis Y to show
-        self.keyV     = ''                 # key for value to show
 
         if 'keyV' in kwargs.keys(): self.keyV = kwargs['keyV']
         if 'keyX' in kwargs.keys(): self.keyX = kwargs['keyX']
@@ -98,11 +98,11 @@ class InfoMarixGui(ttk.Frame):
         lblVal = ttk.Label(frmBtn, text="Value to show:")
         lblVal.grid(column=0, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        self.cbVal = ttk.Combobox(frmBtn, textvariable=self.strV, width=5)
-        self.cbVal['values'] = list(self.dat.getVals().values())
-        self.cbVal['state' ] = 'readonly'
-        self.cbVal.bind('<<ComboboxSelected>>', self.show)
-        self.cbVal.grid(column=0, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+        self.cbV = ttk.Combobox(frmBtn, textvariable=self.strV, width=5)
+        self.cbV['values'] = list(self.dat.getVals().values())
+        self.cbV['state' ] = 'readonly'
+        self.cbV.bind('<<ComboboxSelected>>', self.dataChanged)
+        self.cbV.grid(column=0, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
         
         #----------------------------------------------------------------------
         # X axis dimension selector
@@ -146,11 +146,11 @@ class InfoMarixGui(ttk.Frame):
         lblMet = ttk.Label(frmBtn, text="Apply:")
         lblMet.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        self.cbMet = ttk.Combobox(frmBtn, textvariable=self.strM, width=10)
-        self.cbMet['values'] = ['None', 'Clear Data', 'Random Bit 10%', 'Random Phase']
-        self.cbMet['state' ] = 'readonly'
-        self.cbMet.bind('<<ComboboxSelected>>', self.method)
-        self.cbMet.grid(column=3, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+        self.cbM = ttk.Combobox(frmBtn, textvariable=self.strM, width=10)
+        self.cbM['values'] = ['None', 'Clear Data', 'Random Bit 10%', 'Random Phase']
+        self.cbM['state' ] = 'readonly'
+        self.cbM.bind('<<ComboboxSelected>>', self.method)
+        self.cbM.grid(column=3, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
         # Create a figure with the navigator bar and bind it to mouse events
@@ -198,15 +198,29 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Read actual settings
         #----------------------------------------------------------------------
-        nameV = self.strV.get()    # Name value to show on X axis
-        nameX = self.strX.get()    # Name of the axe to show on X axis
-        nameY = self.strY.get()    # Name of the axe to show on Y axis
-        nameM = self.strM.get()    # Name of the axe to show on Y axis
+        aKeyV = self.   self.cbV.current()
+        aKeyX = self.cbX.current()
+        aKeyY = self.cbY.current()
         
-        self.journal.I(f'{self.name}.dataChanged: value:{nameV}, X-axis={nameX}, Y-axis={nameY}, Method={nameM}')
+        self.journal.I(f'{self.name}.dataChanged: value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
 
+        #----------------------------------------------------------------------
+        # Check for changes
+        #----------------------------------------------------------------------
+        changed = False
+
+        # Zmena val, X, Y
+        if self.keyV != aKeyV: changed = True
+        if self.keyX != aKeyX: changed = True
+        if self.keyY != aKeyY: changed = True
+
+        #----------------------------------------------------------------------
+        # Ak nenastala zmena v zobrazeni, vyskocim
+        #----------------------------------------------------------------------
+        if not changed: self.journal.M(f'{self.name}.dataChanged: Settings have not changed, no need for show')
+        else          : self.show()
+        
         self.journal.O()
-        self.show()
         
     #==========================================================================
     # Method to apply
@@ -214,7 +228,7 @@ class InfoMarixGui(ttk.Frame):
     def method(self, event=None):
         "Apply data in active cut"
         
-        met = self.strMet.get()
+        met = self.strM.get()
         self.journal.I(f'{self.name}.method: {met} with cut = {self.myCut}')
 
         self.dat.cutSet(self.myCut)
@@ -279,13 +293,25 @@ class InfoMarixGui(ttk.Frame):
     def show(self, event=None):
 
         self.journal.I(f'{self.name}.show:')
-        
+
         self.journal.O()
         return
 
         if 'keyVal' in kwargs.keys(): self.strVal.set(kwargs['val'])
         if 'keyX'   in kwargs.keys(): self.strX.  set(kwargs['axX'])
         if 'keyY'   in kwargs.keys(): self.strY.  set(kwargs['axY'])
+
+
+        #----------------------------------------------------------------------
+        # Ziskam udaje pre zobrazenie podla aktualneho settingu
+        #----------------------------------------------------------------------
+        nameV = self.strV.get()    # Name value to show on X axis
+        nameX = self.strX.get()    # Name of the axe to show on X axis
+        nameY = self.strY.get()    # Name of the axe to show on Y axis
+        nameM = self.strM.get()    # Name of the axe to show on Y axis
+
+
+
 
 
 

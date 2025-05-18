@@ -101,6 +101,31 @@ class InfoPoint:
     
     #--------------------------------------------------------------------------
     @staticmethod
+    def getAxeKey(ipType, idx):
+        "Returns axe's key for respective position in the list of axes othewise None"
+
+        #----------------------------------------------------------------------
+        # Check if ipType is defined    
+        #----------------------------------------------------------------------        
+        if ipType not in InfoPoint._schema.keys(): 
+            InfoPoint.journal(f"InfoPoint.getAxeKey: ipType '{ipType}' is not defined InfoPoint type", True)
+            return None 
+
+        #----------------------------------------------------------------------
+        # Check if idx is not out of the range   
+        #----------------------------------------------------------------------        
+        if idx >= len(InfoPoint._schema[ipType]['axes'].keys()): 
+            InfoPoint.journal(f"InfoPoint.getAxeKey: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['axes']}", True)
+            return None 
+
+        #----------------------------------------------------------------------
+        # Find key for index  
+        #----------------------------------------------------------------------
+        key = list(InfoPoint._schema[ipType]['axes'].keys())[idx]
+        return key
+    
+    #--------------------------------------------------------------------------
+    @staticmethod
     def getAxeName(ipType, key):
         "Returns axe's Name for respective key as string othewise None"
 
@@ -153,6 +178,31 @@ class InfoPoint:
         #----------------------------------------------------------------------
         InfoPoint.journal(f"InfoPoint.getValIdx: Key '{key}' not found in valus {InfoPoint._schema[ipType]['vals']}", True)
         return None
+    
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def getValKey(ipType, idx):
+        "Returns value's key for respective position in the list of valus othewise None"
+
+        #----------------------------------------------------------------------
+        # Check if ipType is defined    
+        #----------------------------------------------------------------------        
+        if ipType not in InfoPoint._schema.keys(): 
+            InfoPoint.journal(f"InfoPoint.getValKey: ipType '{ipType}' is not defined InfoPoint type", True)
+            return None 
+
+        #----------------------------------------------------------------------
+        # Check if idx is not out of the range   
+        #----------------------------------------------------------------------        
+        if idx >= len(InfoPoint._schema[ipType]['vals'].keys()): 
+            InfoPoint.journal(f"InfoPoint.getValKey: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['vals']}", True)
+            return None 
+
+        #----------------------------------------------------------------------
+        # Find key for index  
+        #----------------------------------------------------------------------
+        key = list(InfoPoint._schema[ipType]['vals'].keys())[idx]
+        return key
     
     #--------------------------------------------------------------------------
     @staticmethod
@@ -571,10 +621,19 @@ if __name__ == '__main__':
     
     print('schema tools')
     print('idx for keyAxe x =', InfoPoint.getAxeIdx('ipTest', 'x'))
+    print('key for keyAxe 0 =', InfoPoint.getAxeKey('ipTest', 0 ))
     print('idx for keyAxe y =', InfoPoint.getAxeIdx('ipTest', 'y'))
+    print('key for keyAxe 1 =', InfoPoint.getAxeKey('ipTest', 1 ))
     print('idx for keyAxe z =', InfoPoint.getAxeIdx('ipTest', 'z'))
+    print('key for keyAxe 2 =', InfoPoint.getAxeKey('ipTest', 2 ))
+
     print('idx for keyVal x =', InfoPoint.getValIdx('ipTest', 'x'))
+    print('key for keyVal 0 =', InfoPoint.getValKey('ipTest', 0))
     print('idx for keyVal v =', InfoPoint.getValIdx('ipTest', 'v'))
+    print('key for keyVal 1 =', InfoPoint.getValKey('ipTest', 1))
+    print('key for keyVal 2 =', InfoPoint.getValKey('ipTest', 2))
+    print()
+
 
     print('name for keyAxe x =', InfoPoint.getAxeName('ipTest', 'x'))
     print('name for keyAxe y =', InfoPoint.getAxeName('ipTest', 'y'))

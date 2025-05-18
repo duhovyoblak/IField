@@ -215,6 +215,11 @@ class InfoMatrix:
         return InfoPoint.getAxeIdx(self.ipType, key)
     
     #--------------------------------------------------------------------------
+    def getAxeKey(self, idx):
+        "Returns axe's key for respective position in the list of axes othewise None"
+        return InfoPoint.getAxeKey(self.ipType, idx)
+
+    #--------------------------------------------------------------------------
     def getAxeName(self, key):
         "Returns axe's Name for respective key as string othewise None"
         return InfoPoint.getAxeName(self.ipType, key)
@@ -229,6 +234,11 @@ class InfoMatrix:
         "Returns value's idx for respective key as position in the list of axes othewise None"
         return InfoPoint.getValIdx(self.ipType, key)
     
+    #--------------------------------------------------------------------------
+    def getValKey(self, idx):
+        "Returns value's key for respective position in the list of valus othewise None"
+        return InfoPoint.getValKey(self.ipType, idx)
+
     #--------------------------------------------------------------------------
     def getValName(self, key):
         "Returns value's Name for respective key as string othewise None"
