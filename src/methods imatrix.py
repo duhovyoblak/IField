@@ -796,6 +796,368 @@ class InfoMatrix:
         self.journal.O(f"{self.name}.applyPointFunction: {function.__name__} was applied to {aps}/{pts} nodes")
         return True
 
+    #--------------------------------------------------------------------------
+    def applyRays(self, dimLower, start=0, stop=0, forward=True, torus=False):
+        "Apply rays from <dimLower> to next higher dimension"
+        
+        self.journal.I(f"{self.name}.getRays: from dim {dimLower} with torus={torus}")
+        
+        if forward: rotDir = -1j
+        else      : rotDir =  1j
+        
+        # Compute constant length of torus-like dimension
+        count = self.count()
+        
+        dltOff = (self.offMax-self.offMin) * (count+1)/count
+        
+        #----------------------------------------------------------------------
+        # Prepare list of source points
+        #----------------------------------------------------------------------
+        actCut = self.cutDim(dimLower)
+        srcs = self.cutToNodes()
+        
+        #----------------------------------------------------------------------
+        # Prepare of target points
+        #----------------------------------------------------------------------
+        actCut.append('*')
+        tgts = self.cutToNodes(actCut)
+
+        #----------------------------------------------------------------------
+        # Iterate over srcs points
+        #----------------------------------------------------------------------
+        toRet = []
+        for src in srcs:
+        
+            srcP = src['cP']
+        
+            #------------------------------------------------------------------
+            # Iterate over target points
+            #------------------------------------------------------------------
+            for tgt in tgts:
+                
+                tgtP = tgt['cP']
+                
+                #--------------------------------------------------------------
+                # Get coordinates of source point and target point
+                #--------------------------------------------------------------
+                dlts = srcP.deltasTo(tgtP)
+                dx1  = dlts[0]              # Rozdiel 1 suradnic bodov srcP a tgtP
+                dx2  = tgtP.pos[1]          # Bod srcP nema 2 suradnicu, povazujeme ju za 0
+                
+                #--------------------------------------------------------------
+                # Compute distance in periods
+                #--------------------------------------------------------------
+                r = math.sqrt( (dx1*dx1) + (dx2*dx2) )  # in distance units
+                            
+                # phase shift
+                phase = (r / _UPP) * 2 * math.pi        # in radians
+                
+                # Phase defines rotation of amplitude
+                rot = cmath.exp(rotDir * phase)
+            
+                #--------------------------------------------------------------
+                # Superpose srcP * rot to tgtP or backward
+                #--------------------------------------------------------------
+                if forward: tgtP.c += srcP.c * rot
+                else      : srcP.c += tgtP.c * rot
+                
+                #--------------------------------------------------------------
+                # If torus then superpose secondary ray
+                #--------------------------------------------------------------
+                if torus:
+                    
+                    if dx1 != 0:
+                        
+                        dx1 = dltOff - abs(dx1)
+                        
+                        # Compute distance in periods
+                        r = math.sqrt( (dx1*dx1) + (dx2*dx2) )   # in distance units
+                            
+                        # phase shift
+                        phase = (r / _UPP) * 2 * math.pi        # in radians
+                
+                        # Phase defines rotation of amplitude
+                        rot = cmath.exp(rotDir * phase)
+            
+                        #--------------------------------------------------------------
+                        # Superpose srcP * rot to tgtP or backward
+                        #--------------------------------------------------------------
+                        if forward: tgtP.c += srcP.c * rot
+                        else      : srcP.c += tgtP.c * rot
+
+                toRet.append({'src':src['cP'], 'tgt':tgt['cP'], 'dx1':dx1, 'dx2':dx2})
+                
+        #----------------------------------------------------------------------
+        # Normalisation
+        #----------------------------------------------------------------------
+        if forward: self.normAbs(nods=tgts)
+        else      : self.normAbs(nods=srcs)
+
+        #----------------------------------------------------------------------
+        self.journal.O(f"{self.name}.getRays: creates {len(toRet)} rays")
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def evolve(self, srcCut, inf=0, start=0, stop=0):
+        "Evolve state in <srcCut> and historise it in nex dimension"
+        
+        self.journal.I(f"{self.name}.evolve: srcCut={srcCut} from {start} to {stop}")
+        
+        #----------------------------------------------------------------------
+        # Prepare list of nodes for evolution
+        #----------------------------------------------------------------------
+        srcs = self.cutToNodes(srcCut)
+        
+        #----------------------------------------------------------------------
+        # Prepare definition of the target cut
+        #----------------------------------------------------------------------
+        tgtCut = list(srcCut)
+        tgtCut.append(start)
+        
+        #----------------------------------------------------------------------
+        # Copy original srcs into tgts
+        #----------------------------------------------------------------------
+        tgts = self.cutToNodes(tgtCut)
+        self.copyValues(srcs, tgts)
+
+        #----------------------------------------------------------------------
+        # Iterate over states from <start> to <stop>
+        #----------------------------------------------------------------------
+        i = 0
+        for time in range(start+1, stop+1):
+            
+            #------------------------------------------------------------------
+            # Retrieve list of target nodes
+            #------------------------------------------------------------------
+            tgtCut[-1] = time
+            tgts = self.cutToNodes(tgtCut)
+    
+            #------------------------------------------------------------------
+            # Evolve one state
+            #------------------------------------------------------------------
+            self.evolveStateBase(srcs, tgts, a=time, b=time+inf)
+            
+            #------------------------------------------------------------------
+            # Copy evolved state into srcs
+            #------------------------------------------------------------------
+            self.copyValues(tgts, srcs)
+            
+            i += 1
+            
+        #----------------------------------------------------------------------
+        self.journal.O(f"{self.name}.evolve: evolved {i} states")
+
+    #--------------------------------------------------------------------------
+    def evolveStateBase(self, srcs, tgts, a, b=None):
+        "Evolve state of the srcs nodes into tgts nodes"
+        
+        if b is None: b = a
+        self.journal.I(f"{self.name}.evolveStateBase: For Sources relative to the target {a}..{b}")
+
+        #----------------------------------------------------------------------
+        # Doability check
+        #----------------------------------------------------------------------
+        if a > b: 
+            self.journal.M(f"{self.name}.evolveStateBase: Bounadries ERROR: {a} > {b}", True)
+            self.journal.O()
+            return
+
+        #----------------------------------------------------------------------
+        # Phase rotation between two points - static data
+        #----------------------------------------------------------------------
+        rotDist  = (self.offMax - self.offMin) / (self.count()-1)  # distance in units
+        rotPhase = (rotDist/_UPP) * 2 * math.pi                    # distance in radians
+        self.journal.M(f"{self.name}.evolveStateBase: Phase between two points: {rotPhase:5.4} rad")
+
+        #----------------------------------------------------------------------
+        # Iteration prep
+        #----------------------------------------------------------------------
+        rotDir   = -1j                              # Direction of amplitude's rotation
+        rotCoeff = cmath.exp(rotDir * rotPhase)     # rotation coefficient
+        self.journal.M(f"{self.name}.evolveStateBase: Rot coeff: {rotCoeff:5.4}, abs = {abs(rotCoeff):5.4}")
+        
+        #----------------------------------------------------------------------
+        # Preprae global aggregates
+        #----------------------------------------------------------------------
+        srcsSumAbs = 0
+        for src in srcs: srcsSumAbs += src['cP'].abs()
+        
+        #----------------------------------------------------------------------
+        # Iteration over tgts
+        #----------------------------------------------------------------------
+        posT = 0
+        for tgtNode in tgts:
+            
+            cumAmp = complex(0,0)
+
+            #------------------------------------------------------------------
+            # Accumulation over srcs LEFT
+            #------------------------------------------------------------------
+            xL = posT - b
+            yL = posT - a
+            if xL  < 0   : xL  = 0  # pretecenie pred zaciatok
+            
+            for posS in range(xL, yL+1):
+
+                srcNode = srcs[posS]
+                
+                #--------------------------------------------------------------
+                # Rotate srcAmp by abs(posT-posS)*rotPhase
+                #--------------------------------------------------------------
+                rot    = cmath.exp(rotDir * abs(posT-posS) * rotPhase)
+                srcAmp = srcNode['cP'].c * rot
+
+                #--------------------------------------------------------------
+                # Cumulate rotated srcAmp to cumAmp
+                #--------------------------------------------------------------
+                if True:          # Dvojite zapocitanie srcs[posT]
+                
+                    cumAmp += srcAmp
+                    self.journal.M(f"{self.name}.evolveStateBase: Accumulation LEFT: {posS} -> {posT}")
+            
+            #------------------------------------------------------------------
+            # Accumulation over srcs RIGHT
+            #------------------------------------------------------------------
+            xL = posT + a
+            yL = posT + b
+            if yL >= len(srcs): yL = len(srcs)-1  # pretecenie za koniec
+            
+            for posS in range(xL, yL+1):
+
+                srcNode = srcs[posS]
+                
+                #--------------------------------------------------------------
+                # Rotate srcAmp by abs(posT-posS)*rotPhase
+                #--------------------------------------------------------------
+                rot    = cmath.exp(rotDir * abs(posT-posS) * rotPhase)
+                srcAmp = srcNode['cP'].c * rot
+
+                #--------------------------------------------------------------
+                # Cumulate rotated srcAmp to cumAmp
+                #--------------------------------------------------------------
+                if posT != posS:          # Dvojite zapocitanie srcs[posT]
+                
+                    cumAmp += srcAmp
+                    self.journal.M(f"{self.name}.evolveStateBase: Accumulation RIGHT: {posT} <- {posS}")
+            
+            #------------------------------------------------------------------
+            # Set target node value
+            #------------------------------------------------------------------
+            tgtNode['cP'].c = cumAmp
+
+            #------------------------------------------------------------------
+            # Move to the next tgt node
+            #------------------------------------------------------------------
+            posT += 1
+            
+        self.journal.M(f"{self.name}.evolveStateBase: srcsSumAbs: {srcsSumAbs:5.2}")
+
+        #----------------------------------------------------------------------
+        # Normalisation
+        #----------------------------------------------------------------------
+        self.normAbs(nods=tgts, norm=srcsSumAbs)
+
+        #----------------------------------------------------------------------
+        self.journal.O()
+
+    #--------------------------------------------------------------------------
+    def evolveState(self, srcs, tgts):
+        "Evolve state of the srcs nodes into tgts nodes"
+        
+        self.journal.I(f"{self.name}.evolveState:")
+
+        #----------------------------------------------------------------------
+        # Phase rotation between two points - static data
+        #----------------------------------------------------------------------
+        rotDist  = (self.offMax - self.offMin) / (self.count()-1)  # distance in units
+        rotPhase = (rotDist/_UPP) * 2 * math.pi                    # distance in radians
+        self.journal.M(f"{self.name}.evolveState: Phase between two points: {rotPhase} rad")
+
+        #----------------------------------------------------------------------
+        # Iteration over tgts from left
+        #----------------------------------------------------------------------
+        rotDir   = -1j                              # Direction of amplitude's rotation
+        rotCoeff = cmath.exp(rotDir * rotPhase)     # rotation coefficient
+        self.journal.M(f"{self.name}.evolveState: Rot coeff: {rotCoeff}, abs = {abs(rotCoeff)}")
+        
+        cumAmp   = complex(0,0)                     # Cumulative amplitude
+
+        #----------------------------------------------------------------------
+        # Iteration over tgts from left
+        #----------------------------------------------------------------------
+        pos = 0
+        for tgtNode in tgts:
+            
+            #------------------------------------------------------------------
+            # Rotate cumulative amplitude by rotPhase angle (multiple by rotCoeff)
+            #------------------------------------------------------------------
+            cumAmp *= rotCoeff
+            
+            #------------------------------------------------------------------
+            # Retrieve current source's amplitude
+            #------------------------------------------------------------------
+            srcAmp = srcs[pos]['cP'].c
+            
+            #------------------------------------------------------------------
+            # Accumulate srcAmp to cumAmp
+            #------------------------------------------------------------------
+            cumAmp += srcAmp
+
+            #------------------------------------------------------------------
+            # Set target amplitude - ORIGINAL TARGET VALUE IS (0,0)
+            #------------------------------------------------------------------
+            tgtNode['cP'].c = cumAmp
+            print(f"{pos:3} cum {cumAmp.real:7.3f} {cumAmp.imag:7.3f}j   src {srcAmp.real:7.3f} {srcAmp.imag:7.3f}j")
+            
+            #------------------------------------------------------------------
+            # Move to the next right node
+            #------------------------------------------------------------------
+            pos += 1
+
+        #----------------------------------------------------------------------
+        # Iteration over tgts from right
+        #----------------------------------------------------------------------
+        print()
+        rotDir   = -1j                              # Direction of amplitude's rotation
+        rotCoeff = cmath.exp(rotDir * rotPhase)     # rotation coefficient
+        
+        cumAmp   = complex(0,0)                     # Cumulative amplitude
+        
+        #----------------------------------------------------------------------
+        # Iteration over tgts from right
+        #----------------------------------------------------------------------
+        pos = len(tgts)-1
+        for tgtNode in reversed(tgts):
+            
+            #------------------------------------------------------------------
+            # Rotate cumulative amplitude by rotPhase angle (multiple by rotCoeff)
+            #------------------------------------------------------------------
+            cumAmp *= rotCoeff
+            
+            #------------------------------------------------------------------
+            # Retrieve current source's amplitude
+            #------------------------------------------------------------------
+            srcAmp = srcs[pos]['cP'].c
+            
+            #------------------------------------------------------------------
+            # Accumulate srcAmp to cumAmp
+            #------------------------------------------------------------------
+            cumAmp += srcAmp
+
+            #------------------------------------------------------------------
+            # Set target amplitude - ORIGINAL TARGET VALUE IS SETTED FROM LEFT ITERATION
+            #------------------------------------------------------------------
+            tgtNode['cP'].c += cumAmp
+            print(f"{pos:3} cum {cumAmp.real:7.3f} {cumAmp.imag:7.3f}j   src {srcAmp.real:7.3f} {srcAmp.imag:7.3f}j")
+            
+            #------------------------------------------------------------------
+            # Move to the next left node
+            #------------------------------------------------------------------
+            pos -= 1
+
+        #----------------------------------------------------------------------
+        self.journal.O()
+
     #==========================================================================
     # Normalisation methods
     #--------------------------------------------------------------------------
