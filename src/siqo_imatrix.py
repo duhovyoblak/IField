@@ -201,7 +201,7 @@ class InfoMatrix:
     # Proxy tools for InfoPoint schema
     #--------------------------------------------------------------------------
     def clearSchema(self):
-        "Clears schema of InfoPoint for respective ipType to {'axes':{}, 'vals':{}}"
+        "Clears schema of InfoPoint for respective ipType to {'axes':{'None':'None'}, 'vals':{}}"
         return InfoPoint.clearSchema(self.ipType)
     
     #--------------------------------------------------------------------------

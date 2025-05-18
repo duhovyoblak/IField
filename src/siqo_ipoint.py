@@ -15,10 +15,10 @@ _F_TOTAL  = 5                          # Total number of digits in float number
 _F_DECIM  = 3                          # Number of digits after decimal point in float number
 _F_FORMAT = f"{_F_TOTAL}.{_F_DECIM}f"  # Format for float number
 
-_SCHEMA   = {'ipReal   ':{'axes':{'x':'os X', 'y':'os Y'}
-                         ,'vals':{'c':'complex Value'}
+_SCHEMA   = {'ipReal   ':{'axes':{'None':'None'}
+                         ,'vals':{}
                          }
-            ,'ipComplex':{'axes':{'x':'os X', 'y':'os Y'}
+            ,'ipComplex':{'axes':{'None':'None', 'x':'os X', 'y':'os Y'}
                          ,'vals':{'r':'real Value'}
                          }
             }                          # Default built-in Schema for InfoPoint
@@ -62,16 +62,16 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def clearSchema(ipType):
-        "Clears schema of InfoPoint for respective ipType to {'axes':{}, 'vals':{}}"
+        "Clears schema of InfoPoint for respective ipType to {'axes':{'None':'None'}, 'vals':{}}"
         
-        InfoPoint._schema[ipType] = {'axes':{}, 'vals':{}}
+        InfoPoint._schema[ipType] = {'axes':{'None':'None'}, 'vals':{}}
 
     #--------------------------------------------------------------------------
     @staticmethod
     def setAxe(ipType, key, name):
         "Sets axe key and name"
         
-        if ipType not in InfoPoint._schema.keys(): InfoPoint._schema[ipType] = {'axes':{}, 'vals':{}} 
+        if ipType not in InfoPoint._schema.keys(): InfoPoint._schema[ipType] = {'axes':{'None':'None'}, 'vals':{}} 
 
         InfoPoint._schema[ipType]['axes'][key] = name
 
@@ -254,8 +254,8 @@ class InfoPoint:
         if ipType not in InfoPoint._schema.keys():
             InfoPoint.journal(f"InfoPoint.getVals: ipType '{ipType}' is not defined InfoPoint type", True)
             return None
-        
-        return InfoPoint._schema[ipType]['vals'].copy()  
+
+        return InfoPoint._schema[ipType]['vals'].copy()
 
     #==========================================================================
     # Constructor & utilities
@@ -298,6 +298,12 @@ class InfoPoint:
         i = 0
         for axe, axeName in InfoPoint._schema[self._ipType]['axes'].items():
 
+            # Axe 'None' preskocim
+            if axe == 'None': continue
+
+            #----------------------------------------------------------------------
+            # Retrieve position of this InfoPoint for axe with key 'axe'
+            #----------------------------------------------------------------------
             if axe in self._pos.keys(): val = self._pos[axe]
             else                      : val = None
 
@@ -387,8 +393,9 @@ class InfoPoint:
         if pos is not None:
 
             try:
+                # Zapisem poziciu vo vsetkych osiach schemy okrem NONE
                 for key in InfoPoint._schema[self._ipType]['axes'].keys():
-                    self._pos[key] = pos[key]
+                    if key != 'None': self._pos[key] = pos[key]
 
             except KeyError:
                 self.journal(f"InfoPoint.set: Key '{key}' not found in positions {pos} ERROR", True)

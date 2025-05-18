@@ -56,9 +56,9 @@ class InfoMarixGui(ttk.Frame):
         self.IPs      = []                 # List of InfoPoints to show
         self.actPoint = None               # Actual working InfoPoint
         
-        self.keyV     = ''                 # key for value to show
-        self.keyX     = ''                 # key for Axis X to show
-        self.keyY     = ''                 # key for Axis Y to show
+        self.keyV     = None               # key for value to show
+        self.keyX     = None               # key for Axis X to show
+        self.keyY     = None               # key for Axis Y to show
 
         if 'keyV' in kwargs.keys(): self.keyV = kwargs['keyV']
         if 'keyX' in kwargs.keys(): self.keyX = kwargs['keyX']
@@ -198,9 +198,9 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Read actual settings
         #----------------------------------------------------------------------
-        aKeyV = self.   self.cbV.current()
-        aKeyX = self.cbX.current()
-        aKeyY = self.cbY.current()
+        aKeyV = self.dat.getValKey(self.cbV.current())
+        aKeyX = self.dat.getAxeKey(self.cbX.current())
+        aKeyY = self.dat.getAxeKey(self.cbY.current())
         
         self.journal.I(f'{self.name}.dataChanged: value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
 
@@ -218,7 +218,7 @@ class InfoMarixGui(ttk.Frame):
         # Ak nenastala zmena v zobrazeni, vyskocim
         #----------------------------------------------------------------------
         if not changed: self.journal.M(f'{self.name}.dataChanged: Settings have not changed, no need for show')
-        else          : self.show()
+        else          : pass #self.show()
         
         self.journal.O()
         
