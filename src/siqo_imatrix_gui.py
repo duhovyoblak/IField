@@ -208,12 +208,23 @@ class InfoMarixGui(ttk.Frame):
         changed = False
 
         #----------------------------------------------------------------------
-        # Changes in value's key required values refresh
+        # Changes in any key required data refresh
         #----------------------------------------------------------------------
         if (self.keyV!=aKeyV) or (self.keyX!=aKeyX) or (self.keyY!=aKeyY) or force: 
             
             changed = True
-             = self.dat.getNPdata(self.sub2D)
+
+            #------------------------------------------------------------------
+            # Vytvorim predpis pre aktualny subset
+            #------------------------------------------------------------------
+            self.keyV = aKeyV
+            self.keyX = aKeyX
+            self.keyY = aKeyY
+
+            #------------------------------------------------------------------
+            # Ziskam list InfoPoints (whole object) patriacich subsetu
+            #------------------------------------------------------------------
+            self.cIP = self.dat.actMatrix(sub2D=self.sub2D, struct='list')
 
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
@@ -227,45 +238,19 @@ class InfoMarixGui(ttk.Frame):
     # Show the chart
     #--------------------------------------------------------------------------
     def show(self, event=None):
+        """Vykresli chart na zaklade aktualneho listu self.cIP
+        """
 
         self.journal.I(f'{self.name}.show:')
-
-        self.journal.O()
-        return
-
-        if 'keyVal' in kwargs.keys(): self.strVal.set(kwargs['val'])
-        if 'keyX'   in kwargs.keys(): self.strX.  set(kwargs['axX'])
-        if 'keyY'   in kwargs.keys(): self.strY.  set(kwargs['axY'])
-
-
-        #----------------------------------------------------------------------
-        # Ziskam udaje pre zobrazenie podla aktualneho settingu
-        #----------------------------------------------------------------------
-        nameV = self.strV.get()    # Name value to show on X axis
-        nameX = self.strX.get()    # Name of the axe to show on X axis
-        nameY = self.strY.get()    # Name of the axe to show on Y axis
-        nameM = self.strM.get()    # Name of the axe to show on Y axis
-
-
-
-
-
-
 
         #----------------------------------------------------------------------
         # Assign value array to show as a color array
         #----------------------------------------------------------------------
-        val = self.strVal.get()
         arrC = []
         
         # Value is in the last position in the list
-        for cP in self.CPs:
+        #for point in self.cIP:
             
-            if   val == 're'    : arrC.append( cP.real()   )
-            elif val == 'im'    : arrC.append( cP.imag()   )
-            elif val == 'abs'   : arrC.append( cP.abs()    )
-            elif val == 'phase' : arrC.append( cP.phase()  )
-            elif val == 'sqr'   : arrC.append( cP.sqrAbs() )
             
         self.C = np.array(arrC)
         
@@ -275,7 +260,7 @@ class InfoMarixGui(ttk.Frame):
         self.figure.clear() 
         self.chart = self.figure.add_subplot()
 
-        self.chart.set_title(val, fontsize=14)
+#        self.chart.set_title(val, fontsize=14)
         self.chart.grid(False)
         self.chart.set_facecolor('white')
         self.chart.set_xlabel(self.keyX)
@@ -305,6 +290,7 @@ class InfoMarixGui(ttk.Frame):
         self.update()
         self.canvas.draw()
         
+        #----------------------------------------------------------------------
         self.journal.O()
         
     #--------------------------------------------------------------------------
@@ -373,28 +359,6 @@ class InfoMarixGui(ttk.Frame):
 
         for node in self.dat:
             node['cP'].clear()
-            
-        self.journal.O()
-
-    #--------------------------------------------------------------------------
-    def rndBit(self, prob):
-        ""
-        
-        self.journal.I(f'{self.name}.rndBit: subset = {self.sub2D} and prob = {prob}')
-
-        for node in self.dat:
-            node['cP'].rndBit(prob)
-            
-        self.journal.O()
-
-    #--------------------------------------------------------------------------
-    def rndPhase(self):
-        ""
-        
-        self.journal.I(f'{self.name}.rndPhase: subset = {self.sub2D}')
-
-        for node in self.dat:
-            node['cP'].rndPhase()
             
         self.journal.O()
 
