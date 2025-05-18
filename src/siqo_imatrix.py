@@ -507,22 +507,25 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Final 
         #----------------------------------------------------------------------
+        self.journal.O()
         return self.points[lstRow][lstCol]
       
     #==========================================================================
     # Substructure retrieval
     #--------------------------------------------------------------------------
-    def actVector(self, keyVal:str=None):
+    def actVector(self, *, keyVal:str=None, sub1D=None):
         """Returns vector of InfoPoints in field for respective act1D settings
            If keyVal is not None then returns vector of keyed values.
            If keyVal is     None then returns vector of InfoPoints."""
         
+        self.journal.I(f"{self.name}.actVector: keyVal={keyVal}, sub1D={sub1D}")
+
+        if sub1D is not None: self.act2D = sub1D
+
         #----------------------------------------------------------------------
-        # Kontrola nastavenia vyberu 1D
+        # Ak nie je act1D nastaveny, vyber je cela InfoMatrix
         #----------------------------------------------------------------------
-        if self.act1D is None:    
-            self.journal.M(f"{self.name}.actVector: ERROR: act1D is None", True)
-            return None
+        if self.act1D is None: self.act1D = {}    
         
         #----------------------------------------------------------------------
         # Ziskam idxs podla act1D a pre kontrolu aj pocet volnych dimenzii
@@ -530,7 +533,7 @@ class InfoMatrix:
         freeDim, idxs = self._actToIdxs(self.act1D)
 
         if freeDim != 1:
-            self.journal.M(f"{self.name}.actVector: ERROR: act1D {self.act1D} is not 1D substructure but {freeDim}", True)
+            self.journal.M(f"{self.name}.actVector: ERROR: act1D {self.act1D} is not 1D substructure but {freeDim} dim", True)
             return None
 
         #----------------------------------------------------------------------
@@ -548,17 +551,19 @@ class InfoMatrix:
         return toRet    
     
     #--------------------------------------------------------------------------
-    def actMatrix(self, keyVal:str=None):
+    def actMatrix(self, *, keyVal:str=None, sub2D=None):
         """Returns matrix of InfoPoints in field for respective act2D settings 
            If keyVal is not None then returns matrix of keyed values.
            If keyVal is     None then returns matrix of InfoPoints."""
 
+        self.journal.I(f"{self.name}.actMatrix: keyVal={keyVal}, sub2D={sub2D}")
+
+        if sub2D is not None: self.act2D = sub2D
+
         #----------------------------------------------------------------------
-        # Kontrola nastavenia vyberu 2D
+        # Ak nie je act2D nastaveny, vyber je cela InfoMatrix
         #----------------------------------------------------------------------
-        if self.act2D is None:    
-            self.journal.M(f"{self.name}.actMatrix: ERROR: act2D is None", True)
-            return None
+        if self.act2D is None: self.act2D = {}    
         
         #----------------------------------------------------------------------
         # Ziskam idxs podla act2D a pre kontrolu aj pocet volnych dimenzii
@@ -566,7 +571,7 @@ class InfoMatrix:
         freeDim, idxs = self._actToIdxs(self.act2D)
 
         if freeDim != 2:
-            self.journal.M(f"{self.name}.actMatrix: ERROR: act2D {self.act2D} is not 2D substructure but {freeDim}", True)
+            self.journal.M(f"{self.name}.actMatrix: ERROR: act2D {self.act2D} is not 2D substructure but {freeDim} dim", True)
             return None
 
         #----------------------------------------------------------------------
@@ -1185,13 +1190,20 @@ class InfoMatrix:
         self.journal.O(f"{self.name}.normAbs: norm = {norm} for {len(nods)} points")
 
     #==========================================================================
-    # API
+    # Tki API
     #--------------------------------------------------------------------------
-    def getData(self, cut=None):
-        "Returns numpy arrays as a cut from InfoMatrix"
+    def getNPdata(self, *, keyCol, keyU=None, keyV=None, sub2D:dict={}):
+        "Returns numpy arrays of axeX, axeY, values, re and im for respective subset of InfoMatrix"
     
-        self.journal.I(f"{self.name}.getData: cut = {cut}")
-    
+        self.journal.I(f"{self.name}.getData: valueColor={keyCol}, quiverRe={keyU}, quiverIm={keyV} from sub2D={sub2D}")
+
+        #----------------------------------------------------------------------
+        # Ziskam pozadovany subset
+        #----------------------------------------------------------------------
+        subM = self.actMatrix(keyVal=None)
+        for row in mtrx: 
+            for point in row: print(point)
+
 
         #----------------------------------------------------------------------
         self.journal.O()
@@ -1237,13 +1249,14 @@ if __name__ == '__main__':
     print(im1)
 
     im2 = InfoMatrix(journal, 'Test matrix', ipType='ipTest')
-    im2.gener(cnts={'a':3, 'b':4}, origs={'a':0.0, 'b':0}, rect={'a':1.0, 'b':2}, vals={'v':'Value'}, defs={'v':3.0})
+    im2.gener(cnts={'a':3, 'b':4}, origs={'a':0.0, 'b':0}, rect={'a':10, 'b':10}, vals={'v':'Value'}, defs={'v':3.0})
     print(im2)
 
     im3 = InfoMatrix(journal, 'Test matrix', ipType='ipTest')
     im3.gener(cnts={'a':3, 'b':4, 'c':2}, origs={'a':0.0, 'b':0, 'c':0}, rect={'a':1.0, 'b':2, 'c':3}, vals={'v':'Value'}, defs={'v':0.0})
     print(im3)
 
+    print('point')
     print('pos=16 ', im3.pointByPos(16))
     print()
 
@@ -1255,22 +1268,44 @@ if __name__ == '__main__':
     print("_actToIdxs({'b':3, 'c':1})", im3._actToIdxs({'b':3, 'c':1}))
     print()
 
-    print('vector')
-    im3.act1D = {'b':2, 'c':1}
-    print(im3._1DposByIdx(['?', 2, 1]))
-    vec = im3.actVector(keyVal=None)
-    for point in vec: print(point)  
-    print()
+    if False:
+        print('vector')
+        im3.act1D = {'b':2, 'c':1}
+        print(im3._1DposByIdx(['?', 2, 1]))
+        vec = im3.actVector(keyVal=None)
+        for point in vec: print(point)  
+        print()
 
-    print('matrix')
-    im3.act2D = {'b':2}
-    print(im3._2DposByIdx([ '?', 2, '?'] ))
-    mtrx = im3.actMatrix(keyVal=None)
-    for row in mtrx: 
-        for point in row: print(point)
-    print()
-    print(im3.__array__())
+    if True:
+        print('matrix tki API')
+        print(im2)
+        mtrx = im2.actMatrix(keyVal=None)
+        for row in mtrx: 
+            for point in row: print(point)
+        print()
 
+    if False:
+        print('matrix subset')
+        print(im3._2DposByIdx([ '?', '?', 1] ))
+
+        im3.act2D = {'c':1}
+        mtrx = im3.actMatrix(keyVal=None)
+        for row in mtrx: 
+            for point in row: print(point)
+        print()
+
+    if False:
+        print('matrix __array__')
+        print(im3.__array__())
+        print()
+
+    if False:
+        print('matrix np')
+        im3.act2D = {'c':1}
+        mtrx = im3.actMatrix(keyVal='v')
+        for row in mtrx: 
+            for point in row: print(point)
+        print()
 
 #    im1.applyPointFunction(ip.abs, key='v')
 #    print(im1)

@@ -16,14 +16,16 @@ from   siqo_imatrix           import InfoMatrix
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
+_VER            = '2.0'
 _WIN            = '1300x740'
 _DPI            = 100
 
 _FIG_W          = 0.8    # Figure width
 _FIG_H          = 1.0    # Figure height
 
-_PADX           = 5
-_PADY           = 5
+_COMBO_WIDTH    = 10
+_PADX           =  5
+_PADY           =  5
 
 #==============================================================================
 # package's variables
@@ -45,7 +47,7 @@ class InfoMarixGui(ttk.Frame):
         self.journal = journal             # Global journal
         self.name    = name                # Name of this chart
         self.dat     = dat                 # InfoMatrix to show
-        self.myCut   = []                  # Cut of InfoField data for this GUI
+        self.sub2D   = {}                  # Subset of InfoMatrix data defined as frozen axes with desired values e.g. {'x':4, 't':17}
         self.w       = 1600                # Width of the chart in px
         self.h       =  900                # Height of the chart in px
         
@@ -56,9 +58,9 @@ class InfoMarixGui(ttk.Frame):
         self.IPs      = []                 # List of InfoPoints to show
         self.actPoint = None               # Actual working InfoPoint
         
-        self.keyV     = None               # key for value to show
-        self.keyX     = None               # key for Axis X to show
-        self.keyY     = None               # key for Axis Y to show
+        self.keyV     =  None              # key for value to show
+        self.keyX     = 'None'             # Default key for Axis X to show
+        self.keyY     = 'None'             # Default key for Axis Y to show
 
         if 'keyV' in kwargs.keys(): self.keyV = kwargs['keyV']
         if 'keyX' in kwargs.keys(): self.keyX = kwargs['keyX']
@@ -98,7 +100,7 @@ class InfoMarixGui(ttk.Frame):
         lblVal = ttk.Label(frmBtn, text="Value to show:")
         lblVal.grid(column=0, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        self.cbV = ttk.Combobox(frmBtn, textvariable=self.strV, width=5)
+        self.cbV = ttk.Combobox(frmBtn, textvariable=self.strV, width=_COMBO_WIDTH)
         self.cbV['values'] = list(self.dat.getVals().values())
         self.cbV['state' ] = 'readonly'
         self.cbV.bind('<<ComboboxSelected>>', self.dataChanged)
@@ -112,7 +114,7 @@ class InfoMarixGui(ttk.Frame):
         lblX = ttk.Label(frmBtn, text="Dim for X axis:")
         lblX.grid(column=1, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        self.cbX = ttk.Combobox(frmBtn, textvariable=self.strX, width=5)
+        self.cbX = ttk.Combobox(frmBtn, textvariable=self.strX, width=_COMBO_WIDTH)
         self.cbX['values'] = list(self.dat.getAxes().values())
         self.cbX['state' ] = 'readonly'
         self.cbX.bind('<<ComboboxSelected>>', self.dataChanged)
@@ -129,7 +131,7 @@ class InfoMarixGui(ttk.Frame):
         lblY = ttk.Label(frmBtn, text="Dim for Y axis:")
         lblY.grid(column=2, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        self.cbY = ttk.Combobox(frmBtn, textvariable=self.strY, width=5)
+        self.cbY = ttk.Combobox(frmBtn, textvariable=self.strY, width=_COMBO_WIDTH)
         self.cbY['values'] = list(self.dat.getAxes().values())
         self.cbY['state' ] = 'readonly'
         self.cbY.bind('<<ComboboxSelected>>', self.dataChanged)
@@ -146,7 +148,7 @@ class InfoMarixGui(ttk.Frame):
         lblMet = ttk.Label(frmBtn, text="Apply:")
         lblMet.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        self.cbM = ttk.Combobox(frmBtn, textvariable=self.strM, width=10)
+        self.cbM = ttk.Combobox(frmBtn, textvariable=self.strM, width=_COMBO_WIDTH)
         self.cbM['values'] = ['None', 'Clear Data', 'Random Bit 10%', 'Random Phase']
         self.cbM['state' ] = 'readonly'
         self.cbM.bind('<<ComboboxSelected>>', self.method)
@@ -192,8 +194,8 @@ class InfoMarixGui(ttk.Frame):
         else     : return False
         
     #--------------------------------------------------------------------------
-    def dataChanged(self, event=None):
-        "Prepares cut of the dat and assignes self.CPs to show"
+    def dataChanged(self, event=None, force=False):
+        "Prepares npData to show"
         
         #----------------------------------------------------------------------
         # Read actual settings
@@ -203,89 +205,23 @@ class InfoMarixGui(ttk.Frame):
         aKeyY = self.dat.getAxeKey(self.cbY.current())
         
         self.journal.I(f'{self.name}.dataChanged: value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
-
-        #----------------------------------------------------------------------
-        # Check for changes
-        #----------------------------------------------------------------------
         changed = False
 
-        # Zmena val, X, Y
-        if self.keyV != aKeyV: changed = True
-        if self.keyX != aKeyX: changed = True
-        if self.keyY != aKeyY: changed = True
+        #----------------------------------------------------------------------
+        # Changes in value's key required values refresh
+        #----------------------------------------------------------------------
+        if (self.keyV!=aKeyV) or (self.keyX!=aKeyX) or (self.keyY!=aKeyY) or force: 
+            
+            changed = True
+             = self.dat.getNPdata(self.sub2D)
 
         #----------------------------------------------------------------------
-        # Ak nenastala zmena v zobrazeni, vyskocim
+        # Ak nenastala zmena, vyskocim
         #----------------------------------------------------------------------
         if not changed: self.journal.M(f'{self.name}.dataChanged: Settings have not changed, no need for show')
-        else          : pass #self.show()
+        else          : self.show()
         
         self.journal.O()
-        
-    #==========================================================================
-    # Method to apply
-    #--------------------------------------------------------------------------
-    def method(self, event=None):
-        "Apply data in active cut"
-        
-        met = self.strM.get()
-        self.journal.I(f'{self.name}.method: {met} with cut = {self.myCut}')
-
-        self.dat.cutSet(self.myCut)
-
-        if   met == 'Clear Data'    : self.clear()
-        elif met == 'Random Bit 10%': self.rndBit(0.1)
-        elif met == 'Random Phase'  : self.rndPhase()
-
-        if met != 'None':self.dataChanged()
-        self.journal.O()
-
-    #--------------------------------------------------------------------------
-    def clear(self):
-        "Clears data in active cut"
-        
-        self.journal.I(f'{self.name}.clear: with cut = {self.myCut}')
-
-        for node in self.dat:
-            node['cP'].clear()
-            
-        self.journal.O()
-
-    #--------------------------------------------------------------------------
-    def rndBit(self, prob):
-        ""
-        
-        self.journal.I(f'{self.name}.rndBit: with cut = {self.myCut} and prob = {prob}')
-
-        for node in self.dat:
-            node['cP'].rndBit(prob)
-            
-        self.journal.O()
-
-    #--------------------------------------------------------------------------
-    def rndPhase(self):
-        ""
-        
-        self.journal.I(f'{self.name}.rndPhase: with cut = {self.myCut}')
-
-        for node in self.dat:
-            node['cP'].rndPhase()
-            
-        self.journal.O()
-
-    #--------------------------------------------------------------------------
-    def setData(self, dat):
-        "Clears data and set new data"
-        
-        self.dat = dat
-        
-    #--------------------------------------------------------------------------
-    def setPoint(self, c):
-        
-        self.journal.M(f'{self.name}.setPoint: {self.actPoint} = {c}')
-        
-        self.actPoint.setComp(c)
-        self.dataChanged()
         
     #==========================================================================
     # Show the chart
@@ -417,6 +353,66 @@ class InfoMarixGui(ttk.Frame):
         self.journal.O()
 
     #==========================================================================
+    # Method to apply
+    #--------------------------------------------------------------------------
+    def method(self, event=None):
+        "Apply data in active cut"
+        
+        met = self.strM.get()
+        self.journal.I(f'{self.name}.method: {met} with subset = {self.sub2D}')
+
+
+        if met != 'None':self.dataChanged()
+        self.journal.O()
+
+    #--------------------------------------------------------------------------
+    def clear(self):
+        "Clears data in active cut"
+        
+        self.journal.I(f'{self.name}.clear: subset = {self.sub2D}')
+
+        for node in self.dat:
+            node['cP'].clear()
+            
+        self.journal.O()
+
+    #--------------------------------------------------------------------------
+    def rndBit(self, prob):
+        ""
+        
+        self.journal.I(f'{self.name}.rndBit: subset = {self.sub2D} and prob = {prob}')
+
+        for node in self.dat:
+            node['cP'].rndBit(prob)
+            
+        self.journal.O()
+
+    #--------------------------------------------------------------------------
+    def rndPhase(self):
+        ""
+        
+        self.journal.I(f'{self.name}.rndPhase: subset = {self.sub2D}')
+
+        for node in self.dat:
+            node['cP'].rndPhase()
+            
+        self.journal.O()
+
+    #--------------------------------------------------------------------------
+    def setData(self, dat):
+        "Clears data and set new data"
+        
+        self.dat = dat
+        
+    #--------------------------------------------------------------------------
+    def setPoint(self, c):
+        
+        self.journal.M(f'{self.name}.setPoint: {self.actPoint} = {c}')
+        
+        self.actPoint.setComp(c)
+        self.dataChanged()
+        
+    #==========================================================================
     # Tools for figure setting
     #--------------------------------------------------------------------------
     def getDataLabel(self, key):
@@ -449,7 +445,7 @@ class InfoMarixGui(ttk.Frame):
 #==============================================================================
 #   Inicializacia kniznice
 #------------------------------------------------------------------------------
-print('SIQO InfoMarixGui library ver 1.01')
+print(f'SIQO InfoMarixGui library ver {_VER}')
 
 if __name__ == '__main__':
 
