@@ -52,37 +52,28 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self.type     = '2D'           # Actual type of the chart
-        self.CPs      = []             # List of values (cP) to show
-        self.actPoint = None           # Actual working point (cP)
+        self.type     = '2D'               # Actual type of the chart
+        self.CPs      = []                 # List of values (cP) to show
+        self.actPoint = None               # Actual working point (cP)
         
-        self.keyX     = ''             # key for Axis X to show
-        self.keyY     = ''             # key for Axis Y to show
-        self.keyV     = ''             # key for value to show
+        self.keyX     = ''                 # key for Axis X to show
+        self.keyY     = ''                 # key for Axis Y to show
+        self.keyV     = ''                 # key for value to show
 
         if 'keyV' in kwargs.keys(): self.keyV = kwargs['keyV']
         if 'keyX' in kwargs.keys(): self.keyX = kwargs['keyX']
         if 'keyY' in kwargs.keys(): self.keyY = kwargs['keyY']
 
-        self.X        = None           # np array for coordinate X
-        self.Y        = None           # np array for coordinate Y
-        self.C        = None           # np array for value color
-        self.U        = None           # np array for quiver re value
-        self.V        = None           # np array for quiver im value
+        self.X        = None               # np array for coordinate X
+        self.Y        = None               # np array for coordinate Y
+        self.C        = None               # np array for value color
+        self.U        = None               # np array for quiver re value
+        self.V        = None               # np array for quiver im value
 
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
         #----------------------------------------------------------------------
         super().__init__(container)
-
-        self.strVal = tk.StringVar(value='None') # Name of the value to show in the chart
-        self.strX   = tk.StringVar(value='None') # Name of the X-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
-        self.strY   = tk.StringVar(value='None') # Name of the Y-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
-        self.strMet = tk.StringVar(value='None') # Name of the method to apply to the data
-        
-        if 'keyVal' in kwargs.keys(): self.strVal.set(kwargs['val'])
-        if 'keyX'   in kwargs.keys(): self.strX.  set(kwargs['axX'])
-        if 'keyY'   in kwargs.keys(): self.strY.  set(kwargs['axY'])
 
         #----------------------------------------------------------------------
         # Create head buttons bar
@@ -104,12 +95,11 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         self.strV = tk.StringVar(value='None') # Name of the value to show in the chart
 
-
         lblVal = ttk.Label(frmBtn, text="Value to show:")
         lblVal.grid(column=0, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbVal = ttk.Combobox(frmBtn, textvariable=self.strV, width=5)
-        self.cbVal['values'] = self.dat.getVals()
+        self.cbVal['values'] = list(self.dat.getVals().values())
         self.cbVal['state' ] = 'readonly'
         self.cbVal.bind('<<ComboboxSelected>>', self.show)
         self.cbVal.grid(column=0, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -117,11 +107,13 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # X axis dimension selector
         #----------------------------------------------------------------------
+        self.strX   = tk.StringVar(value='None') # Name of the X-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
+
         lblX = ttk.Label(frmBtn, text="Dim for X axis:")
         lblX.grid(column=1, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbX = ttk.Combobox(frmBtn, textvariable=self.strX, width=5)
-        self.cbX['values'] = ['0', '1', '2', '3']
+        self.cbX['values'] = list(self.dat.getAxes().values())
         self.cbX['state' ] = 'readonly'
         self.cbX.bind('<<ComboboxSelected>>', self.dataChanged)
         self.cbX.grid(column=1, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -132,11 +124,13 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Y axis dimension selector
         #----------------------------------------------------------------------
+        self.strY   = tk.StringVar(value='None') # Name of the Y-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
+
         lblY = ttk.Label(frmBtn, text="Dim for Y axis:")
         lblY.grid(column=2, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbY = ttk.Combobox(frmBtn, textvariable=self.strY, width=5)
-        self.cbY['values'] = ['1', '2', '3']
+        self.cbY['values'] = list(self.dat.getAxes().values())
         self.cbY['state' ] = 'readonly'
         self.cbY.bind('<<ComboboxSelected>>', self.dataChanged)
         self.cbY.grid(column=2, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -147,10 +141,12 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Method to apply selector
         #----------------------------------------------------------------------
+        self.strM = tk.StringVar(value='None') # Name of the method to apply to the data
+
         lblMet = ttk.Label(frmBtn, text="Apply:")
         lblMet.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        self.cbMet = ttk.Combobox(frmBtn, textvariable=self.strMet, width=10)
+        self.cbMet = ttk.Combobox(frmBtn, textvariable=self.strM, width=10)
         self.cbMet['values'] = ['None', 'Clear Data', 'Random Bit 10%', 'Random Phase']
         self.cbMet['state' ] = 'readonly'
         self.cbMet.bind('<<ComboboxSelected>>', self.method)
@@ -202,10 +198,12 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Read actual settings
         #----------------------------------------------------------------------
-        axX = int(self.strX.get())    # Dimension number to show on X axis
-        axY = int(self.strY.get())    # Dimension number to show on Y axis
+        nameV = self.strV.get()    # Name value to show on X axis
+        nameX = self.strX.get()    # Name of the axe to show on X axis
+        nameY = self.strY.get()    # Name of the axe to show on Y axis
+        nameM = self.strM.get()    # Name of the axe to show on Y axis
         
-        self.journal.I(f'{self.name}.dataChanged: axX={axX}, axY={axY}')
+        self.journal.I(f'{self.name}.dataChanged: value:{nameV}, X-axis={nameX}, Y-axis={nameY}, Method={nameM}')
 
         self.journal.O()
         self.show()
@@ -284,6 +282,14 @@ class InfoMarixGui(ttk.Frame):
         
         self.journal.O()
         return
+
+        if 'keyVal' in kwargs.keys(): self.strVal.set(kwargs['val'])
+        if 'keyX'   in kwargs.keys(): self.strX.  set(kwargs['axX'])
+        if 'keyY'   in kwargs.keys(): self.strY.  set(kwargs['axY'])
+
+
+
+
         #----------------------------------------------------------------------
         # Assign value array to show as a color array
         #----------------------------------------------------------------------

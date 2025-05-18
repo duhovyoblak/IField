@@ -607,12 +607,12 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Set InfoPoint's schema Axes
         #----------------------------------------------------------------------
-        self.clearSchema(self.ipType)          # Clear schema for this InfoPoint type
+        self.clearSchema()                     # Clear schema for this InfoPoint type
         mins = []                              # List of minimum values for respective axes
 
         for key, val in cnts.items():
 
-            self.setAxe(self.ipType, key, f"os {key}")    
+            self.setAxe(key, f"os {key}")    
             mins.append(val)
 
         #----------------------------------------------------------------------
@@ -621,7 +621,7 @@ class InfoMatrix:
         if vals is not None:
 
             for key, name in vals.items():
-                self.setVal(self.ipType, key, name)
+                self.setVal(key, name)
 
             if len(vals) == 1: self.actVal = list(vals.keys())[0]
 
