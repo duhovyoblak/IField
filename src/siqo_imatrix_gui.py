@@ -35,32 +35,26 @@ class InfoMarixGui(ttk.Frame):
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, journal, name, container, dat, **kwargs):
+    def __init__(self, journal, name, container, dat:InfoMatrix, **kwargs):
         "Call constructor of InfoMarixGui and initialise it for respective data"
 
         journal.I(f'{name}.init:')
 
-        self.journal = journal         # Global journal
-        self.name    = name            # Name of this chart
-        self.dat     = dat             # InfoField data
-        self.myCut   = []              # Cut of InfoField data for this GUI
-        self.w       = 1600            # width of the chart
-        self.h       =  900            # Height of the chart
+        self.journal = journal             # Global journal
+        self.name    = name                # Name of this chart
+        self.dat     = dat                 # InfoMatrix to show
+        self.myCut   = []                  # Cut of InfoField data for this GUI
+        self.w       = 1600                # Width of the chart in px
+        self.h       =  900                # Height of the chart in px
         
-        self.strVal = tk.StringVar()   # Name of the value to show in the chart
-        self.strMet = tk.StringVar()   # Name of the method to apply to the data
-        self.strX   = tk.StringVar()   # Name of the X-axis dimesion from ['0', '1', '2', etc.]
-                                       # '0' means No value to show if this axis
-        self.strY   = tk.StringVar()   # Name of the Y-axis dimesion from ['0', '1', '2', etc.]
+        self.strVal = tk.StringVar('None') # Name of the value to show in the chart
+        self.strX   = tk.StringVar('None') # Name of the X-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
+        self.strY   = tk.StringVar('None') # Name of the Y-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
+        self.strMet = tk.StringVar('None') # Name of the method to apply to the data
         
-        if 'val' in kwargs.keys(): self.strVal.set(kwargs['val'])
-        else                     : self.strVal.set('re')          # Default is real part of points
-
-        if 'axX' in kwargs.keys(): self.strX.set(kwargs['axX'])
-        else                     : self.strX.set('0')             # Default is No data to show on X 
-
-        if 'axY' in kwargs.keys(): self.strY.set(kwargs['axY'])
-        else                     : self.strY.set('1')             # Default is 1-st dimension
+        if 'keyVal' in kwargs.keys(): self.strVal.set(kwargs['val'])
+        if 'keyX'   in kwargs.keys(): self.strX.  set(kwargs['axX'])
+        if 'keyY'   in kwargs.keys(): self.strY.  set(kwargs['axY'])
 
         #----------------------------------------------------------------------
         # Internal objects
@@ -439,8 +433,9 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Zaciatok testu 
     #--------------------------------------------------------------------------
-    matrix = InfoMatrix(journal, 'Test field')
-    matrix.gener(nRow=4, nCol=5, val=-5, nodeKey='val', nodeType=float, xLen=1, yLen=1, orig={'a':5, 'b':7})
+    matrix = InfoMatrix(journal, 'Test field', 'ipTest')
+    matrix.gener(cnts={'x':3, 'y':4, 'z':2}, origs={'x':0, 'y':0, 'z':0}, rect={'x':5, 'y':5, 'z':2}, vals={'m':'hmotnosť', 'v':'rýchlosť'}, defs={'m':1, 'v':2})
+    print(matrix)
 
     matrixGui = InfoMarixGui(journal, name='Test of InfoModelGui class', container=win, dat=matrix)
     matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)

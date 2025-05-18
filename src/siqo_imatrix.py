@@ -198,6 +198,62 @@ class InfoMatrix:
         return toRet
         
     #==========================================================================
+    # Proxy tools for InfoPoint schema
+    #--------------------------------------------------------------------------
+    def resetSchema(self):
+        "Resets schema of InfoPoint to default values"
+        return InfoPoint.resetSchema()
+
+    #--------------------------------------------------------------------------
+    def clearSchema(self, ipType):
+        return InfoPoint.clearSchema(ipType)
+    
+    #--------------------------------------------------------------------------
+    def setAxe(self, ipType, key, name):
+        "Sets axe key and name"
+        return InfoPoint.setAxe(ipType, key, name)
+    
+    #--------------------------------------------------------------------------
+    def getAxeIdx(self, ipType, key):
+        "Returns axe's idx for respective key"
+        return InfoPoint.getAxeIdx(ipType, key)
+    
+    #--------------------------------------------------------------------------
+    def getAxeName(self, ipType, key):
+        "Returns axe's Name for respective key"
+        return InfoPoint.getAxeName(ipType, key)
+    
+    #--------------------------------------------------------------------------
+    def setVal(self, ipType, key, name):
+        "Sets value key and name"
+        return InfoPoint.setVal(ipType, key, name)
+
+    #--------------------------------------------------------------------------
+    def getValIdx(self, ipType, key):
+        "Returns value's idx for respective key"
+        return InfoPoint.getValIdx(ipType, key)
+    
+    #--------------------------------------------------------------------------
+    def getValName(self, ipType, key):
+        "Returns value's Name for respective key"
+        return InfoPoint.getValName(ipType, key)
+    
+    #--------------------------------------------------------------------------
+    def getSchema(self, ipType):
+        "Returns schema for respective InfoPoint type"
+        return InfoPoint.getSchema(ipType)
+    
+    #--------------------------------------------------------------------------
+    def getAxes(self, ipType):
+        "Returns axes keys and names"
+        return InfoPoint.getAxes(ipType)
+    
+    #--------------------------------------------------------------------------
+    def getVals(self, ipType):
+        "Returns values keys and names"
+        return InfoPoint.getVals(ipType)
+
+    #==========================================================================
     # Position and indices tools
     #--------------------------------------------------------------------------
     def _subProducts(self):
@@ -555,12 +611,12 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Set InfoPoint's schema Axes
         #----------------------------------------------------------------------
-        InfoPoint.clearSchema(self.ipType)     # Clear schema for this InfoPoint type
+        self.clearSchema(self.ipType)          # Clear schema for this InfoPoint type
         mins = []                              # List of minimum values for respective axes
 
         for key, val in cnts.items():
 
-            InfoPoint.setAxe(self.ipType, key, f"os {key}")    
+            self.setAxe(self.ipType, key, f"os {key}")    
             mins.append(val)
 
         #----------------------------------------------------------------------
@@ -569,7 +625,7 @@ class InfoMatrix:
         if vals is not None:
 
             for key, name in vals.items():
-                InfoPoint.setVal(self.ipType, key, name)
+                self.setVal(self.ipType, key, name)
 
             if len(vals) == 1: self.actVal = list(vals.keys())[0]
 
