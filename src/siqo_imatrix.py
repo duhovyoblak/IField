@@ -366,7 +366,7 @@ class InfoMatrix:
         return toRet
 
     #--------------------------------------------------------------------------
-    def _2DposByIdx(self, idxs:list):
+    def _2DposByIdx(self, idxs:list, struct:str):
         """Returns positons of InfoPoints for respective indices with TWO
            question marks in the list ['?', b, '?', 'c'].
            Question marks means all values in this dimension and  defines the matrix.
@@ -374,7 +374,7 @@ class InfoMatrix:
            [ [a, b, c], [d, e, f], ... ].
            """
 
-        self.journal.I(f"{self.name}._2DposByIdx: idxs={idxs}")
+        self.journal.I(f"{self.name}._2DposByIdx: Save points for idxs={idxs} into {struct}")
         toRet = []
 
         #----------------------------------------------------------------------
@@ -410,7 +410,12 @@ class InfoMatrix:
             #------------------------------------------------------------------
             # Vlozim rowPos do matice pozicii toRet
             #------------------------------------------------------------------
-            toRet.append(rowPos)       
+            if   struct == 'matrix': toRet.append(rowPos) 
+            elif struct == 'list'  : toRet.extend(rowPos)
+            else:     
+                self.journal.M(f"{self.name}._2DposByIdx: Unknown structure {struct}, command denied")
+                self.journal.O()
+                return None
 
         #----------------------------------------------------------------------
         self.journal.O(f"{self.name}._2DposByIdx: toRet={toRet}")
@@ -534,6 +539,7 @@ class InfoMatrix:
 
         if freeDim != 1:
             self.journal.M(f"{self.name}.actVector: ERROR: act1D {self.act1D} is not 1D substructure but {freeDim} dim", True)
+            self.journal.O()
             return None
 
         #----------------------------------------------------------------------
@@ -548,15 +554,18 @@ class InfoMatrix:
         for pos in poss:
             toRet.append(self.pointByPos(pos).get(key=keyVal))
 
+        #----------------------------------------------------------------------
+        self.journal.O()
         return toRet    
     
     #--------------------------------------------------------------------------
-    def actMatrix(self, *, keyVal:str=None, sub2D=None):
+    def actMatrix(self, *, keyVal:str=None, sub2D=None, struct:str='list'):
         """Returns matrix of InfoPoints in field for respective act2D settings 
            If keyVal is not None then returns matrix of keyed values.
            If keyVal is     None then returns matrix of InfoPoints."""
 
-        self.journal.I(f"{self.name}.actMatrix: keyVal={keyVal}, sub2D={sub2D}")
+        self.journal.I(f"{self.name}.actMatrix: keyVal={keyVal}, sub2D={sub2D} into structure {struct}")
+        toRet = []
 
         if sub2D is not None: self.act2D = sub2D
 
@@ -572,32 +581,57 @@ class InfoMatrix:
 
         if freeDim != 2:
             self.journal.M(f"{self.name}.actMatrix: ERROR: act2D {self.act2D} is not 2D substructure but {freeDim} dim", True)
+            self.journal.O()
             return None
 
         #----------------------------------------------------------------------
         # Ziskam maticu pozicii bodov patriacich hladanej matici
         #----------------------------------------------------------------------
-        mtrx = self._2DposByIdx(idxs)
+        mtrx  = self._2DposByIdx(idxs, struct)
+
+        if mtrx is None:
+            self.journal.M(f"{self.name}.actMatrix: ERROR: Can not obtain positions for desired subset and structure", True)
+            self.journal.O()
+            return None
         
         #----------------------------------------------------------------------
-        # Create marix of InfoPoints for respective positions
+        # Create otput for respective structure settings
         #----------------------------------------------------------------------
-        toRet = []
-        for row in mtrx:
-
-            rowVec = []
+        if struct=='matrix':
 
             #------------------------------------------------------------------
-            # Create row-vector of InfoPoints/Values for respective positions
+            # Create marix of InfoPoints for respective positions
             #------------------------------------------------------------------
-            for pos in row:
-                rowVec.append(self.pointByPos(pos).get(key=keyVal))
+            for row in mtrx:
+
+                rowVec = []
+
+                #--------------------------------------------------------------
+                # Create row-vector of InfoPoints/Values for respective positions
+                #--------------------------------------------------------------
+                for pos in row:
+                    rowVec.append(self.pointByPos(pos).get(key=keyVal))
+
+                #--------------------------------------------------------------
+                # Vlozim riadok do matice
+                #--------------------------------------------------------------
+                toRet.append(rowVec)
+
+        elif struct == 'list':
 
             #------------------------------------------------------------------
-            # Vlozim riadok do matice
+            # Create list of InfoPoints for respective positions
             #------------------------------------------------------------------
-            toRet.append(rowVec)
+            for pos in mtrx:
+                toRet.append(self.pointByPos(pos).get(key=keyVal))
 
+        else:
+            self.journal.M(f"{self.name}.actMatrix: Unknown structure {struct}, command denied")
+            self.journal.O()
+            return None
+
+        #----------------------------------------------------------------------
+        self.journal.O()
         return toRet    
 
     #==========================================================================
@@ -914,7 +948,7 @@ if __name__ == '__main__':
         for point in vec: print(point)  
         print()
 
-    if True:
+    if False:
         print('matrix tki API')
         print(im2)
         mtrx = im2.actMatrix(keyVal=None)
@@ -922,12 +956,18 @@ if __name__ == '__main__':
             for point in row: print(point)
         print()
 
-    if False:
+    if True:
         print('matrix subset')
-        print(im3._2DposByIdx([ '?', '?', 1] ))
+        print('list  :', im3._2DposByIdx([ '?', '?', 1], struct='list'   ))
+        print('matrix:', im3._2DposByIdx([ '?', '?', 1], struct='matrix' ))
 
         im3.act2D = {'c':1}
-        mtrx = im3.actMatrix(keyVal=None)
+
+        mtrx = im3.actMatrix(keyVal=None, struct='list')
+        for point in mtrx: print(point)
+        print()
+
+        mtrx = im3.actMatrix(keyVal=None, struct='matrix')
         for row in mtrx: 
             for point in row: print(point)
         print()
