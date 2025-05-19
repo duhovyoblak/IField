@@ -59,7 +59,7 @@ class InfoMarixGui(ttk.Frame):
         self.iPoints  = []                 # List of InfoPoints to show
         self.actPoint = None               # Actual working InfoPoint
         
-        self.keyV     =  None              # key for value to show
+        self.keyV     = 'None'             # key for value to show
         self.keyX     = 'None'             # Default key for Axis X to show
         self.keyY     = 'None'             # Default key for Axis Y to show
 
@@ -249,6 +249,14 @@ class InfoMarixGui(ttk.Frame):
             return
 
         #----------------------------------------------------------------------
+        # Check value to show
+        #----------------------------------------------------------------------
+        if self.keyV=='None':
+            self.journal.M(f'{self.name}.show: No value selected, nothig to show', True)
+            self.journal.O()
+            return
+        
+        #----------------------------------------------------------------------
         # Check axis to show
         #----------------------------------------------------------------------
         if self.keyX=='None' and self.keyY=='None':
@@ -259,20 +267,46 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Prepare the data for the chart
         #----------------------------------------------------------------------
+        listC = []
+        listX = []
+        listY = []
+        listU = []
+        listV = []
+
+        #----------------------------------------------------------------------
+        # Prejdem vsetky vybrane body na zobrazenie
+        #----------------------------------------------------------------------
+        for point in self.iPoints:
+
+            listC.append(point.get(self.keyV))
+            if self.keyX!='None': listX.append(point.axe(self.keyX))
+            if self.keyY!='None': listY.append(point.axe(self.keyY))
+
+        #----------------------------------------------------------------------
+        # Skonvertujem do npArrays
+        #----------------------------------------------------------------------
+        self.npC = np.array(listC)
+        self.npX = np.array(listX)
+        self.npY = np.array(listY)
 
 
-
-
+        #----------------------------------------------------------------------
+        # Kontrola npArrays
+        #----------------------------------------------------------------------
         if self.npC.size==0:
             self.journal.M(f'{self.name}.show: No values to show', True)
             self.journal.O()
             return
 
-        if  self.is2D() and (self.npX.size==0 or self.npY.size==0):
-            self.journal.M(f'{self.name}.show: No axes to show', True)
+        if self.keyX!='None' and self.npX.size==0:
+            self.journal.M(f'{self.name}.show: Axe X is selected but has no data to show', True)
             self.journal.O()
             return
 
+        if self.keyY!='None' and self.npY.size==0:
+            self.journal.M(f'{self.name}.show: Axe Y is selected but has no data to show', True)
+            self.journal.O()
+            return
 
 
         #----------------------------------------------------------------------
@@ -300,7 +334,7 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             # Chart 2D
             #------------------------------------------------------------------
-            chrtObj = self.chart.scatter( x=self.X, y=self.Y, c=self.C, marker="s", cmap='RdYlBu_r')
+            chrtObj = self.chart.scatter( x=self.npX, y=self.npY, c=self.npC, marker="s", cmap='RdYlBu_r')
 #            chrtObj = self.chart.scatter( x=self.X, y=self.Y, c=self.C, marker="s", lw=0, s=(72./self.figure.dpi)**2, cmap='RdYlBu_r')
             self.figure.colorbar(chrtObj, ax=self.chart)
 
@@ -308,11 +342,11 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             # Chart 1D
             #------------------------------------------------------------------
-            if self.keyX=='None': axis = self.X
-            else                : axis = self.Y
+            if self.keyX!='None': axis = self.npX
+            else                : axis = self.npY
 
 #            chrtObj = self.chart.scatter( x=self.C, y=self.Y, linewidths=1 ) #, edgecolors='gray')
-            chrtObj = self.chart.plot( self.C, axis ) #, edgecolors='gray')
+            chrtObj = self.chart.plot( self.npC, axis ) #, edgecolors='gray')
         
         #----------------------------------------------------------------------
         # Vykreslenie noveho grafu
@@ -389,7 +423,7 @@ class InfoMarixGui(ttk.Frame):
         self.iPoints  = []                 # List of InfoPoints to show
         self.actPoint = None               # Actual working InfoPoint
         
-        self.keyV     =  None              # key for value to show
+        self.keyV     = 'None'             # key for value to show
         self.keyX     = 'None'             # Default key for Axis X to show
         self.keyY     = 'None'             # Default key for Axis Y to show
 

@@ -361,6 +361,22 @@ class InfoPoint:
     #==========================================================================
     # Dat Value retrieval
     #--------------------------------------------------------------------------
+    def axe(self, key:str):
+        "Returns value for respective axis key"
+        
+        #----------------------------------------------------------------------
+        # Key check
+        #----------------------------------------------------------------------
+        if key not in InfoPoint._schema[self._ipType]['axes'].keys():
+            self.journal(f"InfoPoint.get: Key '{key}' not found in axes {InfoPoint._schema[self._ipType]['axes']}", True)
+            return None
+
+        #----------------------------------------------------------------------
+        # Return axe's value of this InfoPoint for respective key
+        #----------------------------------------------------------------------
+        return self._pos[key]
+
+    #--------------------------------------------------------------------------
     def get(self, key:str=None):
         "Returns value of this InfoPoint for respective key"
         
@@ -624,6 +640,9 @@ if __name__ == '__main__':
     print('m =', p2.get('m'))
     print('v2 =', p2.get('v2'))  
     print('no key', p2.get())  
+    print('axe(x) ', p2.axe('x'))
+    print('axe(y) ', p2.axe('y'))
+    print('axe(r) ', p2.axe('r'))
     print()
     
     print('schema tools')

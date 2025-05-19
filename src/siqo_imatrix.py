@@ -962,9 +962,9 @@ if __name__ == '__main__':
         print('matrix:', im3._2DposByIdx([ '?', '?', 1], struct='matrix' ))
 
         im3.act2D = {'c':1}
-
         mtrx = im3.actMatrix(keyVal=None, struct='list')
         for point in mtrx: print(point)
+        print('point.')
         print()
 
         mtrx = im3.actMatrix(keyVal=None, struct='matrix')
