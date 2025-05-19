@@ -524,6 +524,7 @@ class InfoMatrix:
            If keyVal is     None then returns vector of InfoPoints."""
         
         self.journal.I(f"{self.name}.actVector: keyVal={keyVal}, sub1D={sub1D}")
+        toRet = []
 
         if sub1D is not None: self.act2D = sub1D
 
@@ -540,7 +541,7 @@ class InfoMatrix:
         if freeDim != 1:
             self.journal.M(f"{self.name}.actVector: ERROR: act1D {self.act1D} is not 1D substructure but {freeDim} dim", True)
             self.journal.O()
-            return None
+            return toRet
 
         #----------------------------------------------------------------------
         # Ziskam list pozicii bodov patriacich hladanemu vektoru
@@ -550,7 +551,6 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Create vector of InfoPoints/Values for respective positions
         #----------------------------------------------------------------------
-        toRet = []
         for pos in poss:
             toRet.append(self.pointByPos(pos).get(key=keyVal))
 
@@ -582,7 +582,7 @@ class InfoMatrix:
         if freeDim != 2:
             self.journal.M(f"{self.name}.actMatrix: ERROR: act2D {self.act2D} is not 2D substructure but {freeDim} dim", True)
             self.journal.O()
-            return None
+            return toRet
 
         #----------------------------------------------------------------------
         # Ziskam maticu pozicii bodov patriacich hladanej matici
@@ -592,7 +592,7 @@ class InfoMatrix:
         if mtrx is None:
             self.journal.M(f"{self.name}.actMatrix: ERROR: Can not obtain positions for desired subset and structure", True)
             self.journal.O()
-            return None
+            return toRet
         
         #----------------------------------------------------------------------
         # Create otput for respective structure settings

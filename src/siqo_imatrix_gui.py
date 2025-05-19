@@ -46,16 +46,17 @@ class InfoMarixGui(ttk.Frame):
 
         self.journal = journal             # Global journal
         self.name    = name                # Name of this chart
-        self.dat     = dat                 # InfoMatrix to show
+        self.dat     = dat                 # InfoMatrix base data
         self.sub2D   = {}                  # Subset of InfoMatrix data defined as frozen axes with desired values e.g. {'x':4, 't':17}
-        self.w       = 1600                # Width of the chart in px
-        self.h       =  900                # Height of the chart in px
         
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
+        self.w       = 1600                # Width of the chart in px
+        self.h       =  900                # Height of the chart in px
+
         self.type     = '2D'               # Actual type of the chart
-        self.IPs      = []                 # List of InfoPoints to show
+        self.iPoints  = []                 # List of InfoPoints to show
         self.actPoint = None               # Actual working InfoPoint
         
         self.keyV     =  None              # key for value to show
@@ -66,11 +67,11 @@ class InfoMarixGui(ttk.Frame):
         if 'keyX' in kwargs.keys(): self.keyX = kwargs['keyX']
         if 'keyY' in kwargs.keys(): self.keyY = kwargs['keyY']
 
-        self.X        = None               # np array for coordinate X
-        self.Y        = None               # np array for coordinate Y
-        self.C        = None               # np array for value color
-        self.U        = None               # np array for quiver re value
-        self.V        = None               # np array for quiver im value
+        self.npX      = np.array([])       # np array for coordinate X
+        self.npY      = np.array([])       # np array for coordinate Y
+        self.npC      = np.array([])       # np array for value color
+        self.npU      = np.array([])       # np array for quiver re value
+        self.npV      = np.array([])       # np array for quiver im value
 
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
@@ -184,14 +185,11 @@ class InfoMarixGui(ttk.Frame):
         self.journal.O()
 
     #--------------------------------------------------------------------------
-    def is1D(self):
-        "Returns True if this chart is 1D otherwise returns False"
+    def is2D(self):
+        "Returns True if this chart is 2D otherwise returns False"
 
-        # Only axis X can be void
-        axX = int(self.strX.get())
-        
-        if axX==0: return True
-        else     : return False
+        if self.keyX!='None' and self.keyY!='None': return True
+        else                                      : return False
         
     #--------------------------------------------------------------------------
     def dataChanged(self, event=None, force=False):
@@ -224,7 +222,7 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             # Ziskam list InfoPoints (whole object) patriacich subsetu
             #------------------------------------------------------------------
-            self.cIP = self.dat.actMatrix(sub2D=self.sub2D, struct='list')
+            self.iPoints = self.dat.actMatrix(sub2D=self.sub2D, struct='list')
 
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
@@ -240,20 +238,43 @@ class InfoMarixGui(ttk.Frame):
     def show(self, event=None):
         """Vykresli chart na zaklade aktualneho listu self.cIP
         """
-
         self.journal.I(f'{self.name}.show:')
 
         #----------------------------------------------------------------------
-        # Assign value array to show as a color array
+        # Check list of InfoPoints to show
         #----------------------------------------------------------------------
-        arrC = []
+        if len(self.iPoints) == 0:
+            self.journal.M(f'{self.name}.show: No InfoPoints, nothig to show', True)
+            self.journal.O()
+            return
+
+        #----------------------------------------------------------------------
+        # Check axis to show
+        #----------------------------------------------------------------------
+        if self.keyX=='None' and self.keyY=='None':
+            self.journal.M(f'{self.name}.show: No axis selected, nothig to show', True)
+            self.journal.O()
+            return
         
-        # Value is in the last position in the list
-        #for point in self.cIP:
-            
-            
-        self.C = np.array(arrC)
-        
+        #----------------------------------------------------------------------
+        # Prepare the data for the chart
+        #----------------------------------------------------------------------
+
+
+
+
+        if self.npC.size==0:
+            self.journal.M(f'{self.name}.show: No values to show', True)
+            self.journal.O()
+            return
+
+        if  self.is2D() and (self.npX.size==0 or self.npY.size==0):
+            self.journal.M(f'{self.name}.show: No axes to show', True)
+            self.journal.O()
+            return
+
+
+
         #----------------------------------------------------------------------
         # Prepare the chart
         #----------------------------------------------------------------------
@@ -275,17 +296,27 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Show the chart
         #----------------------------------------------------------------------
-        if self.is1D():
-        
-#            chrtObj = self.chart.scatter( x=self.C, y=self.Y, linewidths=1 ) #, edgecolors='gray')
-            chrtObj = self.chart.plot( self.C, self.Y ) #, edgecolors='gray')
-        
-        else:
+        if self.is2D():
+            #------------------------------------------------------------------
+            # Chart 2D
+            #------------------------------------------------------------------
             chrtObj = self.chart.scatter( x=self.X, y=self.Y, c=self.C, marker="s", cmap='RdYlBu_r')
 #            chrtObj = self.chart.scatter( x=self.X, y=self.Y, c=self.C, marker="s", lw=0, s=(72./self.figure.dpi)**2, cmap='RdYlBu_r')
             self.figure.colorbar(chrtObj, ax=self.chart)
-            
+
+        else:
+            #------------------------------------------------------------------
+            # Chart 1D
+            #------------------------------------------------------------------
+            if self.keyX=='None': axis = self.X
+            else                : axis = self.Y
+
+#            chrtObj = self.chart.scatter( x=self.C, y=self.Y, linewidths=1 ) #, edgecolors='gray')
+            chrtObj = self.chart.plot( self.C, axis ) #, edgecolors='gray')
+        
+        #----------------------------------------------------------------------
         # Vykreslenie noveho grafu
+        #----------------------------------------------------------------------
         self.figure.tight_layout()
         self.update()
         self.canvas.draw()
@@ -307,8 +338,8 @@ class InfoMarixGui(ttk.Frame):
             x = round(float(event.xdata), 3)
             y = round(float(event.ydata), 3)
             
-            if self.is1D(): coord = [y   ]
-            else          : coord = [y, x]
+            if self.is2D(): coord = [y, x]
+            else          : coord = [y   ]
             
             self.actPoint = self.dat.getPointByPos(coord)
             
@@ -352,22 +383,50 @@ class InfoMarixGui(ttk.Frame):
         self.journal.O()
 
     #--------------------------------------------------------------------------
-    def clear(self):
-        "Clears data in active cut"
-        
-        self.journal.I(f'{self.name}.clear: subset = {self.sub2D}')
+    def reset(self):
+        "Reset all data into default values"
 
-        for node in self.dat:
-            node['cP'].clear()
-            
+        self.iPoints  = []                 # List of InfoPoints to show
+        self.actPoint = None               # Actual working InfoPoint
+        
+        self.keyV     =  None              # key for value to show
+        self.keyX     = 'None'             # Default key for Axis X to show
+        self.keyY     = 'None'             # Default key for Axis Y to show
+
+        self.npX      = np.array([])       # np array for coordinate X
+        self.npY      = np.array([])       # np array for coordinate Y
+        self.npC      = np.array([])       # np array for value color
+        self.npU      = np.array([])       # np array for quiver re value
+        self.npV      = np.array([])       # np array for quiver im value
+
+        self.journal.M(f'{self.name}.reset: done')
+
+    #--------------------------------------------------------------------------
+    def clear(self):
+        "Clears all data but structure is preserved"
+        
+        self.journal.I(f'{self.name}.clear:')
+
+        #----------------------------------------------------------------------
+        # Clear InfoMatrix base data
+        #----------------------------------------------------------------------
+        self.dat.clear()
+
+        #----------------------------------------------------------------------
+        # Reset GUI
+        #----------------------------------------------------------------------
+        self.reset()
+
         self.journal.O()
 
     #--------------------------------------------------------------------------
-    def setData(self, dat):
-        "Clears data and set new data"
+    def setData(self, dat:InfoMatrix):
+        "Reset matrix and set new data"
         
+        self.clear()
         self.dat = dat
-        
+        self.journal.M(f'{self.name}.setData: New data name = {self.dat.name}')
+
     #--------------------------------------------------------------------------
     def setPoint(self, c):
         
@@ -442,6 +501,8 @@ if __name__ == '__main__':
 
     matrixGui = InfoMarixGui(journal, name='Test of InfoModelGui class', container=win, dat=matrix)
     matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
+
+    matrixGui.sub2D = {'z':1}
 
     win.mainloop()
 
