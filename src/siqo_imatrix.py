@@ -259,6 +259,11 @@ class InfoMatrix:
         "Returns values keys and names as dict {key: name}"
         return InfoPoint.getVals(self.ipType)
 
+    #--------------------------------------------------------------------------
+    def getFMethods(self):
+        "Returns methods returning float value {key: InfoPoint.function}"
+        return InfoPoint.floatMethodx()
+
     #==========================================================================
     # Position and indices tools
     #--------------------------------------------------------------------------

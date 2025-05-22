@@ -59,6 +59,7 @@ class InfoMarixGui(ttk.Frame):
         self.iPoints  = []                 # List of InfoPoints to show
         self.actPoint = None               # Actual working InfoPoint
         
+        self.keyF     = 'None'             # key for methods for value to show
         self.keyV     = 'None'             # key for value to show
         self.keyX     = 'None'             # Default key for Axis X to show
         self.keyY     = 'None'             # Default key for Axis Y to show
@@ -133,14 +134,14 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Value to show selector
         #----------------------------------------------------------------------
-        self.strVP = tk.StringVar() # Name of the part of the  value to show in the chart
+        self.strVP = tk.StringVar() # Name of the method for value to show in the chart
         self.strVX = tk.StringVar() # Name of the value to show in the chart
 
         lblVal = ttk.Label(frmBtn, text="Value to show:")
         lblVal.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbVP = ttk.Combobox(frmBtn, textvariable=self.strVP, width=int(_COMBO_WIDTH/2))
-        self.cbVP['values'] = list(self.dat.getVals().values())
+        self.cbVP['values'] = list(self.dat.getFMethods().keys())
         self.cbVP['state' ] = 'readonly'
         self.cbVP.current(0)
         self.cbVP.bind('<<ComboboxSelected>>', self.dataChanged)
@@ -210,23 +211,25 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Read actual settings
         #----------------------------------------------------------------------
+        aKeyF = self.strVP.get()
         aKeyV = self.dat.getValKey(self.cbVX.current())
         aKeyX = self.dat.getAxeKey(self.cbX.current())
         aKeyY = self.dat.getAxeKey(self.cbY.current())
         
-        self.journal.I(f'{self.name}.dataChanged: value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
+        self.journal.I(f'{self.name}.dataChanged: method={aKeyF}->{self.keyF}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
         changed = False
 
         #----------------------------------------------------------------------
         # Changes in any key required data refresh
         #----------------------------------------------------------------------
-        if (self.keyV!=aKeyV) or (self.keyX!=aKeyX) or (self.keyY!=aKeyY) or force: 
+        if  (self.keyF!=aKeyF) or (self.keyV!=aKeyV) or (self.keyX!=aKeyX) or (self.keyY!=aKeyY) or force: 
             
             changed = True
 
             #------------------------------------------------------------------
             # Vytvorim predpis pre aktualny subset
             #------------------------------------------------------------------
+            self.keyF = aKeyF
             self.keyV = aKeyV
             self.keyX = aKeyX
             self.keyY = aKeyY
@@ -285,12 +288,16 @@ class InfoMarixGui(ttk.Frame):
         listU = []
         listV = []
 
+        ftion = self.dat.getFMethods()[self.keyF]
+
         #----------------------------------------------------------------------
         # Prejdem vsetky vybrane body na zobrazenie
         #----------------------------------------------------------------------
         for point in self.iPoints:
 
-            listC.append(point.get(self.keyV))
+            flt = ftion(point, self.keyV)
+            listC.append(flt)
+
             if self.keyX!='None': listX.append(point.axe(self.keyX))
             if self.keyY!='None': listY.append(point.axe(self.keyY))
 

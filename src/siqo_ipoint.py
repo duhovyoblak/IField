@@ -257,6 +257,18 @@ class InfoPoint:
 
         return InfoPoint._schema[ipType]['vals'].copy()
 
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def floatMethodx():
+        "Returns map of methods returning float number"
+
+        return {'val'  : InfoPoint.fValue
+               ,'abs'  : InfoPoint.abs
+               ,'real' : InfoPoint.real
+               ,'imag' : InfoPoint.imag
+               ,'phase': InfoPoint.phase
+               }
+
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
@@ -476,75 +488,71 @@ class InfoPoint:
         return self
 
     #==========================================================================
-    # Complex Value methods; expects complex value with key 'c' in dat dict
+    # Methods returning real number
     #--------------------------------------------------------------------------
-    def setCompVal(self, c:complex):
-        "Sets complex number to respective complex value"
-        
-        self.dat['c'] = c
-        return self
-        
-    #--------------------------------------------------------------------------
-    def setCompRect(self, re:float, im:float):
-        "Sets complex number given by rectangular coordinates (real, imag)"
-        
-        self.dat['c'] = complex(re, im)
-        return self
-        
-    #--------------------------------------------------------------------------
-    def setCompPolar(self, mod:float, phi:float):
-        "Sets complex number given by polar coordinates (modulus, phase)"
-        
-        self.dat['c'] = cmath.rect(mod, phi)
-        return self
-        
-    #--------------------------------------------------------------------------
-    def real(self):
-        "Returns real part of complex number"
-        
-        return self.dat['c'].real
+    def fValue(self, key:str):
+        "Return value or modul, key is obligatory"
+
+        x = self.get(key)
+        if x is not None:
+
+            if   type(x) in (int, float): return x
+            elif type(x) == complex     : return cmath.polar(x)[0]
+            else                        : return x
+
+        return x
 
     #--------------------------------------------------------------------------
-    def imag(self):
-        "Returns imaginary part of complex number"
-        
-        return self.dat['c'].imag
+    def abs(self, key:str):
+        "Return absolute value or modul, key is obligatory"
+
+        x = self.get(key)
+        if x is not None:
+
+            if   type(x) in (int, float): return math.fabs(x)
+            elif type(x) == complex     : return cmath.polar(x)[0]
+            else                        : return x
+
+        return x
 
     #--------------------------------------------------------------------------
-    def polar(self):
-        "Returns polar coordinates of complex number as a tuple. Phase in <-pi, pi> from +x axis"
-        
-        return cmath.polar(self.dat['c'])
+    def real(self, key:str):
+        "Return real part of value, key is obligatory"
+
+        x = self.get(key)
+        if x is not None:
+
+            if   type(x) in (int, float): return x
+            elif type(x) == complex     : return x.real
+            else                        : return x
+
+        return x
 
     #--------------------------------------------------------------------------
-    def abs(self):
-        "Returns absolute value = modulus of complex number"
-        
-        return abs(self.dat['c'])
+    def imag(self, key:str):
+        "Return imaginary part of value, key is obligatory"
+
+        x = self.get(key)
+        if x is not None:
+
+            if   type(x) in (int, float): return 0
+            elif type(x) == complex     : return x.imag
+            else                        : return x
+
+        return x
 
     #--------------------------------------------------------------------------
-    def phase(self):
-        "Returns phase in <-pi, pi> from +x axis"
+    def phase(self, key:str):
+        "Return phase in <-pi, pi> from +x axis, key is obligatory"
         
-        return cmath.phase(self.dat['c'])
+        x = self.get(key)
+        if x is not None:
 
-    #--------------------------------------------------------------------------
-    def conjugate(self):
-        "Returns conjugate complex number"
-        
-        return self.dat['c'].conjugate()
+            if   type(x) in (int, float): return 0
+            elif type(x) == complex     : return cmath.phase(x)
+            else                        : return x
 
-    #--------------------------------------------------------------------------
-    def sqrComp(self):
-        "Returns square of complex number"
-        
-        return self.dat['c'] * self.dat['c']
-
-    #--------------------------------------------------------------------------
-    def sqrAbs(self):
-        "Returns square of the absolute value of complex value"
-        
-        return (self.dat['c'].real * self.dat['c'].real) + (self.dat['c'].imag * self.dat['c'].imag )
+        return x
 
     #==========================================================================
     # Two-points methods
@@ -589,6 +597,47 @@ class InfoPoint:
         sqrDist = self.distSqrTo(toP)
         return math.sqrt(sqrDist)
     
+    #==========================================================================
+    # Complex Value methods; expects complex value with key 'c' in dat dict
+    #--------------------------------------------------------------------------
+    def setCompVal(self, c:complex):
+        "Sets complex number to respective complex value"
+        
+        self.dat['c'] = c
+        return self
+        
+    #--------------------------------------------------------------------------
+    def setCompRect(self, re:float, im:float):
+        "Sets complex number given by rectangular coordinates (real, imag)"
+        
+        self.dat['c'] = complex(re, im)
+        return self
+        
+    #--------------------------------------------------------------------------
+    def setCompPolar(self, mod:float, phi:float):
+        "Sets complex number given by polar coordinates (modulus, phase)"
+        
+        self.dat['c'] = cmath.rect(mod, phi)
+        return self
+        
+    #--------------------------------------------------------------------------
+    def sqrComp(self):
+        "Returns square of complex number"
+        
+        return self.dat['c'] * self.dat['c']
+
+    #--------------------------------------------------------------------------
+    def sqrAbs(self):
+        "Returns square of the absolute value of complex value"
+        
+        return (self.dat['c'].real * self.dat['c'].real) + (self.dat['c'].imag * self.dat['c'].imag )
+
+    #--------------------------------------------------------------------------
+    def conjugate(self):
+        "Return conjugate complex number"
+        
+        return self.dat['c'].conjugate()
+
 #==============================================================================
 # One-Point associated methods
 #------------------------------------------------------------------------------
@@ -668,8 +717,14 @@ if __name__ == '__main__':
     print('name for keyVal v =', InfoPoint.getValName('ipTest', 'v'))
     print()
 
-    abs(p2, key='v')
-    print('abs v ', p2)
+    print('Methods returning float')
+    print(InfoPoint.floatMethodx())
+    print('v.get', p2.get('v'))
+    print('v.abs', p2.abs('v'))
+
+    ab = InfoPoint.abs
+
+    print('??? ', ab(p2, 'v'))
 
 
     pc = p2.copy()
