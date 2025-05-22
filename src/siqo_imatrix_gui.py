@@ -23,7 +23,7 @@ _DPI            = 100
 _FIG_W          = 0.8    # Figure width
 _FIG_H          = 1.0    # Figure height
 
-_COMBO_WIDTH    = 10
+_COMBO_WIDTH    = 12
 _PADX           =  5
 _PADY           =  5
 
@@ -84,28 +84,15 @@ class InfoMarixGui(ttk.Frame):
         frmBtn = ttk.Frame(self)
         frmBtn.pack(fill=tk.X, expand=True, side=tk.TOP, anchor=tk.N)
  
-        frmBtn.columnconfigure(0, weight=1)
-        frmBtn.columnconfigure(1, weight=1)
-        frmBtn.columnconfigure(2, weight=1)
-        frmBtn.columnconfigure(3, weight=1)
-        frmBtn.columnconfigure(4, weight=1)
+        frmBtn.columnconfigure(0, weight=0)
+        frmBtn.columnconfigure(1, weight=3)
+        frmBtn.columnconfigure(2, weight=3)
+        frmBtn.columnconfigure(3, weight=3)
+        frmBtn.columnconfigure(4, weight=2)
+        frmBtn.columnconfigure(5, weight=0)
         
         frmBtn.rowconfigure(0, weight=1)
         frmBtn.rowconfigure(1, weight=1)
-        
-        #----------------------------------------------------------------------
-        # Value to show selector
-        #----------------------------------------------------------------------
-        self.strV = tk.StringVar(value='None') # Name of the value to show in the chart
-
-        lblVal = ttk.Label(frmBtn, text="Value to show:")
-        lblVal.grid(column=0, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        self.cbV = ttk.Combobox(frmBtn, textvariable=self.strV, width=_COMBO_WIDTH)
-        self.cbV['values'] = list(self.dat.getVals().values())
-        self.cbV['state' ] = 'readonly'
-        self.cbV.bind('<<ComboboxSelected>>', self.dataChanged)
-        self.cbV.grid(column=0, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
         
         #----------------------------------------------------------------------
         # X axis dimension selector
@@ -121,7 +108,8 @@ class InfoMarixGui(ttk.Frame):
         self.cbX.bind('<<ComboboxSelected>>', self.dataChanged)
         self.cbX.grid(column=1, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
         
-        self.cbLogX = ttk.Checkbutton(frmBtn, text='LogX', command=self.show)
+        self.varLogX = tk.BooleanVar(value=False)
+        self.cbLogX = ttk.Checkbutton(frmBtn, text='LogX', variable=self.varLogX, command=self.show)
         self.cbLogX.grid(column=1, row=1, pady=_PADY)
         
         #----------------------------------------------------------------------
@@ -138,22 +126,46 @@ class InfoMarixGui(ttk.Frame):
         self.cbY.bind('<<ComboboxSelected>>', self.dataChanged)
         self.cbY.grid(column=2, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
         
-        self.cbLogY = ttk.Checkbutton(frmBtn, text='LogY', command=self.show)
+        self.varLogY = tk.BooleanVar(value=False)
+        self.cbLogY = ttk.Checkbutton(frmBtn, text='LogY', variable=self.varLogX, command=self.show)
         self.cbLogY.grid(column=2, row=1, pady=_PADY)
 
+        #----------------------------------------------------------------------
+        # Value to show selector
+        #----------------------------------------------------------------------
+        self.strVP = tk.StringVar() # Name of the part of the  value to show in the chart
+        self.strVX = tk.StringVar() # Name of the value to show in the chart
+
+        lblVal = ttk.Label(frmBtn, text="Value to show:")
+        lblVal.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        self.cbVP = ttk.Combobox(frmBtn, textvariable=self.strVP, width=int(_COMBO_WIDTH/2))
+        self.cbVP['values'] = list(self.dat.getVals().values())
+        self.cbVP['state' ] = 'readonly'
+        self.cbVP.current(0)
+        self.cbVP.bind('<<ComboboxSelected>>', self.dataChanged)
+        self.cbVP.grid(column=3, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        self.cbVX = ttk.Combobox(frmBtn, textvariable=self.strVX, width=_COMBO_WIDTH)
+        self.cbVX['values'] = list(self.dat.getVals().values())
+        self.cbVX['state' ] = 'readonly'
+        self.cbVX.current(0)
+        self.cbVX.bind('<<ComboboxSelected>>', self.dataChanged)
+        self.cbVX.grid(column=3, row=1, padx=_PADX, pady=_PADY)
+        
         #----------------------------------------------------------------------
         # Method to apply selector
         #----------------------------------------------------------------------
         self.strM = tk.StringVar(value='None') # Name of the method to apply to the data
 
         lblMet = ttk.Label(frmBtn, text="Apply:")
-        lblMet.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+        lblMet.grid(column=4, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbM = ttk.Combobox(frmBtn, textvariable=self.strM, width=_COMBO_WIDTH)
         self.cbM['values'] = ['None', 'Clear Data', 'Random Bit 10%', 'Random Phase']
         self.cbM['state' ] = 'readonly'
         self.cbM.bind('<<ComboboxSelected>>', self.method)
-        self.cbM.grid(column=3, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+        self.cbM.grid(column=4, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
         # Create a figure with the navigator bar and bind it to mouse events
@@ -198,7 +210,7 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Read actual settings
         #----------------------------------------------------------------------
-        aKeyV = self.dat.getValKey(self.cbV.current())
+        aKeyV = self.dat.getValKey(self.cbVX.current())
         aKeyX = self.dat.getAxeKey(self.cbX.current())
         aKeyY = self.dat.getAxeKey(self.cbY.current())
         
@@ -519,7 +531,7 @@ if __name__ == '__main__':
     win = tk.Tk()
     win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
     win.title('Test of InfoModelGui class')
-    win.maxsize(width=1200, height=800)
+    #win.maxsize(width=1200, height=800)
     win.minsize(width=600, height=300)
     win.config(highlightbackground = "green", highlightcolor= "green")
 
