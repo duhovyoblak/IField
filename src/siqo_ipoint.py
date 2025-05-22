@@ -259,14 +259,28 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def floatMethodx():
-        "Returns map of methods returning float number"
+    def floatMethods():
+        "Returns map of methods returning float number from keyed value"
 
         return {'val'  : InfoPoint.fValue
                ,'abs'  : InfoPoint.abs
                ,'real' : InfoPoint.real
                ,'imag' : InfoPoint.imag
                ,'phase': InfoPoint.phase
+               }
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def genMethods():
+        "Returns map of methods returning float number from keyed value"
+
+        return {'fltConst'   : {'ftion':InfoPoint.fltConst,   'par':{'const' :0                                                 }}
+               ,'fltRandF'   : {'ftion':InfoPoint.fltRandF,   'par':{'min'   :0, 'max'   :1                                     }}
+               ,'fltRandBit' : {'ftion':InfoPoint.fltRandBit, 'par':{'prob1' :0.1                                               }}
+               ,'cmpConstR'  : {'ftion':InfoPoint.cmpConstR,  'par':{'real'  :0, 'imag'  :0                                     }}
+               ,'cmpConstP'  : {'ftion':InfoPoint.cmpConstP,  'par':{'abs'   :0, 'phase' :0                                     }}
+               ,'cmpRandR'   : {'ftion':InfoPoint.cmpRandR,   'par':{'reMin' :0, 'reMax' :1, 'imMin'   :0, 'imMax'   :1         }}
+               ,'cmpRandP'   : {'ftion':InfoPoint.cmpRandP,   'par':{'absMin':0, 'absMax':1, 'phaseMin':0, 'phaseMax':2*cmath.pi}}
                }
 
     #==========================================================================
@@ -448,7 +462,7 @@ class InfoPoint:
     
     #--------------------------------------------------------------------------
     def clear(self, *, dat:dict=None):
-        "Sets data to default values"
+        "Sets all data to default values"
         
         if (dat is not None) and (len(dat) > 0):
 
@@ -465,30 +479,8 @@ class InfoPoint:
 
         return self
 
-    #--------------------------------------------------------------------------
-    def rndBit(self, prob:float):
-        "Sets real value 0/1 with respective probability and imaginary value sets to 0"
-
-        x = rnd.randint(0, 9999)
-        
-        if x <= prob*10000: self.c = complex(1, 0)
-        else              : self.c = complex(0, 0)
-
-        return self
-        
-    #--------------------------------------------------------------------------
-    def rndPhase(self, r=1):
-        "Sets random phase <0, 2PI> and radius r. If r==0 then r will be preserved"
-        
-        if r==0: r = self.c.abs()
-
-        phi    = 2*cmath.pi*rnd.random()
-        self.c = cmath.rect(r, phi)
-
-        return self
-
     #==========================================================================
-    # Methods returning real number
+    # Methods returning float from keyed value
     #--------------------------------------------------------------------------
     def fValue(self, key:str):
         "Return value or modul, key is obligatory"
@@ -553,6 +545,67 @@ class InfoPoint:
             else                        : return x
 
         return x
+
+    #==========================================================================
+    # Methods generating keyed value
+    #--------------------------------------------------------------------------
+    def fltConst(self, key:str, par:dict):
+        "Sets constant value for key"
+
+        self.set(dat={key:par['const']})
+
+    #--------------------------------------------------------------------------
+    def fltRandF(self, key:str, par:dict):
+        "Generates random float value from interval for key"
+
+        val = rnd.random()
+
+        self.set(dat={key:val})
+
+    #--------------------------------------------------------------------------
+    def fltRandBit(self, key:str, par:dict):
+        "Sets value 0/1 with respective probability"
+
+        x = rnd.randint(0, 9999)
+        
+        if x <= par['prob1']*10000: val = 1
+        else                      : val = 0
+
+        self.set(dat={key:val})
+        
+    #--------------------------------------------------------------------------
+    def cmpConstR(self, key:str, par:dict):
+        "Sets constant real and imaginary value for key"
+
+        c = complex(par['real'], par['imag'])
+        self.set(dat={key:c})
+
+    #--------------------------------------------------------------------------
+    def cmpConstP(self, key:str, par:dict):
+        "Sets constant absolute value and phase value for key"
+
+        c = cmath.rect(par['abs'], par['phase'])
+        self.set(dat={key:c})
+
+    #--------------------------------------------------------------------------
+    def cmpRandR(self, key:str, par:dict):
+        "Generates random real and imaginary values from respective intervals for key"
+
+        real = rnd.random()
+        imag = rnd.random()
+        c = complex(real, imag)
+
+        self.set(dat={key:c})
+
+    #--------------------------------------------------------------------------
+    def cmpRandP(self, key:str, par:dict):
+        "Generates random absolute value and phase from respective intervals for key"
+
+        abs   = rnd.random()
+        phase = rnd.random()
+        c = cmath.rect(abs, phase)
+
+        self.set(dat={key:c})
 
     #==========================================================================
     # Two-points methods

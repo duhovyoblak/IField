@@ -262,7 +262,12 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def getFMethods(self):
         "Returns methods returning float value {key: InfoPoint.function}"
-        return InfoPoint.floatMethodx()
+        return InfoPoint.floatMethods()
+
+    #--------------------------------------------------------------------------
+    def genMethods(self):
+        "Returns methods generating keyed value"
+        return InfoPoint.genMethods()
 
     #==========================================================================
     # Position and indices tools

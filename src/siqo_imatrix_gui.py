@@ -128,7 +128,7 @@ class InfoMarixGui(ttk.Frame):
         self.cbY.grid(column=2, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
         
         self.varLogY = tk.BooleanVar(value=False)
-        self.cbLogY = ttk.Checkbutton(frmBtn, text='LogY', variable=self.varLogX, command=self.show)
+        self.cbLogY = ttk.Checkbutton(frmBtn, text='LogY', variable=self.varLogY, command=self.show)
         self.cbLogY.grid(column=2, row=1, pady=_PADY)
 
         #----------------------------------------------------------------------
@@ -157,14 +157,15 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Method to apply selector
         #----------------------------------------------------------------------
-        self.strM = tk.StringVar(value='None') # Name of the method to apply to the data
+        self.strM = tk.StringVar() # Name of the method to apply to the data
 
-        lblMet = ttk.Label(frmBtn, text="Apply:")
+        lblMet = ttk.Label(frmBtn, text="Set values:")
         lblMet.grid(column=4, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbM = ttk.Combobox(frmBtn, textvariable=self.strM, width=_COMBO_WIDTH)
-        self.cbM['values'] = ['None', 'Clear Data', 'Random Bit 10%', 'Random Phase']
+        self.cbM['values'] = list(self.dat.genMethods().keys())
         self.cbM['state' ] = 'readonly'
+        self.cbM.current(0)
         self.cbM.bind('<<ComboboxSelected>>', self.method)
         self.cbM.grid(column=4, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
