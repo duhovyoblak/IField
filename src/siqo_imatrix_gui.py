@@ -81,6 +81,29 @@ class InfoMarixGui(ttk.Frame):
         super().__init__(container)
 
         #----------------------------------------------------------------------
+        # Vytvorenie hlavného menu a priradenie do container (okno)
+        #----------------------------------------------------------------------
+        mainMenu = tk.Menu(container)
+        container.config(menu=mainMenu)
+
+        # Pridanie File menu
+        fileMenu = tk.Menu(mainMenu, tearoff=0)
+        mainMenu.add_cascade(label="File", menu=fileMenu)
+        fileMenu.add_command(label="Open", command=self.onOpen)
+        fileMenu.add_command(label="Save", command=self.onSave)
+        fileMenu.add_separator()
+
+        # Pridanie Data menu
+        dataMenu = tk.Menu(mainMenu, tearoff=0)
+        mainMenu.add_cascade(label="Data", menu=dataMenu)
+        dataMenu.add_command(label="New data", command=self.onNew)
+
+        # Pridanie Help menu
+        helpMenu = tk.Menu(mainMenu, tearoff=0)
+        mainMenu.add_cascade(label="Help", menu=helpMenu)
+        helpMenu.add_command(label="About", command=self.onAbout)
+
+        #----------------------------------------------------------------------
         # Create head buttons bar
         #----------------------------------------------------------------------
         frmBtn = ttk.Frame(self)
@@ -176,7 +199,7 @@ class InfoMarixGui(ttk.Frame):
         self.figure = plt.figure(figsize=(self.w*_FIG_W/100, self.h*_FIG_H/100), dpi=_DPI)
         self.canvas = FigureCanvasTkAgg(self.figure, self)
         
-        self.canvas.callbacks.connect('button_press_event', self.on_click)
+        self.canvas.callbacks.connect('button_press_event', self.onClick)
         
         NavigationToolbar2Tk(self.canvas, self)
         
@@ -382,10 +405,10 @@ class InfoMarixGui(ttk.Frame):
         self.journal.O()
         
     #--------------------------------------------------------------------------
-    def on_click(self, event):
+    def onClick(self, event):
         "Print information about mouse-given position"
         
-        self.journal.I(f'{self.name}.on_click:')
+        self.journal.I(f'{self.name}.onClick:')
 
         if event.inaxes is not None:
             
@@ -413,7 +436,7 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             elif btn == 3: #MouseButton.RIGHT:
                 
-                self.journal.M(f'{self.name}.on_click: right click for {self.actPoint}')
+                self.journal.M(f'{self.name}.onClick: right click for {self.actPoint}')
                 
                 try    : self.pointMenu.tk_popup(event.x, event.y)
                 finally: self.pointMenu.grab_release()
@@ -425,6 +448,33 @@ class InfoMarixGui(ttk.Frame):
             print('Clicked ouside axes bounds but inside plot window')
         
         self.journal.O()
+
+    #==========================================================================
+    # File menu
+    #--------------------------------------------------------------------------
+    def onOpen(self, event=None):
+
+        return
+
+    #--------------------------------------------------------------------------
+    def onSave(self, event=None):
+
+        return
+
+    #==========================================================================
+    # Data menu
+    #--------------------------------------------------------------------------
+    def onNew(self, event=None):
+
+        return
+
+
+    #==========================================================================
+    # Help menu
+    #--------------------------------------------------------------------------
+    def onAbout(self, event=None):
+
+        return
 
     #==========================================================================
     # Method to apply
