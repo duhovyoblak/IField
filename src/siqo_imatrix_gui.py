@@ -11,6 +11,7 @@ from   matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToo
 import numpy                  as np
 import matplotlib.pyplot      as plt
 
+from   siqolib.message        import getNumber
 from   siqo_imatrix           import InfoMatrix
 
 #==============================================================================
@@ -220,6 +221,8 @@ class InfoMarixGui(ttk.Frame):
         self.journal.I(f'{self.name}.dataChanged: method={aKeyF}->{self.keyF}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
         changed = False
 
+        if force: changed=True
+
         #----------------------------------------------------------------------
         # Changes in any key required data refresh
         #----------------------------------------------------------------------
@@ -238,7 +241,7 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             # Ziskam list InfoPoints (whole object) patriacich subsetu
             #------------------------------------------------------------------
-            self.iPoints = self.dat.actMatrix(sub2D=self.sub2D, struct='list')
+            self.iPoints = self.dat.actMatrix(act2D=self.sub2D)
 
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
@@ -429,11 +432,38 @@ class InfoMarixGui(ttk.Frame):
     def method(self, event=None):
         "Apply data in active cut"
         
-        met = self.strM.get()
-        self.journal.I(f'{self.name}.method: {met} with subset = {self.sub2D}')
+        metKey = self.strM.get()
+        if metKey == 'None': return
 
+        self.journal.I(f'{self.name}.method: Value {self.keyV} will be set by {metKey} with subset = {self.sub2D}')
 
-        if met != 'None':self.dataChanged()
+        #----------------------------------------------------------------------
+        # Zistenie detailov metody
+        #----------------------------------------------------------------------
+        metDef = self.dat.genMethods()[metKey]
+        ftion  = metDef['ftion']
+        params = metDef['par'  ]
+        newPar = {}
+
+        for par, entry in params.items():
+
+            newEntry = getNumber(self.journal, name=f"Parameter of {metKey}", label=par, entry=entry, wpix=200, hpix=100, lpix=300, tpix=200)
+
+            if newEntry is None:
+                self.journal.M(f"{self.name}.method: {metKey} cancelled by user", True)
+                return
+
+            newPar[par] = newEntry
+
+        #----------------------------------------------------------------------
+        # Vykonanie metody
+        #----------------------------------------------------------------------
+        self.journal.M(f"{self.name}.method: {metKey}:  {ftion.__name__}(key='{self.keyV}', par={newPar})", True)
+        self.dat.actPointFunction(ftion, key=self.keyV, par=newPar)
+
+        self.dataChanged(force=True)
+
+        #----------------------------------------------------------------------
         self.journal.O()
 
     #--------------------------------------------------------------------------

@@ -46,13 +46,17 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         self.name       = name            # Name of the InfoMatrix
         self.ipType     = ipType          # Type of the InfoPoint in this InfoMatrix
-        self.points     = []              # List of InfoPoints
-        self.actVal     = None            # Key of the current InfoPoint's dat value
-        self.act1D      = None            # Current active 1D submatrix (vector) defined as dict of freezed axesKeys with values
-                                          #  {'x':x, 'y':y, ....] but ONE active axes missing
-        self.act2D      = None            # Current active 2D submatrix defined as dict of freezed axesKeys with values
-                                          #  {'x':x, 'y':y, ....] but TWO active axes missing
         self.staticEdge = False           # Static edge means value of the edge points is fixed in some methods
+
+        self.points     = []              # List of InfoPoints
+
+        self.actVal     = None            # Key of the current InfoPoint's dat value
+        self.act1D      = None            # Current active 1D submatrix definition as dict of freezed axesKeys with values
+                                          #  {'x':x, 'y':y, ....] but ONE active axes missing
+        self.act2D      = None            # Current active 2D submatrix definition as dict of freezed axesKeys with values
+                                          #  {'x':x, 'y':y, ....] but TWO active axes missing
+        self.actSub     = []              # Current active list of points in submatrix/subvector
+        self.actChanged = False           # Current sub settings was changed and actSub needs refresh
         
         #----------------------------------------------------------------------
         # Private datove polozky triedy
@@ -103,10 +107,13 @@ class InfoMatrix:
         if ipType is not None: self.ipType = ipType
 
         self.points     = []              # List of rows of lists of InfoPoints
+        self.staticEdge = False           # Static edge means value of the edge nodes is fixed        
+
         self.actVal     = None            # Key of the InfoPoint's current dat value
         self.act1D      = None            # Current active 1D submatrix (vector) defined as dict of freezed axesKeys with values
         self.act2D      = None            # Current active 2D submatrix defined as dict of freezed axesKeys with values
-        self.staticEdge = False           # Static edge means value of the edge nodes is fixed        
+        self.actSub     = []              # Current active submatrix/subvector
+        self.actChanged = False           # Current sub settings was changed and actSub needs refresh
 
         self._origs     = {}              # Origin's coordinates of the InfoMatrix
         self._cnts      = {}              # Number of InfoPoints in respective axes
@@ -129,10 +136,11 @@ class InfoMatrix:
             dat['name'       ] = self.name
             dat['ipType'     ] = self.ipType
             dat['schema'     ] = InfoPoint.getSchema(self.ipType)
+            dat['staticEdge' ] = self.staticEdge
+
             dat['actVal'     ] = self.actVal
             dat['act1D'      ] = self.act1D
             dat['act2D'      ] = self.act2D
-            dat['staticEdge' ] = self.staticEdge
 
             dat['origs'      ] = self._origs
             dat['cnts'       ] = self._cnts
@@ -178,10 +186,13 @@ class InfoMatrix:
 
         toRet.points     = []                  # List of InfoPoints
         toRet.ipType     = self.ipType         # Type of the InfoPoint in this InfoMatrix
+        toRet.staticEdge = self.staticEdge     # Static edge means value of the edge nodes is fixed
+
         toRet.actVal     = self.actVal         # Key of the InfoPoint's dat value
         toRet.act1D      = self.act1D          # Current active 1D submatrix (vector) defined as dict of freezed axesKeys with values
         toRet.act2D      = self.act2D          # Current active 2D submatrix defined as dict of freezed axesKeys with values
-        toRet.staticEdge = self.staticEdge     # Static edge means value of the edge nodes is fixed
+        self.actSub      = []                  # Current active submatrix/subvector
+        self.actChanged  = True                # Current sub settings was changed and actSub needs refresh
 
         toRet._origs     = self._origs.copy()  # Origin's coordinates of the InfoMatrix 
         toRet._cnts      = self._cnts.copy()   # Number of InfoPoints in respective axes
@@ -332,7 +343,8 @@ class InfoMatrix:
     def _1DposByIdx(self, idxs:list):
         """Returns list of pos for vector of respective indices with ONE
            question mark in the list [a, b, '?', 'c'].
-           Question mark means all values in this dimension and defines vector."""
+           Question mark means all values in this dimension and defines vector.
+           Positions are returned as the list of point's positions in the self.points"""
 
         self.journal.I(f"{self.name}._1DposByIdx: idxs={idxs}")
         toRet = []
@@ -376,15 +388,14 @@ class InfoMatrix:
         return toRet
 
     #--------------------------------------------------------------------------
-    def _2DposByIdx(self, idxs:list, struct:str):
+    def _2DposByIdx(self, idxs:list):
         """Returns positons of InfoPoints for respective indices with TWO
            question marks in the list ['?', b, '?', 'c'].
            Question marks means all values in this dimension and  defines the matrix.
-           Positions are returned in the list of vector's positions list
-           [ [a, b, c], [d, e, f], ... ].
+           Positions are returned as the list of point's positions in the self.points
            """
 
-        self.journal.I(f"{self.name}._2DposByIdx: Save points for idxs={idxs} into {struct}")
+        self.journal.I(f"{self.name}._2DposByIdx: Get point's positions for idxs={idxs}")
         toRet = []
 
         #----------------------------------------------------------------------
@@ -416,16 +427,7 @@ class InfoMatrix:
             # Vygenerujem pozicie pre row-vektor
             #------------------------------------------------------------------
             rowPos = self._1DposByIdx(rowIdxs)
-
-            #------------------------------------------------------------------
-            # Vlozim rowPos do matice pozicii toRet
-            #------------------------------------------------------------------
-            if   struct == 'matrix': toRet.append(rowPos) 
-            elif struct == 'list'  : toRet.extend(rowPos)
-            else:     
-                self.journal.M(f"{self.name}._2DposByIdx: Unknown structure {struct}, command denied")
-                self.journal.O()
-                return None
+            toRet.extend(rowPos)
 
         #----------------------------------------------------------------------
         self.journal.O(f"{self.name}._2DposByIdx: toRet={toRet}")
@@ -528,20 +530,29 @@ class InfoMatrix:
     #==========================================================================
     # Substructure retrieval
     #--------------------------------------------------------------------------
-    def actVector(self, *, keyVal:str=None, sub1D=None):
+    def actVector(self, act1D=None, force=False):
         """Returns vector of InfoPoints in field for respective act1D settings
-           If keyVal is not None then returns vector of keyed values.
-           If keyVal is     None then returns vector of InfoPoints."""
-        
-        self.journal.I(f"{self.name}.actVector: keyVal={keyVal}, sub1D={sub1D}")
-        toRet = []
-
-        if sub1D is not None: self.act2D = sub1D
+        """
 
         #----------------------------------------------------------------------
         # Ak nie je act1D nastaveny, vyber je cela InfoMatrix
         #----------------------------------------------------------------------
         if self.act1D is None: self.act1D = {}    
+
+        if act1D is not None and act1D != self.act1D: 
+            self.act1D = act1D
+            self.actChanged = True
+
+        #----------------------------------------------------------------------
+        # Kontrola potreby obnovenia
+        #----------------------------------------------------------------------
+        if not self.actChanged and not force:
+            self.journal.M(f"{self.name}.actVector: subVector definition was not changed, no need to refresh", True)
+            return self.actSub
+
+        #----------------------------------------------------------------------
+        self.journal.I(f"{self.name}.actVector: act1D={self.act1D}")
+        self.actSub = []
         
         #----------------------------------------------------------------------
         # Ziskam idxs podla act1D a pre kontrolu aj pocet volnych dimenzii
@@ -551,39 +562,53 @@ class InfoMatrix:
         if freeDim != 1:
             self.journal.M(f"{self.name}.actVector: ERROR: act1D {self.act1D} is not 1D substructure but {freeDim} dim", True)
             self.journal.O()
-            return toRet
+            return self.actSub
 
         #----------------------------------------------------------------------
         # Ziskam list pozicii bodov patriacich hladanemu vektoru
         #----------------------------------------------------------------------
         poss = self._1DposByIdx(idxs)
         
+        if poss is None:
+            self.journal.M(f"{self.name}.actVector: ERROR: Can not obtain positions for desired subset and structure", True)
+            self.journal.O()
+            return self.actSub
+        
         #----------------------------------------------------------------------
         # Create vector of InfoPoints/Values for respective positions
         #----------------------------------------------------------------------
         for pos in poss:
-            toRet.append(self.pointByPos(pos).get(key=keyVal))
+            self.actSub.append(self.pointByPos(pos))
 
         #----------------------------------------------------------------------
         self.journal.O()
-        return toRet    
+        return self.actSub    
     
     #--------------------------------------------------------------------------
-    def actMatrix(self, *, keyVal:str=None, sub2D=None, struct:str='list'):
-        """Returns matrix of InfoPoints in field for respective act2D settings 
-           If keyVal is not None then returns matrix of keyed values.
-           If keyVal is     None then returns matrix of InfoPoints."""
-
-        self.journal.I(f"{self.name}.actMatrix: keyVal={keyVal}, sub2D={sub2D} into structure {struct}")
-        toRet = []
-
-        if sub2D is not None: self.act2D = sub2D
+    def actMatrix(self, *, act2D=None, force=False):
+        """Returns 2D submatrix of InfoPoints in field for respective act2D settings 
+        """
 
         #----------------------------------------------------------------------
         # Ak nie je act2D nastaveny, vyber je cela InfoMatrix
         #----------------------------------------------------------------------
         if self.act2D is None: self.act2D = {}    
-        
+
+        if act2D is not None and act2D != self.act2D: 
+            self.act2D = act2D
+            self.actChanged = True
+
+        #----------------------------------------------------------------------
+        # Kontrola potreby obnovenia
+        #----------------------------------------------------------------------
+        if not self.actChanged and not force:
+            self.journal.M(f"{self.name}.actMatrix: subMatrix definition was not changed, no need to refresh", True)
+            return self.actSub
+
+        #----------------------------------------------------------------------
+        self.journal.I(f"{self.name}.actMatrix: sub2D={self.act2D}")
+        self.actSub = []
+
         #----------------------------------------------------------------------
         # Ziskam idxs podla act2D a pre kontrolu aj pocet volnych dimenzii
         #----------------------------------------------------------------------
@@ -592,57 +617,27 @@ class InfoMatrix:
         if freeDim != 2:
             self.journal.M(f"{self.name}.actMatrix: ERROR: act2D {self.act2D} is not 2D substructure but {freeDim} dim", True)
             self.journal.O()
-            return toRet
+            return self.actSub
 
         #----------------------------------------------------------------------
-        # Ziskam maticu pozicii bodov patriacich hladanej matici
+        # Ziskam list pozicii bodov patriacich hladanej matici
         #----------------------------------------------------------------------
-        mtrx  = self._2DposByIdx(idxs, struct)
+        poss = self._2DposByIdx(idxs)
 
-        if mtrx is None:
+        if poss is None:
             self.journal.M(f"{self.name}.actMatrix: ERROR: Can not obtain positions for desired subset and structure", True)
             self.journal.O()
-            return toRet
+            return self.actSub
         
         #----------------------------------------------------------------------
-        # Create otput for respective structure settings
+        # Create vector of InfoPoints/Values for respective positions
         #----------------------------------------------------------------------
-        if struct=='matrix':
-
-            #------------------------------------------------------------------
-            # Create marix of InfoPoints for respective positions
-            #------------------------------------------------------------------
-            for row in mtrx:
-
-                rowVec = []
-
-                #--------------------------------------------------------------
-                # Create row-vector of InfoPoints/Values for respective positions
-                #--------------------------------------------------------------
-                for pos in row:
-                    rowVec.append(self.pointByPos(pos).get(key=keyVal))
-
-                #--------------------------------------------------------------
-                # Vlozim riadok do matice
-                #--------------------------------------------------------------
-                toRet.append(rowVec)
-
-        elif struct == 'list':
-
-            #------------------------------------------------------------------
-            # Create list of InfoPoints for respective positions
-            #------------------------------------------------------------------
-            for pos in mtrx:
-                toRet.append(self.pointByPos(pos).get(key=keyVal))
-
-        else:
-            self.journal.M(f"{self.name}.actMatrix: Unknown structure {struct}, command denied")
-            self.journal.O()
-            return None
+        for pos in poss:
+            self.actSub.append(self.pointByPos(pos))
 
         #----------------------------------------------------------------------
         self.journal.O()
-        return toRet    
+        return self.actSub    
 
     #==========================================================================
     # Value modification
@@ -787,57 +782,20 @@ class InfoMatrix:
         return self
         
     #--------------------------------------------------------------------------
-    def applyPointFunction(self, function, key:str, par:dict=None, slice=(0,0,0,0)):
-        "Apply respective function for all points in slices"
+    def actPointFunction(self, function, key:str, par:dict=None):
+        "Apply respective function for all points in active substructure"
 
-        #----------------------------------------------------------------------
-        # Slice settings
-        #----------------------------------------------------------------------
-        rowFrom = slice[0]
-        colFrom = slice[1]
-        rowTo   = slice[2] if slice[2] > 0 else self._rows-1
-        colTo   = slice[3] if slice[3] > 0 else self._cols-1
+        self.journal.I(f"{self.name}.actPointFunction: {function.__name__}(key={key}, par={par}) for {len(self.actSub)} active Points]")
         
-        self.journal.I(f"{self.name}.applyPointFunction: {function.__name__}(key={key}, par={par}) from [{rowFrom}:{colFrom}] to [{rowTo}:{colTo}]")
-        
-        pts = 0  # Counter of points to be processed
-        aps = 0  # Counter of points processed by function   
+        pts = 0  # Counter of points
+
+        for point in self.actSub:
+
+            function(self=point, key=key, par=par)
+            pts += 1
 
         #----------------------------------------------------------------------
-        # rows from rowFrom to rowTo
-        #----------------------------------------------------------------------
-        for row in range(rowFrom, rowTo+1): 
-            
-            #------------------------------------------------------------------
-            # columns from colFrom to colTo
-            #------------------------------------------------------------------
-            for col in range(colFrom, colTo+1):
-                
-                #--------------------------------------------------------------
-                # Get node to apply function
-                #--------------------------------------------------------------
-                point = self.pointByIdx([row, col])
-                if point is None:
-                    self.journal.M(f"{self.name}.applyPointFunction: ERROR Target point[{row},{col}] does not exists", True)
-                    break
-
-                pts += 1
-
-                #--------------------------------------------------------------
-                # Apply function to point
-                #--------------------------------------------------------------
-                if function(point=point, key=key, par=par): aps += 1
-
-                #--------------------------------------------------------------
-                # Number of points should be number of applied functions
-                #--------------------------------------------------------------
-                if pts != aps: 
-                    self.journal.M(f"{self.name}.applyPointFunction: ERROR: function {function.__name__} failed for point[{row},{col}]", True)
-                    self.journal.O()
-                    return False
-
-        #----------------------------------------------------------------------
-        self.journal.O(f"{self.name}.applyPointFunction: {function.__name__} was applied to {aps}/{pts} nodes")
+        self.journal.O(f"{self.name}.actPointFunction: {function.__name__} was applied to {pts} nodes")
         return True
 
     #==========================================================================
@@ -871,27 +829,6 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         self.journal.O(f"{self.name}.normAbs: norm = {norm} for {len(nods)} points")
 
-    #==========================================================================
-    # Tki API
-    #--------------------------------------------------------------------------
-    def getNPdata(self, *, keyCol, keyU=None, keyV=None, sub2D:dict={}):
-        "Returns numpy arrays of axeX, axeY, values, re and im for respective subset of InfoMatrix"
-    
-        self.journal.I(f"{self.name}.getData: valueColor={keyCol}, quiverRe={keyU}, quiverIm={keyV} from sub2D={sub2D}")
-
-        #----------------------------------------------------------------------
-        # Ziskam pozadovany subset
-        #----------------------------------------------------------------------
-        subM = self.actMatrix(keyVal=None)
-        for row in mtrx: 
-            for point in row: print(point)
-
-
-        #----------------------------------------------------------------------
-        self.journal.O()
-        return toRet
-
-    #--------------------------------------------------------------------------
     #==========================================================================
     # Persistency methods
     #--------------------------------------------------------------------------
@@ -968,19 +905,14 @@ if __name__ == '__main__':
 
     if True:
         print('matrix subset')
-        print('list  :', im3._2DposByIdx([ '?', '?', 1], struct='list'   ))
-        print('matrix:', im3._2DposByIdx([ '?', '?', 1], struct='matrix' ))
+        print(im3._2DposByIdx([ '?', '?', 1]))
 
         im3.act2D = {'c':1}
-        mtrx = im3.actMatrix(keyVal=None, struct='list')
-        for point in mtrx: print(point)
-        print('point.')
+        actMtrx = im3.actMatrix(force=True)
+        for point in actMtrx: print(point)
         print()
 
-        mtrx = im3.actMatrix(keyVal=None, struct='matrix')
-        for row in mtrx: 
-            for point in row: print(point)
-        print()
+
 
     if False:
         print('matrix __array__')
