@@ -68,6 +68,13 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
+    def isValidSchema(ipType):
+        "Returns True if schema is valid otherwise returns False"
+        
+        return True
+
+    #--------------------------------------------------------------------------
+    @staticmethod
     def setAxe(ipType, key, name):
         "Sets axe key and name"
         
@@ -271,16 +278,16 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def genMethods():
+    def mapMethods():
         "Returns map of methods returning float number from keyed value"
 
-        return {'fltConst'   : {'ftion':InfoPoint.fltConst,   'par':{'const' :0                                                 }}
-               ,'fltRandF'   : {'ftion':InfoPoint.fltRandF,   'par':{'min'   :0, 'max'   :1                                     }}
-               ,'fltRandBit' : {'ftion':InfoPoint.fltRandBit, 'par':{'prob1' :0.1                                               }}
-               ,'cmpConstR'  : {'ftion':InfoPoint.cmpConstR,  'par':{'real'  :0, 'imag'  :0                                     }}
-               ,'cmpConstP'  : {'ftion':InfoPoint.cmpConstP,  'par':{'abs'   :0, 'phase' :0                                     }}
-               ,'cmpRandR'   : {'ftion':InfoPoint.cmpRandR,   'par':{'reMin' :0, 'reMax' :1, 'imMin'   :0, 'imMax'   :1         }}
-               ,'cmpRandP'   : {'ftion':InfoPoint.cmpRandP,   'par':{'absMin':0, 'absMax':1, 'phaseMin':0, 'phaseMax':2*cmath.pi}}
+        return {'fill constant'  : {'ftion':InfoPoint.fltConst,   'par':{'const' :0                                                 }}
+               ,'random uniform' : {'ftion':InfoPoint.fltRandUni, 'par':{'min'   :0, 'max'   :1                                     }}
+               ,'random bit'     : {'ftion':InfoPoint.fltRandBit, 'par':{'prob1' :0.1                                               }}
+               ,'cmpConstR'      : {'ftion':InfoPoint.cmpConstR,  'par':{'real'  :0, 'imag'  :0                                     }}
+               ,'cmpConstP'      : {'ftion':InfoPoint.cmpConstP,  'par':{'abs'   :0, 'phase' :0                                     }}
+               ,'cmpRandR'       : {'ftion':InfoPoint.cmpRandR,   'par':{'reMin' :0, 'reMax' :1, 'imMin'   :0, 'imMax'   :1         }}
+               ,'cmpRandP'       : {'ftion':InfoPoint.cmpRandP,   'par':{'absMin':0, 'absMax':1, 'phaseMin':0, 'phaseMax':2*cmath.pi}}
                }
 
     #==========================================================================
@@ -555,10 +562,17 @@ class InfoPoint:
         self.set(dat={key:par['const']})
 
     #--------------------------------------------------------------------------
-    def fltRandF(self, key:str, par:dict):
-        "Generates random float value from interval for key"
+    def fltRandUni(self, key:str, par:dict):
+        "Generates uniform random float value from interval for key"
 
-        val = rnd.random()
+        if 'min' in par.keys(): min_val = par['min']
+        else                  : min_val = 0
+
+        if 'max' in par.keys(): max_val = par['max']
+        else                  : max_val = 1
+
+        val = rnd.uniform(min_val, max_val)
+        self.journal(f"fltRandUni: Generated value {val} for key '{key}' in interval [{min_val}, {max_val}]")
 
         self.set(dat={key:val})
 

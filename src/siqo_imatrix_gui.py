@@ -11,7 +11,7 @@ from   matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToo
 import numpy                  as np
 import matplotlib.pyplot      as plt
 
-from   siqolib.message        import getNumber
+from   siqolib.message        import askInt, askReal
 from   siqo_imatrix           import InfoMatrix
 
 #==============================================================================
@@ -466,6 +466,54 @@ class InfoMarixGui(ttk.Frame):
     #--------------------------------------------------------------------------
     def onNew(self, event=None):
 
+        self.journal.I(f'{self.name}.onNew:')
+
+        #----------------------------------------------------------------------
+        # Zistenie poctov bodov v jednotlivych osiach
+        #----------------------------------------------------------------------
+        cnts = {}
+        
+        for axe, oCnt in self.dat._cnts.items():
+          
+            cnt = askInt(container=self, title='Zadaj počet bodov v osi', prompt=axe, initialvalue=oCnt, min=1, max=1000)
+
+            if cnt is None: 
+                self.journal.O(f'{self.name}.onNew: cancelled by user')
+                return
+            
+            cnts[axe] = cnt
+
+        #----------------------------------------------------------------------
+        # Zistenie pociatkov a dlzok jednotlivych osi
+        #----------------------------------------------------------------------
+        origs = {}
+        rect  = {}
+        
+        for axe, oOrig in self.dat._origs.items():
+          
+            orig = askReal(container=self, title='Zadaj počiatok v osi', prompt=axe, initialvalue=oOrig)
+
+            if orig is None: 
+                self.journal.O(f'{self.name}.onNew: cancelled by user')
+                return
+            
+            origs[axe] = orig
+
+            len = askReal(container=self, title='Zadaj dĺžku osi', prompt=axe)
+
+            if len is None: 
+                self.journal.O(f'{self.name}.onNew: cancelled by user')
+                return
+            
+            rect[axe] = len
+
+
+
+
+        #----------------------------------------------------------------------
+        self.dat.gener(cnts=cnts, origs=origs, rect=rect)
+        self.dataChanged(force=True)
+
         return
 
 
@@ -491,13 +539,12 @@ class InfoMarixGui(ttk.Frame):
         # Zistenie detailov metody
         #----------------------------------------------------------------------
         metDef = self.dat.genMethods()[metKey]
-        ftion  = metDef['ftion']
-        params = metDef['par'  ]
+        params = metDef['par']
         newPar = {}
 
         for par, entry in params.items():
 
-            newEntry = getNumber(self.journal, name=f"Parameter of {metKey}", label=par, entry=entry, wpix=200, hpix=100, lpix=300, tpix=200)
+            newEntry = askReal(container=self, title=f"Parameter of {metKey}", prompt=par, initialvalue=entry)
 
             if newEntry is None:
                 self.journal.M(f"{self.name}.method: {metKey} cancelled by user", True)
@@ -508,8 +555,8 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Vykonanie metody
         #----------------------------------------------------------------------
-        self.journal.M(f"{self.name}.method: {metKey}:  {ftion.__name__}(key='{self.keyV}', par={newPar})", True)
-        self.dat.actPointFunction(ftion, key=self.keyV, par=newPar)
+        self.journal.M(f"{self.name}.method: {metKey}(key='{self.keyV}', par={newPar})", True)
+        self.dat.actPointFunction(keyFtion=metKey, key=self.keyV, par=newPar)
 
         self.dataChanged(force=True)
 

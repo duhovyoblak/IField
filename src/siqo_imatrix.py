@@ -213,11 +213,19 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def clearSchema(self):
         "Clears schema of InfoPoint for respective ipType to {'axes':{'None':'None'}, 'vals':{}}"
+
+        self.reset()
+
         return InfoPoint.clearSchema(self.ipType)
     
     #--------------------------------------------------------------------------
     def setAxe(self, key, name):
         "Sets axe key and name"
+
+        if key not in self._origs.keys(): self._origs[key] = None
+        if key not in self._cnts. keys(): self._cnts [key] = None
+        if key not in self._diffs.keys(): self._origs[key] = None
+
         return InfoPoint.setAxe(self.ipType, key, name)
     
     #--------------------------------------------------------------------------
@@ -276,9 +284,9 @@ class InfoMatrix:
         return InfoPoint.floatMethods()
 
     #--------------------------------------------------------------------------
-    def genMethods(self):
-        "Returns methods generating keyed value"
-        return InfoPoint.genMethods()
+    def mapMethods(self):
+        "Returns map of methods for one InfoPoint"
+        return InfoPoint.mapMethods()
 
     #==========================================================================
     # Position and indices tools
@@ -650,34 +658,23 @@ class InfoMatrix:
         for point in self.points: point.clear(dat=defs)
 
     #--------------------------------------------------------------------------
-    def gener(self, *, cnts:dict, origs:dict, rect:dict, ipType:str=None, vals:dict=None, defs:dict={} ):
-        "Creates InfoMatrix with respective settings"
+    def gener(self, *, cnts:dict, origs:dict, rect:dict, ipType:str=None, defs:dict={} ):
+        """Creates new InfoMatrix with respective cnts, origs and rect. Expecting valid 
+           ipType scheme. If ipType is not in arguments, uses existing ipType"""
         
         if ipType is not None: self.ipType = ipType
         self.journal.I(f"{self.name}.gener: {cnts} points of type {self.ipType} on rect {rect} from {origs}")
 
+        #----------------------------------------------------------------------
+        # Check validity of InfoPoint's schema 
+        #----------------------------------------------------------------------
+
+
+
+        #----------------------------------------------------------------------
+        # Destroy old data
+        #----------------------------------------------------------------------
         self.points.clear()                    # Clear all points in the InfoMatrix
-
-        #----------------------------------------------------------------------
-        # Set InfoPoint's schema Axes
-        #----------------------------------------------------------------------
-        self.clearSchema()                     # Clear schema for this InfoPoint type
-        mins = []                              # List of minimum values for respective axes
-
-        for key, val in cnts.items():
-
-            self.setAxe(key, f"os {key}")    
-            mins.append(val)
-
-        #----------------------------------------------------------------------
-        # Set InfoPoint's schema Values if vals is not None 
-        #----------------------------------------------------------------------
-        if vals is not None:
-
-            for key, name in vals.items():
-                self.setVal(key, name)
-
-            if len(vals) == 1: self.actVal = list(vals.keys())[0]
 
         #----------------------------------------------------------------------
         # InfoMatrix settings
@@ -782,11 +779,14 @@ class InfoMatrix:
         return self
         
     #--------------------------------------------------------------------------
-    def actPointFunction(self, function, key:str, par:dict=None):
+    def actPointFunction(self, keyFtion, key:str, par:dict=None):
         "Apply respective function for all points in active substructure"
 
         self.journal.I(f"{self.name}.actPointFunction: {function.__name__}(key={key}, par={par}) for {len(self.actSub)} active Points]")
         
+        function = self.mapMethods()[keyFtion]['ftion']
+
+
         pts = 0  # Counter of points
 
         for point in self.actSub:
@@ -861,18 +861,24 @@ if __name__ == '__main__':
     im1.gener(cnts={'a':5}, origs={'a':0.0}, rect={'a':1.0})
     print(im1)
 
-    im1.gener(cnts={'a':4}, origs={'a':0.0}, rect={'a':1.0}, vals={'v':'Value'})
-    print(im1)
+    im1.setAxe('a', 'Os A')
+    im1.setAxe('a', 'Os A')
 
-    im1.gener(cnts={'a':3}, origs={'a':0.0}, rect={'a':1.0}, vals={'v':'Value'}, defs={'v':0.0})
+    im1.gener(cnts={'a':3}, origs={'a':0.0}, rect={'a':1.0})
     print(im1)
 
     im2 = InfoMatrix(journal, 'Test matrix', ipType='ipTest')
-    im2.gener(cnts={'a':3, 'b':4}, origs={'a':0.0, 'b':0}, rect={'a':10, 'b':10}, vals={'v':'Value'}, defs={'v':3.0})
+    im2.setAxe('b', 'Os B')
+    im2.gener(cnts={'a':3, 'b':4}, origs={'a':0.0, 'b':0}, rect={'a':10, 'b':10})
     print(im2)
 
     im3 = InfoMatrix(journal, 'Test matrix', ipType='ipTest')
-    im3.gener(cnts={'a':3, 'b':4, 'c':2}, origs={'a':0.0, 'b':0, 'c':0}, rect={'a':1.0, 'b':2, 'c':3}, vals={'v':'Value'}, defs={'v':0.0})
+    im2.setAxe('c', 'Os C')
+    im3.gener(cnts={'a':3, 'b':4, 'c':2}, origs={'a':0.0, 'b':0, 'c':0}, rect={'a':1.0, 'b':2, 'c':3})
+    im3.setVal('v', 'Rýchlosť')
+    im3.setVal('m', 'Hmotnosť')
+    im3.actPointFunction('random uniform', 'm', par={'min':0, 'max':5})
+    
     print(im3)
 
     print('point')
