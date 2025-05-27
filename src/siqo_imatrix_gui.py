@@ -187,7 +187,7 @@ class InfoMarixGui(ttk.Frame):
         lblMet.grid(column=4, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbM = ttk.Combobox(frmBtn, textvariable=self.strM, width=_COMBO_WIDTH)
-        self.cbM['values'] = list(self.dat.genMethods().keys())
+        self.cbM['values'] = list(self.dat.mapMethods().keys())
         self.cbM['state' ] = 'readonly'
         self.cbM.current(0)
         self.cbM.bind('<<ComboboxSelected>>', self.method)
@@ -538,7 +538,7 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Zistenie detailov metody
         #----------------------------------------------------------------------
-        metDef = self.dat.genMethods()[metKey]
+        metDef = self.dat.mapMethods()[metKey]
         params = metDef['par']
         newPar = {}
 
@@ -677,7 +677,17 @@ if __name__ == '__main__':
     # Zaciatok testu 
     #--------------------------------------------------------------------------
     matrix = InfoMatrix(journal, 'Test field', 'ipTest')
-    matrix.gener(cnts={'x':3, 'y':4, 'z':2}, origs={'x':0, 'y':0, 'z':0}, rect={'x':5, 'y':5, 'z':2}, vals={'m':'hmotnosť', 'v':'rýchlosť'}, defs={'m':1, 'v':2})
+
+    matrix.setAxe('x', 'Epoch')
+    matrix.setAxe('y', 'L-dist')
+    matrix.setAxe('z', 'Os Z')
+
+    matrix.setVal('m', 'hmotnosť')
+    matrix.setVal('v', 'rýchlosť')
+
+
+
+    matrix.gener(cnts={'x':100, 'y':400, 'z':2}, origs={'x':0, 'y':0, 'z':0}, rects={'x':5, 'y':5, 'z':2}, defs={'m':1, 'v':2})
     print(matrix)
 
     matrixGui = InfoMarixGui(journal, name='Test of InfoModelGui class', container=win, dat=matrix)

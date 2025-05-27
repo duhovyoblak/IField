@@ -68,9 +68,44 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def isValidSchema(ipType):
-        "Returns True if schema is valid otherwise returns False"
+    def checkSchema(ipType):
+        "Checks if schema does exist for respective ipType"
         
+        if ipType not in InfoPoint._schema.keys():
+            InfoPoint._schema[ipType] = {'axes':{'None':'None'}, 'vals':{}}
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def isInSchema(ipType, *, axes:list=None, vals:list=None):
+        "Returns True if schema has defined all axes and vals otherwise returns False"
+
+        if ipType not in InfoPoint._schema.keys():
+            InfoPoint.journal(f"InfoPoint.isInSchema: ipType '{ipType}' is not defined InfoPoint type", True)
+            return False
+        
+        #----------------------------------------------------------------------
+        # Check axes    
+        #----------------------------------------------------------------------        
+        if axes is not None:
+
+            for axe in axes:
+
+                if axe not in InfoPoint._schema[ipType]['axes'].keys():
+                    InfoPoint.journal(f"InfoPoint.isInSchema: Axe '{axe}' is not defined in schema axes {InfoPoint._schema[ipType]['axes']}", True)
+                    return False
+
+        #----------------------------------------------------------------------
+        # Check values    
+        #----------------------------------------------------------------------        
+        if vals is not None:
+
+            for val in vals:
+
+                if val not in InfoPoint._schema[ipType]['vals'].keys():
+                    InfoPoint.journal(f"InfoPoint.isInSchema: Value '{val}' is not defined in schema values {InfoPoint._schema[ipType]['vals']}", True)
+                    return False
+        
+        #----------------------------------------------------------------------        
         return True
 
     #--------------------------------------------------------------------------
@@ -296,6 +331,8 @@ class InfoPoint:
     def __init__(self, ipType:str, *, pos=None, dat=None):
         "Calls constructor of InfoPoint on respective position"
         
+        InfoPoint.checkSchema(ipType)
+
         self._ipType = ipType # Type of InfoPoint (ipReal, ipComplex, ...)
         self._pos    = {}     # Dict of real numbers for position coordinates {'row':5, 'col':6, ...} defined by schema
         self._dat    = {}     # Dict of values of this InfoPoint defined by schema
@@ -447,7 +484,7 @@ class InfoPoint:
                     if key != 'None': self._pos[key] = pos[key]
 
             except KeyError:
-                self.journal(f"InfoPoint.set: Key '{key}' not found in positions {pos} ERROR", True)
+                self.journal(f"InfoPoint.set: Position '{pos}' is not compatible with schema axes {InfoPoint._schema[self._ipType]['axes']} ERROR", True)
                 return False
             
         #----------------------------------------------------------------------
@@ -572,7 +609,6 @@ class InfoPoint:
         else                  : max_val = 1
 
         val = rnd.uniform(min_val, max_val)
-        self.journal(f"fltRandUni: Generated value {val} for key '{key}' in interval [{min_val}, {max_val}]")
 
         self.set(dat={key:val})
 

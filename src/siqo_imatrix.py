@@ -12,7 +12,7 @@ from   siqo_ipoint import InfoPoint
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-_VER    = '3.02'
+_VER    = '3.03'
 _IND    = '|  '       # Info indentation
 _UPP    = 10          # distance units per period
 
@@ -62,6 +62,7 @@ class InfoMatrix:
         # Private datove polozky triedy
         #----------------------------------------------------------------------
         self._origs     = {}              # Origin's coordinates of the InfoMatrix for respective axes in lambda units
+        self._rects     = {}              # Lenghts of the InfoMatrix for respective axes in lambda units
         self._cnts      = {}              # Number of InfoPoints in respective axes
         self._diffs     = {}              # Distance between two points in respective axes in lambda units
 
@@ -116,6 +117,7 @@ class InfoMatrix:
         self.actChanged = False           # Current sub settings was changed and actSub needs refresh
 
         self._origs     = {}              # Origin's coordinates of the InfoMatrix
+        self._rects     = {}              # Lenghts of the InfoMatrix for respective axes in lambda units
         self._cnts      = {}              # Number of InfoPoints in respective axes
         self._diffs     = {}              # Distance between two points in respective axes in lambda units
         
@@ -143,6 +145,7 @@ class InfoMatrix:
             dat['act2D'      ] = self.act2D
 
             dat['origs'      ] = self._origs
+            dat['rects'      ] = self._rects
             dat['cnts'       ] = self._cnts
             dat['len'        ] = len(self.points)
             dat['count'      ] = self.count()
@@ -195,6 +198,7 @@ class InfoMatrix:
         self.actChanged  = True                # Current sub settings was changed and actSub needs refresh
 
         toRet._origs     = self._origs.copy()  # Origin's coordinates of the InfoMatrix 
+        toRet._rects     = self._rects.copy()  # Lengths of the InfoMatrix's axes 
         toRet._cnts      = self._cnts.copy()   # Number of InfoPoints in respective axes
         toRet._diffs     = self._diffs.copy()  # Distance between two points in respective axes in lambda units
 
@@ -219,10 +223,16 @@ class InfoMatrix:
         return InfoPoint.clearSchema(self.ipType)
     
     #--------------------------------------------------------------------------
+    def isInSchema(self, *, axes:list=None, vals:list=None):
+
+        return InfoPoint.isInSchema(self.ipType, axes=axes, vals=vals)
+
+    #--------------------------------------------------------------------------
     def setAxe(self, key, name):
-        "Sets axe key and name"
+        "Add axe key and name"
 
         if key not in self._origs.keys(): self._origs[key] = None
+        if key not in self._rects.keys(): self._rects[key] = None
         if key not in self._cnts. keys(): self._cnts [key] = None
         if key not in self._diffs.keys(): self._origs[key] = None
 
@@ -658,18 +668,21 @@ class InfoMatrix:
         for point in self.points: point.clear(dat=defs)
 
     #--------------------------------------------------------------------------
-    def gener(self, *, cnts:dict, origs:dict, rect:dict, ipType:str=None, defs:dict={} ):
+    def gener(self, *, cnts:dict, origs:dict, rects:dict, ipType:str=None, defs:dict={} ):
         """Creates new InfoMatrix with respective cnts, origs and rect. Expecting valid 
            ipType scheme. If ipType is not in arguments, uses existing ipType"""
         
         if ipType is not None: self.ipType = ipType
-        self.journal.I(f"{self.name}.gener: {cnts} points of type {self.ipType} on rect {rect} from {origs}")
+        self.journal.I(f"{self.name}.gener: {cnts} points of type {self.ipType} on rect {rects} from {origs} with values {defs}")
 
         #----------------------------------------------------------------------
         # Check validity of InfoPoint's schema 
-        #----------------------------------------------------------------------
+        #--- -------------------------------------------------------------------
+        if not self.isInSchema(axes=list(cnts.keys()), vals=list(defs.keys())):
 
-
+            self.journal.M(f"{self.name}.gener: Schema for {self.ipType} is not comaptible with arguments")
+            self.journal.O()
+            return
 
         #----------------------------------------------------------------------
         # Destroy old data
@@ -681,10 +694,11 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         self._cnts     = cnts.copy()              # List of number of InfoPoints in respective axes     
         self._origs    = origs.copy()             # List of origin's coordinates of the InfoMatrix
+        self._rects    = rects.copy()             # List of lenghts of the InfoMatrix's axes
 
         self._diffs    = {}                       # List of distances between two points in respective axes in lambda units
         for key, cnt in self._cnts.items():
-            self._diffs[key] = rect[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
+            self._diffs[key] = self._rects[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
                 
         self.actCol    = None                     # Current axes in role of the columns for 2D matrix
         self.actRow    = None                     # Current axes in role of the rows for 2D matrix
@@ -782,20 +796,36 @@ class InfoMatrix:
     def actPointFunction(self, keyFtion, key:str, par:dict=None):
         "Apply respective function for all points in active substructure"
 
-        self.journal.I(f"{self.name}.actPointFunction: {function.__name__}(key={key}, par={par}) for {len(self.actSub)} active Points]")
+        self.journal.I(f"{self.name}.actPointFunction: {keyFtion}(key={key}, par={par}) for {len(self.actSub)} active Points]")
         
+        #----------------------------------------------------------------------
+        # Ziskanie vykonavanej funkcie
+        #----------------------------------------------------------------------
         function = self.mapMethods()[keyFtion]['ftion']
 
+        #----------------------------------------------------------------------
+        # Ziskanie listu bodov na aplikovanie funkcie
+        #----------------------------------------------------------------------
+        if 'all' in par.keys() and par['all'] == True:
+            tgtStr = 'all'
+            tgtList = self.points
 
+        else:
+            tgtStr = 'active subset'
+            tgtList = self.actSub
+
+        #----------------------------------------------------------------------
+        # Vykonanie funkcie
+        #----------------------------------------------------------------------
         pts = 0  # Counter of points
 
-        for point in self.actSub:
+        for point in tgtList:
 
             function(self=point, key=key, par=par)
             pts += 1
 
         #----------------------------------------------------------------------
-        self.journal.O(f"{self.name}.actPointFunction: {function.__name__} was applied to {pts} nodes")
+        self.journal.O(f"{self.name}.actPointFunction: {keyFtion} was applied to {tgtStr} {pts} InfoPoints")
         return True
 
     #==========================================================================
@@ -858,26 +888,27 @@ if __name__ == '__main__':
     im1 = InfoMatrix(journal, 'Test matrix', ipType='ipTest')
     print(im1)
 
-    im1.gener(cnts={'a':5}, origs={'a':0.0}, rect={'a':1.0})
+    im1.gener(cnts={'a':5}, origs={'a':0.0}, rects={'a':1.0})
     print(im1)
 
     im1.setAxe('a', 'Os A')
     im1.setAxe('a', 'Os A')
 
-    im1.gener(cnts={'a':3}, origs={'a':0.0}, rect={'a':1.0})
+    im1.gener(cnts={'a':3}, origs={'a':0.0}, rects={'a':1.0})
     print(im1)
 
     im2 = InfoMatrix(journal, 'Test matrix', ipType='ipTest')
     im2.setAxe('b', 'Os B')
-    im2.gener(cnts={'a':3, 'b':4}, origs={'a':0.0, 'b':0}, rect={'a':10, 'b':10})
+    im2.gener(cnts={'a':3, 'b':4}, origs={'a':0.0, 'b':0}, rects={'a':10, 'b':10})
     print(im2)
 
-    im3 = InfoMatrix(journal, 'Test matrix', ipType='ipTest')
-    im2.setAxe('c', 'Os C')
-    im3.gener(cnts={'a':3, 'b':4, 'c':2}, origs={'a':0.0, 'b':0, 'c':0}, rect={'a':1.0, 'b':2, 'c':3})
+    im3 = InfoMatrix(journal, 'Test matrix 3', ipType='ipTest')
+    im3.setAxe('c', 'Os C')
+    im3.gener(cnts={'a':3, 'b':4, 'c':2}, origs={'a':0.0, 'b':0, 'c':0}, rects={'a':1.0, 'b':2, 'c':3})
     im3.setVal('v', 'Rýchlosť')
     im3.setVal('m', 'Hmotnosť')
-    im3.actPointFunction('random uniform', 'm', par={'min':0, 'max':5})
+    im3.actMatrix(force=True)
+    im3.actPointFunction('random uniform', 'm', par={'all':True, 'min':0, 'max':5})
     
     print(im3)
 
