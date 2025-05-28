@@ -9,6 +9,8 @@ import random                 as rnd
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
+_VER      = '3.04'
+
 _IND      = '|  '                      # Info indentation
 _F_SCHEMA = 1                          # Format for ipType
 _F_TOTAL  = 5                          # Total number of digits in float number
@@ -48,7 +50,8 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def journal(msg, force=False):
-        ""
+        "Write message into journal"
+
         if InfoPoint._journal is not None:
             InfoPoint._journal.M(msg, force)
 
@@ -69,7 +72,9 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def checkSchema(ipType):
-        "Checks if schema does exist for respective ipType"
+        """Checks if schema does exist for respective ipType. If schema for ipType 
+           does not exist, create empty as {'axes':{'None':'None'}, 'vals':{}}
+        """
         
         if ipType not in InfoPoint._schema.keys():
             InfoPoint._schema[ipType] = {'axes':{'None':'None'}, 'vals':{}}
@@ -111,7 +116,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def setAxe(ipType, key, name):
-        "Sets axe key and name"
+        "Sets axe's key and name for respective ipType. If axe exists already, redefine name."
         
         if ipType not in InfoPoint._schema.keys(): InfoPoint._schema[ipType] = {'axes':{'None':'None'}, 'vals':{}} 
 
@@ -120,7 +125,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getAxeIdx(ipType, key):
-        "Returns axe's idx for respective key as position in the list of axes othewise None"
+        "Returns axe's idx position in the dict of axes for respective key, othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
@@ -144,7 +149,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getAxeKey(ipType, idx):
-        "Returns axe's key for respective position in the list of axes othewise None"
+        "Returns axe's key for respective idx position in the dict of axes, othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
@@ -169,7 +174,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getAxeName(ipType, key):
-        "Returns axe's Name for respective key as string othewise None"
+        "Returns axe's Name for respective key, othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
@@ -191,7 +196,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def setVal(ipType, key, name):
-        "Sets value key and name"
+        "Sets value key and name for respective ipType. If value exists already, redefine name."
         
         if ipType not in InfoPoint._schema.keys(): InfoPoint._schema[ipType] = {'axes':{}, 'vals':{}} 
 
@@ -200,7 +205,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getValIdx(ipType, key):
-        "Returns value's idx for respective key as position in the list of axes othewise None"
+        "Returns value's idx position in the dict of values for respective key, othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
@@ -224,7 +229,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getValKey(ipType, idx):
-        "Returns value's key for respective position in the list of valus othewise None"
+        "Returns value's key in the dict of values for respective idx position, othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
@@ -249,7 +254,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getValName(ipType, key):
-        "Returns value's Name for respective key as string othewise None"
+        "Returns value's Name for respective key, othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
@@ -280,7 +285,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getAxes(ipType):
-        "Returns axes keys and names as dict {key: name}"
+        "Returns axes keys and names as dict {key: name} for respective ipType, otherwise None"
         
         if ipType not in InfoPoint._schema.keys():
             InfoPoint.journal(f"InfoPoint.getAxes: ipType '{ipType}' is not defined InfoPoint type", True)
@@ -291,7 +296,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getVals(ipType):
-        "Returns values keys and names as dict {key: name}"
+        "Returns values keys and names as dict {key: name} for respective ipType, otherwise None"
 
         if ipType not in InfoPoint._schema.keys():
             InfoPoint.journal(f"InfoPoint.getVals: ipType '{ipType}' is not defined InfoPoint type", True)
@@ -301,7 +306,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def floatMethods():
+    def mapFloatMethods():
         "Returns map of methods returning float number from keyed value"
 
         return {'val'  : InfoPoint.fValue
@@ -313,31 +318,31 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def mapMethods():
-        "Returns map of methods returning float number from keyed value"
+    def mapGenMethods():
+        "Returns map of methods returning generated value for respective parameters"
 
-        return {'fill constant'  : {'ftion':InfoPoint.fltConst,   'par':{'const' :0                                                 }}
-               ,'random uniform' : {'ftion':InfoPoint.fltRandUni, 'par':{'min'   :0, 'max'   :1                                     }}
-               ,'random bit'     : {'ftion':InfoPoint.fltRandBit, 'par':{'prob1' :0.1                                               }}
-               ,'cmpConstR'      : {'ftion':InfoPoint.cmpConstR,  'par':{'real'  :0, 'imag'  :0                                     }}
-               ,'cmpConstP'      : {'ftion':InfoPoint.cmpConstP,  'par':{'abs'   :0, 'phase' :0                                     }}
-               ,'cmpRandR'       : {'ftion':InfoPoint.cmpRandR,   'par':{'reMin' :0, 'reMax' :1, 'imMin'   :0, 'imMax'   :1         }}
-               ,'cmpRandP'       : {'ftion':InfoPoint.cmpRandP,   'par':{'absMin':0, 'absMax':1, 'phaseMin':0, 'phaseMax':2*cmath.pi}}
+        return {'Real constant'          : {'ftion':InfoPoint.fltConst,    'par':{'const' :0                                                 }}
+               ,'Random uniform'         : {'ftion':InfoPoint.fltRandUni,  'par':{'min'   :0, 'max'   :1                                     }}
+               ,'Random bit'             : {'ftion':InfoPoint.fltRandBit,  'par':{'prob1' :0.1                                               }}
+               ,'Comp constant (re/im)'  : {'ftion':InfoPoint.cmpConstR,   'par':{'real'  :0, 'imag'  :0                                     }}
+               ,'Comp constant (abs/phs)': {'ftion':InfoPoint.cmpConstP,   'par':{'abs'   :0, 'phase' :0                                     }}
+               ,'Comp random (re/im)'    : {'ftion':InfoPoint.cmpRandUniR, 'par':{'reMin' :0, 'reMax' :1, 'imMin'   :0, 'imMax'   :1         }}
+               ,'Comp random (abs/phs)'  : {'ftion':InfoPoint.cmpRandUniP, 'par':{'absMin':0, 'absMax':1, 'phaseMin':0, 'phaseMax':2*cmath.pi}}
                }
 
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, ipType:str, *, pos=None, dat=None):
+    def __init__(self, ipType:str, *, pos=None, val=None):
         "Calls constructor of InfoPoint on respective position"
         
         InfoPoint.checkSchema(ipType)
 
         self._ipType = ipType # Type of InfoPoint (ipReal, ipComplex, ...)
         self._pos    = {}     # Dict of real numbers for position coordinates {'row':5, 'col':6, ...} defined by schema
-        self._dat    = {}     # Dict of values of this InfoPoint defined by schema
+        self._val    = {}     # Dict of values of this InfoPoint defined by schema
 
-        self.set(pos=pos, dat=dat)
+        self.set(pos=pos, val=val)
 
     #--------------------------------------------------------------------------
     def __str__(self):
@@ -389,14 +394,14 @@ class InfoPoint:
     
     #--------------------------------------------------------------------------
     def _datStr(self):
-        "Creates string representation of the data of this InfoPoint"
+        "Creates string representation of the values of this InfoPoint"
 
         toRet = '{'
         
         i = 0
         for valKey, valName in InfoPoint._schema[self._ipType]['vals'].items():
             
-            if valKey in self._dat.keys(): val = self._dat[valKey]
+            if valKey in self._val.keys(): val = self._val[valKey]
             else                         : val = None
 
             #----------------------------------------------------------------------
@@ -413,9 +418,9 @@ class InfoPoint:
     def info(self, indent=0):
         "Creates info about this InfoPoint"
         
-        msg = f"{indent*_IND}{self._ipType:{_F_SCHEMA}}{self._posStr()}: {self._datStr()}"
+        msg = f"{indent*_IND}{self._ipType:{_F_SCHEMA}}{self._posStr()}: {self._valStr()}"
 
-        return {'res':'OK', 'dat':self._dat, 'msg':msg}
+        return {'res':'OK', 'val':self._val, 'msg':msg}
         
     #--------------------------------------------------------------------------
     def copy(self):
@@ -424,15 +429,15 @@ class InfoPoint:
         toRet = InfoPoint(self._ipType)
 
         toRet._pos = self._pos.copy()
-        toRet._dat = self._dat.copy()
+        toRet._val = self._val.copy()
 
         return toRet
         
     #==========================================================================
-    # Dat Value retrieval
+    # Value retrieval
     #--------------------------------------------------------------------------
-    def axe(self, key:str):
-        "Returns value for respective axis key"
+    def pos(self, key:str):
+        "Returns position for respective axis key"
         
         #----------------------------------------------------------------------
         # Key check
@@ -447,7 +452,7 @@ class InfoPoint:
         return self._pos[key]
 
     #--------------------------------------------------------------------------
-    def get(self, key:str=None):
+    def val(self, key:str=None):
         "Returns value of this InfoPoint for respective key"
         
         #----------------------------------------------------------------------
@@ -465,12 +470,12 @@ class InfoPoint:
         #----------------------------------------------------------------------
         # Return value of this InfoPoint for respective key
         #----------------------------------------------------------------------
-        return self._dat[key]
+        return self._val[key]
 
     #==========================================================================
     # Dat Value modification
     #--------------------------------------------------------------------------
-    def set(self, *, pos=None, dat=None):
+    def set(self, *, pos=None, val=None):
         "Sets position and data of this InfoPoint"
         
         #----------------------------------------------------------------------
@@ -490,12 +495,12 @@ class InfoPoint:
         #----------------------------------------------------------------------
         # Set values of this InfoPoint
         #----------------------------------------------------------------------
-        if dat is not None:
+        if val is not None:
 
-            for key, val in dat.items():
+            for key, valX in val.items():
 
                 if key in InfoPoint._schema[self._ipType]['vals'].keys():
-                    self._dat[key] = val    
+                    self._val[key] = valX    
 
                 else:
                     self.journal(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}", True)
@@ -505,31 +510,31 @@ class InfoPoint:
         return True
     
     #--------------------------------------------------------------------------
-    def clear(self, *, dat:dict=None):
-        "Sets all data to default values"
+    def clear(self, *, val:dict=None):
+        "Sets all values to default values"
         
-        if (dat is not None) and (len(dat) > 0):
+        if (val is not None) and (len(val) > 0):
 
-            for key, val in dat.items():
+            for key, valX in val.items():
 
                 if key in InfoPoint._schema[self._ipType]['vals'].keys():
-                    self._dat[key] = val    
+                    self._val[key] = valX    
 
                 else:
                     self.journal(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}", True)
                     return False
 
-        else: self._dat = {}
+        else: self._val = {}
 
         return self
 
     #==========================================================================
-    # Methods returning float from keyed value
+    # Methods returning float for keyed value
     #--------------------------------------------------------------------------
     def fValue(self, key:str):
-        "Return value or modul, key is obligatory"
+        "Return float value or modul for respective key value"
 
-        x = self.get(key)
+        x = self.val(key)
         if x is not None:
 
             if   type(x) in (int, float): return x
@@ -540,9 +545,9 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     def abs(self, key:str):
-        "Return absolute value or modul, key is obligatory"
+        "Return absolute value or modul for respective key"
 
-        x = self.get(key)
+        x = self.val(key)
         if x is not None:
 
             if   type(x) in (int, float): return math.fabs(x)
@@ -553,9 +558,9 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     def real(self, key:str):
-        "Return real part of value, key is obligatory"
+        "Return real part of value for respective key"
 
-        x = self.get(key)
+        x = self.val(key)
         if x is not None:
 
             if   type(x) in (int, float): return x
@@ -566,9 +571,9 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     def imag(self, key:str):
-        "Return imaginary part of value, key is obligatory"
+        "Return imaginary part of value for respective key"
 
-        x = self.get(key)
+        x = self.val(key)
         if x is not None:
 
             if   type(x) in (int, float): return 0
@@ -579,9 +584,9 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     def phase(self, key:str):
-        "Return phase in <-pi, pi> from +x axis, key is obligatory"
+        "Return phase in <-pi, pi> from +x axis for respective key"
         
-        x = self.get(key)
+        x = self.val(key)
         if x is not None:
 
             if   type(x) in (int, float): return 0
@@ -594,13 +599,13 @@ class InfoPoint:
     # Methods generating keyed value
     #--------------------------------------------------------------------------
     def fltConst(self, key:str, par:dict):
-        "Sets constant value for key"
+        "Sets constant value for keyed value"
 
         self.set(dat={key:par['const']})
 
     #--------------------------------------------------------------------------
     def fltRandUni(self, key:str, par:dict):
-        "Generates uniform random float value from interval for key"
+        "Generates uniform random float value from interval for keyed value"
 
         if 'min' in par.keys(): min_val = par['min']
         else                  : min_val = 0
@@ -614,7 +619,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     def fltRandBit(self, key:str, par:dict):
-        "Sets value 0/1 with respective probability"
+        "Sets value 0/1 with respective probability for keyed value"
 
         x = rnd.randint(0, 9999)
         
@@ -625,21 +630,21 @@ class InfoPoint:
         
     #--------------------------------------------------------------------------
     def cmpConstR(self, key:str, par:dict):
-        "Sets constant real and imaginary value for key"
+        "Sets constant real and imaginary value for keyed value"
 
         c = complex(par['real'], par['imag'])
         self.set(dat={key:c})
 
     #--------------------------------------------------------------------------
     def cmpConstP(self, key:str, par:dict):
-        "Sets constant absolute value and phase value for key"
+        "Sets constant absolute value and phase value for keyed value"
 
         c = cmath.rect(par['abs'], par['phase'])
         self.set(dat={key:c})
 
     #--------------------------------------------------------------------------
-    def cmpRandR(self, key:str, par:dict):
-        "Generates random real and imaginary values from respective intervals for key"
+    def cmpRandUniR(self, key:str, par:dict):
+        "Generates random uniform real and imaginary values from respective intervals for keyed value"
 
         real = rnd.random()
         imag = rnd.random()
@@ -648,8 +653,8 @@ class InfoPoint:
         self.set(dat={key:c})
 
     #--------------------------------------------------------------------------
-    def cmpRandP(self, key:str, par:dict):
-        "Generates random absolute value and phase from respective intervals for key"
+    def cmpRandUniP(self, key:str, par:dict):
+        "Generates random uniform absolute value and phase from respective intervals for keyed value"
 
         abs   = rnd.random()
         phase = rnd.random()
@@ -661,7 +666,7 @@ class InfoPoint:
     # Two-points methods
     #--------------------------------------------------------------------------
     def deltasTo(self, toP):
-        "Returns list of differences between coordinates for respective InfoPoint"
+        "Returns list of differences between coordinates to other InfoPoint"
         
         #----------------------------------------------------------------------
         # Check if both InfoPoints have the same number of coordinates and create pairs of them
@@ -677,14 +682,14 @@ class InfoPoint:
             return None
             
         #----------------------------------------------------------------------
-        # Cretess list of differences between coordinates for respective InfoPoint
+        # Creates list of differences between coordinates for respective InfoPoint
         #----------------------------------------------------------------------
         toRet = [pair[1] - pair[0] for pair in pairs]
         return toRet
 
     #--------------------------------------------------------------------------
     def distSqrTo(self, toP):
-        "Returns square of the distance to respective InfoPoint"
+        "Returns square of the distance to other InfoPoint"
         
         dlts  = self.deltasTo(toP)
         toRet = 0
@@ -695,7 +700,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     def distTo(self, toP):
-        "Returns the distance to respective InfoPoint"
+        "Returns the distance to other InfoPoint"
         
         sqrDist = self.distSqrTo(toP)
         return math.sqrt(sqrDist)
@@ -741,28 +746,12 @@ class InfoPoint:
         
         return self.dat['c'].conjugate()
 
+#------------------------------------------------------------------------------
+print(f'InfoPoint ver {_VER}')
+
 #==============================================================================
-# One-Point associated methods
+# Unit tests
 #------------------------------------------------------------------------------
-def abs(point:InfoPoint, key:str, par:dict=None):
-    "Returns the absolute value of the value on the position valKey"
-
-    #--------------------------------------------------------------------------
-    # Key check
-    #--------------------------------------------------------------------------
-    if key not in InfoPoint._schema[point._ipType]['vals'].keys():
-        InfoPoint.journal(f"abs: Key '{key}' was not found in values {InfoPoint._schema[point._ipType]['vals']}", True)
-        return False
-
-    #--------------------------------------------------------------------------
-    # Apply function
-    #--------------------------------------------------------------------------
-    point._dat[key] = math.fabs(point._dat[key])
-    return True
- 
-#------------------------------------------------------------------------------
-print('InfoPoint ver 3.01')
-
 if __name__ == '__main__':
 
     from   siqolib.journal          import SiqoJournal
@@ -772,78 +761,98 @@ if __name__ == '__main__':
 
     InfoPoint.setJournal(journal)
 
-    InfoPoint.setAxe('ipTest', 'x', 'os X')    
-    InfoPoint.setAxe('ipTest', 'y', 'os Y')    
-    InfoPoint.setVal('ipTest', 'm', 'hmotnost')
-    InfoPoint.setVal('ipTest', 'v', 'rychlost')
+    if True:
+ 
+        print(40*'=')
+        print('Schema creating')
+        print(40*'-')
 
-    print('Test of InfoPoint class')
-    print('_IND      =', _IND)
-    print('schema    =', InfoPoint._schema)
-    print('axes      =', InfoPoint.getAxes('ipTest'))   
-    print('vals      =', InfoPoint.getVals('ipTest')) 
+        InfoPoint.setAxe('ipTest', 'x', 'os X')    
+        InfoPoint.setAxe('ipTest', 'y', 'os Y')    
+        InfoPoint.setVal('ipTest', 'm', 'hmotnost')
+        InfoPoint.setVal('ipTest', 'v', 'rychlost')
 
-    p1 = InfoPoint('ipTest')
-    print(p1)
+        print('Test of InfoPoint class')
+        print('_IND      =', _IND)
+        print('schema    =', InfoPoint._schema)
 
-    p2 = InfoPoint('ipTest', pos={'x':1, 'y':1.2}, dat={'m':3, 'v':-4.567891234})
-    print(p2)
+        print()
+        print('Schema for ipTest')
+        print('axes      =', InfoPoint.getAxes('ipTest'))   
+        print('vals      =', InfoPoint.getVals('ipTest')) 
 
-    print('m =', p2.get('m'))
-    print('v2 =', p2.get('v2'))  
-    print('no key', p2.get())  
-    print('axe(x) ', p2.axe('x'))
-    print('axe(y) ', p2.axe('y'))
-    print('axe(r) ', p2.axe('r'))
-    print()
-    
-    print('schema tools')
-    print('idx for keyAxe x =', InfoPoint.getAxeIdx('ipTest', 'x'))
-    print('key for keyAxe 0 =', InfoPoint.getAxeKey('ipTest', 0 ))
-    print('idx for keyAxe y =', InfoPoint.getAxeIdx('ipTest', 'y'))
-    print('key for keyAxe 1 =', InfoPoint.getAxeKey('ipTest', 1 ))
-    print('idx for keyAxe z =', InfoPoint.getAxeIdx('ipTest', 'z'))
-    print('key for keyAxe 2 =', InfoPoint.getAxeKey('ipTest', 2 ))
+    if False:
+ 
+        print(40*'=')
+        print('Schema tools')
+        print(40*'-')
 
-    print('idx for keyVal x =', InfoPoint.getValIdx('ipTest', 'x'))
-    print('key for keyVal 0 =', InfoPoint.getValKey('ipTest', 0))
-    print('idx for keyVal v =', InfoPoint.getValIdx('ipTest', 'v'))
-    print('key for keyVal 1 =', InfoPoint.getValKey('ipTest', 1))
-    print('key for keyVal 2 =', InfoPoint.getValKey('ipTest', 2))
-    print()
+        print('idx for keyAxe x =', InfoPoint.getAxeIdx('ipTest', 'x'))
+        print('key for keyAxe 0 =', InfoPoint.getAxeKey('ipTest', 0 ))
+        print('idx for keyAxe y =', InfoPoint.getAxeIdx('ipTest', 'y'))
+        print('key for keyAxe 1 =', InfoPoint.getAxeKey('ipTest', 1 ))
+        print('idx for keyAxe z =', InfoPoint.getAxeIdx('ipTest', 'z'))
+        print('key for keyAxe 2 =', InfoPoint.getAxeKey('ipTest', 2 ))
+
+        print('idx for keyVal x =', InfoPoint.getValIdx('ipTest', 'x'))
+        print('key for keyVal 0 =', InfoPoint.getValKey('ipTest', 0))
+        print('idx for keyVal v =', InfoPoint.getValIdx('ipTest', 'v'))
+        print('key for keyVal 1 =', InfoPoint.getValKey('ipTest', 1))
+        print('key for keyVal 2 =', InfoPoint.getValKey('ipTest', 2))
+
+        print('name for keyAxe x =', InfoPoint.getAxeName('ipTest', 'x'))
+        print('name for keyAxe y =', InfoPoint.getAxeName('ipTest', 'y'))
+        print('name for keyAxe z =', InfoPoint.getAxeName('ipTest', 'z'))
+        print('name for keyVal x =', InfoPoint.getValName('ipTest', 'x'))
+        print('name for keyVal v =', InfoPoint.getValName('ipTest', 'v'))
+
+    if False:
+
+        print(40*'=')
+        print('Creating, copying InfoPoint')
+        print(40*'-')
+
+        p1 = InfoPoint('ipTest')
+        print(p1)
+
+        p2 = InfoPoint('ipTest', pos={'x':1, 'y':1.2}, dat={'m':3, 'v':-4.567891234})
+        print(p2)
+
+        print('m =', p2.get('m'))
+        print('v2 =', p2.get('v2'))  
+        print('no key', p2.get())  
+        print('axe(x) ', p2.axe('x'))
+        print('axe(y) ', p2.axe('y'))
+        print('axe(r) ', p2.axe('r'))
+        print()
+
+        pc = p2.copy()
+        print('Copied ', pc)
+
+        pc = pc.clear()
+        print('Cleared ', pc)
+
+        pc = pc.clear(dat={'m':3})
+        print('Cleared ', pc)
+
+        pc = pc.clear(dat={})
+        print('Cleared ', pc)
+
+        pc = pc.clear(dat={'r':4})
+        print('Cleared ', pc)
+
+    if False:
+
+        print('Methods returning float')
+        print(InfoPoint.floatMethodx())
+        print('v.get', p2.get('v'))
+        print('v.abs', p2.abs('v'))
+
+        ab = InfoPoint.abs
+
+        print('??? ', ab(p2, 'v'))
 
 
-    print('name for keyAxe x =', InfoPoint.getAxeName('ipTest', 'x'))
-    print('name for keyAxe y =', InfoPoint.getAxeName('ipTest', 'y'))
-    print('name for keyAxe z =', InfoPoint.getAxeName('ipTest', 'z'))
-    print('name for keyVal x =', InfoPoint.getValName('ipTest', 'x'))
-    print('name for keyVal v =', InfoPoint.getValName('ipTest', 'v'))
-    print()
-
-    print('Methods returning float')
-    print(InfoPoint.floatMethodx())
-    print('v.get', p2.get('v'))
-    print('v.abs', p2.abs('v'))
-
-    ab = InfoPoint.abs
-
-    print('??? ', ab(p2, 'v'))
-
-
-    pc = p2.copy()
-    print('Copied ', pc)
-
-    pc = pc.clear()
-    print('Cleared ', pc)
-
-    pc = pc.clear(dat={'m':3})
-    print('Cleared ', pc)
-
-    pc = pc.clear(dat={})
-    print('Cleared ', pc)
-
-    pc = pc.clear(dat={'r':4})
-    print('Cleared ', pc)
 
 #==============================================================================
 #                              END OF FILE
