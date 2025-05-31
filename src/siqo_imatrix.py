@@ -44,27 +44,23 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
-        self.name       = name            # Name of the InfoMatrix
-        self.ipType     = ipType          # Type of the InfoPoint in this InfoMatrix
-        self.staticEdge = False           # Static edge means value of the edge points is fixed in some methods
+        self.name       = name     # Name of the InfoMatrix
+        self.ipType     = ipType   # Type of the InfoPoint in this InfoMatrix
+        self.staticEdge = False    # Static edge means value of the edge points is fixed in some methods
+        self.points     = []       # List of InfoPoints
 
-        self.points     = []              # List of InfoPoints
-
-        self.actVal     = None            # Key of the current InfoPoint's dat value
-        self.act1D      = None            # Current active 1D submatrix definition as dict of freezed axesKeys with values
-                                          #  {'x':x, 'y':y, ....] but ONE active axes missing
-        self.act2D      = None            # Current active 2D submatrix definition as dict of freezed axesKeys with values
-                                          #  {'x':x, 'y':y, ....] but TWO active axes missing
-        self.actSub     = []              # Current active list of points in submatrix/subvector
-        self.actChanged = False           # Current sub settings was changed and actSub needs refresh
+        self.actVal     = None     # Key of the current InfoPoint's dat value
+        self.actSub     = {}       # Current active submatrix definition as dict of freezed axesKeys with values
+        self.actList    = []       # Current active list of points in submatrix
+        self.actChanged = True     # Current sub settings was changed and actSub needs refresh
         
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
-        self._origs     = {}              # Origin's coordinates of the InfoMatrix for respective axes in lambda units
-        self._rects     = {}              # Lenghts of the InfoMatrix for respective axes in lambda units
-        self._cnts      = {}              # Number of InfoPoints in respective axes
-        self._diffs     = {}              # Distance between two points in respective axes in lambda units
+        self._cnts      = {}       # Number of InfoPoints in respective axes
+        self._origs     = {}       # Origin's coordinates of the InfoMatrix for respective axes in lambda units
+        self._rects     = {}       # Lenghts of the InfoMatrix for respective axes in lambda units
+        self._diffs     = {}       # Distance between two points in respective axes in lambda units
 
         #----------------------------------------------------------------------
         # Inicializacia
@@ -107,19 +103,18 @@ class InfoMatrix:
         
         if ipType is not None: self.ipType = ipType
 
-        self.points     = []              # List of rows of lists of InfoPoints
-        self.staticEdge = False           # Static edge means value of the edge nodes is fixed        
+        self.points     = []       # List of rows of lists of InfoPoints
+        self.staticEdge = False    # Static edge means value of the edge nodes is fixed        
 
-        self.actVal     = None            # Key of the InfoPoint's current dat value
-        self.act1D      = None            # Current active 1D submatrix (vector) defined as dict of freezed axesKeys with values
-        self.act2D      = None            # Current active 2D submatrix defined as dict of freezed axesKeys with values
-        self.actSub     = []              # Current active submatrix/subvector
-        self.actChanged = False           # Current sub settings was changed and actSub needs refresh
+        self.actVal     = None     # Key of the InfoPoint's current dat value
+        self.actSub     = {}       # Current active submatrix defined as dict of freezed axesKeys with values
+        self.actList    = []       # Current active submatrix/subvector
+        self.actChanged = True     # Current sub settings was changed and actSub needs refresh
 
-        self._origs     = {}              # Origin's coordinates of the InfoMatrix
-        self._rects     = {}              # Lenghts of the InfoMatrix for respective axes in lambda units
-        self._cnts      = {}              # Number of InfoPoints in respective axes
-        self._diffs     = {}              # Distance between two points in respective axes in lambda units
+        self._cnts      = {}       # Number of InfoPoints in respective axes
+        self._origs     = {}       # Origin's coordinates of the InfoMatrix
+        self._rects     = {}       # Lenghts of the InfoMatrix for respective axes in lambda units
+        self._diffs     = {}       # Distance between two points in respective axes in lambda units
         
         self.journal.O()
         
@@ -135,22 +130,22 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         if indent == 0:
             msg.append(f"{indent*_IND}{60*'='}")
-            dat['name'       ] = self.name
-            dat['ipType'     ] = self.ipType
-            dat['schema'     ] = InfoPoint.getSchema(self.ipType)
-            dat['staticEdge' ] = self.staticEdge
+            dat['name'          ] = self.name
+            dat['ipType'        ] = self.ipType
+            dat['schema'        ] = InfoPoint.getSchema(self.ipType)
+            dat['cnt of points' ] = len(self.points)
+            dat['staticEdge'    ] = self.staticEdge
 
-            dat['actVal'     ] = self.actVal
-            dat['act1D'      ] = self.act1D
-            dat['act2D'      ] = self.act2D
+            dat['actVal'        ] = self.actVal
+            dat['actSub'        ] = self.actSub
+            dat['cnt of actList'] = len(self.actList)
+            dat['actChanged'    ] = self.actChanged
 
-            dat['origs'      ] = self._origs
-            dat['rects'      ] = self._rects
-            dat['cnts'       ] = self._cnts
-            dat['len'        ] = len(self.points)
-            dat['count'      ] = self.count()
-            dat['subProducts'] = self._subProducts()
-            dat['diffs'      ] = self._diffs
+            dat['cnts'          ] = self._cnts
+            dat['origs'         ] = self._origs
+            dat['rects'         ] = self._rects
+            dat['diffs'         ] = self._diffs
+            dat['subProducts'   ] = self._subProducts()
 
         for key, val in dat.items(): msg.append(f"{indent*_IND}{key:<15}: {val}")
 
@@ -192,14 +187,13 @@ class InfoMatrix:
         toRet.staticEdge = self.staticEdge     # Static edge means value of the edge nodes is fixed
 
         toRet.actVal     = self.actVal         # Key of the InfoPoint's dat value
-        toRet.act1D      = self.act1D          # Current active 1D submatrix (vector) defined as dict of freezed axesKeys with values
-        toRet.act2D      = self.act2D          # Current active 2D submatrix defined as dict of freezed axesKeys with values
-        self.actSub      = []                  # Current active submatrix/subvector
-        self.actChanged  = True                # Current sub settings was changed and actSub needs refresh
+        toRet.actSub     = self.actSub.copy()  # Current active submatrix defined as dict of freezed axesKeys with values
+        toRet.actList    = []                  # Current active submatrix/subvector
+        toRet.actChanged = True                # Current sub settings was changed and actSub needs refresh
 
+        toRet._cnts      = self._cnts.copy()   # Number of InfoPoints in respective axes
         toRet._origs     = self._origs.copy()  # Origin's coordinates of the InfoMatrix 
         toRet._rects     = self._rects.copy()  # Lengths of the InfoMatrix's axes 
-        toRet._cnts      = self._cnts.copy()   # Number of InfoPoints in respective axes
         toRet._diffs     = self._diffs.copy()  # Distance between two points in respective axes in lambda units
 
         #----------------------------------------------------------------------
@@ -231,9 +225,9 @@ class InfoMatrix:
     def setAxe(self, key, name):
         "Add axe key and name"
 
+        if key not in self._cnts. keys(): self._cnts [key] = None
         if key not in self._origs.keys(): self._origs[key] = None
         if key not in self._rects.keys(): self._rects[key] = None
-        if key not in self._cnts. keys(): self._cnts [key] = None
         if key not in self._diffs.keys(): self._origs[key] = None
 
         return InfoPoint.setAxe(self.ipType, key, name)
@@ -289,14 +283,14 @@ class InfoMatrix:
         return InfoPoint.getVals(self.ipType)
 
     #--------------------------------------------------------------------------
-    def getFMethods(self):
-        "Returns methods returning float value {key: InfoPoint.function}"
-        return InfoPoint.floatMethods()
+    def mapFloatMethods(self):
+        "Returns map of methods returning float number from keyed value"
+        return InfoPoint.mapFloatMethods()
 
     #--------------------------------------------------------------------------
-    def mapMethods(self):
-        "Returns map of methods for one InfoPoint"
-        return InfoPoint.mapMethods()
+    def mapSetMethods(self):
+        "Returns map of methods setting keyed value to function value for respective parameters"
+        return InfoPoint.mapSetMethods()
 
     #==========================================================================
     # Position and indices tools
@@ -356,6 +350,39 @@ class InfoMatrix:
             toRet.insert(0, idx)
 
         return toRet
+
+    #--------------------------------------------------------------------------
+    def _idxByCoord(self, axe, coord):
+        "Returns index in axe for respective coordinate"
+
+        #----------------------------------------------------------------------
+        # Coord is before pos[0]
+        #----------------------------------------------------------------------
+
+
+
+        #----------------------------------------------------------------------
+        # Coord is between pos[0] and pos[cnt]
+        #----------------------------------------------------------------------
+
+
+
+        #----------------------------------------------------------------------
+        # Coord is after pos[cnt]
+        #----------------------------------------------------------------------
+
+
+
+    #==========================================================================
+    # Active submatrix tools
+    #--------------------------------------------------------------------------
+    def _actPosBySub(self):
+        "Return list of position in self.points for respective deifinition self.actSub"
+
+        toRet = []
+
+        for axeKey in 
+
 
     #--------------------------------------------------------------------------
     def _1DposByIdx(self, idxs:list):
@@ -566,11 +593,11 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         if not self.actChanged and not force:
             self.journal.M(f"{self.name}.actVector: subVector definition was not changed, no need to refresh", True)
-            return self.actSub
+            return self.actList
 
         #----------------------------------------------------------------------
         self.journal.I(f"{self.name}.actVector: act1D={self.act1D}")
-        self.actSub = []
+        self.actList = []
         
         #----------------------------------------------------------------------
         # Ziskam idxs podla act1D a pre kontrolu aj pocet volnych dimenzii
@@ -580,7 +607,7 @@ class InfoMatrix:
         if freeDim != 1:
             self.journal.M(f"{self.name}.actVector: ERROR: act1D {self.act1D} is not 1D substructure but {freeDim} dim", True)
             self.journal.O()
-            return self.actSub
+            return self.actList
 
         #----------------------------------------------------------------------
         # Ziskam list pozicii bodov patriacich hladanemu vektoru
@@ -590,17 +617,17 @@ class InfoMatrix:
         if poss is None:
             self.journal.M(f"{self.name}.actVector: ERROR: Can not obtain positions for desired subset and structure", True)
             self.journal.O()
-            return self.actSub
+            return self.actList
         
         #----------------------------------------------------------------------
         # Create vector of InfoPoints/Values for respective positions
         #----------------------------------------------------------------------
         for pos in poss:
-            self.actSub.append(self.pointByPos(pos))
+            self.actList.append(self.pointByPos(pos))
 
         #----------------------------------------------------------------------
         self.journal.O()
-        return self.actSub    
+        return self.actList    
     
     #--------------------------------------------------------------------------
     def actMatrix(self, *, act2D=None, force=False):
@@ -621,11 +648,11 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         if not self.actChanged and not force:
             self.journal.M(f"{self.name}.actMatrix: subMatrix definition was not changed, no need to refresh", True)
-            return self.actSub
+            return self.actList
 
         #----------------------------------------------------------------------
         self.journal.I(f"{self.name}.actMatrix: sub2D={self.act2D}")
-        self.actSub = []
+        self.actList = []
 
         #----------------------------------------------------------------------
         # Ziskam idxs podla act2D a pre kontrolu aj pocet volnych dimenzii
@@ -635,7 +662,7 @@ class InfoMatrix:
         if freeDim != 2:
             self.journal.M(f"{self.name}.actMatrix: ERROR: act2D {self.act2D} is not 2D substructure but {freeDim} dim", True)
             self.journal.O()
-            return self.actSub
+            return self.actList
 
         #----------------------------------------------------------------------
         # Ziskam list pozicii bodov patriacich hladanej matici
@@ -645,17 +672,17 @@ class InfoMatrix:
         if poss is None:
             self.journal.M(f"{self.name}.actMatrix: ERROR: Can not obtain positions for desired subset and structure", True)
             self.journal.O()
-            return self.actSub
+            return self.actList
         
         #----------------------------------------------------------------------
         # Create vector of InfoPoints/Values for respective positions
         #----------------------------------------------------------------------
         for pos in poss:
-            self.actSub.append(self.pointByPos(pos))
+            self.actList.append(self.pointByPos(pos))
 
         #----------------------------------------------------------------------
         self.journal.O()
-        return self.actSub    
+        return self.actList    
 
     #==========================================================================
     # Value modification
@@ -723,7 +750,7 @@ class InfoMatrix:
             #------------------------------------------------------------------
             # Create new row of InfoPoint at respective coordinates
             #------------------------------------------------------------------
-            point = InfoPoint(self.ipType, pos=coos, dat=defs)
+            point = InfoPoint(self.ipType, pos=coos, vals=defs)
             self.points.append(point)
             
         #----------------------------------------------------------------------
@@ -793,15 +820,21 @@ class InfoMatrix:
         return self
         
     #--------------------------------------------------------------------------
-    def actPointFunction(self, keyFtion, key:str, par:dict=None):
-        "Apply respective function for all points in active substructure"
+    def pointSetFunction(self, keyFtion, key:str, par:dict=None):
+        "Apply respective function for all points or points in active substructure"
 
-        self.journal.I(f"{self.name}.actPointFunction: {keyFtion}(key={key}, par={par}) for {len(self.actSub)} active Points]")
+        self.journal.I(f"{self.name}.pointSetFunction: {keyFtion}(key={key}, par={par}) for {len(self.actList)} active Points]")
         
         #----------------------------------------------------------------------
         # Ziskanie vykonavanej funkcie
         #----------------------------------------------------------------------
-        function = self.mapMethods()[keyFtion]['ftion']
+        if keyFtion in self.mapSetMethods().keys(): 
+            function = self.mapSetMethods()[keyFtion]['ftion']
+
+        else:
+            self.journal.M(f"{self.name}.pointSetFunction: '{keyFtion}' is not in defined functions ERROR", True)
+            self.journal.O()
+            return False
 
         #----------------------------------------------------------------------
         # Ziskanie listu bodov na aplikovanie funkcie
@@ -812,7 +845,7 @@ class InfoMatrix:
 
         else:
             tgtStr = 'active subset'
-            tgtList = self.actSub
+            tgtList = self.actList
 
         #----------------------------------------------------------------------
         # Vykonanie funkcie
@@ -825,7 +858,7 @@ class InfoMatrix:
             pts += 1
 
         #----------------------------------------------------------------------
-        self.journal.O(f"{self.name}.actPointFunction: {keyFtion} was applied to {tgtStr} {pts} InfoPoints")
+        self.journal.O(f"{self.name}.pointSetFunction: {keyFtion} was applied to {tgtStr} {pts} InfoPoints")
         return True
 
     #==========================================================================
@@ -908,7 +941,8 @@ if __name__ == '__main__':
     im3.setVal('v', 'Rýchlosť')
     im3.setVal('m', 'Hmotnosť')
     im3.actMatrix(force=True)
-    im3.actPointFunction('random uniform', 'm', par={'all':True, 'min':0, 'max':5})
+    im3.pointSetFunction('BRandom fuuniform', 'm', par={'all':True, 'min':0, 'max':5})
+    im3.pointSetFunction('Random uniform', 'm', par={'all':True, 'min':0, 'max':5})
     
     print(im3)
 

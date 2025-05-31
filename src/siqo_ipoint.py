@@ -318,8 +318,8 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def mapGenMethods():
-        "Returns map of methods returning generated value for respective parameters"
+    def mapSetMethods():
+        "Returns map of methods setting keyed value to function value for respective parameters"
 
         return {'Real constant'          : {'ftion':InfoPoint.fltConst,    'par':{'const' :0                                                 }}
                ,'Random uniform'         : {'ftion':InfoPoint.fltRandUni,  'par':{'min'   :0, 'max'   :1                                     }}
@@ -602,7 +602,7 @@ class InfoPoint:
     def fltConst(self, key:str, par:dict):
         "Sets constant value for keyed value"
 
-        self.set(dat={key:par['const']})
+        self.set(vals={key:par['const']})
 
     #--------------------------------------------------------------------------
     def fltRandUni(self, key:str, par:dict):
@@ -616,7 +616,7 @@ class InfoPoint:
 
         val = rnd.uniform(min_val, max_val)
 
-        self.set(dat={key:val})
+        self.set(vals={key:val})
 
     #--------------------------------------------------------------------------
     def fltRandBit(self, key:str, par:dict):
@@ -627,21 +627,21 @@ class InfoPoint:
         if x <= par['prob1']*10000: val = 1
         else                      : val = 0
 
-        self.set(dat={key:val})
+        self.set(vals={key:val})
         
     #--------------------------------------------------------------------------
     def cmpConstR(self, key:str, par:dict):
         "Sets constant real and imaginary value for keyed value"
 
         c = complex(par['real'], par['imag'])
-        self.set(dat={key:c})
+        self.set(vals={key:c})
 
     #--------------------------------------------------------------------------
     def cmpConstP(self, key:str, par:dict):
         "Sets constant absolute value and phase value for keyed value"
 
         c = cmath.rect(par['abs'], par['phase'])
-        self.set(dat={key:c})
+        self.set(vals={key:c})
 
     #--------------------------------------------------------------------------
     def cmpRandUniR(self, key:str, par:dict):
@@ -651,7 +651,7 @@ class InfoPoint:
         imag = rnd.random()
         c = complex(real, imag)
 
-        self.set(dat={key:c})
+        self.set(vals={key:c})
 
     #--------------------------------------------------------------------------
     def cmpRandUniP(self, key:str, par:dict):
@@ -661,7 +661,7 @@ class InfoPoint:
         phase = rnd.random()
         c = cmath.rect(abs, phase)
 
-        self.set(dat={key:c})
+        self.set(vals={key:c})
 
     #==========================================================================
     # Two-points methods
@@ -706,47 +706,6 @@ class InfoPoint:
         sqrDist = self.distSqrTo(toP)
         return math.sqrt(sqrDist)
     
-    #==========================================================================
-    # Complex Value methods; expects complex value with key 'c' in dat dict
-    #--------------------------------------------------------------------------
-    def setCompVal(self, c:complex):
-        "Sets complex number to respective complex value"
-        
-        self.dat['c'] = c
-        return self
-        
-    #--------------------------------------------------------------------------
-    def setCompRect(self, re:float, im:float):
-        "Sets complex number given by rectangular coordinates (real, imag)"
-        
-        self.dat['c'] = complex(re, im)
-        return self
-        
-    #--------------------------------------------------------------------------
-    def setCompPolar(self, mod:float, phi:float):
-        "Sets complex number given by polar coordinates (modulus, phase)"
-        
-        self.dat['c'] = cmath.rect(mod, phi)
-        return self
-        
-    #--------------------------------------------------------------------------
-    def sqrComp(self):
-        "Returns square of complex number"
-        
-        return self.dat['c'] * self.dat['c']
-
-    #--------------------------------------------------------------------------
-    def sqrAbs(self):
-        "Returns square of the absolute value of complex value"
-        
-        return (self.dat['c'].real * self.dat['c'].real) + (self.dat['c'].imag * self.dat['c'].imag )
-
-    #--------------------------------------------------------------------------
-    def conjugate(self):
-        "Return conjugate complex number"
-        
-        return self.dat['c'].conjugate()
-
 #------------------------------------------------------------------------------
 print(f'InfoPoint ver {_VER}')
 
