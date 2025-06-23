@@ -13,9 +13,8 @@ _VER      = '3.04'
 
 _IND      = '|  '                      # Info indentation
 _F_SCHEMA = 1                          # Format for ipType
-_F_TOTAL  = 5                          # Total number of digits in float number
+_F_TOTAL  = 6                          # Total number of digits in float number
 _F_DECIM  = 3                          # Number of digits after decimal point in float number
-_F_FORMAT = f"{_F_TOTAL}.{_F_DECIM}f"  # Format for float number
 
 _SCHEMA   = {'ipReal   ':{'axes':{'None':'None'}
                          ,'vals':{}
@@ -61,6 +60,7 @@ class InfoPoint:
         "Resets schema of InfoPoint to default values"
         
         InfoPoint._schema = _SCHEMA.copy()
+        InfoPoint.journal("InfoPoint.resetSchema:")
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -68,6 +68,7 @@ class InfoPoint:
         "Clears schema of InfoPoint for respective ipType to {'axes':{'None':'None'}, 'vals':{}}"
         
         InfoPoint._schema[ipType] = {'axes':{'None':'None'}, 'vals':{}}
+        InfoPoint.journal(f"InfoPoint.setAxe: clearSchema ipType '{ipType}'")
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -121,6 +122,7 @@ class InfoPoint:
         if ipType not in InfoPoint._schema.keys(): InfoPoint._schema[ipType] = {'axes':{'None':'None'}, 'vals':{}} 
 
         InfoPoint._schema[ipType]['axes'][key] = name
+        InfoPoint.journal(f"InfoPoint.setAxe: set key '{key}' for axe '{name}'")
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -201,6 +203,7 @@ class InfoPoint:
         if ipType not in InfoPoint._schema.keys(): InfoPoint._schema[ipType] = {'axes':{}, 'vals':{}} 
 
         InfoPoint._schema[ipType]['vals'][key] = name
+        InfoPoint.journal(f"InfoPoint.setVal: set key '{key}' for value '{name}'")
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -490,7 +493,7 @@ class InfoPoint:
                     if key != 'None': self._pos[key] = pos[key]
 
             except KeyError:
-                self.journal(f"InfoPoint.set: Position '{pos}' is not compatible with schema axes {InfoPoint._schema[self._ipType]['axes']} ERROR", True)
+                self.journal(f"InfoPoint.set: Position '{self._posStr()}' is not compatible with schema axes {InfoPoint._schema[self._ipType]['axes']} ERROR", True)
                 return False
             
         #----------------------------------------------------------------------
@@ -508,6 +511,7 @@ class InfoPoint:
                     return False
                 
         #----------------------------------------------------------------------
+        InfoPoint.journal(f"InfoPoint.set: pos={self._posStr()}, vals {self._valStr()}")
         return True
     
     #--------------------------------------------------------------------------
@@ -527,6 +531,7 @@ class InfoPoint:
 
         else: self._vals = {}
 
+        InfoPoint.journal(f"InfoPoint.clear: with vals {vals}")
         return self
 
     #==========================================================================
