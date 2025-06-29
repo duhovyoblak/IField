@@ -3,11 +3,11 @@
 #------------------------------------------------------------------------------
 import math
 import cmath
-import numpy                 as np
-import random                as rnd
+import numpy                  as np
+import random                 as rnd
 
-import siqo_ipoint            as ip
-from   siqo_ipoint import InfoPoint
+from   siqolib.logger         import SiqoLogger
+from   siqo_ipoint            import InfoPoint
 
 #==============================================================================
 # package's constants
@@ -21,7 +21,7 @@ _F_POS  =  8          # Format for position
 #==============================================================================
 # package's variables
 #------------------------------------------------------------------------------
-
+logger = SiqoLogger('InfoMatrix test', level='INFO')
 
 #==============================================================================
 # InfoMatrix
@@ -35,11 +35,10 @@ class InfoMatrix:
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, journal, name, ipType):
+    def __init__(self, name, ipType):
         "Calls constructor of InfoMatrix"
 
-        self.journal = journal
-        self.journal.I(f"InfoMatrix.constructor: {name}")
+        logger.debug(f"InfoMatrix.constructor: {name}")
         
         #----------------------------------------------------------------------
         # Public datove polozky triedy
@@ -65,9 +64,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Inicializacia
         #----------------------------------------------------------------------
-        InfoPoint.setJournal(self.journal)
-
-        self.journal.O(f"{self.name}.constructor: done")
+        logger.debug(f"{self.name}.constructor: done")
 
     #--------------------------------------------------------------------------
     def __str__(self):
@@ -87,7 +84,7 @@ class InfoMatrix:
         # Kontrola existencie vybranej 2D matice
         #----------------------------------------------------------------------
         if mtrx is None:
-            self.journal.M(f"{self.name}.__array__: ERROR: actMatrix is None", True)
+            logger.info(f"{self.name}.__array__: ERROR: actMatrix is None")
             return None
 
         #----------------------------------------------------------------------
@@ -99,7 +96,7 @@ class InfoMatrix:
     def reset(self, ipType=None):
         "Resets all InfoMatrix's data and destroys all points. Count of points will be 0"
         
-        self.journal.I(f"{self.name}.reset: ipType={ipType}")
+        logger.debug(f"{self.name}.reset: ipType={ipType}")
         
         if ipType is not None: self.ipType = ipType
 
@@ -116,7 +113,7 @@ class InfoMatrix:
         self._rects     = {}       # Lenghts of the InfoMatrix for respective axes in lambda units
         self._diffs     = {}       # Distance between two points in respective axes in lambda units
         
-        self.journal.O()
+         
         
     #--------------------------------------------------------------------------
     def info(self, indent=0):
@@ -176,12 +173,12 @@ class InfoMatrix:
     def copy(self, name):
         "Creates copy of this InfoMatrix"
         
-        self.journal.I(f"{self.name}.copy: to {name}")
+        logger.debug(f"{self.name}.copy: to {name}")
 
         #----------------------------------------------------------------------
         # Create new InfoMatrix with the same dimensions
         #----------------------------------------------------------------------
-        toRet = InfoMatrix(self.journal, name, self.ipType)
+        toRet = InfoMatrix(name, self.ipType)
 
         toRet.points     = []                  # List of InfoPoints
         toRet.ipType     = self.ipType         # Type of the InfoPoint in this InfoMatrix
@@ -204,7 +201,7 @@ class InfoMatrix:
             toRet.points.append(self.copy())
 
         #----------------------------------------------------------------------
-        self.journal.O()
+         
         return toRet
         
     #==========================================================================
@@ -450,7 +447,7 @@ class InfoMatrix:
            If actSub definition changed from current definition, sets actChanged to True.
         """
 
-        self.journal.I(f"{self.name}.actSubSet: To {actSub}")
+        logger.debug(f"{self.name}.actSubSet: To {actSub}")
 
         #----------------------------------------------------------------------
         # Doplnenie definicie o nezmrazene osi
@@ -463,8 +460,8 @@ class InfoMatrix:
         # Kontrola zmeny definicie
         #----------------------------------------------------------------------
         if self.actSub == actSub: 
-            self.journal.M(f"{self.name}.actSubSet: actSub definition was not changed")
-            self.journal.O()
+            logger.info(f"{self.name}.actSubSet: actSub definition was not changed")
+             
             return
         
         #----------------------------------------------------------------------
@@ -473,8 +470,8 @@ class InfoMatrix:
         self.actSub = actSub.copy()
         self.actChanged = True
 
-        self.journal.M(f"{self.name}.actSubSet: definition was changed to {self.actSub}")
-        self.journal.O()
+        logger.info(f"{self.name}.actSubSet: definition was changed to {self.actSub}")
+         
 
     #--------------------------------------------------------------------------
     def _actPossBySub(self, axesLeft:list= None):
@@ -556,11 +553,11 @@ class InfoMatrix:
         # Kontrola potreby obnovenia
         #----------------------------------------------------------------------
         if not self.actChanged and not force:
-            self.journal.M(f"{self.name}.actSubmatrix: subMatrix definition was not changed, no need to refresh", True)
+            logger.info(f"{self.name}.actSubmatrix: subMatrix definition was not changed, no need to refresh")
             return self.actList
 
         #----------------------------------------------------------------------
-        self.journal.I(f"{self.name}.actSubmatrix: actSub={self.actSub}, force={force}")
+        logger.debug(f"{self.name}.actSubmatrix: actSub={self.actSub}, force={force}")
         self.actList = []
         
         #----------------------------------------------------------------------
@@ -569,8 +566,8 @@ class InfoMatrix:
         poss = self._actPossBySub()
         
         if poss is None:
-            self.journal.M(f"{self.name}.actSubmatrix: ERROR: Can not obtain positions for desired subset and structure", True)
-            self.journal.O()
+            logger.info(f"{self.name}.actSubmatrix: ERROR: Can not obtain positions for desired subset and structure")
+             
             return self.actList
         
         #----------------------------------------------------------------------
@@ -580,7 +577,7 @@ class InfoMatrix:
             self.actList.append(self.pointByPos(pos))
 
         #----------------------------------------------------------------------
-        self.journal.O()
+         
         return self.actList    
     
     #==========================================================================
@@ -589,7 +586,7 @@ class InfoMatrix:
     def clear(self, *, defs:dict={}):
         "Set all InfoPoint's values to default value"
         
-        self.journal.M(f"{self.name}.clear: defs={defs}")
+        logger.info(f"{self.name}.clear: defs={defs}")
 
         for point in self.points: point.clear(dat=defs)
 
@@ -599,15 +596,15 @@ class InfoMatrix:
            ipType scheme. If ipType is not in arguments, uses existing ipType"""
         
         if ipType is not None: self.ipType = ipType
-        self.journal.I(f"{self.name}.gener: {cnts} points of type {self.ipType} on rect {rects} from {origs} with values {defs}")
+        logger.debug(f"{self.name}.gener: {cnts} points of type {self.ipType} on rect {rects} from {origs} with values {defs}")
 
         #----------------------------------------------------------------------
         # Check validity of InfoPoint's schema 
         #--- -------------------------------------------------------------------
         if not self.isInSchema(axes=list(cnts.keys()), vals=list(defs.keys())):
 
-            self.journal.M(f"{self.name}.gener: Schema for {self.ipType} is not comaptible with arguments")
-            self.journal.O()
+            logger.info(f"{self.name}.gener: Schema for {self.ipType} is not comaptible with arguments")
+             
             return
 
         #----------------------------------------------------------------------
@@ -655,7 +652,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Final adjustments
         #----------------------------------------------------------------------
-        self.journal.O()
+         
         
     #--------------------------------------------------------------------------
 
@@ -665,7 +662,7 @@ class InfoMatrix:
     def copyFrom(self, src, *, key=None, tgtSlice=(0,0,0,0), srcFrom=(0,0)):
         "Copy point's values from srcs 2D matrix into tgts 2D matrix"
         
-        self.journal.I(f"{self.name}.copyFrom: From {src.name} starting at {srcFrom} to nodes {tgtSlice} for key={key}")
+        logger.debug(f"{self.name}.copyFrom: From {src.name} starting at {srcFrom} to nodes {tgtSlice} for key={key}")
 
         #----------------------------------------------------------------------
         # Slice settings
@@ -695,7 +692,7 @@ class InfoMatrix:
                 #--------------------------------------------------------------
                 tgtPoint = self.pointByIdx([tgtRow, tgtCol])
                 if tgtPoint is None:
-                    self.journal.M(f"{self.name}.copyFrom: ERROR Target point[{tgtRow},{tgtCol}] does not exists", True)
+                    logger.info(f"{self.name}.copyFrom: ERROR Target point[{tgtRow},{tgtCol}] does not exists")
                     break
                 
                 #--------------------------------------------------------------
@@ -704,7 +701,7 @@ class InfoMatrix:
                 try:
                     srcPoint = src.pointByIdx([srcRowFrom+tgtRow-tgtRowFrom, srcColFrom+tgtCol-tgtColFrom])
                 except IndexError:
-                    self.journal.M(f"{self.name}.copyFrom: ERROR Source point[{srcRowFrom+tgtRow-tgtRowFrom}, {srcColFrom+tgtCol-tgtColFrom}] does not exists", True)
+                    logger.info(f"{self.name}.copyFrom: ERROR Source point[{srcRowFrom+tgtRow-tgtRowFrom}, {srcColFrom+tgtCol-tgtColFrom}] does not exists")
                     break   
                 
                 #--------------------------------------------------------------
@@ -715,14 +712,14 @@ class InfoMatrix:
                 i += 1
 
         #----------------------------------------------------------------------
-        self.journal.O(f"{self.name}.copyFrom: Copied {i} points")
+        logger.debug(f"{self.name}.copyFrom: Copied {i} points")
         return self
         
     #--------------------------------------------------------------------------
     def pointSetFunction(self, keyFtion, key:str, par:dict=None):
         "Apply respective function for all points or points in active substructure"
 
-        self.journal.I(f"{self.name}.pointSetFunction: {keyFtion}(key={key}, par={par}) for {len(self.actList)} active Points]")
+        logger.debug(f"{self.name}.pointSetFunction: {keyFtion}(key={key}, par={par}) for {len(self.actList)} active Points]")
         
         #----------------------------------------------------------------------
         # Ziskanie vykonavanej funkcie
@@ -731,8 +728,8 @@ class InfoMatrix:
             function = self.mapSetMethods()[keyFtion]['ftion']
 
         else:
-            self.journal.M(f"{self.name}.pointSetFunction: '{keyFtion}' is not in defined functions ERROR", True)
-            self.journal.O()
+            logger.info(f"{self.name}.pointSetFunction: '{keyFtion}' is not in defined functions ERROR")
+             
             return False
 
         #----------------------------------------------------------------------
@@ -757,7 +754,7 @@ class InfoMatrix:
             pts += 1
 
         #----------------------------------------------------------------------
-        self.journal.O(f"{self.name}.pointSetFunction: {keyFtion} was applied to {tgtStr} {pts} InfoPoints")
+        logger.debug(f"{self.name}.pointSetFunction: {keyFtion} was applied to {tgtStr} {pts} InfoPoints")
         return True
 
     #==========================================================================
@@ -766,7 +763,7 @@ class InfoMatrix:
     def normAbs(self, nods, norm=None):
         "Normalise set of the nodes by sum of absolute values"
         
-        self.journal.I(f"{self.name}.normAbs: ")
+        logger.debug(f"{self.name}.normAbs: ")
         
         #----------------------------------------------------------------------
         # Initialisation
@@ -789,7 +786,7 @@ class InfoMatrix:
         else: norm = 1
 
         #----------------------------------------------------------------------
-        self.journal.O(f"{self.name}.normAbs: norm = {norm} for {len(nods)} points")
+        logger.debug(f"{self.name}.normAbs: norm = {norm} for {len(nods)} points")
 
     #==========================================================================
     # Persistency methods
@@ -797,11 +794,11 @@ class InfoMatrix:
     def toJson(self):
         "Converts node into json structure"
         
-        self.journal.I(f'{self.name}.toJson:')
+        logger.debug(f'{self.name}.toJson:')
         
         toRet = {}
 
-        self.journal.O(f'{self.name}.toJson: Converted')
+        logger.debug(f'{self.name}.toJson: Converted')
         return toRet
 
 #------------------------------------------------------------------------------
@@ -812,18 +809,15 @@ print(f"InfoMatrix ver {_VER}")
 #------------------------------------------------------------------------------
 if __name__ == '__main__':
 
-    from   siqolib.journal          import SiqoJournal
-    journal = SiqoJournal('IMatrix component test', debug=3)
-
     #--------------------------------------------------------------------------
     # Test of the InfoMatrix class
     #--------------------------------------------------------------------------
-    journal.M('Test of InfoMatrix class')
+    logger.debug('Test of InfoMatrix class')
 
     #--------------------------------------------------------------------------
     # Vytvorenie, generovanie osi
     #--------------------------------------------------------------------------
-    im = InfoMatrix(journal, 'Test matrix', ipType='ipTest')
+    im = InfoMatrix('Test matrix', ipType='ipTest')
     print(im)
     input('Press Enter to continue...')
 

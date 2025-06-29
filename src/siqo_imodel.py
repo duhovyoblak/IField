@@ -31,11 +31,10 @@ class InfoModel:
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, journal):
+    def __init__(self):
         "Calls constructor of InfoModel"
 
-        self.journal = journal
-        self.journal.I("InfoModel.constructor:")
+        logger.debug("InfoModel.constructor:")
         
         #----------------------------------------------------------------------
         # Public datove polozky triedy
@@ -43,16 +42,16 @@ class InfoModel:
         self.name      = _NAME            # Name of the model
         self.fName     = _FNAME           # FileName of the model
         
-        self.journal.O(f"{self.name}.constructor: done")
+        logger.debug(f"{self.name}.constructor: done")
 
     #--------------------------------------------------------------------------
     def copy(self, name):
         "Creates copy of this InfoModel"
         
-        self.journal.I(f"{self.name}.copy: To {name}")
+        logger.debug(f"{self.name}.copy: To {name}")
         
 
-        self.journal.O()
+         
         
     #--------------------------------------------------------------------------
     def info(self, indent=0):
@@ -94,10 +93,10 @@ class InfoModel:
     def reset(self):
         "Clears InfoModel and reset it to dimension=1"
         
-        self.journal.I(f"{self.name}.reset:")
+        logger.debug(f"{self.name}.reset:")
         
         
-        self.journal.O()
+         
         
     #==========================================================================
     # API
@@ -108,11 +107,11 @@ class InfoModel:
     def toJson(self):
         "Converts model into json structure"
         
-        self.journal.I(f'{self.name}.toJson:')
+        logger.debug(f'{self.name}.toJson:')
         
         toRet = {}
 
-        self.journal.O(f'{self.name}.toJson: Converted')
+        logger.debug(f'{self.name}.toJson: Converted')
         return toRet
 
 #------------------------------------------------------------------------------

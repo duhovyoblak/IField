@@ -54,8 +54,7 @@ class IFieldGui(tk.Tk):
     def __init__(self, journal, name):
         "Create and show GUI for Information field"
 
-        self.journal = journal
-        self.journal.I('IFieldGui constructor...')
+        logger.debug('IFieldGui constructor...')
 
         #----------------------------------------------------------------------
         # inicializacia tk.Tk
@@ -81,10 +80,10 @@ class IFieldGui(tk.Tk):
         #----------------------------------------------------------------------
         # Start GUI
         #----------------------------------------------------------------------
-        self.journal.M(f"{self.name}.init: Start application")
+        logger.info(f"{self.name}.init: Start application")
         self.show()
 
-        self.journal.O()
+         
 
     #--------------------------------------------------------------------------
     def closeGui(self):
@@ -95,7 +94,7 @@ class IFieldGui(tk.Tk):
     #--------------------------------------------------------------------------
     def show(self):
 
-        self.journal.I(f"{self.name}.show:")
+        logger.debug(f"{self.name}.show:")
 
         #----------------------------------------------------------------------
         # Nastavenia root window
@@ -146,7 +145,7 @@ class IFieldGui(tk.Tk):
 #        self.bind("<F12>"       , lambda x: self.menuAbout())
         self.bind('<Alt-Key-F4>', lambda x: self.closeGui())
         
-        self.journal.O()
+         
 
     #--------------------------------------------------------------------------
     def tabChanged(self, event):
@@ -160,7 +159,7 @@ class IFieldGui(tk.Tk):
         # get selected tab name
         #----------------------------------------------------------------------
         selected_tab_name = self.tabs.tab(self.tabs.select(), 'text')
-        self.journal.I(f"{self.name}.refresh: tabSelected = {selected_tab_name}")
+        logger.debug(f"{self.name}.refresh: tabSelected = {selected_tab_name}")
 
         #----------------------------------------------------------------------
         # Refreshnem aktivny tab v notebooku podla nazvu zalozky
@@ -169,14 +168,14 @@ class IFieldGui(tk.Tk):
         elif selected_tab_name == 'SpaceTime'       : self.tabSptRefresh()
 
         #----------------------------------------------------------------------
-        self.journal.O()
+         
 
     #==========================================================================
     # Status bar
     #--------------------------------------------------------------------------
     def statusBarShow(self):
 
-        self.journal.I(f"{self.name}.statusBarShow:")
+        logger.debug(f"{self.name}.statusBarShow:")
 
         frame_status_bar = tk.Frame(self, relief=tk.RAISED, borderwidth=2, bg='silver')
         frame_status_bar.pack(side='bottom', anchor='s', fill='x')
@@ -189,18 +188,18 @@ class IFieldGui(tk.Tk):
         status_bar_mod.grid(row = 0, column = 1, sticky = 'e' )
         status_bar_mod.bind("<Button-1>", lambda x: self.changeModel())
 
-        self.journal.O()
+         
 
     #--------------------------------------------------------------------------
     def setStatus(self, msg):
 
-        self.journal.M(f"{self.name}.setStatus: {msg}")
+        logger.info(f"{self.name}.setStatus: {msg}")
         self.str_status_msg.set(msg)
 
     #--------------------------------------------------------------------------
     def changeModel(self):
 
-        self.journal.I(f"{self.name}.changeModel:")
+        logger.debug(f"{self.name}.changeModel:")
 
         #----------------------------------------------------------------------
         # Odpojenie od aktualneho modelu
@@ -217,7 +216,7 @@ class IFieldGui(tk.Tk):
         self.refresh()
 
         #----------------------------------------------------------------------
-        self.journal.O()
+         
         return
 
     #==========================================================================
@@ -225,7 +224,7 @@ class IFieldGui(tk.Tk):
     #--------------------------------------------------------------------------
     def tabInfShow(self):
 
-        self.journal.I(f"{self.name}.tabInfShow:")
+        logger.debug(f"{self.name}.tabInfShow:")
 
         #----------------------------------------------------------------------
         # Vytvorim frame a skonfigurujem grid
@@ -270,23 +269,23 @@ class IFieldGui(tk.Tk):
         sep.grid(row=2, column=2, columnspan=2, sticky='we')
 
 
-        self.journal.O()
+         
 
     #--------------------------------------------------------------------------
     def tabInfRefresh(self, event=None):
 
-        self.journal.I(f"{self.name}.tabInfRefresh:")
+        logger.debug(f"{self.name}.tabInfRefresh:")
 
 
 
-        self.journal.O()
+         
 
     #==========================================================================
     # Tab SpaceTime
     #--------------------------------------------------------------------------
     def tabSptShow(self):
 
-        self.journal.I(f"{self.name}.tabSptShow:")
+        logger.debug(f"{self.name}.tabSptShow:")
 
         #----------------------------------------------------------------------
         # Vytvorim frame a skonfigurujem grid
@@ -326,15 +325,15 @@ class IFieldGui(tk.Tk):
 
 
 
-        self.journal.O()
+         
 
     #--------------------------------------------------------------------------
     def tabSptRefresh(self):
 
-        self.journal.I(f"{self.name}.tabSptRefresh:")
+        logger.debug(f"{self.name}.tabSptRefresh:")
 
 
-        self.journal.O()
+         
         return True
 
     #--------------------------------------------------------------------------
@@ -399,7 +398,7 @@ class IFieldGui(tk.Tk):
         #self.pnw.sash_place(index=0, x=100, y=100)
 
 #        self.show()   # Initial drawing
-        self.journal.O('IFieldGui created for Object {}'.format(self.name))
+        logger.debug('IFieldGui created for Object {}'.format(self.name))
 
         self.win.mainloop()       # Start listening for events
 

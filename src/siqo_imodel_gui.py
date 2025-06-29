@@ -35,25 +35,24 @@ class InfoModelGui:
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, journal, parent):
+    def __init__(self, parent):
         "Call constructor of InfoMarixGui and initialise it for respective data"
 
         journal.I('InfoModelGui.init:')
 
-        self.journal = journal
         self.parent  = parent
         self.model   = InfoModel(journal)
 
         self.cwd     = os.getcwd()           # Lokalny folder pre pracu s datami
 
-        self.journal.O()
+         
 
     #==========================================================================
     # Internal methods
     #--------------------------------------------------------------------------
     def formatJson(self, txt):
             
-        self.journal.I(f"{self.model.name}.formatJson:")
+        logger.debug(f"{self.model.name}.formatJson:")
 
         try:
             txt = literal_eval(txt)
@@ -61,10 +60,10 @@ class InfoModelGui:
         except Exception as e:
             # SyntaxError: invalid syntax
             messagebox.showerror('Invalid input', 'Not a valid JSON',parent=self.parent)
-            self.journal.M(f"{self.model.name}.formatJson: {e}", True)
+            logger.info(f"{self.model.name}.formatJson: {e}")
             return False
         
-        self.journal.O(f"{self.model.name}.formatJson: done")
+        logger.debug(f"{self.model.name}.formatJson: done")
         return True
 
     #==========================================================================
@@ -72,13 +71,13 @@ class InfoModelGui:
     #--------------------------------------------------------------------------
     def load(self):
 
-        self.journal.I(f"{self.model.name}.load:")
+        logger.debug(f"{self.model.name}.load:")
 
         fileName = filedialog.askopenfilename(parent=self.parent, title='Select IMF file', initialdir=self.cwd, 
                                               filetypes=(('IModel files', '*.imf'), ('All files', '*.*')) )
 
         if not fileName:
-             self.journal.M('Load cancelled')
+             logger.info('Load cancelled')
            
         else:   
             self.cwd = os.path.normpath(os.path.split(fileName)[0])
@@ -88,15 +87,15 @@ class InfoModelGui:
 
             if self.formatJson(txt):
 
-                self.model = InfoModel(self.journal, name='InfoModel', json=txt)
+                self.model = InfoModel(name='InfoModel', json=txt)
 
-        self.journal.O()
+         
         return self.model
     
     #--------------------------------------------------------------------------
     def save(self):
             
-        self.journal.I(f"{self.model.name}.save:")
+        logger.debug(f"{self.model.name}.save:")
 
         fileName =  filedialog.asksaveasfilename(parent=self.parent, initialfile = fileName, 
                                                  title='Select IMF file', initialdir=self.cwd, defaultextension=".imf", 
@@ -108,12 +107,12 @@ class InfoModelGui:
             with open(fileName,'w',encoding='utf8') as f:
                 f.write(self.model.toJson())
 
-            self.journal.M(f"{self.model.name}.save: Saved into {fileName}")
+            logger.info(f"{self.model.name}.save: Saved into {fileName}")
 
         else:
-            self.journal.M(f"{self.model.name}.save: Save cancelled")
+            logger.info(f"{self.model.name}.save: Save cancelled")
 
-        self.journal.O()
+         
 
 #==============================================================================
 #   Inicializacia kniznice
