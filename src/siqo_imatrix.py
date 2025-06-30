@@ -317,7 +317,7 @@ class InfoMatrix:
         serie  = subs[axePos  ]                            # Pocet Points v jednej grupe
         if axePos+1>=len(subs): period = count  
         else                  : period = subs[axePos+1]    # Perioda v akej sa opakuju grupy
-        groups = self.count() // period                   # Pocet grup s indexom axeIdx v osi axeKey
+        groups = self.count() // period                    # Pocet grup s indexom axeIdx v osi axeKey
 
         return period, serie, groups
 
@@ -351,6 +351,8 @@ class InfoMatrix:
         #-----------------------------------------------------------------------
         return toRet
 
+    #--------------------------------------------------------------------------
+    # One Point position tools
     #--------------------------------------------------------------------------
     def _posByIdx(self, idxs:list):
         "Returns position of the InfoPoint in the list for respective indices"
@@ -438,7 +440,7 @@ class InfoMatrix:
     #==========================================================================
     # Active submatrix tools
     #--------------------------------------------------------------------------
-    # Active subsmatrix definition
+    # Active submatrix definition
     #--------------------------------------------------------------------------
     def actSubSet(self, actSub:dict):
         """Sets active submatrix definition as dict of freezed axesKeys with values.
@@ -536,6 +538,9 @@ class InfoMatrix:
         """Returns active submatrix of InfoPoints in field as list of InfoPoints
         """
 
+        logger.info(f"{self.name}.actSubmatrix: actSub={actSub}, force={force}")
+        toRet = []
+
         #----------------------------------------------------------------------
         # Nastavenie aktivnej submatice ak bola dodana definicia
         #----------------------------------------------------------------------
@@ -553,10 +558,38 @@ class InfoMatrix:
         self.actList = []
         
         #----------------------------------------------------------------------
-        # Ziskam list pozicii bodov patriacich hladanemu vektoru
+        # Prejdem vsetky osi s definovanou hodnotou idx a ziskam pozicie pointov
         #----------------------------------------------------------------------
+        for axe, idx in self.actSub.items():
+            if axe not in self._cnts.keys():
+                logger.error(f"{self.name}.actSubmatrix: Axe '{axe}' is not in InfoMatrix axes {list(self._cnts.keys())}")
+                return self.actList
+            
+            #------------------------------------------------------------------
+            # Ziskam pozicie bodov patriacich danej osi
+            #------------------------------------------------------------------
+            if idx is None:
+                logger.debug(f"{self.name}.actSubmatrix: Axe '{axe}' is not freezed, skipping")
+                continue
+            
+            if isinstance(idx, int):
+                poss = self._possForAxeVal(axe, idx)
+            else:
+                logger.error(f"{self.name}.actSubmatrix: Axe '{axe}' has invalid value {idx}, should be int or None")
+                return self.actList
+
+
+
         poss = self._actPossBySub()
         
+
+        #----------------------------------------------------------------------
+        # Ziskam list pozicii bodov patriacich hladanemu vektoru
+        #----------------------------------------------------------------------
+
+
+
+
         if poss is None:
             logger.error(f"{self.name}.actSubmatrix: Can not obtain positions for desired subset and structure")
             return self.actList
@@ -586,7 +619,7 @@ class InfoMatrix:
            ipType scheme. If ipType is not in arguments, uses existing ipType"""
         
         if ipType is not None: self.ipType = ipType
-        logger.debug(f"{self.name}.gener: {cnts} points of type {self.ipType} on rect {rects} from {origs} with values {defs}")
+        logger.info(f"{self.name}.gener: {cnts} points of type {self.ipType} on rect {rects} from {origs} with values {defs}")
 
         #----------------------------------------------------------------------
         # Check validity of InfoPoint's schema 
@@ -640,7 +673,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Final adjustments
         #----------------------------------------------------------------------
-         
+        logger.info(f"{self.name}.gener: Created {len(self.points)} InfoPoints")
         
     #--------------------------------------------------------------------------
 
