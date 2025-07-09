@@ -1,7 +1,7 @@
 #==============================================================================
 #  IField: main file
 #------------------------------------------------------------------------------
-from   siqolib.journal          import SiqoJournal
+from   siqolib.logger          import Siqologger
 
 from   inf_gui                  import IFieldGui
 #from   siqo_ifield              import InfoField, _LIN, _LOG
@@ -22,15 +22,15 @@ _VALS_MAX  = 100000
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
     
-    journal = SiqoJournal('IField', debug=3)
-    journal.I('Main loop')
+    logger = Siqologger('IField', debug=3)
+    logger.I('Main loop')
 
-#    dat = InfoMatrix(journal, 'Test field')
+#    dat = InfoMatrix(logger, 'Test field')
 
 #    dat.gener(count=200, offMin=0.1, offMax=20, dim=2, spread=_LIN)
 
 #    print(dat)
-#    dat = InfoField.gener(journal, 'Test field', count=200, offMin=0.0, offMax=20, dim=1, spread=_LIN)
+#    dat = InfoField.gener(logger, 'Test field', count=200, offMin=0.0, offMax=20, dim=1, spread=_LIN)
 #    dat.extend(count=200, offMin=0.1, offMax=20, spread=_LIN)
 #    print(dat)
 
@@ -39,11 +39,11 @@ if __name__ =='__main__':
 
     
     # Vytvorim GUI
-    journal.setDepth(3)
-    gui = IFieldGui(journal, name='IField GUI')
+    logger.setDepth(3)
+    gui = IFieldGui(logger, name='IField GUI')
     gui.mainloop()
     
-    journal.O('Main end')
+    logger.O('Main end')
     
 #==============================================================================
 #                              END OF FILE

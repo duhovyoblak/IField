@@ -654,15 +654,13 @@ print(f'SIQO InfoMarixGui library ver {_VER}')
 
 if __name__ == '__main__':
 
-    from   siqolib.journal          import SiqoJournal
-    from   siqo_imatrix             import InfoMatrix
-
-    journal = SiqoJournal('InfoMarixGui component test', debug=4)
+    from   siqo_imatrix           import InfoMatrix
 
     #--------------------------------------------------------------------------
     # Test of the InfoMarixGui class
     #--------------------------------------------------------------------------
-    journal.I('Test of InfoMarixGui class')
+    logger.setLevel('INFO')
+    logger.info('Test of InfoMarixGui class')
 
     win = tk.Tk()
     win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
@@ -677,7 +675,7 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Zaciatok testu 
     #--------------------------------------------------------------------------
-    matrix = InfoMatrix(journal, 'Test field', 'ipTest')
+    matrix = InfoMatrix('Test field', 'ipTest')
 
     matrix.setAxe('x', 'Epoch')
     matrix.setAxe('y', 'L-dist')
@@ -686,19 +684,17 @@ if __name__ == '__main__':
     matrix.setVal('m', 'hmotnosť')
     matrix.setVal('v', 'rýchlosť')
 
-
-
     matrix.gener(cnts={'x':100, 'y':400, 'z':2}, origs={'x':0, 'y':0, 'z':0}, rects={'x':5, 'y':5, 'z':2}, defs={'m':1, 'v':2})
     print(matrix)
 
-    matrixGui = InfoMarixGui(journal, name='Test of InfoModelGui class', container=win, dat=matrix)
+    matrixGui = InfoMarixGui(name='Test of InfoModelGui class', container=win, dat=matrix)
     matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
     matrixGui.sub2D = {'z':1}
 
     win.mainloop()
 
-    journal.O()
+    logger.info('Stop of InfoMarixGui test')
 
 #==============================================================================
 #                              END OF FILE

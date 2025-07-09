@@ -322,14 +322,14 @@ class InfoMatrix:
         return period, serie, groups
 
     #--------------------------------------------------------------------------
-    def _possForAxeVal(self, axeKey:str, axeIdx:int):
-        "Returns list of positions of Points belonging to the axe with respective index axeIdx"
+    def _possForAxeIdx(self, axeKey:str, axeIdx:int):
+        "Returns set of positions of Points belonging to the axe with respective index axeIdx"
 
         #----------------------------------------------------------------------
         # Zistim hodnoty serie, period a groups pre danu os axeKey
         #----------------------------------------------------------------------
         period, serie, groups = self._subPeriods(axeKey)
-        toRet = []
+        toRet = set()
 
         #----------------------------------------------------------------------
         # Prejdem vsetky grupy
@@ -346,7 +346,7 @@ class InfoMatrix:
             # Vlozim Points s indexom axeIdx do zoznamu toRet
             #------------------------------------------------------------------
             for pos in range(start, stop):
-                toRet.append(pos)
+                toRet.add(pos)
         
         #-----------------------------------------------------------------------
         return toRet
@@ -395,7 +395,7 @@ class InfoMatrix:
         return toRet
 
     #--------------------------------------------------------------------------
-    def _idxByCoord(self, coord):
+    def _idxForAxeVal(self, axeKey:str, axeVal:float):
         "Returns index in axe for respective coordinate"
 
         #----------------------------------------------------------------------
@@ -442,109 +442,52 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     # Active submatrix definition
     #--------------------------------------------------------------------------
-    def actSubSet(self, actSub:dict):
+    def _actSubSet(self, actSub:dict):
         """Sets active submatrix definition as dict of freezed axesKeys with values.
            If actSub definition changed from current definition, sets actChanged to True.
         """
 
-        logger.info(f"{self.name}.actSubSet: To {actSub}")
-
-        #----------------------------------------------------------------------
-        # Doplnenie definicie o nezmrazene osi
-        #----------------------------------------------------------------------
-        for key in self._cnts.keys():
-            if key not in actSub.keys():
-                actSub[key] = None
+        logger.info(f"{self.name}._actSubSet: To {actSub}")
 
         #----------------------------------------------------------------------
         # Kontrola zmeny definicie
         #----------------------------------------------------------------------
         if self.actSub == actSub: 
-            logger.debug(f"{self.name}.actSubSet: actSub definition was not changed")
+            logger.debug(f"{self.name}._actSubSet: actSub definition was not changed")
             return
         
         #----------------------------------------------------------------------
+        # Kontrola novej definicie
+        #----------------------------------------------------------------------
+        for axe, axeIdx in actSub.items():
+
+            if axe not in self._cnts.keys():
+                logger.error(f"{self.name}._actSubSet: Axe '{axe}' is not in InfoMatrix axes {list(self._cnts.keys())}, change denied")
+                return self.actList
+            
+        #----------------------------------------------------------------------
         # Nastavenie aktivnej submatice
         #----------------------------------------------------------------------
-        self.actSub = actSub.copy()
+        self.actSub     = actSub.copy()
+        self.actList    = []
         self.actChanged = True
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}.actSubSet: definition was changed to {self.actSub}")
-
-    #--------------------------------------------------------------------------
-    def _actPossBySub(self, axesLeft:list= None):
-        "Return list of position in self.points for respective deifinition self.actSub"
-
-        toRet = []
-        idxs  = []
-
-        #----------------------------------------------------------------------
-        # Inicializacia rekurzie: vytvorim list klucov ku vsetkym osiam ['a', 'b', 'c', ...]
-        #----------------------------------------------------------------------
-        if axesLeft is None: axesLeft = list(self._cnts.keys())
-
-        #----------------------------------------------------------------------
-        # Odoberiem zo zonamu osi prvu os axe = 'a'
-        #----------------------------------------------------------------------
-        axe = axesLeft.pop(0)
-
-        #----------------------------------------------------------------------
-        # Prejdem vsetky hodnoty idx v spracovavanej osi
-        #----------------------------------------------------------------------
-        for idx in self._cnts[axe]:
-
-            #------------------------------------------------------------------
-            # Ak sa aktualna hodnota rovna zmrazenej alebo neurcenej hodnote  
-            #------------------------------------------------------------------
-            if (self.actSub[axe] is None) or (self.actSub[axe]==idx):
-
-                #--------------------------------------------------------------
-                # Trivialne riesenie: ak uz nezostali dalsie osi, pridam idx do zoznamu
-                #--------------------------------------------------------------
-                if len(axesLeft) == 0:
-
-                    toRet.append(idx)
-
-                #--------------------------------------------------------------
-                # Rekurzia: ak este zostali nejake osy 
-                #--------------------------------------------------------------
-                if len(axesLeft) > 0:
-
-                    #----------------------------------------------------------
-                    # Pridam aktualny index do zoznamu idxs
-                    #----------------------------------------------------------
-                    idxs.append(idx)
-                    subPoss = self._actPossBySub(axesLeft.copy())
-
-                    #----------------------------------------------------------
-                    # Pridam vsetky pozicie z podmatice do vysledneho zoznamu
-                    #----------------------------------------------------------
-                    for pos in subPoss: toRet.append(pos)
-
-                #--------------------------------------------------------------
-                # Odstranim posledny index z idxs pre dalsie iteracie
-                #--------------------------------------------------------------
-                idxs.pop()
-
-            pass
-
-        #_posByIdx(self, idxs:list)
+        logger.debug(f"{self.name}._actSubSet: definition was changed to {self.actSub}")
 
     #--------------------------------------------------------------------------
     # Active subsmatrix retrieval
     #--------------------------------------------------------------------------
     def actSubmatrix(self, actSub=None, force=False):
-        """Returns active submatrix of InfoPoints in field as list of InfoPoints
+        """Returns active submatrix of InfoPoints as list of InfoPoints
         """
 
         logger.info(f"{self.name}.actSubmatrix: actSub={actSub}, force={force}")
-        toRet = []
 
         #----------------------------------------------------------------------
         # Nastavenie aktivnej submatice ak bola dodana definicia
         #----------------------------------------------------------------------
-        if actSub is not None: self.actSubSet(actSub)
+        if actSub is not None: self._actSubSet(actSub)
 
         #----------------------------------------------------------------------
         # Kontrola potreby obnovenia
@@ -554,49 +497,52 @@ class InfoMatrix:
             return self.actList
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.actSubmatrix: actSub={self.actSub}, force={force}")
-        self.actList = []
-        
+        logger.info(f"{self.name}.actSubmatrix: Refresh for actSub={self.actSub}, force={force}")
+
         #----------------------------------------------------------------------
-        # Prejdem vsetky osi s definovanou hodnotou idx a ziskam pozicie pointov
+        # Prejdem vsetky osi s definovanou hodnotou idx
         #----------------------------------------------------------------------
-        for axe, idx in self.actSub.items():
-            if axe not in self._cnts.keys():
-                logger.error(f"{self.name}.actSubmatrix: Axe '{axe}' is not in InfoMatrix axes {list(self._cnts.keys())}")
-                return self.actList
-            
+        poss  = set()  # Set of positions of InfoPoints in the active submatrix
+        first = True   # Flag for first axe
+
+        for axe, axeIdx in self.actSub.items():
+
             #------------------------------------------------------------------
-            # Ziskam pozicie bodov patriacich danej osi
+            # Kontrola, ci je daná os freezed
             #------------------------------------------------------------------
-            if idx is None:
+            if axeIdx is None:
                 logger.debug(f"{self.name}.actSubmatrix: Axe '{axe}' is not freezed, skipping")
                 continue
             
-            if isinstance(idx, int):
-                poss = self._possForAxeVal(axe, idx)
+            #------------------------------------------------------------------
+            # Ziskam mnozinu pozicii bodov patriacich danej osi
+            #------------------------------------------------------------------
+            actPoss = self._possForAxeIdx(axeKey=axe, axeIdx=axeIdx)
+
+            #------------------------------------------------------------------
+            # Ak uz existuje nejaka mnozina pozicii, vytvorim prienik s touto mnozinou
+            #------------------------------------------------------------------
+            if first:
+                #----------------------------------------------------------------
+                # Prva os, nastavim mnozinu pozicii na tuto mnozinu
+                #----------------------------------------------------------------
+                poss  = actPoss
+                first = False
+
             else:
-                logger.error(f"{self.name}.actSubmatrix: Axe '{axe}' has invalid value {idx}, should be int or None")
-                return self.actList
-
-
-
-        poss = self._actPossBySub()
-        
+                #----------------------------------------------------------------
+                # Dalsia os, vytvorim prienik s touto poss mnozinou
+                #----------------------------------------------------------------
+                poss = poss.intersection(actPoss)
 
         #----------------------------------------------------------------------
-        # Ziskam list pozicii bodov patriacich hladanemu vektoru
+        logger.info(f"{self.name}.actSubmatrix: Found {len(poss)} positions in active submatrix for actSub={self.actSub}")
+        print(poss)
+
         #----------------------------------------------------------------------
-
-
-
-
-        if poss is None:
-            logger.error(f"{self.name}.actSubmatrix: Can not obtain positions for desired subset and structure")
-            return self.actList
-        
+        # Create vector of InfoPoints for respective positions
         #----------------------------------------------------------------------
-        # Create vector of InfoPoints/Values for respective positions
-        #----------------------------------------------------------------------
+        self.actList.clear()  # Clear active list of points
         for pos in poss:
             self.actList.append(self.pointByPos(pos))
 
@@ -865,16 +811,19 @@ if __name__ == '__main__':
     print()
 
     print(im)
-    print('possA0', im._possForAxeVal(axeKey='a', axeIdx=0))
-    print('possA1', im._possForAxeVal(axeKey='a', axeIdx=1))
+    print('possA0', im._possForAxeIdx(axeKey='a', axeIdx=0))
+    print('possA1', im._possForAxeIdx(axeKey='a', axeIdx=1))
     print()
-    print('possB0', im._possForAxeVal(axeKey='b', axeIdx=0))
-    print('possB1', im._possForAxeVal(axeKey='b', axeIdx=1))
+    print('possB0', im._possForAxeIdx(axeKey='b', axeIdx=0))
+    print('possB1', im._possForAxeIdx(axeKey='b', axeIdx=1))
     print()
-    print('possC0', im._possForAxeVal(axeKey='c', axeIdx=0))
-    print('possC1', im._possForAxeVal(axeKey='c', axeIdx=1))
+    print('possC0', im._possForAxeIdx(axeKey='c', axeIdx=0))
+    print('possC1', im._possForAxeIdx(axeKey='c', axeIdx=1))
     input('Press Enter to continue...')
     print()
+
+    im.actSubmatrix({'a':0, 'b':1, 'c':None})
+    print(im.actList)
 
     #--------------------------------------------------------------------------
     # generovanie hodnot
@@ -898,8 +847,6 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Submatrix
     #--------------------------------------------------------------------------
-    im.actSubSet({'b':1})
-    input('Press Enter to continue...')
 
 
 
