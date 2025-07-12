@@ -12,7 +12,7 @@ import numpy                  as np
 import matplotlib.pyplot      as plt
 
 from   siqolib.logger         import SiqoLogger
-from   siqolib.message        import askInt, askReal
+from   siqolib.message        import SiqoMessage, askInt, askReal
 from   siqo_imatrix           import InfoMatrix
 
 #==============================================================================
@@ -101,8 +101,8 @@ class InfoMarixGui(ttk.Frame):
 
         # Pridanie Help menu
         helpMenu = tk.Menu(mainMenu, tearoff=0)
-        mainMenu.add_cascade(label="Help", menu=helpMenu)
-        helpMenu.add_command(label="About", command=self.onAbout)
+        mainMenu.add_cascade(label="Info", menu=helpMenu)
+        helpMenu.add_command(label="Matrix info", command=self.onInfo)
 
         #----------------------------------------------------------------------
         # Create head buttons bar
@@ -521,9 +521,18 @@ class InfoMarixGui(ttk.Frame):
     #==========================================================================
     # Help menu
     #--------------------------------------------------------------------------
-    def onAbout(self, event=None):
+    def onInfo(self, event=None):
+        "Show information about the InfoMatrix data"
 
-        return
+        logger.debug(f'{self.name}.onInfo:')
+
+
+        text = self.dat.info()['msg']
+        text = text.split('\n')
+
+        msgWin = SiqoMessage(name=self.dat.name, text=text, wpix=800)
+
+        logger.debug(f'{self.name}.onInfo: Show info about {self.dat.name}')
 
     #==========================================================================
     # Method to apply

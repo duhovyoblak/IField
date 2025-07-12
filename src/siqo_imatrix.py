@@ -161,7 +161,8 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         dat['name'          ] = self.name
         dat['ipType'        ] = self.ipType
-        dat['schema'        ] = InfoPoint.getSchema(self.ipType)
+        dat['schema_axes'   ] = InfoPoint.getSchema(self.ipType)['axes']
+        dat['schema_vals'   ] = InfoPoint.getSchema(self.ipType)['vals']
         dat['cnt of points' ] = self.count()
         dat['len(points)'   ] = len(self.points)
         dat['staticEdge'    ] = self.staticEdge
@@ -199,20 +200,28 @@ class InfoMatrix:
         return {'res':'OK', 'dat':dat, 'msg':msg}
         
     #--------------------------------------------------------------------------
-    def count(self):
+    def count(self, check=True):
         "Returns Count of points in this InfoMatrix"
         
-        if len(self._cnts) == 0: return 0
+        #----------------------------------------------------------------------
+        # Pocet bodov podla _cnts
+        #----------------------------------------------------------------------
+        if len(self._cnts) == 0: toRet = 0
 
-        toRet = 1
-        for cnt in self._cnts.values():
-            toRet *= cnt
+        else: 
+            toRet = 1
+            for cnt in self._cnts.values():
+                toRet *= cnt
 
-        if toRet != len(self.points):
+        #----------------------------------------------------------------------
+        # Kontrola, ci sa pocet bodov zhoduje s dlzkou zoznamu points
+        #----------------------------------------------------------------------
+        if check and (toRet != len(self.points)):
             logger.critical(f"{self.name}.count: Count of points {toRet} is not equal to len(points) {len(self.points)}, Matrix terminated")
             self.reset()
             toRet = 0
 
+        #----------------------------------------------------------------------
         return toRet
 
     #--------------------------------------------------------------------------
@@ -645,7 +654,7 @@ class InfoMatrix:
         # Generate InfoPoints at respective positions
         #----------------------------------------------------------------------
         point = None
-        for pos in range(self.count()):
+        for pos in range(self.count(check=False)):
 
             #------------------------------------------------------------------
             # Compute coordinates of the InfoPoint for respective position and indices
