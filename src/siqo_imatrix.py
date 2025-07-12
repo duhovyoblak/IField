@@ -100,6 +100,9 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Inicializacia
         #----------------------------------------------------------------------
+        InfoPoint.checkSchema(ipType)
+
+        #----------------------------------------------------------------------
         logger.info(f"{self.name}.constructor: done")
 
     #--------------------------------------------------------------------------
@@ -132,8 +135,18 @@ class InfoMatrix:
         
         logger.warning(f"{self.name}.reset: ipType={ipType}")
         
-        if ipType is not None: self.ipType = ipType
+        #----------------------------------------------------------------------
+        # Reset ipType if it is not None
+        #----------------------------------------------------------------------
+        if ipType is not None: 
 
+            self.ipType = ipType
+            InfoPoint.checkSchema(ipType)
+            logger.warning(f"{self.name}.reset: ipType changed to {self.ipType}")
+
+        #----------------------------------------------------------------------
+        # Reset all InfoMatrix's data
+        #----------------------------------------------------------------------
         self.points     = []       # List of rows of lists of InfoPoints
         self.staticEdge = False    # Static edge means value of the edge nodes is fixed        
 
@@ -222,6 +235,7 @@ class InfoMatrix:
             toRet = 0
 
         #----------------------------------------------------------------------
+        logger.debug(f"{self.name}.count: Count of points is {toRet}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -347,7 +361,7 @@ class InfoMatrix:
     #==========================================================================
     # Position and indices tools
     #--------------------------------------------------------------------------
-    def _subProducts(self):
+    def _subProducts(self) -> list:
         "Returns list of subproducts of _cnts [1, A, AB, ABC, ...]"
 
         toRet = [1]
@@ -359,26 +373,47 @@ class InfoMatrix:
         # Remove last element which is the product of all dimensions
         #----------------------------------------------------------------------
         toRet.pop()
+
+        #----------------------------------------------------------------------
+        logger.debug(f"{self.name}._subProducts: {toRet}")
         return toRet
 
     #--------------------------------------------------------------------------
     def _subPeriods(self, axeKey:str):
         "Returns period,serie & groups for respective axe"
 
+        logger.debug(f"{self.name}._subPeriods: axeKey={axeKey}")
+
         subs   = self._subProducts()
         axePos = self.getAxeIdx(axeKey)
         count  = self.count()
 
+        #----------------------------------------------------------------------
+        # Pocet Points v jednej grupe
+        #----------------------------------------------------------------------
         serie  = subs[axePos  ]                            # Pocet Points v jednej grupe
+        logger.debug(f"{self.name}._subPeriods: serie={serie} for axeKey={axeKey}")
+
+        #----------------------------------------------------------------------
+        # Perioda v akej sa opakuju grupy
+        #----------------------------------------------------------------------
         if axePos+1>=len(subs): period = count  
         else                  : period = subs[axePos+1]    # Perioda v akej sa opakuju grupy
+        logger.debug(f"{self.name}._subPeriods: period={period} for axeKey={axeKey}")
+        
+        #----------------------------------------------------------------------
+        # Pocet grup s indexom axeIdx v osi axeKey
+        #----------------------------------------------------------------------
         groups = self.count() // period                    # Pocet grup s indexom axeIdx v osi axeKey
+        logger.debug(f"{self.name}._subPeriods: groups={groups} for axeKey={axeKey}")
 
         return period, serie, groups
 
     #--------------------------------------------------------------------------
-    def _possForAxeIdx(self, axeKey:str, axeIdx:int):
+    def _possForAxeIdx(self, axeKey:str, axeIdx:int) -> set:
         "Returns set of positions of Points belonging to the axe with respective index axeIdx"
+
+        logger.debug(f"{self.name}._possForAxeIdx: axeKey={axeKey}, axeIdx={axeIdx}")
 
         #----------------------------------------------------------------------
         # Zistim hodnoty serie, period a groups pre danu os axeKey
@@ -404,6 +439,7 @@ class InfoMatrix:
                 toRet.add(pos)
         
         #-----------------------------------------------------------------------
+        logger.debug(f"{self.name}._possForAxeIdx: Found {len(toRet)} positions for axeKey={axeKey}, axeIdx={axeIdx}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -591,10 +627,6 @@ class InfoMatrix:
                 poss = poss.intersection(actPoss)
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.actSubmatrix: Found {len(poss)} positions in active submatrix for actSub={self.actSub}")
-        print(poss)
-
-        #----------------------------------------------------------------------
         # Create vector of InfoPoints for respective positions
         #----------------------------------------------------------------------
         self.actList.clear()  # Clear active list of points
@@ -602,6 +634,7 @@ class InfoMatrix:
             self.actList.append(self.pointByPos(pos))
 
         #----------------------------------------------------------------------
+        logger.info(f"{self.name}.actSubmatrix: Found {len(self.actList)} positions in active submatrix for actSub={self.actSub}")
         return self.actList    
     
     #==========================================================================
@@ -864,6 +897,8 @@ if __name__ == '__main__':
     im.setVal('m', 'Hmotnosť')
     input('Press Enter to continue...')
     print()
+
+    logger.setLevel('DEBUG')
 
     print(im.info(full=True)['msg'])
     print('possA0', im._possForAxeIdx(axeKey='a', axeIdx=0))

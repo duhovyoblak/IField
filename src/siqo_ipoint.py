@@ -17,8 +17,11 @@ _F_SCHEMA = 1                          # Format for ipType
 _F_TOTAL  = 6                          # Total number of digits in float number
 _F_DECIM  = 3                          # Number of digits after decimal point in float number
 
-_SCHEMA   = {'ipReal   ':{'axes':{'None':'None'}
-                         ,'vals':{}
+_SCH_AXES = {}                         # Default axes for InfoPoint schema
+_SCH_VALS = {}                         # Default values for InfoPoint schema    
+
+_SCHEMA   = {'ipReal   ':{'axes':_SCH_AXES.copy()
+                         ,'vals':_SCH_VALS.copy()
                          }
             ,'ipComplex':{'axes':{'None':'None', 'x':'os X', 'y':'os Y'}
                          ,'vals':{'r':'real Value'}
@@ -50,21 +53,22 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def clearSchema(ipType):
-        "Clears schema of InfoPoint for respective ipType to {'axes':{'None':'None'}, 'vals':{}}"
-        
-        InfoPoint._schema[ipType] = {'axes':{'None':'None'}, 'vals':{}}
-        logger.info(f"InfoPoint.setAxe: clearSchema ipType '{ipType}'")
-
-    #--------------------------------------------------------------------------
-    @staticmethod
     def checkSchema(ipType):
         """Checks if schema does exist for respective ipType. If schema for ipType 
-           does not exist, create empty as {'axes':{'None':'None'}, 'vals':{}}
+           does not exist, create empty as {'axes':{}, 'vals':{}}
         """
         
         if ipType not in InfoPoint._schema.keys():
-            InfoPoint._schema[ipType] = {'axes':{'None':'None'}, 'vals':{}}
+            InfoPoint._schema[ipType] = {'axes':_SCH_AXES.copy(), 'vals':_SCH_VALS.copy()}
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def clearSchema(ipType):
+        "Clears schema of InfoPoint for respective ipType to {'axes':{}, 'vals':{}}"
+        
+        InfoPoint.checkSchema(ipType)
+        InfoPoint._schema[ipType] = {'axes':_SCH_AXES.copy(), 'vals':_SCH_VALS.copy()}
+        logger.info(f"InfoPoint.setAxe: clearSchema ipType '{ipType}'")
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -105,8 +109,7 @@ class InfoPoint:
     def setAxe(ipType, key, name):
         "Sets axe's key and name for respective ipType. If axe exists already, redefine name."
         
-        if ipType not in InfoPoint._schema.keys(): InfoPoint._schema[ipType] = {'axes':{'None':'None'}, 'vals':{}} 
-
+        InfoPoint.checkSchema(ipType)
         InfoPoint._schema[ipType]['axes'][key] = name
         logger.debug(f"InfoPoint.setAxe: set key '{key}' for axe '{name}'")
 
@@ -126,7 +129,9 @@ class InfoPoint:
         # Find index of the axe's key  
         #----------------------------------------------------------------------
         for i, keyAxe in enumerate(InfoPoint._schema[ipType]['axes'].keys()):
-            if key==keyAxe: return i
+            if key==keyAxe: 
+                logger.debug(f"InfoPoint.getAxeIdx: Key '{key}' found in axes {InfoPoint._schema[ipType]['axes']} at index {i}")
+                return i
 
         #----------------------------------------------------------------------
         # Key not found     
@@ -186,8 +191,7 @@ class InfoPoint:
     def setVal(ipType, key, name):
         "Sets value key and name for respective ipType. If value exists already, redefine name."
         
-        if ipType not in InfoPoint._schema.keys(): InfoPoint._schema[ipType] = {'axes':{}, 'vals':{}} 
-
+        InfoPoint.checkSchema(ipType) 
         InfoPoint._schema[ipType]['vals'][key] = name
         logger.debug(f"InfoPoint.setVal: set key '{key}' for value '{name}'")
 
@@ -267,30 +271,23 @@ class InfoPoint:
     def getSchema(ipType):
         "Returns schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
         
-        if ipType not in InfoPoint._schema.keys(): InfoPoint._schema[ipType] = {'axes':{}, 'vals':{}}
-
+        InfoPoint.checkSchema(ipType) 
         return InfoPoint._schema[ipType].copy()
     
     #--------------------------------------------------------------------------
     @staticmethod
     def getAxes(ipType):
-        "Returns axes keys and names as dict {key: name} for respective ipType, otherwise None"
+        "Returns axes keys and names as dict {key: name} for respective ipType"
         
-        if ipType not in InfoPoint._schema.keys():
-            logger.warning(f"InfoPoint.getAxes: ipType '{ipType}' is not defined InfoPoint type")
-            return None 
-
+        InfoPoint.checkSchema(ipType) 
         return InfoPoint._schema[ipType]['axes'].copy()
     
     #--------------------------------------------------------------------------
     @staticmethod
     def getVals(ipType):
-        "Returns values keys and names as dict {key: name} for respective ipType, otherwise None"
+        "Returns values keys and names as dict {key: name} for respective ipType"
 
-        if ipType not in InfoPoint._schema.keys():
-            logger.warning(f"InfoPoint.getVals: ipType '{ipType}' is not defined InfoPoint type")
-            return None
-
+        InfoPoint.checkSchema(ipType) 
         return InfoPoint._schema[ipType]['vals'].copy()
 
     #--------------------------------------------------------------------------

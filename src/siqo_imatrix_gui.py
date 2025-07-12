@@ -121,6 +121,12 @@ class InfoMarixGui(ttk.Frame):
         frmBtn.rowconfigure(1, weight=1)
         
         #----------------------------------------------------------------------
+        # List of axis
+        #----------------------------------------------------------------------
+        axesLst = list(self.dat.getAxes().values())
+        axesLst.insert(0, 'None') # Insert 'None' as first item
+
+        #----------------------------------------------------------------------
         # X axis dimension selector
         #----------------------------------------------------------------------
         self.strX   = tk.StringVar(value='None') # Name of the X-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
@@ -129,7 +135,7 @@ class InfoMarixGui(ttk.Frame):
         lblX.grid(column=1, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbX = ttk.Combobox(frmBtn, textvariable=self.strX, width=_COMBO_WIDTH)
-        self.cbX['values'] = list(self.dat.getAxes().values())
+        self.cbX['values'] = axesLst
         self.cbX['state' ] = 'readonly'
         self.cbX.bind('<<ComboboxSelected>>', self.dataChanged)
         self.cbX.grid(column=1, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -147,7 +153,7 @@ class InfoMarixGui(ttk.Frame):
         lblY.grid(column=2, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbY = ttk.Combobox(frmBtn, textvariable=self.strY, width=_COMBO_WIDTH)
-        self.cbY['values'] = list(self.dat.getAxes().values())
+        self.cbY['values'] = axesLst
         self.cbY['state' ] = 'readonly'
         self.cbY.bind('<<ComboboxSelected>>', self.dataChanged)
         self.cbY.grid(column=2, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -239,8 +245,9 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         aKeyS = self.strVP.get()
         aKeyV = self.dat.getValKey(self.cbVX.current())
-        aKeyX = self.dat.getAxeKey(self.cbX.current())
-        aKeyY = self.dat.getAxeKey(self.cbY.current())
+
+        aKeyX = self.dat.getAxeKey(self.cbX.current()-1)  # -1 because 'None' is first item
+        aKeyY = self.dat.getAxeKey(self.cbY.current()-1)  # -1 because 'None' is first item
         
         logger.debug(f'{self.name}.dataChanged: method={aKeyS}->{self.keyS}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
         changed = False
@@ -288,7 +295,6 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         if len(self.iPoints) == 0:
             logger.info(f'{self.name}.show: No InfoPoints, nothig to show')
-             
             return
 
         #----------------------------------------------------------------------
@@ -296,7 +302,6 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         if self.keyV=='None':
             logger.info(f'{self.name}.show: No value selected, nothig to show')
-             
             return
         
         #----------------------------------------------------------------------
@@ -304,7 +309,6 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         if self.keyX=='None' and self.keyY=='None':
             logger.info(f'{self.name}.show: No axis selected, nothig to show')
-             
             return
         
         #----------------------------------------------------------------------
@@ -326,8 +330,8 @@ class InfoMarixGui(ttk.Frame):
             valueToShow = showFtion(point, self.keyV)
             listC.append(valueToShow)
 
-            if self.keyX!='None': listX.append(point.axe(self.keyX))
-            if self.keyY!='None': listY.append(point.axe(self.keyY))
+            if self.keyX!='None': listX.append(point.pos(self.keyX))
+            if self.keyY!='None': listY.append(point.pos(self.keyY))
 
         #----------------------------------------------------------------------
         # Skonvertujem do npArrays
@@ -693,13 +697,14 @@ if __name__ == '__main__':
     matrix.setVal('m', 'hmotnosť')
     matrix.setVal('v', 'rýchlosť')
 
-    matrix.gener(cnts={'x':100, 'y':400, 'z':2}, origs={'x':0, 'y':0, 'z':0}, rects={'x':5, 'y':5, 'z':2}, defs={'m':1, 'v':2})
+    matrix.gener(cnts={'x':10, 'y':40, 'z':2}, origs={'x':0, 'y':0, 'z':0}, rects={'x':5, 'y':5, 'z':2}, defs={'m':1, 'v':2})
     print(matrix)
 
     matrixGui = InfoMarixGui(name='Test of InfoModelGui class', container=win, dat=matrix)
     matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
     matrixGui.sub2D = {'z':1}
+    logger.setLevel('DEBUG')
 
     win.mainloop()
 
