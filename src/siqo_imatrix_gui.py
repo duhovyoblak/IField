@@ -61,7 +61,7 @@ class InfoMarixGui(ttk.Frame):
         self.iPoints  = []                 # List of InfoPoints to show
         self.actPoint = None               # Actual working InfoPoint
         
-        self.keyF     = 'None'             # key for methods for value to show
+        self.keyS     = 'None'             # key for methods for value to show
         self.keyV     = 'None'             # key for value to show
         self.keyX     = 'None'             # Default key for Axis X to show
         self.keyY     = 'None'             # Default key for Axis Y to show
@@ -166,7 +166,7 @@ class InfoMarixGui(ttk.Frame):
         lblVal.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbVP = ttk.Combobox(frmBtn, textvariable=self.strVP, width=int(_COMBO_WIDTH/2))
-        self.cbVP['values'] = list(self.dat.getFMethods().keys())
+        self.cbVP['values'] = list(self.dat.mapShowMethods().keys())
         self.cbVP['state' ] = 'readonly'
         self.cbVP.current(0)
         self.cbVP.bind('<<ComboboxSelected>>', self.dataChanged)
@@ -188,7 +188,7 @@ class InfoMarixGui(ttk.Frame):
         lblMet.grid(column=4, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbM = ttk.Combobox(frmBtn, textvariable=self.strM, width=_COMBO_WIDTH)
-        self.cbM['values'] = list(self.dat.mapMethods().keys())
+        self.cbM['values'] = list(self.dat.mapSetMethods().keys())
         self.cbM['state' ] = 'readonly'
         self.cbM.current(0)
         self.cbM.bind('<<ComboboxSelected>>', self.method)
@@ -237,12 +237,12 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Read actual settings
         #----------------------------------------------------------------------
-        aKeyF = self.strVP.get()
+        aKeyS = self.strVP.get()
         aKeyV = self.dat.getValKey(self.cbVX.current())
         aKeyX = self.dat.getAxeKey(self.cbX.current())
         aKeyY = self.dat.getAxeKey(self.cbY.current())
         
-        logger.debug(f'{self.name}.dataChanged: method={aKeyF}->{self.keyF}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
+        logger.debug(f'{self.name}.dataChanged: method={aKeyS}->{self.keyS}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
         changed = False
 
         if force: changed=True
@@ -250,14 +250,14 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Changes in any key required data refresh
         #----------------------------------------------------------------------
-        if  (self.keyF!=aKeyF) or (self.keyV!=aKeyV) or (self.keyX!=aKeyX) or (self.keyY!=aKeyY) or force: 
+        if  (self.keyS!=aKeyS) or (self.keyV!=aKeyV) or (self.keyX!=aKeyX) or (self.keyY!=aKeyY) or force: 
             
             changed = True
 
             #------------------------------------------------------------------
             # Vytvorim predpis pre aktualny subset
             #------------------------------------------------------------------
-            self.keyF = aKeyF
+            self.keyS = aKeyS
             self.keyV = aKeyV
             self.keyX = aKeyX
             self.keyY = aKeyY
@@ -265,7 +265,7 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             # Ziskam list InfoPoints (whole object) patriacich subsetu
             #------------------------------------------------------------------
-            self.iPoints = self.dat.actMatrix(act2D=self.sub2D)
+            self.iPoints = self.dat.actSubmatrix(actSub=self.sub2D)
 
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
@@ -316,15 +316,15 @@ class InfoMarixGui(ttk.Frame):
         listU = []
         listV = []
 
-        ftion = self.dat.getFMethods()[self.keyF]
-
         #----------------------------------------------------------------------
         # Prejdem vsetky vybrane body na zobrazenie
         #----------------------------------------------------------------------
+        showFtion = self.dat.mapShowMethods()[self.keyS]
+
         for point in self.iPoints:
 
-            flt = ftion(point, self.keyV)
-            listC.append(flt)
+            valueToShow = showFtion(point, self.keyV)
+            listC.append(valueToShow)
 
             if self.keyX!='None': listX.append(point.axe(self.keyX))
             if self.keyY!='None': listY.append(point.axe(self.keyY))
@@ -539,7 +539,7 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Zistenie detailov metody
         #----------------------------------------------------------------------
-        metDef = self.dat.mapMethods()[metKey]
+        metDef = self.dat.mapSetMethods()[metKey]
         params = metDef['par']
         newPar = {}
 
@@ -557,7 +557,7 @@ class InfoMarixGui(ttk.Frame):
         # Vykonanie metody
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.method: {metKey}(key='{self.keyV}', par={newPar})")
-        self.dat.actPointFunction(keyFtion=metKey, key=self.keyV, par=newPar)
+        self.dat.pointSetFunction(keyFtion=metKey, key=self.keyV, par=newPar)
 
         self.dataChanged(force=True)
 

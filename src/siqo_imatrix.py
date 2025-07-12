@@ -1,6 +1,7 @@
 #==============================================================================
 # Siqo class InfoMatrix
 #------------------------------------------------------------------------------
+import functools
 import math
 import cmath
 import numpy                  as np
@@ -22,6 +23,41 @@ _F_POS  =  8          # Format for position
 # package's variables
 #------------------------------------------------------------------------------
 logger = SiqoLogger('InfoMatrix test', level='INFO')
+
+#==============================================================================
+# Only when matrix is not empty
+#------------------------------------------------------------------------------
+def noEmptyMatrix(function):
+    "Assures matrix is not empty before calling decorated function"
+
+    #--------------------------------------------------------------------------
+    # Interna wrapper funkcia
+    #--------------------------------------------------------------------------
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+
+        #----------------------------------------------------------------------
+        # Before decorated function
+        #----------------------------------------------------------------------
+        self = args[0]
+        logger.debug(f"{self.name}.noEmptyMatrix: {function.__name__}")
+        resp = None
+
+        #----------------------------------------------------------------------
+        # Kontrola existencie bodov v InfoMatrix
+        #----------------------------------------------------------------------
+        if self.count() > 0: resp = function(*args, **kwargs)
+        else               : logger.warning(f"{self.name}.noEmptyMatrix: Matrix is empty, function {function.__name__} denied")
+
+        #----------------------------------------------------------------------
+        # After decorated function
+        #----------------------------------------------------------------------
+        return resp
+
+    #--------------------------------------------------------------------------
+    # Koniec internej wrapper fcie
+    #--------------------------------------------------------------------------
+    return wrapper
 
 #==============================================================================
 # InfoMatrix
@@ -70,9 +106,7 @@ class InfoMatrix:
     def __str__(self):
         "Prints info about this InfoMatrix"
 
-        toRet = ''
-        for line in self.info()['msg']: toRet += line +'\n'
-        return toRet
+        return self.info()['msg']
 
     #--------------------------------------------------------------------------
     def __array__(self):
@@ -116,43 +150,50 @@ class InfoMatrix:
         logger.info(f"{self.name}.reset: done")
 
     #--------------------------------------------------------------------------
-    def info(self, indent=0):
+    def info(self, indent=0, full=False):
         "Creates info about this InfoMatrix"
         
         dat = {}
-        msg = []
+        msg = ''
 
         #----------------------------------------------------------------------
         # info o celej strukture
         #----------------------------------------------------------------------
-        if indent == 0:
-            msg.append(f"{indent*_IND}{60*'='}")
-            dat['name'          ] = self.name
-            dat['ipType'        ] = self.ipType
-            dat['schema'        ] = InfoPoint.getSchema(self.ipType)
-            dat['cnt of points' ] = self.count()
-            dat['len(points)'   ] = len(self.points)
-            dat['staticEdge'    ] = self.staticEdge
+        dat['name'          ] = self.name
+        dat['ipType'        ] = self.ipType
+        dat['schema'        ] = InfoPoint.getSchema(self.ipType)
+        dat['cnt of points' ] = self.count()
+        dat['len(points)'   ] = len(self.points)
+        dat['staticEdge'    ] = self.staticEdge
 
-            dat['actVal'        ] = self.actVal
-            dat['actSub'        ] = self.actSub
-            dat['cnt of actList'] = len(self.actList)
-            dat['actChanged'    ] = self.actChanged
+        dat['actVal'        ] = self.actVal
+        dat['actSub'        ] = self.actSub
+        dat['cnt of actList'] = len(self.actList)
+        dat['actChanged'    ] = self.actChanged
 
-            dat['cnts'          ] = self._cnts
-            dat['origs'         ] = self._origs
-            dat['rects'         ] = self._rects
-            dat['diffs'         ] = self._diffs
-            dat['subProducts'   ] = self._subProducts()
+        dat['cnts'          ] = self._cnts
+        dat['origs'         ] = self._origs
+        dat['rects'         ] = self._rects
+        dat['diffs'         ] = self._diffs
+        dat['subProducts'   ] = self._subProducts()
 
-        for key, val in dat.items(): msg.append(f"{indent*_IND}{key:<15}: {val}")
+        if indent == 0: msg = f"{indent*_IND}{60*'='}\n"
+
+        for key, val in dat.items(): 
+            msg += f"{indent*_IND}{key:<15}: {val}\n"
 
         #----------------------------------------------------------------------
         # info o vsetkych bodoch
         #----------------------------------------------------------------------
-        for pos, point in enumerate(self.points):
-            idxs = self._idxByPos(pos)
-            msg.append(f"{pos:{_F_POS}} {idxs} {str(point)}")
+        if full:
+
+            if indent == 0: msg += f"{indent*_IND}{60*'+'}\n"
+
+            for pos, point in enumerate(self.points):
+                idxs = self._idxByPos(pos)
+                msg += f"{pos:{_F_POS}} {idxs} {str(point)}\n"
+
+            if indent == 0: msg += f"{indent*_IND}{60*'-'}\n"
         
         #----------------------------------------------------------------------
         return {'res':'OK', 'dat':dat, 'msg':msg}
@@ -166,6 +207,11 @@ class InfoMatrix:
         toRet = 1
         for cnt in self._cnts.values():
             toRet *= cnt
+
+        if toRet != len(self.points):
+            logger.critical(f"{self.name}.count: Count of points {toRet} is not equal to len(points) {len(self.points)}, Matrix terminated")
+            self.reset()
+            toRet = 0
 
         return toRet
 
@@ -280,9 +326,9 @@ class InfoMatrix:
         return InfoPoint.getVals(self.ipType)
 
     #--------------------------------------------------------------------------
-    def mapFloatMethods(self):
+    def mapShowMethods(self):
         "Returns map of methods returning float number from keyed value"
-        return InfoPoint.mapFloatMethods()
+        return InfoPoint.mapShowMethods()
 
     #--------------------------------------------------------------------------
     def mapSetMethods(self):
@@ -417,21 +463,21 @@ class InfoMatrix:
     #==========================================================================
     # InfoPoint retrieval
     #--------------------------------------------------------------------------
-    def pointByPos(self, pos:int):
+    def pointByPos(self, pos:int) -> InfoPoint:
         "Returns InfoPoint in field for respective position"
 
         toRet = self.points[pos]
         return toRet
 
     #--------------------------------------------------------------------------
-    def pointByIdx(self, idxs:list):
+    def pointByIdx(self, idxs:list) -> InfoPoint:
         "Returns InfoPoint in field at respective indexes"
         
         pos = self._posByIdx(idxs)
         return self.pointByPos(pos)
         
     #--------------------------------------------------------------------------
-    def pointByCoord(self, coord:list):
+    def pointByCoord(self, coord:list) -> InfoPoint:
         "Returns nearest InfoPoint in field to respective coordinates"
         
         pos = self._posByCoord(coord)
@@ -463,7 +509,7 @@ class InfoMatrix:
 
             if axe not in self._cnts.keys():
                 logger.error(f"{self.name}._actSubSet: Axe '{axe}' is not in InfoMatrix axes {list(self._cnts.keys())}, change denied")
-                return self.actList
+                return
             
         #----------------------------------------------------------------------
         # Nastavenie aktivnej submatice
@@ -478,7 +524,7 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     # Active subsmatrix retrieval
     #--------------------------------------------------------------------------
-    def actSubmatrix(self, actSub=None, force=False):
+    def actSubmatrix(self, actSub=None, force=False) -> list:
         """Returns active submatrix of InfoPoints as list of InfoPoints
         """
 
@@ -626,7 +672,7 @@ class InfoMatrix:
     #==========================================================================
     # Methods application
     #--------------------------------------------------------------------------
-    def copyFrom(self, src, *, key=None, tgtSlice=(0,0,0,0), srcFrom=(0,0)):
+    def copyFrom(self, src, *, key=None, tgtSlice=(0,0,0,0), srcFrom=(0,0)) -> 'InfoMatrix':
         "Copy point's values from srcs 2D matrix into tgts 2D matrix"
         
         logger.info(f"{self.name}.copyFrom: From {src.name} starting at {srcFrom} to nodes {tgtSlice} for key={key}")
@@ -683,8 +729,8 @@ class InfoMatrix:
         return self
         
     #--------------------------------------------------------------------------
-    def pointSetFunction(self, keyFtion, key:str, par:dict=None):
-        "Apply respective function for all points or points in active substructure"
+    def pointSetFunction(self, keyFtion:str, key:str, par:dict=None) -> bool:
+        "Apply respective function for all points or points in active substructure to set the value for key"
 
         logger.info(f"{self.name}.pointSetFunction: {keyFtion}(key={key}, par={par}) for {len(self.actList)} active Points]")
         
@@ -786,21 +832,21 @@ if __name__ == '__main__':
     input('Press Enter to continue...')
 
     im.gener(cnts={'a':5}, origs={'a':0.0}, rects={'a':1.0})
-    print(im)
+    print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 
     im.setAxe('a', 'Os A')
     im.setAxe('a', 'Os A')
-    print(im)
+    print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 
     im.gener(cnts={'a':3}, origs={'a':0.0}, rects={'a':1.0})
-    print(im)
+    print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 
     im.setAxe('b', 'Os B')
     im.gener(cnts={'a':3, 'b':4}, origs={'a':0.0, 'b':0}, rects={'a':10, 'b':10})
-    print(im)
+    print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 
     im.setAxe('c', 'Os C')
@@ -810,7 +856,7 @@ if __name__ == '__main__':
     input('Press Enter to continue...')
     print()
 
-    print(im)
+    print(im.info(full=True)['msg'])
     print('possA0', im._possForAxeIdx(axeKey='a', axeIdx=0))
     print('possA1', im._possForAxeIdx(axeKey='a', axeIdx=1))
     print()
@@ -830,7 +876,7 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     im.pointSetFunction('BRandom fuuniform', 'm', par={'all':True, 'min':0, 'max':5})
     im.pointSetFunction('Random uniform', 'm', par={'all':True, 'min':0, 'max':5})
-    print(im)
+    print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 
     #--------------------------------------------------------------------------

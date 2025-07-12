@@ -295,14 +295,14 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def mapFloatMethods():
+    def mapShowMethods():
         "Returns map of methods returning float number from keyed value"
 
-        return {'val'  : InfoPoint.fValue
-               ,'abs'  : InfoPoint.abs
-               ,'real' : InfoPoint.real
-               ,'imag' : InfoPoint.imag
-               ,'phase': InfoPoint.phase
+        return {'Float value'   : InfoPoint.fValue
+               ,'Absolute value': InfoPoint.abs
+               ,'Real value'    : InfoPoint.real
+               ,'Imag value'    : InfoPoint.imag
+               ,'Phase'         : InfoPoint.phase
                }
 
     #--------------------------------------------------------------------------
@@ -337,9 +337,7 @@ class InfoPoint:
     def __str__(self):
         "Prints info about this InfoPoint"
 
-        toRet = ''
-        for line in self.info()['msg']: toRet += line
-        return toRet
+        return self.info()['msg']
 
     #--------------------------------------------------------------------------
     def _format(self, val):
