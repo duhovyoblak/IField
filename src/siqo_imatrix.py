@@ -75,7 +75,7 @@ class InfoMatrix:
         "Calls constructor of InfoMatrix"
 
         logger.info(f"InfoMatrix.constructor: {name}")
-        
+
         #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
@@ -88,7 +88,7 @@ class InfoMatrix:
         self.actSub     = {}       # Current active submatrix definition as dict of freezed axesKeys with values
         self.actList    = []       # Current active list of points in submatrix
         self.actChanged = True     # Current sub settings was changed and actSub needs refresh
-        
+
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
@@ -114,7 +114,7 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def __array__(self):
         "Returns InfoMatrix as 2D numpy array"
- 
+
         mtrx = self.actSubmatrix(keyVal=self.actVal)
 
         #----------------------------------------------------------------------
@@ -132,13 +132,13 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def reset(self, ipType=None):
         "Resets all InfoMatrix's data and destroys all points. Count of points will be 0"
-        
+
         logger.warning(f"{self.name}.reset: ipType={ipType}")
-        
+
         #----------------------------------------------------------------------
         # Reset ipType if it is not None
         #----------------------------------------------------------------------
-        if ipType is not None: 
+        if ipType is not None:
 
             self.ipType = ipType
             InfoPoint.checkSchema(ipType)
@@ -148,7 +148,7 @@ class InfoMatrix:
         # Reset all InfoMatrix's data
         #----------------------------------------------------------------------
         self.points     = []       # List of rows of lists of InfoPoints
-        self.staticEdge = False    # Static edge means value of the edge nodes is fixed        
+        self.staticEdge = False    # Static edge means value of the edge nodes is fixed
 
         self.actVal     = None     # Key of the InfoPoint's current dat value
         self.actSub     = {}       # Current active submatrix defined as dict of freezed axesKeys with values
@@ -165,7 +165,7 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def info(self, indent=0, full=False):
         "Creates info about this InfoMatrix"
-        
+
         dat = {}
         msg = ''
 
@@ -193,7 +193,7 @@ class InfoMatrix:
 
         if indent == 0: msg = f"{indent*_IND}{60*'='}\n"
 
-        for key, val in dat.items(): 
+        for key, val in dat.items():
             msg += f"{indent*_IND}{key:<15}: {val}\n"
 
         #----------------------------------------------------------------------
@@ -204,24 +204,24 @@ class InfoMatrix:
             if indent == 0: msg += f"{indent*_IND}{60*'+'}\n"
 
             for pos, point in enumerate(self.points):
-                idxs = self._idxByPos(pos)
+                idxs = self._idxsByPos(pos)
                 msg += f"{pos:{_F_POS}} {idxs} {str(point)}\n"
 
             if indent == 0: msg += f"{indent*_IND}{60*'-'}\n"
-        
+
         #----------------------------------------------------------------------
         return {'res':'OK', 'dat':dat, 'msg':msg}
-        
+
     #--------------------------------------------------------------------------
     def count(self, check=True):
         "Returns Count of points in this InfoMatrix"
-        
+
         #----------------------------------------------------------------------
         # Pocet bodov podla _cnts
         #----------------------------------------------------------------------
         if len(self._cnts) == 0: toRet = 0
 
-        else: 
+        else:
             toRet = 1
             for cnt in self._cnts.values():
                 toRet *= cnt
@@ -241,7 +241,7 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def copy(self, name):
         "Creates copy of this InfoMatrix"
-        
+
         logger.debug(f"{self.name}.copy: to {name}")
 
         #----------------------------------------------------------------------
@@ -259,8 +259,8 @@ class InfoMatrix:
         toRet.actChanged = True                # Current sub settings was changed and actSub needs refresh
 
         toRet._cnts      = self._cnts.copy()   # Number of InfoPoints in respective axes
-        toRet._origs     = self._origs.copy()  # Origin's coordinates of the InfoMatrix 
-        toRet._rects     = self._rects.copy()  # Lengths of the InfoMatrix's axes 
+        toRet._origs     = self._origs.copy()  # Origin's coordinates of the InfoMatrix
+        toRet._rects     = self._rects.copy()  # Lengths of the InfoMatrix's axes
         toRet._diffs     = self._diffs.copy()  # Distance between two points in respective axes in lambda units
 
         #----------------------------------------------------------------------
@@ -271,7 +271,7 @@ class InfoMatrix:
 
         #----------------------------------------------------------------------
         return toRet
-        
+
     #==========================================================================
     # Proxy tools for InfoPoint schema
     #--------------------------------------------------------------------------
@@ -279,13 +279,24 @@ class InfoMatrix:
         "Clears schema of InfoPoint for respective ipType to {'axes':{'None':'None'}, 'vals':{}}"
 
         self.reset()
-
         return InfoPoint.clearSchema(self.ipType)
-    
+
     #--------------------------------------------------------------------------
-    def isInSchema(self, *, axes:list=None, vals:list=None):
+    def isInSchema(self, *, axes:list=None, vals:list=None) -> bool:
 
         return InfoPoint.isInSchema(self.ipType, axes=axes, vals=vals)
+
+    #--------------------------------------------------------------------------
+    def getSchema(self) -> dict:
+        "Returns schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
+        return InfoPoint.getSchema(self.ipType)
+
+    #--------------------------------------------------------------------------
+    # Schema axes methods
+    #--------------------------------------------------------------------------
+    def getAxes(self) -> dict:
+        "Returns axes keys and names as dict {key: name}"
+        return InfoPoint.getAxes(self.ipType)
 
     #--------------------------------------------------------------------------
     def setAxe(self, key, name):
@@ -297,64 +308,68 @@ class InfoMatrix:
         if key not in self._diffs.keys(): self._origs[key] = 0
 
         return InfoPoint.setAxe(self.ipType, key, name)
-    
-    #--------------------------------------------------------------------------
-    def getAxeIdx(self, key):
-        "Returns axe's idx for respective key as position in the list of axes othewise None"
-        return InfoPoint.getAxeIdx(self.ipType, key)
-    
-    #--------------------------------------------------------------------------
-    def getAxeKey(self, idx):
-        "Returns axe's key for respective position in the list of axes othewise None"
-        return InfoPoint.getAxeKey(self.ipType, idx)
 
     #--------------------------------------------------------------------------
-    def getAxeName(self, key):
+    def axeIdxByKey(self, key) -> int:
+        "Returns axe's idx for respective key as position in the list of axes othewise None"
+        return InfoPoint.axeIdxByKey(self.ipType, key)
+
+    #--------------------------------------------------------------------------
+    def axeKeyByIdx(self, idx) -> str:
+        "Returns axe's key for respective position in the list of axes othewise None"
+        return InfoPoint.axeKeyByIdx(self.ipType, idx)
+
+    #--------------------------------------------------------------------------
+    def axeNameByKey(self, key) -> str:
         "Returns axe's Name for respective key as string othewise None"
-        return InfoPoint.getAxeName(self.ipType, key)
-    
+        return InfoPoint.axeNameByKey(self.ipType, key)
+
+     #--------------------------------------------------------------------------
+    def axeKeyByName(self, name) -> str:
+        "Returns axe's key for respective Name, othewise None"
+        return InfoPoint.axeKeyByName(self.ipType, name)
+
+    #--------------------------------------------------------------------------
+    # Schema vals methods
+    #--------------------------------------------------------------------------
+    def getVals(self) -> dict:
+        "Returns values keys and names as dict {key: name}"
+        return InfoPoint.getVals(self.ipType)
+
     #--------------------------------------------------------------------------
     def setVal(self, key, name):
         "Sets value key and name"
         return InfoPoint.setVal(self.ipType, key, name)
 
     #--------------------------------------------------------------------------
-    def getValIdx(self, key):
+    def valIdxByKey(self, key) -> int:
         "Returns value's idx for respective key as position in the list of axes othewise None"
-        return InfoPoint.getValIdx(self.ipType, key)
-    
+        return InfoPoint.valIdxByKey(self.ipType, key)
+
     #--------------------------------------------------------------------------
-    def getValKey(self, idx):
+    def valKeyByIdx(self, idx) -> str:
         "Returns value's key for respective position in the list of valus othewise None"
-        return InfoPoint.getValKey(self.ipType, idx)
+        return InfoPoint.valKeyByIdx(self.ipType, idx)
 
     #--------------------------------------------------------------------------
-    def getValName(self, key):
+    def valNameByKey(self, key) -> str:
         "Returns value's Name for respective key as string othewise None"
-        return InfoPoint.getValName(self.ipType, key)
-    
-    #--------------------------------------------------------------------------
-    def getSchema(self):
-        "Returns schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
-        return InfoPoint.getSchema(self.ipType)
-    
-    #--------------------------------------------------------------------------
-    def getAxes(self):
-        "Returns axes keys and names as dict {key: name}"
-        return InfoPoint.getAxes(self.ipType)
-    
-    #--------------------------------------------------------------------------
-    def getVals(self):
-        "Returns values keys and names as dict {key: name}"
-        return InfoPoint.getVals(self.ipType)
+        return InfoPoint.valNameByKey(self.ipType, key)
 
     #--------------------------------------------------------------------------
-    def mapShowMethods(self):
+    def valKeyByName(self, name) -> str:
+        "Returns val's key for respective Name, othewise None"
+        return InfoPoint.valKeyByName(self.ipType, name)
+
+    #--------------------------------------------------------------------------
+    # Method's methods
+    #--------------------------------------------------------------------------
+    def mapShowMethods(self) -> dict:
         "Returns map of methods returning float number from keyed value"
         return InfoPoint.mapShowMethods()
 
     #--------------------------------------------------------------------------
-    def mapSetMethods(self):
+    def mapSetMethods(self) -> dict:
         "Returns map of methods setting keyed value to function value for respective parameters"
         return InfoPoint.mapSetMethods()
 
@@ -379,13 +394,13 @@ class InfoMatrix:
         return toRet
 
     #--------------------------------------------------------------------------
-    def _subPeriods(self, axeKey:str):
+    def _subPeriods(self, axeKey:str) -> tuple:
         "Returns period,serie & groups for respective axe"
 
         logger.debug(f"{self.name}._subPeriods: axeKey={axeKey}")
 
         subs   = self._subProducts()
-        axePos = self.getAxeIdx(axeKey)
+        axePos = self.axeIdxByKey(axeKey)
         count  = self.count()
 
         #----------------------------------------------------------------------
@@ -397,10 +412,10 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Perioda v akej sa opakuju grupy
         #----------------------------------------------------------------------
-        if axePos+1>=len(subs): period = count  
+        if axePos+1>=len(subs): period = count
         else                  : period = subs[axePos+1]    # Perioda v akej sa opakuju grupy
         logger.debug(f"{self.name}._subPeriods: period={period} for axeKey={axeKey}")
-        
+
         #----------------------------------------------------------------------
         # Pocet grup s indexom axeIdx v osi axeKey
         #----------------------------------------------------------------------
@@ -410,10 +425,10 @@ class InfoMatrix:
         return period, serie, groups
 
     #--------------------------------------------------------------------------
-    def _possForAxeIdx(self, axeKey:str, axeIdx:int) -> set:
+    def _possByAxeIdx(self, axeKey:str, axeIdx:int) -> set:
         "Returns set of positions of Points belonging to the axe with respective index axeIdx"
 
-        logger.debug(f"{self.name}._possForAxeIdx: axeKey={axeKey}, axeIdx={axeIdx}")
+        logger.debug(f"{self.name}._possByAxeIdx: axeKey={axeKey}, axeIdx={axeIdx}")
 
         #----------------------------------------------------------------------
         # Zistim hodnoty serie, period a groups pre danu os axeKey
@@ -431,21 +446,69 @@ class InfoMatrix:
             #------------------------------------------------------------------
             start = (grp * period) + (axeIdx * serie)
             stop  = start + serie
-            
+
             #------------------------------------------------------------------
             # Vlozim Points s indexom axeIdx do zoznamu toRet
             #------------------------------------------------------------------
             for pos in range(start, stop):
                 toRet.add(pos)
-        
+
         #-----------------------------------------------------------------------
-        logger.debug(f"{self.name}._possForAxeIdx: Found {len(toRet)} positions for axeKey={axeKey}, axeIdx={axeIdx}")
+        logger.debug(f"{self.name}._possByAxeIdx: Found {len(toRet)} positions for axeKey={axeKey}, axeIdx={axeIdx}")
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def _axeValByIdx(self, axeKey:str, axeIdx:int) -> float:
+        "Returns value of the axe with respective index axeIdx in lambda units"
+
+        logger.debug(f"{self.name}._axeValByIdx: axeKey={axeKey}, axeIdx={axeIdx}")
+
+        #----------------------------------------------------------------------
+        # Kontrola existencie osi
+        #----------------------------------------------------------------------
+        if axeKey not in self._cnts.keys():
+            logger.error(f"{self.name}._axeValByIdx: Axe '{axeKey}' is not in InfoMatrix axes {list(self._cnts.keys())}")
+            return None
+
+        #----------------------------------------------------------------------
+        # Vypocitam hodnotu osi
+        #----------------------------------------------------------------------
+        toRet = self._origs[axeKey] + (axeIdx * self._diffs[axeKey])
+
+        logger.debug(f"{self.name}._axeValByIdx: axeVal={toRet} for axeKey={axeKey} and axeIdx={axeIdx}")
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def _idxByAxeVal(self, axeKey:str, axeVal:float) -> int:
+        "Returns index in axe for respective coordinate"
+
+        #----------------------------------------------------------------------
+        # Kontrola existencie osi
+        #----------------------------------------------------------------------
+        if axeKey not in self._cnts.keys():
+            logger.error(f"{self.name}._idxByAxeVal: Axe '{axeKey}' is not in InfoMatrix axes {list(self._cnts.keys())}")
+            return None
+
+        #----------------------------------------------------------------------
+        # Odstrihnem extremy pred a po min/max hodnatach
+        #----------------------------------------------------------------------
+        if   axeVal <= self._origs[axeKey]                      : toRet = 0
+        elif axeVal >= self._origs[axeKey] + self._rects[axeKey]: toRet = self._cnts[axeKey]-1
+        else:
+            #------------------------------------------------------------------
+            # Vypocitam index v osi podla (axeVal-axeOrig)/diff
+            #------------------------------------------------------------------
+            idx = (axeVal - self._origs[axeKey]) / self._diffs[axeKey]
+            toRet = int(round(idx))
+
+        #----------------------------------------------------------------------
+        logger.debug(f"{self.name}._idxByAxeVal: axeKey={axeKey}, axeVal={axeVal} -> idx={toRet}")
         return toRet
 
     #--------------------------------------------------------------------------
     # One Point position tools
     #--------------------------------------------------------------------------
-    def _posByIdx(self, idxs:list):
+    def _posByIdxs(self, idxs:list) -> int:
         "Returns position of the InfoPoint in the list for respective indices"
 
         subProd = self._subProducts()
@@ -457,7 +520,7 @@ class InfoMatrix:
         return pos
 
     #--------------------------------------------------------------------------
-    def _idxByPos(self, pos:int):
+    def _idxsByPos(self, pos:int) -> list:
         "Returns indices of the InfoPoint for respective position in the list"
 
         #----------------------------------------------------------------------
@@ -476,7 +539,7 @@ class InfoMatrix:
             #------------------------------------------------------------------
             idx = pos // sub
             pos = pos %  sub
-            
+
             #------------------------------------------------------------------
             # Vlozim index na zaciatok zoznamu idxs
             #------------------------------------------------------------------
@@ -484,26 +547,6 @@ class InfoMatrix:
 
         #----------------------------------------------------------------------
         return toRet
-
-    #--------------------------------------------------------------------------
-    def _idxForAxeVal(self, axeKey:str, axeVal:float):
-        "Returns index in axe for respective coordinate"
-
-        #----------------------------------------------------------------------
-        # Coord is before pos[0]
-        #----------------------------------------------------------------------
-
-
-
-        #----------------------------------------------------------------------
-        # Coord is between pos[0] and pos[cnt]
-        #----------------------------------------------------------------------
-
-
-
-        #----------------------------------------------------------------------
-        # Coord is after pos[cnt]
-        #----------------------------------------------------------------------
 
     #==========================================================================
     # InfoPoint retrieval
@@ -515,19 +558,47 @@ class InfoMatrix:
         return toRet
 
     #--------------------------------------------------------------------------
-    def pointByIdx(self, idxs:list) -> InfoPoint:
+    def pointByIdxs(self, idxs:list) -> InfoPoint:
         "Returns InfoPoint in field at respective indexes"
-        
-        pos = self._posByIdx(idxs)
+
+        pos = self._posByIdxs(idxs)
         return self.pointByPos(pos)
-        
+
     #--------------------------------------------------------------------------
-    def pointByCoord(self, coord:list) -> InfoPoint:
+    def pointByCoord(self, coord:dict) -> InfoPoint:
         "Returns nearest InfoPoint in field to respective coordinates"
-        
-        pos = self._posByCoord(coord)
+
+        logger.debug(f"{self.name}.pointByCoord: coord sent={coord}")
+
+        vals = []  # List of axe values for debugging
+        idxs = []  # List of indices for respective axes
+
+        #----------------------------------------------------------------------
+        # Prejdem vsetky osi a vypocitam index pre kazdu os
+        #----------------------------------------------------------------------
+        for axe in self._cnts.keys():
+
+            #------------------------------------------------------------------
+            # Ak je os zmrazena, pouzijem zmrazenu hodnotu ako jeden z koordinatov
+            #------------------------------------------------------------------
+            if axe in self.actSub.keys() and self.actSub[axe]: axeVal = self.actSub[axe]
+            else                                             : axeVal = coord[axe]
+            
+            #------------------------------------------------------------------
+            # Z axeVal vypocitam index v osi a vlozim ho do zoznamu idxs
+            #------------------------------------------------------------------
+            vals.append(axeVal)  # For debugging purposes
+            idxs.append(self._idxByAxeVal(axeKey=axe, axeVal=axeVal))
+
+        #----------------------------------------------------------------------
+        # Z idxs vypocitam poziciu v zozname bodov
+        #----------------------------------------------------------------------
+        pos = self._posByIdxs(idxs)
+
+        #----------------------------------------------------------------------
+        logger.debug(f"{self.name}.pointByCoord: coord={coord} -> vals={vals} -> idxs={idxs} -> pos={pos}")
         return self.pointByPos(pos)
-        
+
     #==========================================================================
     # Active submatrix tools
     #--------------------------------------------------------------------------
@@ -543,10 +614,10 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Kontrola zmeny definicie
         #----------------------------------------------------------------------
-        if self.actSub == actSub: 
+        if self.actSub == actSub:
             logger.debug(f"{self.name}._actSubSet: actSub definition was not changed")
             return
-        
+
         #----------------------------------------------------------------------
         # Kontrola novej definicie
         #----------------------------------------------------------------------
@@ -555,7 +626,7 @@ class InfoMatrix:
             if axe not in self._cnts.keys():
                 logger.error(f"{self.name}._actSubSet: Axe '{axe}' is not in InfoMatrix axes {list(self._cnts.keys())}, change denied")
                 return
-            
+
         #----------------------------------------------------------------------
         # Nastavenie aktivnej submatice
         #----------------------------------------------------------------------
@@ -604,11 +675,11 @@ class InfoMatrix:
             if axeIdx is None:
                 logger.debug(f"{self.name}.actSubmatrix: Axe '{axe}' is not freezed, skipping")
                 continue
-            
+
             #------------------------------------------------------------------
             # Ziskam mnozinu pozicii bodov patriacich danej osi
             #------------------------------------------------------------------
-            actPoss = self._possForAxeIdx(axeKey=axe, axeIdx=axeIdx)
+            actPoss = self._possByAxeIdx(axeKey=axe, axeIdx=axeIdx)
 
             #------------------------------------------------------------------
             # Ak uz existuje nejaka mnozina pozicii, vytvorim prienik s touto mnozinou
@@ -635,28 +706,28 @@ class InfoMatrix:
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.actSubmatrix: Found {len(self.actList)} positions in active submatrix for actSub={self.actSub}")
-        return self.actList    
-    
+        return self.actList
+
     #==========================================================================
     # Value modification
     #--------------------------------------------------------------------------
     def clear(self, *, defs:dict={}):
         "Set all InfoPoint's values to default value"
-        
+
         logger.info(f"{self.name}.clear: defs={defs}")
 
         for point in self.points: point.clear(dat=defs)
 
     #--------------------------------------------------------------------------
     def gener(self, *, cnts:dict, origs:dict, rects:dict, ipType:str=None, defs:dict={} ):
-        """Creates new InfoMatrix with respective cnts, origs and rect. Expecting valid 
+        """Creates new InfoMatrix with respective cnts, origs and rect. Expecting valid
            ipType scheme. If ipType is not in arguments, uses existing ipType"""
-        
+
         if ipType is not None: self.ipType = ipType
         logger.info(f"{self.name}.gener: {cnts} points of type {self.ipType} on rect {rects} from {origs} with values {defs}")
 
         #----------------------------------------------------------------------
-        # Check validity of InfoPoint's schema 
+        # Check validity of InfoPoint's schema
         #--- -------------------------------------------------------------------
         if not self.isInSchema(axes=list(cnts.keys()), vals=list(defs.keys())):
             logger.error(f"{self.name}.gener: Schema for {self.ipType} is not comaptible with arguments")
@@ -670,18 +741,18 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # InfoMatrix settings
         #----------------------------------------------------------------------
-        self._cnts     = cnts.copy()              # List of number of InfoPoints in respective axes     
+        self._cnts     = cnts.copy()              # List of number of InfoPoints in respective axes
         self._origs    = origs.copy()             # List of origin's coordinates of the InfoMatrix
         self._rects    = rects.copy()             # List of lenghts of the InfoMatrix's axes
 
         self._diffs    = {}                       # List of distances between two points in respective axes in lambda units
         for key, cnt in self._cnts.items():
             self._diffs[key] = self._rects[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
-                
+
         self.actCol    = None                     # Current axes in role of the columns for 2D matrix
         self.actRow    = None                     # Current axes in role of the rows for 2D matrix
         if len(self._cnts) <= 1: self.actRow = list(self._cnts.keys())[0]
-        if len(self._cnts) == 2: self.actCol = list(self._cnts.keys())[1]   
+        if len(self._cnts) == 2: self.actCol = list(self._cnts.keys())[1]
 
         #----------------------------------------------------------------------
         # Generate InfoPoints at respective positions
@@ -692,7 +763,7 @@ class InfoMatrix:
             #------------------------------------------------------------------
             # Compute coordinates of the InfoPoint for respective position and indices
             #------------------------------------------------------------------
-            idxs = self._idxByPos(pos)          # Get indices of the InfoPoint for respective position
+            idxs = self._idxsByPos(pos)          # Get indices of the InfoPoint for respective position
             coos = {}
 
             for i, key in enumerate(self._cnts.keys()):
@@ -703,12 +774,12 @@ class InfoMatrix:
             #------------------------------------------------------------------
             point = InfoPoint(self.ipType, pos=coos, vals=defs)
             self.points.append(point)
-            
+
         #----------------------------------------------------------------------
         # Final adjustments
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.gener: Created {len(self.points)} InfoPoints")
-        
+
     #--------------------------------------------------------------------------
 
     #==========================================================================
@@ -716,7 +787,7 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def copyFrom(self, src, *, key=None, tgtSlice=(0,0,0,0), srcFrom=(0,0)) -> 'InfoMatrix':
         "Copy point's values from srcs 2D matrix into tgts 2D matrix"
-        
+
         logger.info(f"{self.name}.copyFrom: From {src.name} starting at {srcFrom} to nodes {tgtSlice} for key={key}")
 
         #----------------------------------------------------------------------
@@ -726,7 +797,7 @@ class InfoMatrix:
         tgtColFrom = tgtSlice[1]
         tgtRowTo   = tgtSlice[2] if tgtSlice[2] > 0 else self._rows-1
         tgtColTo   = tgtSlice[3] if tgtSlice[3] > 0 else self._cols-1
-        
+
         srcRowFrom = srcFrom[0]
         srcColFrom = srcFrom[1]
 
@@ -735,30 +806,30 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Target rows from tgtRowFrom to tgtRowTo
         #----------------------------------------------------------------------
-        for tgtRow in range(tgtRowFrom, tgtRowTo+1): 
-            
+        for tgtRow in range(tgtRowFrom, tgtRowTo+1):
+
             #------------------------------------------------------------------
             # Target columns from tgtColFrom to tgtColTo
             #------------------------------------------------------------------
             for tgtCol in range(tgtColFrom, tgtColTo+1):
-                
+
                 #--------------------------------------------------------------
                 # Get target node
                 #--------------------------------------------------------------
-                tgtPoint = self.pointByIdx([tgtRow, tgtCol])
+                tgtPoint = self.pointByIdxs([tgtRow, tgtCol])
                 if tgtPoint is None:
                     logger.error(f"{self.name}.copyFrom: Target point[{tgtRow},{tgtCol}] does not exists")
                     break
-                
+
                 #--------------------------------------------------------------
                 # Trying to get source node
                 #--------------------------------------------------------------
                 try:
-                    srcPoint = src.pointByIdx([srcRowFrom+tgtRow-tgtRowFrom, srcColFrom+tgtCol-tgtColFrom])
+                    srcPoint = src.pointByIdxs([srcRowFrom+tgtRow-tgtRowFrom, srcColFrom+tgtCol-tgtColFrom])
                 except IndexError:
                     logger.error(f"{self.name}.copyFrom: Source point[{srcRowFrom+tgtRow-tgtRowFrom}, {srcColFrom+tgtCol-tgtColFrom}] does not exists")
-                    break   
-                
+                    break
+
                 #--------------------------------------------------------------
                 # Copy value from source to target node
                 #--------------------------------------------------------------
@@ -769,17 +840,17 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.copyFrom: Copied {i} points")
         return self
-        
+
     #--------------------------------------------------------------------------
     def pointSetFunction(self, keyFtion:str, key:str, par:dict=None) -> bool:
         "Apply respective function for all points or points in active substructure to set the value for key"
 
         logger.info(f"{self.name}.pointSetFunction: {keyFtion}(key={key}, par={par}) for {len(self.actList)} active Points]")
-        
+
         #----------------------------------------------------------------------
         # Ziskanie vykonavanej funkcie
         #----------------------------------------------------------------------
-        if keyFtion in self.mapSetMethods().keys(): 
+        if keyFtion in self.mapSetMethods().keys():
             function = self.mapSetMethods()[keyFtion]['ftion']
 
         else:
@@ -815,9 +886,9 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def normAbs(self, nods, norm=None):
         "Normalise set of the nodes by sum of absolute values"
-        
+
         logger.info(f"{self.name}.normAbs: ")
-        
+
         #----------------------------------------------------------------------
         # Initialisation
         #----------------------------------------------------------------------
@@ -834,7 +905,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         if norm > 0:
             for node in nods: node['cP'].c /= norm
-            
+
         else: norm = 1
 
         #----------------------------------------------------------------------
@@ -845,9 +916,9 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def toJson(self):
         "Converts node into json structure"
-        
+
         logger.debug(f'{self.name}.toJson:')
-        
+
         toRet = {}
 
         logger.debug(f'{self.name}.toJson: Converted')
@@ -901,14 +972,14 @@ if __name__ == '__main__':
     logger.setLevel('DEBUG')
 
     print(im.info(full=True)['msg'])
-    print('possA0', im._possForAxeIdx(axeKey='a', axeIdx=0))
-    print('possA1', im._possForAxeIdx(axeKey='a', axeIdx=1))
+    print('possA0', im._possByAxeIdx(axeKey='a', axeIdx=0))
+    print('possA1', im._possByAxeIdx(axeKey='a', axeIdx=1))
     print()
-    print('possB0', im._possForAxeIdx(axeKey='b', axeIdx=0))
-    print('possB1', im._possForAxeIdx(axeKey='b', axeIdx=1))
+    print('possB0', im._possByAxeIdx(axeKey='b', axeIdx=0))
+    print('possB1', im._possByAxeIdx(axeKey='b', axeIdx=1))
     print()
-    print('possC0', im._possForAxeIdx(axeKey='c', axeIdx=0))
-    print('possC1', im._possForAxeIdx(axeKey='c', axeIdx=1))
+    print('possC0', im._possByAxeIdx(axeKey='c', axeIdx=0))
+    print('possC1', im._possByAxeIdx(axeKey='c', axeIdx=1))
     input('Press Enter to continue...')
     print()
 
@@ -929,9 +1000,9 @@ if __name__ == '__main__':
     print('point')
     print('pos=16 ', im.pointByPos(16))
     input('Press Enter to continue...')
-   
 
-    print('[1, 3, 0] ', im.pointByIdx([1, 3, 0]))
+
+    print('[1, 3, 0] ', im.pointByIdxs([1, 3, 0]))
     input('Press Enter to continue...')
 
     #--------------------------------------------------------------------------

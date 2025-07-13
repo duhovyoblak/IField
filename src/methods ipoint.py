@@ -77,14 +77,14 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def getAxeIdx(ipType, key):
+    def axeIdxByKey(ipType, key):
         "Returns axe's idx for respective key as position in the list of axes othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
         #----------------------------------------------------------------------        
         if ipType not in InfoPoint._schema.keys(): 
-            logger.info(f"InfoPoint.getAxeIdx: ipType '{ipType}' is not defined InfoPoint type")
+            logger.info(f"InfoPoint.axeIdxByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None 
 
         #----------------------------------------------------------------------
@@ -96,26 +96,26 @@ class InfoPoint:
         #----------------------------------------------------------------------
         # Key not found     
         #----------------------------------------------------------------------
-        logger.info(f"InfoPoint.getAxeIdx: Key '{key}' not found in axes {InfoPoint._schema[ipType]['axes']}")
+        logger.info(f"InfoPoint.axeIdxByKey: Key '{key}' not found in axes {InfoPoint._schema[ipType]['axes']}")
         return None
     
     #--------------------------------------------------------------------------
     @staticmethod
-    def getAxeKey(ipType, idx):
+    def axeKeyByIdx(ipType, idx):
         "Returns axe's key for respective position in the list of axes othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
         #----------------------------------------------------------------------        
         if ipType not in InfoPoint._schema.keys(): 
-            logger.info(f"InfoPoint.getAxeKey: ipType '{ipType}' is not defined InfoPoint type")
+            logger.info(f"InfoPoint.axeKeyByIdx: ipType '{ipType}' is not defined InfoPoint type")
             return None 
 
         #----------------------------------------------------------------------
         # Check if idx is not out of the range   
         #----------------------------------------------------------------------        
         if idx >= len(InfoPoint._schema[ipType]['axes'].keys()): 
-            logger.info(f"InfoPoint.getAxeKey: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['axes']}")
+            logger.info(f"InfoPoint.axeKeyByIdx: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['axes']}")
             return None 
 
         #----------------------------------------------------------------------
@@ -126,21 +126,21 @@ class InfoPoint:
     
     #--------------------------------------------------------------------------
     @staticmethod
-    def getAxeName(ipType, key):
+    def axeNameByKey(ipType, key):
         "Returns axe's Name for respective key as string othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
         #----------------------------------------------------------------------        
         if ipType not in InfoPoint._schema.keys(): 
-            logger.info(f"InfoPoint.getAxeName: ipType '{ipType}' is not defined InfoPoint type")
+            logger.info(f"InfoPoint.axeNameByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None 
 
         #----------------------------------------------------------------------
         # Find name of the axe's key  
         #----------------------------------------------------------------------
         if key not in InfoPoint._schema[ipType]['axes'].keys():
-            logger.info(f"InfoPoint.getAxeName: Key '{key}' not found in axes {InfoPoint._schema[ipType]['axes']}")
+            logger.info(f"InfoPoint.axeNameByKey: Key '{key}' not found in axes {InfoPoint._schema[ipType]['axes']}")
             return None
         
         else:
@@ -157,14 +157,14 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def getValIdx(ipType, key):
+    def valIdxByKey(ipType, key):
         "Returns value's idx for respective key as position in the list of axes othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
         #----------------------------------------------------------------------        
         if ipType not in InfoPoint._schema.keys(): 
-            logger.info(f"InfoPoint.getValIdx: ipType '{ipType}' is not defined InfoPoint type")
+            logger.info(f"InfoPoint.valIdxByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None 
 
         #----------------------------------------------------------------------
@@ -176,26 +176,26 @@ class InfoPoint:
         #----------------------------------------------------------------------
         # Key not found     
         #----------------------------------------------------------------------
-        logger.info(f"InfoPoint.getValIdx: Key '{key}' not found in valus {InfoPoint._schema[ipType]['vals']}")
+        logger.info(f"InfoPoint.valIdxByKey: Key '{key}' not found in valus {InfoPoint._schema[ipType]['vals']}")
         return None
     
     #--------------------------------------------------------------------------
     @staticmethod
-    def getValKey(ipType, idx):
+    def valKeyByIdx(ipType, idx):
         "Returns value's key for respective position in the list of valus othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
         #----------------------------------------------------------------------        
         if ipType not in InfoPoint._schema.keys(): 
-            logger.info(f"InfoPoint.getValKey: ipType '{ipType}' is not defined InfoPoint type")
+            logger.info(f"InfoPoint.valKeyByIdx: ipType '{ipType}' is not defined InfoPoint type")
             return None 
 
         #----------------------------------------------------------------------
         # Check if idx is not out of the range   
         #----------------------------------------------------------------------        
         if idx >= len(InfoPoint._schema[ipType]['vals'].keys()): 
-            logger.info(f"InfoPoint.getValKey: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['vals']}")
+            logger.info(f"InfoPoint.valKeyByIdx: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['vals']}")
             return None 
 
         #----------------------------------------------------------------------
@@ -206,21 +206,21 @@ class InfoPoint:
     
     #--------------------------------------------------------------------------
     @staticmethod
-    def getValName(ipType, key):
+    def valNameByKey(ipType, key):
         "Returns value's Name for respective key as string othewise None"
 
         #----------------------------------------------------------------------
         # Check if ipType is defined    
         #----------------------------------------------------------------------        
         if ipType not in InfoPoint._schema.keys(): 
-            logger.info(f"InfoPoint.getValName: ipType '{ipType}' is not defined InfoPoint type")
+            logger.info(f"InfoPoint.valNameByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None 
 
         #----------------------------------------------------------------------
         # Find name of the value's key  
         #----------------------------------------------------------------------
         if key not in InfoPoint._schema[ipType]['vals'].keys():
-            logger.info(f"InfoPoint.getValName: Key '{key}' not found in valus {InfoPoint._schema[ipType]['vals']}")
+            logger.info(f"InfoPoint.valNameByKey: Key '{key}' not found in valus {InfoPoint._schema[ipType]['vals']}")
             return None
         
         else:
@@ -627,26 +627,26 @@ if __name__ == '__main__':
     print()
     
     print('schema tools')
-    print('idx for keyAxe x =', InfoPoint.getAxeIdx('ipTest', 'x'))
-    print('key for keyAxe 0 =', InfoPoint.getAxeKey('ipTest', 0 ))
-    print('idx for keyAxe y =', InfoPoint.getAxeIdx('ipTest', 'y'))
-    print('key for keyAxe 1 =', InfoPoint.getAxeKey('ipTest', 1 ))
-    print('idx for keyAxe z =', InfoPoint.getAxeIdx('ipTest', 'z'))
-    print('key for keyAxe 2 =', InfoPoint.getAxeKey('ipTest', 2 ))
+    print('idx for keyAxe x =', InfoPoint.axeIdxByKey('ipTest', 'x'))
+    print('key for keyAxe 0 =', InfoPoint.axeKeyByIdx('ipTest', 0 ))
+    print('idx for keyAxe y =', InfoPoint.axeIdxByKey('ipTest', 'y'))
+    print('key for keyAxe 1 =', InfoPoint.axeKeyByIdx('ipTest', 1 ))
+    print('idx for keyAxe z =', InfoPoint.axeIdxByKey('ipTest', 'z'))
+    print('key for keyAxe 2 =', InfoPoint.axeKeyByIdx('ipTest', 2 ))
 
-    print('idx for keyVal x =', InfoPoint.getValIdx('ipTest', 'x'))
-    print('key for keyVal 0 =', InfoPoint.getValKey('ipTest', 0))
-    print('idx for keyVal v =', InfoPoint.getValIdx('ipTest', 'v'))
-    print('key for keyVal 1 =', InfoPoint.getValKey('ipTest', 1))
-    print('key for keyVal 2 =', InfoPoint.getValKey('ipTest', 2))
+    print('idx for keyVal x =', InfoPoint.valIdxByKey('ipTest', 'x'))
+    print('key for keyVal 0 =', InfoPoint.valKeyByIdx('ipTest', 0))
+    print('idx for keyVal v =', InfoPoint.valIdxByKey('ipTest', 'v'))
+    print('key for keyVal 1 =', InfoPoint.valKeyByIdx('ipTest', 1))
+    print('key for keyVal 2 =', InfoPoint.valKeyByIdx('ipTest', 2))
     print()
 
 
-    print('name for keyAxe x =', InfoPoint.getAxeName('ipTest', 'x'))
-    print('name for keyAxe y =', InfoPoint.getAxeName('ipTest', 'y'))
-    print('name for keyAxe z =', InfoPoint.getAxeName('ipTest', 'z'))
-    print('name for keyVal x =', InfoPoint.getValName('ipTest', 'x'))
-    print('name for keyVal v =', InfoPoint.getValName('ipTest', 'v'))
+    print('name for keyAxe x =', InfoPoint.axeNameByKey('ipTest', 'x'))
+    print('name for keyAxe y =', InfoPoint.axeNameByKey('ipTest', 'y'))
+    print('name for keyAxe z =', InfoPoint.axeNameByKey('ipTest', 'z'))
+    print('name for keyVal x =', InfoPoint.valNameByKey('ipTest', 'x'))
+    print('name for keyVal v =', InfoPoint.valNameByKey('ipTest', 'v'))
     print()
 
     abs(p2, key='v')

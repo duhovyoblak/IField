@@ -207,19 +207,19 @@ class InfoMatrix:
         return InfoPoint.setAxe(self.ipType, key, name)
     
     #--------------------------------------------------------------------------
-    def getAxeIdx(self, key):
+    def axeIdxByKey(self, key):
         "Returns axe's idx for respective key as position in the list of axes othewise None"
-        return InfoPoint.getAxeIdx(self.ipType, key)
+        return InfoPoint.axeIdxByKey(self.ipType, key)
     
     #--------------------------------------------------------------------------
-    def getAxeKey(self, idx):
+    def axeKeyByIdx(self, idx):
         "Returns axe's key for respective position in the list of axes othewise None"
-        return InfoPoint.getAxeKey(self.ipType, idx)
+        return InfoPoint.axeKeyByIdx(self.ipType, idx)
 
     #--------------------------------------------------------------------------
-    def getAxeName(self, key):
+    def axeNameByKey(self, key):
         "Returns axe's Name for respective key as string othewise None"
-        return InfoPoint.getAxeName(self.ipType, key)
+        return InfoPoint.axeNameByKey(self.ipType, key)
     
     #--------------------------------------------------------------------------
     def setVal(self, key, name):
@@ -227,19 +227,19 @@ class InfoMatrix:
         return InfoPoint.setVal(self.ipType, key, name)
 
     #--------------------------------------------------------------------------
-    def getValIdx(self, key):
+    def valIdxByKey(self, key):
         "Returns value's idx for respective key as position in the list of axes othewise None"
-        return InfoPoint.getValIdx(self.ipType, key)
+        return InfoPoint.valIdxByKey(self.ipType, key)
     
     #--------------------------------------------------------------------------
-    def getValKey(self, idx):
+    def valKeyByIdx(self, idx):
         "Returns value's key for respective position in the list of valus othewise None"
-        return InfoPoint.getValKey(self.ipType, idx)
+        return InfoPoint.valKeyByIdx(self.ipType, idx)
 
     #--------------------------------------------------------------------------
-    def getValName(self, key):
+    def valNameByKey(self, key):
         "Returns value's Name for respective key as string othewise None"
-        return InfoPoint.getValName(self.ipType, key)
+        return InfoPoint.valNameByKey(self.ipType, key)
     
     #--------------------------------------------------------------------------
     def getSchema(self):
