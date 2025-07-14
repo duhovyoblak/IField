@@ -31,7 +31,6 @@ _SCHEMA   = {'ipReal   ':{'axes':_SCH_AXES.copy()
 #==============================================================================
 # package's variables
 #------------------------------------------------------------------------------
-_logger = SiqoLogger('InfoPoint test', level='INFO')
 
 #==============================================================================
 # InfoPoint
@@ -41,8 +40,8 @@ class InfoPoint:
     #==========================================================================
     # Static variables & methods
     #--------------------------------------------------------------------------
-    _schema = _SCHEMA.copy()                      # Schema for InfoPoint
-    logger  = _logger                            # Logger for InfoPoint
+    _schema = _SCHEMA.copy()                               # Schema for InfoPoint
+    logger  = SiqoLogger('InfoPoint test', level='INFO')   # Logger for InfoPoint
 
     #--------------------------------------------------------------------------
     # Schema methods
