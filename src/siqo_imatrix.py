@@ -578,11 +578,17 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         for axe in self._cnts.keys():
 
+            print(f"{self.name}.pointByCoord: axe={axe}, coord={coord}")
             #------------------------------------------------------------------
             # Ak je os zmrazena, pouzijem zmrazenu hodnotu ako jeden z koordinatov
             #------------------------------------------------------------------
-            if axe in self.actSub.keys() and self.actSub[axe]: axeVal = self.actSub[axe]
-            else                                             : axeVal = coord[axe]
+            if   axe in self.actSub.keys() and self.actSub[axe]: axeVal = self.actSub[axe]
+            elif axe in       coord.keys() and       coord[axe]: axeVal = coord[axe]
+            else:
+                #--------------------------------------------------------------
+                # Ak nie je os zmrazena ani v koordinatoch, pouzijem hodnotu z origu
+                #--------------------------------------------------------------
+                axeVal = self._origs[axe]
 
             #------------------------------------------------------------------
             # Z axeVal vypocitam index v osi a vlozim ho do zoznamu idxs

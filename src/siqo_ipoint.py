@@ -479,7 +479,7 @@ class InfoPoint:
     #==========================================================================
     # Value retrieval
     #--------------------------------------------------------------------------
-    def pos(self, key:str):
+    def pos(self, key:str) -> float:
         "Returns position for respective axis key"
 
         #----------------------------------------------------------------------
@@ -493,6 +493,22 @@ class InfoPoint:
         # Return axe's value of this InfoPoint for respective key
         #----------------------------------------------------------------------
         return self._pos[key]
+
+    #--------------------------------------------------------------------------
+    def posName(self, key:str) -> str:
+        "Returns name for respective axis key"
+
+        #----------------------------------------------------------------------
+        # Key check
+        #----------------------------------------------------------------------
+        if key not in InfoPoint._schema[self._ipType]['axes'].keys():
+            self.logger.warning(f"InfoPoint.get: Key '{key}' not found in axes {InfoPoint._schema[self._ipType]['axes']}")
+            return None
+
+        #----------------------------------------------------------------------
+        # Return axe's name of this InfoPoint for respective key
+        #----------------------------------------------------------------------
+        return InfoPoint._schema[self._ipType]['axes'][key]
 
     #--------------------------------------------------------------------------
     def val(self, key:str=None):
@@ -514,6 +530,27 @@ class InfoPoint:
         # Return value of this InfoPoint for respective key
         #----------------------------------------------------------------------
         return self._vals[key]
+
+    #--------------------------------------------------------------------------
+    def valName(self, key:str=None) -> str:
+        "Returns value's name of this InfoPoint for respective key"
+
+        #----------------------------------------------------------------------
+        # Return this InfoPoint for key is None
+        #----------------------------------------------------------------------
+        if key is None: return self
+
+        #----------------------------------------------------------------------
+        # Key check
+        #----------------------------------------------------------------------
+        if key not in InfoPoint._schema[self._ipType]['vals'].keys():
+            self.logger.warning(f"InfoPoint.get: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
+            return None
+
+        #----------------------------------------------------------------------
+        # Return value's name of this InfoPoint for respective key
+        #----------------------------------------------------------------------
+        return InfoPoint._schema[self._ipType]['vals'][key]
 
     #==========================================================================
     # Dat Value modification

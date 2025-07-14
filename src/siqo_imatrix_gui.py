@@ -45,17 +45,18 @@ class InfoMarixGui(ttk.Frame):
         "Call constructor of InfoMarixGui and initialise it for respective data"
 
         self.logger = SiqoLogger(name, level='DEBUG')
-        self.logger.debug(f'{name}.init:')
+        self.logger.audit(f'{name}.init:')
 
-        self.name    = name                # Name of this chart
-        self.dat     = dat                 # InfoMatrix base data
-        self.sub2D   = {}                  # Subset of InfoMatrix data defined as frozen axes with desired values e.g. {'x':4, 't':17}
+        self.name     = name               # Name of this chart
+        self.dat      = dat                # InfoMatrix base data
+        self.sub2D    = {}                 # Subset of InfoMatrix data defined as frozen axes with desired values e.g. {'x':4, 't':17}
+        self.needShow = False              # Flag to show the chart, True means data changed and need to be shown
 
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self.w       = 1600                # Width of the chart in px
-        self.h       =  600                # Height of the chart in px
+        self.w        = 1600               # Width of the chart in px
+        self.h        =  600               # Height of the chart in px
 
         self.type     = '2D'               # Actual type of the chart
         self.iPoints  = []                 # List of InfoPoints to show
@@ -204,30 +205,19 @@ class InfoMarixGui(ttk.Frame):
         # Create a figure with the navigator bar and bind it to mouse events
         #----------------------------------------------------------------------
         self.figure = plt.figure(figsize=(self.w*_FIG_W/100, self.h*_FIG_H/100), dpi=_DPI)
+
         self.canvas = FigureCanvasTkAgg(self.figure, self)
-
         self.canvas.callbacks.connect('button_press_event', self.onClick)
-
         NavigationToolbar2Tk(self.canvas, self)
 
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
-        #----------------------------------------------------------------------
-        # Vytvorim Menu pre click on Point
-        #----------------------------------------------------------------------
-        self.pointMenu = tk.Menu(self, tearoff = 0)
-        self.pointMenu.add_command(label ="Set to ( 0,0)", command=lambda c=complex( 0,0): self.setPoint(c))
-        self.pointMenu.add_command(label ="Set to ( 1,0)", command=lambda c=complex( 1,0): self.setPoint(c))
-        self.pointMenu.add_command(label ="Set to (-1,0)", command=lambda c=complex(-1,0): self.setPoint(c))
-        self.pointMenu.add_command(label ="Set to (0, 1)", command=lambda c=complex(0, 1): self.setPoint(c))
-        self.pointMenu.add_command(label ="Set to (0,-1)", command=lambda c=complex(0,-1): self.setPoint(c))
 
         #----------------------------------------------------------------------
         # Initialisation
         #----------------------------------------------------------------------
         self.dataChanged()
 
-
+        self.logger.audit(f'{name}.init: Done')
 
     #--------------------------------------------------------------------------
     def dims(self):
@@ -238,7 +228,7 @@ class InfoMarixGui(ttk.Frame):
         if self.keyX: toRet += 1
         if self.keyY: toRet += 1
 
-        self.logger.info(f'{self.name}.dims: Chart has {toRet} dimensions')
+        self.logger.debug(f'{self.name}.dims: Chart has {toRet} dimensions')
         return toRet
 
     #--------------------------------------------------------------------------
@@ -250,21 +240,18 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         aKeyS = self.strVP.get()
         aKeyV = self.dat.valKeyByName( self.strVX.get())  # Key for Name of the value to show in the chart, 'None' means nothing to show
-
         aKeyX = self.dat.axeKeyByName( self.strX.get() )  # Key for Name of the X-axis dimension from ipType.axis, 'None' means nothing to show in this axis
         aKeyY = self.dat.axeKeyByName( self.strY.get() )  # Key for Name of the Y-axis dimension from ipType.axis, 'None' means nothing to show in this axis
 
-        self.logger.debug(f'{self.name}.dataChanged: method={aKeyS}->{self.keyS}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
-        changed = False
-
-        if force: changed=True
+        self.logger.info(f'{self.name}.dataChanged: method={aKeyS}->{self.keyS}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
+        self.needShow = False
 
         #----------------------------------------------------------------------
         # Changes in any key required data refresh
         #----------------------------------------------------------------------
-        if  (self.keyS!=aKeyS) or (self.keyV!=aKeyV) or (self.keyX!=aKeyX) or (self.keyY!=aKeyY) or force:
+        if (self.keyS!=aKeyS) or (self.keyV!=aKeyV) or (self.keyX!=aKeyX) or (self.keyY!=aKeyY) or force:
 
-            changed = True
+            self.needShow = True
 
             #------------------------------------------------------------------
             # Vytvorim predpis pre aktualny subset
@@ -282,10 +269,8 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
         #----------------------------------------------------------------------
-        if not changed: self.logger.info(f'{self.name}.dataChanged: Settings have not changed, no need for show')
-        else          : self.show()
-
-
+        self.logger.info(f'{self.name}.dataChanged: needShow = {self.needShow}')
+        self.show()
 
     #==========================================================================
     # Show the chart
@@ -294,6 +279,13 @@ class InfoMarixGui(ttk.Frame):
         """Vykresli chart na zaklade aktualneho listu self.cIP
         """
         self.logger.info(f"{self.name}.show: axisX='{self.keyX}', axisY='{self.keyY}', value='{self.keyV}', method='{self.keyS}'")
+
+        #----------------------------------------------------------------------
+        # Ak nenastala zmena, vyskocim
+        #----------------------------------------------------------------------
+        if not self.needShow:
+            self.logger.info(f'{self.name}.show: Data have not changed, no need for show')
+            return
 
         #----------------------------------------------------------------------
         # Check list of InfoPoints to show
@@ -330,7 +322,7 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         showFtion = self.dat.mapShowMethods()[self.keyS]
 
-        self.logger.debug(f'{self.name}.show: Iterating iPoints for showFtion={showFtion} with keyV={self.keyV}')
+        self.logger.debug(f'{self.name}.show: Iterating iPoints for showFtion={self.keyS} with keyV={self.keyV}')
         for point in self.iPoints:
 
             valueToShow = showFtion(point, self.keyV)
@@ -346,25 +338,20 @@ class InfoMarixGui(ttk.Frame):
         self.npX = np.array(listX)
         self.npY = np.array(listY)
 
-
         #----------------------------------------------------------------------
         # Kontrola npArrays
         #----------------------------------------------------------------------
         if self.npC.size==0:
             self.logger.info(f'{self.name}.show: No values to show')
-
             return
 
         if self.keyX and self.npX.size==0:
             self.logger.info(f'{self.name}.show: Axe X is selected but has no data to show')
-
             return
 
         if self.keyY and self.npY.size==0:
             self.logger.info(f'{self.name}.show: Axe Y is selected but has no data to show')
-
             return
-
 
         #----------------------------------------------------------------------
         # Prepare the chart
@@ -412,7 +399,6 @@ class InfoMarixGui(ttk.Frame):
         else:
             self.logger.error(f'{self.name}.show: Chart with {self.dims()} dimensions is not supported')
 
-
         #----------------------------------------------------------------------
         # Vykreslenie noveho grafu
         #----------------------------------------------------------------------
@@ -421,7 +407,7 @@ class InfoMarixGui(ttk.Frame):
         self.canvas.draw()
 
         #----------------------------------------------------------------------
-
+        self.logger.info(f'{self.name}.show: Chart with {self.dims()} dimensions is shown')
 
     #--------------------------------------------------------------------------
     def onClick(self, event):
@@ -448,7 +434,10 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             # Left button
             #------------------------------------------------------------------
-            if btn == 1 and False: #MouseButton.LEFT:
+            if btn == 1: #MouseButton.LEFT:
+
+               self.logger.info(f'{self.name}.onClick: left click for {self.actPoint}')
+
                tit = f'Nearest point to [{round(y,2)}, {round(x,2)}]'
                mes = str(self.actPoint)
                showinfo(title=tit, message=mes)
@@ -458,18 +447,32 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             elif btn == 3: #MouseButton.RIGHT:
 
-                self.logger.info(f'{self.name}.onClick: right click for {self.actPoint}')
+                val     = self.actPoint.val(self.keyV)
+                valName = self.actPoint.valName(self.keyV)
 
-                try    : self.pointMenu.tk_popup(event.x, event.y)
-                finally: self.pointMenu.grab_release()
+                self.logger.info(f'{self.name}.onClick: right click for {self.keyV}[{valName}] = {val} {type(val)}')
+
+                #--------------------------------------------------------------
+                # User input based on value type
+                #--------------------------------------------------------------
+                if type(val) in [int, float]:
+
+                   inp = askReal(container=self, title=f'Zadaj hodnotu pre {valName}', prompt=self.keyV, initialvalue=val)
+
+                   if not inp:
+                       self.logger.info(f'{self.name}.onClick: User input cancelled by user')
+                       return
+
+                   self.actPoint.set(vals={self.keyV:inp})
 
             #------------------------------------------------------------------
 
         else:
             self.actPoint = None
-            print('Clicked ouside axes bounds but inside plot window')
+            self.logger.warning(f'{self.name}.onClick: Clicked ouside axes bounds but inside plot window')
 
-
+        #----------------------------------------------------------------------
+        self.logger.debug(f'{self.name}.onClick: Done')
 
     #==========================================================================
     # File menu
@@ -529,18 +532,14 @@ class InfoMarixGui(ttk.Frame):
 
             rect[axe] = len
 
-
-
-
         #----------------------------------------------------------------------
         self.dat.gener(cnts=cnts, origs=origs, rect=rect)
         self.dataChanged(force=True)
 
         return
 
-
     #==========================================================================
-    # Help menu
+    # Info menu
     #--------------------------------------------------------------------------
     def onInfo(self, event=None):
         "Show information about the InfoMatrix data"
