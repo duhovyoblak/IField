@@ -54,7 +54,7 @@ class IFieldGui(tk.Tk):
     def __init__(self, journal, name):
         "Create and show GUI for Information field"
 
-        logger.debug('IFieldGui constructor...')
+        self.logger.debug('IFieldGui constructor...')
 
         #----------------------------------------------------------------------
         # inicializacia tk.Tk
@@ -80,10 +80,10 @@ class IFieldGui(tk.Tk):
         #----------------------------------------------------------------------
         # Start GUI
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.init: Start application")
+        self.logger.info(f"{self.name}.init: Start application")
         self.show()
 
-         
+
 
     #--------------------------------------------------------------------------
     def closeGui(self):
@@ -94,7 +94,7 @@ class IFieldGui(tk.Tk):
     #--------------------------------------------------------------------------
     def show(self):
 
-        logger.debug(f"{self.name}.show:")
+        self.logger.debug(f"{self.name}.show:")
 
         #----------------------------------------------------------------------
         # Nastavenia root window
@@ -111,7 +111,7 @@ class IFieldGui(tk.Tk):
         #----------------------------------------------------------------------
         self.style = ttk.Style()
         self.style.theme_use('clam')
-        
+
         self.style.configure('Treeview', background='grey98', foreground='black', rowheight=16, fieldbackground='grey',borderwidth=0 )
         self.style.configure('TNotebook', bordercolor='gray')
 
@@ -144,8 +144,8 @@ class IFieldGui(tk.Tk):
 #        self.bind('<F5>'        , lambda x: self.refresh())
 #        self.bind("<F12>"       , lambda x: self.menuAbout())
         self.bind('<Alt-Key-F4>', lambda x: self.closeGui())
-        
-         
+
+
 
     #--------------------------------------------------------------------------
     def tabChanged(self, event):
@@ -159,7 +159,7 @@ class IFieldGui(tk.Tk):
         # get selected tab name
         #----------------------------------------------------------------------
         selected_tab_name = self.tabs.tab(self.tabs.select(), 'text')
-        logger.debug(f"{self.name}.refresh: tabSelected = {selected_tab_name}")
+        self.logger.debug(f"{self.name}.refresh: tabSelected = {selected_tab_name}")
 
         #----------------------------------------------------------------------
         # Refreshnem aktivny tab v notebooku podla nazvu zalozky
@@ -168,14 +168,14 @@ class IFieldGui(tk.Tk):
         elif selected_tab_name == 'SpaceTime'       : self.tabSptRefresh()
 
         #----------------------------------------------------------------------
-         
+
 
     #==========================================================================
     # Status bar
     #--------------------------------------------------------------------------
     def statusBarShow(self):
 
-        logger.debug(f"{self.name}.statusBarShow:")
+        self.logger.debug(f"{self.name}.statusBarShow:")
 
         frame_status_bar = tk.Frame(self, relief=tk.RAISED, borderwidth=2, bg='silver')
         frame_status_bar.pack(side='bottom', anchor='s', fill='x')
@@ -188,18 +188,18 @@ class IFieldGui(tk.Tk):
         status_bar_mod.grid(row = 0, column = 1, sticky = 'e' )
         status_bar_mod.bind("<Button-1>", lambda x: self.changeModel())
 
-         
+
 
     #--------------------------------------------------------------------------
     def setStatus(self, msg):
 
-        logger.info(f"{self.name}.setStatus: {msg}")
+        self.logger.info(f"{self.name}.setStatus: {msg}")
         self.str_status_msg.set(msg)
 
     #--------------------------------------------------------------------------
     def changeModel(self):
 
-        logger.debug(f"{self.name}.changeModel:")
+        self.logger.debug(f"{self.name}.changeModel:")
 
         #----------------------------------------------------------------------
         # Odpojenie od aktualneho modelu
@@ -216,7 +216,7 @@ class IFieldGui(tk.Tk):
         self.refresh()
 
         #----------------------------------------------------------------------
-         
+
         return
 
     #==========================================================================
@@ -224,7 +224,7 @@ class IFieldGui(tk.Tk):
     #--------------------------------------------------------------------------
     def tabInfShow(self):
 
-        logger.debug(f"{self.name}.tabInfShow:")
+        self.logger.debug(f"{self.name}.tabInfShow:")
 
         #----------------------------------------------------------------------
         # Vytvorim frame a skonfigurujem grid
@@ -269,23 +269,23 @@ class IFieldGui(tk.Tk):
         sep.grid(row=2, column=2, columnspan=2, sticky='we')
 
 
-         
+
 
     #--------------------------------------------------------------------------
     def tabInfRefresh(self, event=None):
 
-        logger.debug(f"{self.name}.tabInfRefresh:")
+        self.logger.debug(f"{self.name}.tabInfRefresh:")
 
 
 
-         
+
 
     #==========================================================================
     # Tab SpaceTime
     #--------------------------------------------------------------------------
     def tabSptShow(self):
 
-        logger.debug(f"{self.name}.tabSptShow:")
+        self.logger.debug(f"{self.name}.tabSptShow:")
 
         #----------------------------------------------------------------------
         # Vytvorim frame a skonfigurujem grid
@@ -325,15 +325,15 @@ class IFieldGui(tk.Tk):
 
 
 
-         
+
 
     #--------------------------------------------------------------------------
     def tabSptRefresh(self):
 
-        logger.debug(f"{self.name}.tabSptRefresh:")
+        self.logger.debug(f"{self.name}.tabSptRefresh:")
 
 
-         
+
         return True
 
     #--------------------------------------------------------------------------
@@ -398,7 +398,7 @@ class IFieldGui(tk.Tk):
         #self.pnw.sash_place(index=0, x=100, y=100)
 
 #        self.show()   # Initial drawing
-        logger.debug('IFieldGui created for Object {}'.format(self.name))
+        self.logger.debug('IFieldGui created for Object {}'.format(self.name))
 
         self.win.mainloop()       # Start listening for events
 
@@ -442,39 +442,39 @@ class IFieldGui(tk.Tk):
         "Copy time slice from the right pane to the left"
 
         if self.str_time.get() != '': self.time = int(self.str_time.get())
-        
+
         self.dat.copySlice(dim=2, pos=self.time)
         self.left.show()
-        
+
         self.setTime(self.time+1)
 
     # --------------------------------------------------------------------------
     def setTime(self, time):
         "Sets new value for global time"
-        
+
         self.time = time
         self.str_time.set(self.time)
 
     #--------------------------------------------------------------------------
     def timeChanged(self, widget, blank, mode):
-        
+
         if self.str_time.get() != '': tmpTime = int(self.str_time.get())
         else                        : tmpTime = 0
-        
+
         # Ak nastala zmena periody
         if tmpTime != self.time:
-            
+
             self.time = tmpTime
-        
+
             # Ak je perioda vacsia ako maximalna perioda v historii planety
 #            if self.period > self.planet.getMaxPeriod():
 #                self.period = self.planet.getMaxPeriod()
 #                self.str_period.set(self.period)
-                
+
 #            # Vykreslim zmenenu periodu
 #            self.setStatus(f'Selected period is {self.period}')
 #            self.mapShow()
-        
+
     # ==========================================================================
     # GUI methods
     # --------------------------------------------------------------------------

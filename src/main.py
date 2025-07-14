@@ -21,9 +21,9 @@ _VALS_MAX  = 100000
 # Functions
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
-    
+
     logger = Siqologger('IField', debug=3)
-    logger.I('Main loop')
+    self.logger.I('Main loop')
 
 #    dat = InfoMatrix(logger, 'Test field')
 
@@ -37,14 +37,14 @@ if __name__ =='__main__':
 #    dat.cut = [-1, -1, -1]
 #    dat.rndBit(0.5)
 
-    
+
     # Vytvorim GUI
-    logger.setDepth(3)
+    self.logger.setDepth(3)
     gui = IFieldGui(logger, name='IField GUI')
     gui.mainloop()
-    
-    logger.O('Main end')
-    
+
+    self.logger.O('Main end')
+
 #==============================================================================
 #                              END OF FILE
 #------------------------------------------------------------------------------

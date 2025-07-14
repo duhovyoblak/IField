@@ -38,8 +38,8 @@ class InfoMatrix:
     def __init__(self, name, ipType):
         "Calls constructor of InfoMatrix"
 
-        logger.debug(f"InfoMatrix.constructor: {name}")
-        
+        self.logger.debug(f"InfoMatrix.constructor: {name}")
+
         #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
@@ -52,7 +52,7 @@ class InfoMatrix:
         self.act2D      = None            # Current active 2D submatrix defined as dict of freezed axesKeys with values
                                           #  {'x':x, 'y':y, ....] but TWO active axes missing
         self.staticEdge = False           # Static edge means value of the edge points is fixed in some methods
-        
+
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
@@ -63,7 +63,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Inicializacia
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}.constructor: done")
+        self.logger.debug(f"{self.name}.constructor: done")
 
     #--------------------------------------------------------------------------
     def __str__(self):
@@ -76,14 +76,14 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def __array__(self):
         "Returns InfoMatrix as 2D numpy array"
- 
+
         mtrx = self.actMatrix(keyVal=self.actVal)
 
         #----------------------------------------------------------------------
         # Kontrola existencie vybranej 2D matice
         #----------------------------------------------------------------------
         if mtrx is None:
-            logger.info(f"{self.name}.__array__: ERROR: actMatrix is None")
+            self.logger.info(f"{self.name}.__array__: ERROR: actMatrix is None")
             return None
 
         #----------------------------------------------------------------------
@@ -94,27 +94,27 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def reset(self, ipType=None):
         "Resets all InfoMatrix's data and destroys all points. Count of points will be 0"
-        
-        logger.debug(f"{self.name}.reset: ipType={ipType}")
-        
+
+        self.logger.debug(f"{self.name}.reset: ipType={ipType}")
+
         if ipType is not None: self.ipType = ipType
 
         self.points     = []              # List of rows of lists of InfoPoints
         self.actVal     = None            # Key of the InfoPoint's current dat value
         self.act1D      = None            # Current active 1D submatrix (vector) defined as dict of freezed axesKeys with values
         self.act2D      = None            # Current active 2D submatrix defined as dict of freezed axesKeys with values
-        self.staticEdge = False           # Static edge means value of the edge nodes is fixed        
+        self.staticEdge = False           # Static edge means value of the edge nodes is fixed
 
         self._origs     = {}              # Origin's coordinates of the InfoMatrix
         self._cnts      = {}              # Number of InfoPoints in respective axes
         self._diffs     = {}              # Distance between two points in respective axes in lambda units
-        
-         
-        
+
+
+
     #--------------------------------------------------------------------------
     def info(self, indent=0):
         "Creates info about this InfoMatrix"
-        
+
         dat = {}
         msg = []
 
@@ -146,14 +146,14 @@ class InfoMatrix:
         for pos, point in enumerate(self.points):
             idxs = self._idxByPos(pos)
             msg.append(f"{pos:{_F_POS}} {idxs} {str(point)}")
-        
+
         #----------------------------------------------------------------------
         return {'res':'OK', 'dat':dat, 'msg':msg}
-        
+
     #--------------------------------------------------------------------------
     def count(self):
         "Returns Count of points in this InfoMatrix"
-        
+
         if len(self._cnts) == 0: return 0
 
         toRet = 1
@@ -165,8 +165,8 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def copy(self, name):
         "Creates copy of this InfoMatrix"
-        
-        logger.debug(f"{self.name}.copy: to {name}")
+
+        self.logger.debug(f"{self.name}.copy: to {name}")
 
         #----------------------------------------------------------------------
         # Create new InfoMatrix with the same dimensions
@@ -180,7 +180,7 @@ class InfoMatrix:
         toRet.act2D      = self.act2D          # Current active 2D submatrix defined as dict of freezed axesKeys with values
         toRet.staticEdge = self.staticEdge     # Static edge means value of the edge nodes is fixed
 
-        toRet._origs     = self._origs.copy()  # Origin's coordinates of the InfoMatrix 
+        toRet._origs     = self._origs.copy()  # Origin's coordinates of the InfoMatrix
         toRet._cnts      = self._cnts.copy()   # Number of InfoPoints in respective axes
         toRet._diffs     = self._diffs.copy()  # Distance between two points in respective axes in lambda units
 
@@ -191,26 +191,26 @@ class InfoMatrix:
             toRet.points.append(self.copy())
 
         #----------------------------------------------------------------------
-         
+
         return toRet
-        
+
     #==========================================================================
     # Proxy tools for InfoPoint schema
     #--------------------------------------------------------------------------
     def clearSchema(self):
         "Clears schema of InfoPoint for respective ipType to {'axes':{'None':'None'}, 'vals':{}}"
         return InfoPoint.clearSchema(self.ipType)
-    
+
     #--------------------------------------------------------------------------
     def setAxe(self, key, name):
         "Sets axe key and name"
         return InfoPoint.setAxe(self.ipType, key, name)
-    
+
     #--------------------------------------------------------------------------
     def axeIdxByKey(self, key):
         "Returns axe's idx for respective key as position in the list of axes othewise None"
         return InfoPoint.axeIdxByKey(self.ipType, key)
-    
+
     #--------------------------------------------------------------------------
     def axeKeyByIdx(self, idx):
         "Returns axe's key for respective position in the list of axes othewise None"
@@ -220,7 +220,7 @@ class InfoMatrix:
     def axeNameByKey(self, key):
         "Returns axe's Name for respective key as string othewise None"
         return InfoPoint.axeNameByKey(self.ipType, key)
-    
+
     #--------------------------------------------------------------------------
     def setVal(self, key, name):
         "Sets value key and name"
@@ -230,7 +230,7 @@ class InfoMatrix:
     def valIdxByKey(self, key):
         "Returns value's idx for respective key as position in the list of axes othewise None"
         return InfoPoint.valIdxByKey(self.ipType, key)
-    
+
     #--------------------------------------------------------------------------
     def valKeyByIdx(self, idx):
         "Returns value's key for respective position in the list of valus othewise None"
@@ -240,17 +240,17 @@ class InfoMatrix:
     def valNameByKey(self, key):
         "Returns value's Name for respective key as string othewise None"
         return InfoPoint.valNameByKey(self.ipType, key)
-    
+
     #--------------------------------------------------------------------------
     def getSchema(self):
         "Returns schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
         return InfoPoint.getSchema(self.ipType)
-    
+
     #--------------------------------------------------------------------------
     def getAxes(self):
         "Returns axes keys and names as dict {key: name}"
         return InfoPoint.getAxes(self.ipType)
-    
+
     #--------------------------------------------------------------------------
     def getVals(self):
         "Returns values keys and names as dict {key: name}"
@@ -307,7 +307,7 @@ class InfoMatrix:
             #------------------------------------------------------------------
             idx = pos // sub
             pos = pos %  sub
-            
+
             #------------------------------------------------------------------
             # Vlozim index na zaciatok zoznamu idxs
             #------------------------------------------------------------------
@@ -321,7 +321,7 @@ class InfoMatrix:
            question mark in the list [a, b, '?', 'c'].
            Question mark means all values in this dimension and defines vector."""
 
-        logger.debug(f"{self.name}._1DposByIdx: idxs={idxs}")
+        self.logger.debug(f"{self.name}._1DposByIdx: idxs={idxs}")
         toRet = []
 
         #----------------------------------------------------------------------
@@ -337,7 +337,7 @@ class InfoMatrix:
                 vecDim = i
 
         #----------------------------------------------------------------------
-        # Zistim pocet hodnot v hladanom vektore 
+        # Zistim pocet hodnot v hladanom vektore
         #----------------------------------------------------------------------
         vecCnt = list(self._cnts.values())[vecDim]
 
@@ -350,16 +350,16 @@ class InfoMatrix:
         # Zistim krok od startPos pre vsetky dalsie InfoPointy v hladanom vektore
         #----------------------------------------------------------------------
         step = self._subProducts()[vecDim]
-        logger.info(f"{self.name}._1DposByIdx: startPos={startPos}, vecCnt={vecCnt} and step={step}")
+        self.logger.info(f"{self.name}._1DposByIdx: startPos={startPos}, vecCnt={vecCnt} and step={step}")
 
         #----------------------------------------------------------------------
-        # Vytvorim vsetky pozicie v hladanom vektore        
+        # Vytvorim vsetky pozicie v hladanom vektore
         #----------------------------------------------------------------------
         for pos in range(startPos, startPos + (vecCnt*step), step):
             toRet.append(pos)
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}._1DposByIdx: toRet={toRet}")
+        self.logger.debug(f"{self.name}._1DposByIdx: toRet={toRet}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -371,7 +371,7 @@ class InfoMatrix:
            [ [a, b, c], [d, e, f], ... ].
            """
 
-        logger.debug(f"{self.name}._2DposByIdx: idxs={idxs}")
+        self.logger.debug(f"{self.name}._2DposByIdx: idxs={idxs}")
         toRet = []
 
         #----------------------------------------------------------------------
@@ -407,10 +407,10 @@ class InfoMatrix:
             #------------------------------------------------------------------
             # Vlozim rowPos do matice pozicii toRet
             #------------------------------------------------------------------
-            toRet.append(rowPos)       
+            toRet.append(rowPos)
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}._2DposByIdx: toRet={toRet}")
+        self.logger.debug(f"{self.name}._2DposByIdx: toRet={toRet}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -443,7 +443,7 @@ class InfoMatrix:
                 idxs.append( act[key] )
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}._actToIdxs: {act} -> {idxs}({freeDim})")
+        self.logger.info(f"{self.name}._actToIdxs: {act} -> {idxs}({freeDim})")
         return (freeDim, idxs)
 
     #==========================================================================
@@ -459,15 +459,15 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def pointByIdx(self, idxs:list):
         "Returns InfoPoint in field at respective indexes"
-        
+
         pos = self._posByIdx(idxs)
         return self.pointByPos(pos)
-        
+
     #--------------------------------------------------------------------------
     def pointByCoords(self, coos:list):
         "Returns nearest InfoPoint in field for respective coordinates"
 
-        logger.debug(f"{self.name}.pointByPos: x={x}, y={y}")
+        self.logger.debug(f"{self.name}.pointByPos: x={x}, y={y}")
 
         #----------------------------------------------------------------------
         # Searching for the row index for respective x
@@ -492,9 +492,9 @@ class InfoMatrix:
 
             lstCol = col
             if self.points[0][col].pos[1] >= y: break
-        
+
         #----------------------------------------------------------------------
-        # Col index before or after y ? 
+        # Col index before or after y ?
         #----------------------------------------------------------------------
         if lstCol < self._cols-1:
 
@@ -502,11 +502,11 @@ class InfoMatrix:
                 lstCol += 1
 
         #----------------------------------------------------------------------
-        # Final 
+        # Final
         #----------------------------------------------------------------------
-         
+
         return self.points[lstRow][lstCol]
-      
+
     #==========================================================================
     # Substructure retrieval
     #--------------------------------------------------------------------------
@@ -514,30 +514,30 @@ class InfoMatrix:
         """Returns vector of InfoPoints in field for respective act1D settings
            If keyVal is not None then returns vector of keyed values.
            If keyVal is     None then returns vector of InfoPoints."""
-        
-        logger.debug(f"{self.name}.actVector: keyVal={keyVal}, sub1D={sub1D}")
+
+        self.logger.debug(f"{self.name}.actVector: keyVal={keyVal}, sub1D={sub1D}")
 
         if sub1D is not None: self.act2D = sub1D
 
         #----------------------------------------------------------------------
         # Ak nie je act1D nastaveny, vyber je cela InfoMatrix
         #----------------------------------------------------------------------
-        if self.act1D is None: self.act1D = {}    
-        
+        if self.act1D is None: self.act1D = {}
+
         #----------------------------------------------------------------------
         # Ziskam idxs podla act1D a pre kontrolu aj pocet volnych dimenzii
         #----------------------------------------------------------------------
         freeDim, idxs = self._actToIdxs(self.act1D)
 
         if freeDim != 1:
-            logger.info(f"{self.name}.actVector: ERROR: act1D {self.act1D} is not 1D substructure but {freeDim} dim")
+            self.logger.info(f"{self.name}.actVector: ERROR: act1D {self.act1D} is not 1D substructure but {freeDim} dim")
             return None
 
         #----------------------------------------------------------------------
         # Ziskam list pozicii bodov patriacich hladanemu vektoru
         #----------------------------------------------------------------------
         poss = self._1DposByIdx(idxs)
-        
+
         #----------------------------------------------------------------------
         # Create vector of InfoPoints/Values for respective positions
         #----------------------------------------------------------------------
@@ -545,37 +545,37 @@ class InfoMatrix:
         for pos in poss:
             toRet.append(self.pointByPos(pos).get(key=keyVal))
 
-        return toRet    
-    
+        return toRet
+
     #--------------------------------------------------------------------------
     def actMatrix(self, *, keyVal:str=None, sub2D=None):
-        """Returns matrix of InfoPoints in field for respective act2D settings 
+        """Returns matrix of InfoPoints in field for respective act2D settings
            If keyVal is not None then returns matrix of keyed values.
            If keyVal is     None then returns matrix of InfoPoints."""
 
-        logger.debug(f"{self.name}.actMatrix: keyVal={keyVal}, sub2D={sub2D}")
+        self.logger.debug(f"{self.name}.actMatrix: keyVal={keyVal}, sub2D={sub2D}")
 
         if sub2D is not None: self.act2D = sub2D
 
         #----------------------------------------------------------------------
         # Ak nie je act2D nastaveny, vyber je cela InfoMatrix
         #----------------------------------------------------------------------
-        if self.act2D is None: self.act2D = {}    
-        
+        if self.act2D is None: self.act2D = {}
+
         #----------------------------------------------------------------------
         # Ziskam idxs podla act2D a pre kontrolu aj pocet volnych dimenzii
         #----------------------------------------------------------------------
         freeDim, idxs = self._actToIdxs(self.act2D)
 
         if freeDim != 2:
-            logger.info(f"{self.name}.actMatrix: ERROR: act2D {self.act2D} is not 2D substructure but {freeDim} dim")
+            self.logger.info(f"{self.name}.actMatrix: ERROR: act2D {self.act2D} is not 2D substructure but {freeDim} dim")
             return None
 
         #----------------------------------------------------------------------
         # Ziskam maticu pozicii bodov patriacich hladanej matici
         #----------------------------------------------------------------------
         mtrx = self._2DposByIdx(idxs)
-        
+
         #----------------------------------------------------------------------
         # Create marix of InfoPoints for respective positions
         #----------------------------------------------------------------------
@@ -595,24 +595,24 @@ class InfoMatrix:
             #------------------------------------------------------------------
             toRet.append(rowVec)
 
-        return toRet    
+        return toRet
 
     #==========================================================================
     # Value modification
     #--------------------------------------------------------------------------
     def clear(self, *, defs:dict={}):
         "Set all InfoPoint's values to default value"
-        
-        logger.info(f"{self.name}.clear: defs={defs}")
+
+        self.logger.info(f"{self.name}.clear: defs={defs}")
 
         for point in self.points: point.clear(dat=defs)
 
     #--------------------------------------------------------------------------
     def gener(self, *, cnts:dict, origs:dict, rect:dict, ipType:str=None, vals:dict=None, defs:dict={} ):
         "Creates InfoMatrix with respective settings"
-        
+
         if ipType is not None: self.ipType = ipType
-        logger.debug(f"{self.name}.gener: {cnts} points of type {self.ipType} on rect {rect} from {origs}")
+        self.logger.debug(f"{self.name}.gener: {cnts} points of type {self.ipType} on rect {rect} from {origs}")
 
         self.points.clear()                    # Clear all points in the InfoMatrix
 
@@ -624,11 +624,11 @@ class InfoMatrix:
 
         for key, val in cnts.items():
 
-            self.setAxe(key, f"os {key}")    
+            self.setAxe(key, f"os {key}")
             mins.append(val)
 
         #----------------------------------------------------------------------
-        # Set InfoPoint's schema Values if vals is not None 
+        # Set InfoPoint's schema Values if vals is not None
         #----------------------------------------------------------------------
         if vals is not None:
 
@@ -640,17 +640,17 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # InfoMatrix settings
         #----------------------------------------------------------------------
-        self._cnts     = cnts.copy()              # List of number of InfoPoints in respective axes     
+        self._cnts     = cnts.copy()              # List of number of InfoPoints in respective axes
         self._origs    = origs.copy()             # List of origin's coordinates of the InfoMatrix
 
         self._diffs    = {}                       # List of distances between two points in respective axes in lambda units
         for key, cnt in self._cnts.items():
             self._diffs[key] = rect[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
-                
+
         self.actCol    = None                     # Current axes in role of the columns for 2D matrix
         self.actRow    = None                     # Current axes in role of the rows for 2D matrix
         if len(self._cnts) <= 1: self.actRow = list(self._cnts.keys())[0]
-        if len(self._cnts) == 2: self.actCol = list(self._cnts.keys())[1]   
+        if len(self._cnts) == 2: self.actCol = list(self._cnts.keys())[1]
 
         #----------------------------------------------------------------------
         # Generate InfoPoints at respective positions
@@ -672,12 +672,12 @@ class InfoMatrix:
             #------------------------------------------------------------------
             point = InfoPoint(self.ipType, pos=coos, dat=defs)
             self.points.append(point)
-            
+
         #----------------------------------------------------------------------
         # Final adjustments
         #----------------------------------------------------------------------
-         
-        
+
+
     #--------------------------------------------------------------------------
 
     #==========================================================================
@@ -685,8 +685,8 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def copyFrom(self, src, *, key=None, tgtSlice=(0,0,0,0), srcFrom=(0,0)):
         "Copy point's values from srcs 2D matrix into tgts 2D matrix"
-        
-        logger.debug(f"{self.name}.copyFrom: From {src.name} starting at {srcFrom} to nodes {tgtSlice} for key={key}")
+
+        self.logger.debug(f"{self.name}.copyFrom: From {src.name} starting at {srcFrom} to nodes {tgtSlice} for key={key}")
 
         #----------------------------------------------------------------------
         # Slice settings
@@ -695,7 +695,7 @@ class InfoMatrix:
         tgtColFrom = tgtSlice[1]
         tgtRowTo   = tgtSlice[2] if tgtSlice[2] > 0 else self._rows-1
         tgtColTo   = tgtSlice[3] if tgtSlice[3] > 0 else self._cols-1
-        
+
         srcRowFrom = srcFrom[0]
         srcColFrom = srcFrom[1]
 
@@ -704,30 +704,30 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Target rows from tgtRowFrom to tgtRowTo
         #----------------------------------------------------------------------
-        for tgtRow in range(tgtRowFrom, tgtRowTo+1): 
-            
+        for tgtRow in range(tgtRowFrom, tgtRowTo+1):
+
             #------------------------------------------------------------------
             # Target columns from tgtColFrom to tgtColTo
             #------------------------------------------------------------------
             for tgtCol in range(tgtColFrom, tgtColTo+1):
-                
+
                 #--------------------------------------------------------------
                 # Get target node
                 #--------------------------------------------------------------
                 tgtPoint = self.pointByIdx([tgtRow, tgtCol])
                 if tgtPoint is None:
-                    logger.info(f"{self.name}.copyFrom: ERROR Target point[{tgtRow},{tgtCol}] does not exists")
+                    self.logger.info(f"{self.name}.copyFrom: ERROR Target point[{tgtRow},{tgtCol}] does not exists")
                     break
-                
+
                 #--------------------------------------------------------------
                 # Trying to get source node
                 #--------------------------------------------------------------
                 try:
                     srcPoint = src.pointByIdx([srcRowFrom+tgtRow-tgtRowFrom, srcColFrom+tgtCol-tgtColFrom])
                 except IndexError:
-                    logger.info(f"{self.name}.copyFrom: ERROR Source point[{srcRowFrom+tgtRow-tgtRowFrom}, {srcColFrom+tgtCol-tgtColFrom}] does not exists")
-                    break   
-                
+                    self.logger.info(f"{self.name}.copyFrom: ERROR Source point[{srcRowFrom+tgtRow-tgtRowFrom}, {srcColFrom+tgtCol-tgtColFrom}] does not exists")
+                    break
+
                 #--------------------------------------------------------------
                 # Copy value from source to target node
                 #--------------------------------------------------------------
@@ -736,9 +736,9 @@ class InfoMatrix:
                 i += 1
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}.copyFrom: Copied {i} points")
+        self.logger.debug(f"{self.name}.copyFrom: Copied {i} points")
         return self
-        
+
     #--------------------------------------------------------------------------
     def applyPointFunction(self, function, key:str, par:dict=None, slice=(0,0,0,0)):
         "Apply respective function for all points in slices"
@@ -750,28 +750,28 @@ class InfoMatrix:
         colFrom = slice[1]
         rowTo   = slice[2] if slice[2] > 0 else self._rows-1
         colTo   = slice[3] if slice[3] > 0 else self._cols-1
-        
-        logger.debug(f"{self.name}.applyPointFunction: {function.__name__}(key={key}, par={par}) from [{rowFrom}:{colFrom}] to [{rowTo}:{colTo}]")
-        
+
+        self.logger.debug(f"{self.name}.applyPointFunction: {function.__name__}(key={key}, par={par}) from [{rowFrom}:{colFrom}] to [{rowTo}:{colTo}]")
+
         pts = 0  # Counter of points to be processed
-        aps = 0  # Counter of points processed by function   
+        aps = 0  # Counter of points processed by function
 
         #----------------------------------------------------------------------
         # rows from rowFrom to rowTo
         #----------------------------------------------------------------------
-        for row in range(rowFrom, rowTo+1): 
-            
+        for row in range(rowFrom, rowTo+1):
+
             #------------------------------------------------------------------
             # columns from colFrom to colTo
             #------------------------------------------------------------------
             for col in range(colFrom, colTo+1):
-                
+
                 #--------------------------------------------------------------
                 # Get node to apply function
                 #--------------------------------------------------------------
                 point = self.pointByIdx([row, col])
                 if point is None:
-                    logger.info(f"{self.name}.applyPointFunction: ERROR Target point[{row},{col}] does not exists")
+                    self.logger.info(f"{self.name}.applyPointFunction: ERROR Target point[{row},{col}] does not exists")
                     break
 
                 pts += 1
@@ -784,35 +784,35 @@ class InfoMatrix:
                 #--------------------------------------------------------------
                 # Number of points should be number of applied functions
                 #--------------------------------------------------------------
-                if pts != aps: 
-                    logger.info(f"{self.name}.applyPointFunction: ERROR: function {function.__name__} failed for point[{row},{col}]")
-                     
+                if pts != aps:
+                    self.logger.info(f"{self.name}.applyPointFunction: ERROR: function {function.__name__} failed for point[{row},{col}]")
+
                     return False
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}.applyPointFunction: {function.__name__} was applied to {aps}/{pts} nodes")
+        self.logger.debug(f"{self.name}.applyPointFunction: {function.__name__} was applied to {aps}/{pts} nodes")
         return True
 
     #--------------------------------------------------------------------------
     def applyRays(self, dimLower, start=0, stop=0, forward=True, torus=False):
         "Apply rays from <dimLower> to next higher dimension"
-        
-        logger.debug(f"{self.name}.getRays: from dim {dimLower} with torus={torus}")
-        
+
+        self.logger.debug(f"{self.name}.getRays: from dim {dimLower} with torus={torus}")
+
         if forward: rotDir = -1j
         else      : rotDir =  1j
-        
+
         # Compute constant length of torus-like dimension
         count = self.count()
-        
+
         dltOff = (self.offMax-self.offMin) * (count+1)/count
-        
+
         #----------------------------------------------------------------------
         # Prepare list of source points
         #----------------------------------------------------------------------
         actCut = self.cutDim(dimLower)
         srcs = self.cutToNodes()
-        
+
         #----------------------------------------------------------------------
         # Prepare of target points
         #----------------------------------------------------------------------
@@ -824,58 +824,58 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         toRet = []
         for src in srcs:
-        
+
             srcP = src['cP']
-        
+
             #------------------------------------------------------------------
             # Iterate over target points
             #------------------------------------------------------------------
             for tgt in tgts:
-                
+
                 tgtP = tgt['cP']
-                
+
                 #--------------------------------------------------------------
                 # Get coordinates of source point and target point
                 #--------------------------------------------------------------
                 dlts = srcP.deltasTo(tgtP)
                 dx1  = dlts[0]              # Rozdiel 1 suradnic bodov srcP a tgtP
                 dx2  = tgtP.pos[1]          # Bod srcP nema 2 suradnicu, povazujeme ju za 0
-                
+
                 #--------------------------------------------------------------
                 # Compute distance in periods
                 #--------------------------------------------------------------
                 r = math.sqrt( (dx1*dx1) + (dx2*dx2) )  # in distance units
-                            
+
                 # phase shift
                 phase = (r / _UPP) * 2 * math.pi        # in radians
-                
+
                 # Phase defines rotation of amplitude
                 rot = cmath.exp(rotDir * phase)
-            
+
                 #--------------------------------------------------------------
                 # Superpose srcP * rot to tgtP or backward
                 #--------------------------------------------------------------
                 if forward: tgtP.c += srcP.c * rot
                 else      : srcP.c += tgtP.c * rot
-                
+
                 #--------------------------------------------------------------
                 # If torus then superpose secondary ray
                 #--------------------------------------------------------------
                 if torus:
-                    
+
                     if dx1 != 0:
-                        
+
                         dx1 = dltOff - abs(dx1)
-                        
+
                         # Compute distance in periods
                         r = math.sqrt( (dx1*dx1) + (dx2*dx2) )   # in distance units
-                            
+
                         # phase shift
                         phase = (r / _UPP) * 2 * math.pi        # in radians
-                
+
                         # Phase defines rotation of amplitude
                         rot = cmath.exp(rotDir * phase)
-            
+
                         #--------------------------------------------------------------
                         # Superpose srcP * rot to tgtP or backward
                         #--------------------------------------------------------------
@@ -883,7 +883,7 @@ class InfoMatrix:
                         else      : srcP.c += tgtP.c * rot
 
                 toRet.append({'src':src['cP'], 'tgt':tgt['cP'], 'dx1':dx1, 'dx2':dx2})
-                
+
         #----------------------------------------------------------------------
         # Normalisation
         #----------------------------------------------------------------------
@@ -891,26 +891,26 @@ class InfoMatrix:
         else      : self.normAbs(nods=srcs)
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}.getRays: creates {len(toRet)} rays")
+        self.logger.debug(f"{self.name}.getRays: creates {len(toRet)} rays")
         return toRet
 
     #--------------------------------------------------------------------------
     def evolve(self, srcCut, inf=0, start=0, stop=0):
         "Evolve state in <srcCut> and historise it in nex dimension"
-        
-        logger.debug(f"{self.name}.evolve: srcCut={srcCut} from {start} to {stop}")
-        
+
+        self.logger.debug(f"{self.name}.evolve: srcCut={srcCut} from {start} to {stop}")
+
         #----------------------------------------------------------------------
         # Prepare list of nodes for evolution
         #----------------------------------------------------------------------
         srcs = self.cutToNodes(srcCut)
-        
+
         #----------------------------------------------------------------------
         # Prepare definition of the target cut
         #----------------------------------------------------------------------
         tgtCut = list(srcCut)
         tgtCut.append(start)
-        
+
         #----------------------------------------------------------------------
         # Copy original srcs into tgts
         #----------------------------------------------------------------------
@@ -922,41 +922,41 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         i = 0
         for time in range(start+1, stop+1):
-            
+
             #------------------------------------------------------------------
             # Retrieve list of target nodes
             #------------------------------------------------------------------
             tgtCut[-1] = time
             tgts = self.cutToNodes(tgtCut)
-    
+
             #------------------------------------------------------------------
             # Evolve one state
             #------------------------------------------------------------------
             self.evolveStateBase(srcs, tgts, a=time, b=time+inf)
-            
+
             #------------------------------------------------------------------
             # Copy evolved state into srcs
             #------------------------------------------------------------------
             self.copyValues(tgts, srcs)
-            
+
             i += 1
-            
+
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}.evolve: evolved {i} states")
+        self.logger.debug(f"{self.name}.evolve: evolved {i} states")
 
     #--------------------------------------------------------------------------
     def evolveStateBase(self, srcs, tgts, a, b=None):
         "Evolve state of the srcs nodes into tgts nodes"
-        
+
         if b is None: b = a
-        logger.debug(f"{self.name}.evolveStateBase: For Sources relative to the target {a}..{b}")
+        self.logger.debug(f"{self.name}.evolveStateBase: For Sources relative to the target {a}..{b}")
 
         #----------------------------------------------------------------------
         # Doability check
         #----------------------------------------------------------------------
-        if a > b: 
-            logger.info(f"{self.name}.evolveStateBase: Bounadries ERROR: {a} > {b}")
-             
+        if a > b:
+            self.logger.info(f"{self.name}.evolveStateBase: Bounadries ERROR: {a} > {b}")
+
             return
 
         #----------------------------------------------------------------------
@@ -964,27 +964,27 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         rotDist  = (self.offMax - self.offMin) / (self.count()-1)  # distance in units
         rotPhase = (rotDist/_UPP) * 2 * math.pi                    # distance in radians
-        logger.info(f"{self.name}.evolveStateBase: Phase between two points: {rotPhase:5.4} rad")
+        self.logger.info(f"{self.name}.evolveStateBase: Phase between two points: {rotPhase:5.4} rad")
 
         #----------------------------------------------------------------------
         # Iteration prep
         #----------------------------------------------------------------------
         rotDir   = -1j                              # Direction of amplitude's rotation
         rotCoeff = cmath.exp(rotDir * rotPhase)     # rotation coefficient
-        logger.info(f"{self.name}.evolveStateBase: Rot coeff: {rotCoeff:5.4}, abs = {abs(rotCoeff):5.4}")
-        
+        self.logger.info(f"{self.name}.evolveStateBase: Rot coeff: {rotCoeff:5.4}, abs = {abs(rotCoeff):5.4}")
+
         #----------------------------------------------------------------------
         # Preprae global aggregates
         #----------------------------------------------------------------------
         srcsSumAbs = 0
         for src in srcs: srcsSumAbs += src['cP'].abs()
-        
+
         #----------------------------------------------------------------------
         # Iteration over tgts
         #----------------------------------------------------------------------
         posT = 0
         for tgtNode in tgts:
-            
+
             cumAmp = complex(0,0)
 
             #------------------------------------------------------------------
@@ -993,11 +993,11 @@ class InfoMatrix:
             xL = posT - b
             yL = posT - a
             if xL  < 0   : xL  = 0  # pretecenie pred zaciatok
-            
+
             for posS in range(xL, yL+1):
 
                 srcNode = srcs[posS]
-                
+
                 #--------------------------------------------------------------
                 # Rotate srcAmp by abs(posT-posS)*rotPhase
                 #--------------------------------------------------------------
@@ -1008,21 +1008,21 @@ class InfoMatrix:
                 # Cumulate rotated srcAmp to cumAmp
                 #--------------------------------------------------------------
                 if True:          # Dvojite zapocitanie srcs[posT]
-                
+
                     cumAmp += srcAmp
-                    logger.info(f"{self.name}.evolveStateBase: Accumulation LEFT: {posS} -> {posT}")
-            
+                    self.logger.info(f"{self.name}.evolveStateBase: Accumulation LEFT: {posS} -> {posT}")
+
             #------------------------------------------------------------------
             # Accumulation over srcs RIGHT
             #------------------------------------------------------------------
             xL = posT + a
             yL = posT + b
             if yL >= len(srcs): yL = len(srcs)-1  # pretecenie za koniec
-            
+
             for posS in range(xL, yL+1):
 
                 srcNode = srcs[posS]
-                
+
                 #--------------------------------------------------------------
                 # Rotate srcAmp by abs(posT-posS)*rotPhase
                 #--------------------------------------------------------------
@@ -1033,10 +1033,10 @@ class InfoMatrix:
                 # Cumulate rotated srcAmp to cumAmp
                 #--------------------------------------------------------------
                 if posT != posS:          # Dvojite zapocitanie srcs[posT]
-                
+
                     cumAmp += srcAmp
-                    logger.info(f"{self.name}.evolveStateBase: Accumulation RIGHT: {posT} <- {posS}")
-            
+                    self.logger.info(f"{self.name}.evolveStateBase: Accumulation RIGHT: {posT} <- {posS}")
+
             #------------------------------------------------------------------
             # Set target node value
             #------------------------------------------------------------------
@@ -1046,8 +1046,8 @@ class InfoMatrix:
             # Move to the next tgt node
             #------------------------------------------------------------------
             posT += 1
-            
-        logger.info(f"{self.name}.evolveStateBase: srcsSumAbs: {srcsSumAbs:5.2}")
+
+        self.logger.info(f"{self.name}.evolveStateBase: srcsSumAbs: {srcsSumAbs:5.2}")
 
         #----------------------------------------------------------------------
         # Normalisation
@@ -1055,28 +1055,28 @@ class InfoMatrix:
         self.normAbs(nods=tgts, norm=srcsSumAbs)
 
         #----------------------------------------------------------------------
-         
+
 
     #--------------------------------------------------------------------------
     def evolveState(self, srcs, tgts):
         "Evolve state of the srcs nodes into tgts nodes"
-        
-        logger.debug(f"{self.name}.evolveState:")
+
+        self.logger.debug(f"{self.name}.evolveState:")
 
         #----------------------------------------------------------------------
         # Phase rotation between two points - static data
         #----------------------------------------------------------------------
         rotDist  = (self.offMax - self.offMin) / (self.count()-1)  # distance in units
         rotPhase = (rotDist/_UPP) * 2 * math.pi                    # distance in radians
-        logger.info(f"{self.name}.evolveState: Phase between two points: {rotPhase} rad")
+        self.logger.info(f"{self.name}.evolveState: Phase between two points: {rotPhase} rad")
 
         #----------------------------------------------------------------------
         # Iteration over tgts from left
         #----------------------------------------------------------------------
         rotDir   = -1j                              # Direction of amplitude's rotation
         rotCoeff = cmath.exp(rotDir * rotPhase)     # rotation coefficient
-        logger.info(f"{self.name}.evolveState: Rot coeff: {rotCoeff}, abs = {abs(rotCoeff)}")
-        
+        self.logger.info(f"{self.name}.evolveState: Rot coeff: {rotCoeff}, abs = {abs(rotCoeff)}")
+
         cumAmp   = complex(0,0)                     # Cumulative amplitude
 
         #----------------------------------------------------------------------
@@ -1084,17 +1084,17 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         pos = 0
         for tgtNode in tgts:
-            
+
             #------------------------------------------------------------------
             # Rotate cumulative amplitude by rotPhase angle (multiple by rotCoeff)
             #------------------------------------------------------------------
             cumAmp *= rotCoeff
-            
+
             #------------------------------------------------------------------
             # Retrieve current source's amplitude
             #------------------------------------------------------------------
             srcAmp = srcs[pos]['cP'].c
-            
+
             #------------------------------------------------------------------
             # Accumulate srcAmp to cumAmp
             #------------------------------------------------------------------
@@ -1105,7 +1105,7 @@ class InfoMatrix:
             #------------------------------------------------------------------
             tgtNode['cP'].c = cumAmp
             print(f"{pos:3} cum {cumAmp.real:7.3f} {cumAmp.imag:7.3f}j   src {srcAmp.real:7.3f} {srcAmp.imag:7.3f}j")
-            
+
             #------------------------------------------------------------------
             # Move to the next right node
             #------------------------------------------------------------------
@@ -1117,25 +1117,25 @@ class InfoMatrix:
         print()
         rotDir   = -1j                              # Direction of amplitude's rotation
         rotCoeff = cmath.exp(rotDir * rotPhase)     # rotation coefficient
-        
+
         cumAmp   = complex(0,0)                     # Cumulative amplitude
-        
+
         #----------------------------------------------------------------------
         # Iteration over tgts from right
         #----------------------------------------------------------------------
         pos = len(tgts)-1
         for tgtNode in reversed(tgts):
-            
+
             #------------------------------------------------------------------
             # Rotate cumulative amplitude by rotPhase angle (multiple by rotCoeff)
             #------------------------------------------------------------------
             cumAmp *= rotCoeff
-            
+
             #------------------------------------------------------------------
             # Retrieve current source's amplitude
             #------------------------------------------------------------------
             srcAmp = srcs[pos]['cP'].c
-            
+
             #------------------------------------------------------------------
             # Accumulate srcAmp to cumAmp
             #------------------------------------------------------------------
@@ -1146,23 +1146,23 @@ class InfoMatrix:
             #------------------------------------------------------------------
             tgtNode['cP'].c += cumAmp
             print(f"{pos:3} cum {cumAmp.real:7.3f} {cumAmp.imag:7.3f}j   src {srcAmp.real:7.3f} {srcAmp.imag:7.3f}j")
-            
+
             #------------------------------------------------------------------
             # Move to the next left node
             #------------------------------------------------------------------
             pos -= 1
 
         #----------------------------------------------------------------------
-         
+
 
     #==========================================================================
     # Normalisation methods
     #--------------------------------------------------------------------------
     def normAbs(self, nods, norm=None):
         "Normalise set of the nodes by sum of absolute values"
-        
-        logger.debug(f"{self.name}.normAbs: ")
-        
+
+        self.logger.debug(f"{self.name}.normAbs: ")
+
         #----------------------------------------------------------------------
         # Initialisation
         #----------------------------------------------------------------------
@@ -1178,32 +1178,32 @@ class InfoMatrix:
         # Iterate over nodes and apply norm if possible
         #----------------------------------------------------------------------
         if norm > 0:
-            
+
             for node in nods: node['cP'].c /= norm
-            
+
         else: norm = 1
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}.normAbs: norm = {norm} for {len(nods)} points")
+        self.logger.debug(f"{self.name}.normAbs: norm = {norm} for {len(nods)} points")
 
     #==========================================================================
     # Tki API
     #--------------------------------------------------------------------------
     def getNPdata(self, *, keyCol, keyU=None, keyV=None, sub2D:dict={}):
         "Returns numpy arrays of axeX, axeY, values, re and im for respective subset of InfoMatrix"
-    
-        logger.debug(f"{self.name}.getData: valueColor={keyCol}, quiverRe={keyU}, quiverIm={keyV} from sub2D={sub2D}")
+
+        self.logger.debug(f"{self.name}.getData: valueColor={keyCol}, quiverRe={keyU}, quiverIm={keyV} from sub2D={sub2D}")
 
         #----------------------------------------------------------------------
         # Ziskam pozadovany subset
         #----------------------------------------------------------------------
         subM = self.actMatrix(keyVal=None)
-        for row in mtrx: 
+        for row in mtrx:
             for point in row: print(point)
 
 
         #----------------------------------------------------------------------
-         
+
         return toRet
 
     #--------------------------------------------------------------------------
@@ -1212,12 +1212,12 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def toJson(self):
         "Converts node into json structure"
-        
-        logger.debug(f'{self.name}.toJson:')
-        
+
+        self.logger.debug(f'{self.name}.toJson:')
+
         toRet = {}
 
-        logger.debug(f'{self.name}.toJson: Converted')
+        self.logger.debug(f'{self.name}.toJson: Converted')
         return toRet
 
 #------------------------------------------------------------------------------
@@ -1270,14 +1270,14 @@ if __name__ == '__main__':
         im3.act1D = {'b':2, 'c':1}
         print(im3._1DposByIdx(['?', 2, 1]))
         vec = im3.actVector(keyVal=None)
-        for point in vec: print(point)  
+        for point in vec: print(point)
         print()
 
     if True:
         print('matrix tki API')
         print(im2)
         mtrx = im2.actMatrix(keyVal=None)
-        for row in mtrx: 
+        for row in mtrx:
             for point in row: print(point)
         print()
 
@@ -1287,7 +1287,7 @@ if __name__ == '__main__':
 
         im3.act2D = {'c':1}
         mtrx = im3.actMatrix(keyVal=None)
-        for row in mtrx: 
+        for row in mtrx:
             for point in row: print(point)
         print()
 
@@ -1300,7 +1300,7 @@ if __name__ == '__main__':
         print('matrix np')
         im3.act2D = {'c':1}
         mtrx = im3.actMatrix(keyVal='v')
-        for row in mtrx: 
+        for row in mtrx:
             for point in row: print(point)
         print()
 

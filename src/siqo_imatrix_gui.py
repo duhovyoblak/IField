@@ -32,7 +32,6 @@ _PADY           =  5
 #==============================================================================
 # package's variables
 #------------------------------------------------------------------------------
-logger = SiqoLogger('InfoMatrixGUI test', level='INFO')
 
 #==============================================================================
 # Class InfoMarixGui
@@ -45,7 +44,8 @@ class InfoMarixGui(ttk.Frame):
     def __init__(self, name, container, dat:InfoMatrix, **kwargs):
         "Call constructor of InfoMarixGui and initialise it for respective data"
 
-        logger.debug(f'{name}.init:')
+        self.logger = SiqoLogger(name, level='DEBUG')
+        self.logger.debug(f'{name}.init:')
 
         self.name    = name                # Name of this chart
         self.dat     = dat                 # InfoMatrix base data
@@ -238,7 +238,7 @@ class InfoMarixGui(ttk.Frame):
         if self.keyX: toRet += 1
         if self.keyY: toRet += 1
 
-        logger.info(f'{self.name}.dims: Chart has {toRet} dimensions')
+        self.logger.info(f'{self.name}.dims: Chart has {toRet} dimensions')
         return toRet
 
     #--------------------------------------------------------------------------
@@ -254,7 +254,7 @@ class InfoMarixGui(ttk.Frame):
         aKeyX = self.dat.axeKeyByName( self.strX.get() )  # Key for Name of the X-axis dimension from ipType.axis, 'None' means nothing to show in this axis
         aKeyY = self.dat.axeKeyByName( self.strY.get() )  # Key for Name of the Y-axis dimension from ipType.axis, 'None' means nothing to show in this axis
 
-        logger.debug(f'{self.name}.dataChanged: method={aKeyS}->{self.keyS}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
+        self.logger.debug(f'{self.name}.dataChanged: method={aKeyS}->{self.keyS}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
         changed = False
 
         if force: changed=True
@@ -282,7 +282,7 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
         #----------------------------------------------------------------------
-        if not changed: logger.info(f'{self.name}.dataChanged: Settings have not changed, no need for show')
+        if not changed: self.logger.info(f'{self.name}.dataChanged: Settings have not changed, no need for show')
         else          : self.show()
 
 
@@ -293,27 +293,27 @@ class InfoMarixGui(ttk.Frame):
     def show(self, event=None):
         """Vykresli chart na zaklade aktualneho listu self.cIP
         """
-        logger.info(f"{self.name}.show: axisX='{self.keyX}', axisY='{self.keyY}', value='{self.keyV}', method='{self.keyS}'")
+        self.logger.info(f"{self.name}.show: axisX='{self.keyX}', axisY='{self.keyY}', value='{self.keyV}', method='{self.keyS}'")
 
         #----------------------------------------------------------------------
         # Check list of InfoPoints to show
         #----------------------------------------------------------------------
         if len(self.iPoints) == 0:
-            logger.info(f'{self.name}.show: No InfoPoints, nothig to show')
+            self.logger.info(f'{self.name}.show: No InfoPoints, nothig to show')
             return
 
         #----------------------------------------------------------------------
         # Check value to show
         #----------------------------------------------------------------------
         if not self.keyV:
-            logger.info(f'{self.name}.show: No value selected, nothig to show')
+            self.logger.info(f'{self.name}.show: No value selected, nothig to show')
             return
 
         #----------------------------------------------------------------------
         # Check axis to show
         #----------------------------------------------------------------------
         if not self.keyX and not self.keyY:
-            logger.info(f'{self.name}.show: No axis selected, nothig to show')
+            self.logger.info(f'{self.name}.show: No axis selected, nothig to show')
             return
 
         #----------------------------------------------------------------------
@@ -330,7 +330,7 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         showFtion = self.dat.mapShowMethods()[self.keyS]
 
-        logger.debug(f'{self.name}.show: Iterating iPoints for showFtion={showFtion} with keyV={self.keyV}')
+        self.logger.debug(f'{self.name}.show: Iterating iPoints for showFtion={showFtion} with keyV={self.keyV}')
         for point in self.iPoints:
 
             valueToShow = showFtion(point, self.keyV)
@@ -351,17 +351,17 @@ class InfoMarixGui(ttk.Frame):
         # Kontrola npArrays
         #----------------------------------------------------------------------
         if self.npC.size==0:
-            logger.info(f'{self.name}.show: No values to show')
+            self.logger.info(f'{self.name}.show: No values to show')
 
             return
 
         if self.keyX and self.npX.size==0:
-            logger.info(f'{self.name}.show: Axe X is selected but has no data to show')
+            self.logger.info(f'{self.name}.show: Axe X is selected but has no data to show')
 
             return
 
         if self.keyY and self.npY.size==0:
-            logger.info(f'{self.name}.show: Axe Y is selected but has no data to show')
+            self.logger.info(f'{self.name}.show: Axe Y is selected but has no data to show')
 
             return
 
@@ -410,7 +410,7 @@ class InfoMarixGui(ttk.Frame):
             self.figure.colorbar(chrtObj, ax=self.chart)
 
         else:
-            logger.error(f'{self.name}.show: Chart with {self.dims()} dimensions is not supported')
+            self.logger.error(f'{self.name}.show: Chart with {self.dims()} dimensions is not supported')
 
 
         #----------------------------------------------------------------------
@@ -427,7 +427,7 @@ class InfoMarixGui(ttk.Frame):
     def onClick(self, event):
         "Print information about mouse-given position"
 
-        logger.debug(f'{self.name}.onClick:')
+        self.logger.debug(f'{self.name}.onClick:')
 
         if event.inaxes is not None:
 
@@ -437,7 +437,7 @@ class InfoMarixGui(ttk.Frame):
             btn = event.button
             x   = round(float(event.xdata), 3)
             y   = round(float(event.ydata), 3)
-            logger.info(f'{self.name}.onClick: {btn} button clicked at [{y}, {x}] in axes {event.inaxes.get_title()}')
+            self.logger.info(f'{self.name}.onClick: {btn} button clicked at [{y}, {x}] in axes {event.inaxes.get_title()}')
 
             #------------------------------------------------------------------
             # Get the actual point by coordinates
@@ -458,7 +458,7 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             elif btn == 3: #MouseButton.RIGHT:
 
-                logger.info(f'{self.name}.onClick: right click for {self.actPoint}')
+                self.logger.info(f'{self.name}.onClick: right click for {self.actPoint}')
 
                 try    : self.pointMenu.tk_popup(event.x, event.y)
                 finally: self.pointMenu.grab_release()
@@ -488,7 +488,7 @@ class InfoMarixGui(ttk.Frame):
     #--------------------------------------------------------------------------
     def onNew(self, event=None):
 
-        logger.debug(f'{self.name}.onNew:')
+        self.logger.debug(f'{self.name}.onNew:')
 
         #----------------------------------------------------------------------
         # Zistenie poctov bodov v jednotlivych osiach
@@ -500,7 +500,7 @@ class InfoMarixGui(ttk.Frame):
             cnt = askInt(container=self, title='Zadaj počet bodov v osi', prompt=axe, initialvalue=oCnt, min=1, max=1000)
 
             if cnt is None:
-                logger.debug(f'{self.name}.onNew: cancelled by user')
+                self.logger.debug(f'{self.name}.onNew: cancelled by user')
                 return
 
             cnts[axe] = cnt
@@ -516,7 +516,7 @@ class InfoMarixGui(ttk.Frame):
             orig = askReal(container=self, title='Zadaj počiatok v osi', prompt=axe, initialvalue=oOrig)
 
             if orig is None:
-                logger.debug(f'{self.name}.onNew: cancelled by user')
+                self.logger.debug(f'{self.name}.onNew: cancelled by user')
                 return
 
             origs[axe] = orig
@@ -524,7 +524,7 @@ class InfoMarixGui(ttk.Frame):
             len = askReal(container=self, title='Zadaj dĺžku osi', prompt=axe)
 
             if len is None:
-                logger.debug(f'{self.name}.onNew: cancelled by user')
+                self.logger.debug(f'{self.name}.onNew: cancelled by user')
                 return
 
             rect[axe] = len
@@ -545,7 +545,7 @@ class InfoMarixGui(ttk.Frame):
     def onInfo(self, event=None):
         "Show information about the InfoMatrix data"
 
-        logger.debug(f'{self.name}.onInfo:')
+        self.logger.debug(f'{self.name}.onInfo:')
 
 
         text = self.dat.info()['msg']
@@ -553,7 +553,7 @@ class InfoMarixGui(ttk.Frame):
 
         msgWin = SiqoMessage(name=self.dat.name, text=text, wpix=800)
 
-        logger.debug(f'{self.name}.onInfo: Show info about {self.dat.name}')
+        self.logger.debug(f'{self.name}.onInfo: Show info about {self.dat.name}')
 
     #==========================================================================
     # Method to apply
@@ -564,7 +564,7 @@ class InfoMarixGui(ttk.Frame):
         metKey = self.strM.get()
         if metKey == 'None': return
 
-        logger.debug(f'{self.name}.method: Value {self.keyV} will be set by {metKey} with subset = {self.sub2D}')
+        self.logger.debug(f'{self.name}.method: Value {self.keyV} will be set by {metKey} with subset = {self.sub2D}')
 
         #----------------------------------------------------------------------
         # Zistenie detailov metody
@@ -578,7 +578,7 @@ class InfoMarixGui(ttk.Frame):
             newEntry = askReal(container=self, title=f"Parameter of {metKey}", prompt=par, initialvalue=entry)
 
             if newEntry is None:
-                logger.info(f"{self.name}.method: {metKey} cancelled by user")
+                self.logger.info(f"{self.name}.method: {metKey} cancelled by user")
                 return
 
             newPar[par] = newEntry
@@ -586,7 +586,7 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Vykonanie metody
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.method: {metKey}(key='{self.keyV}', par={newPar})")
+        self.logger.info(f"{self.name}.method: {metKey}(key='{self.keyV}', par={newPar})")
         self.dat.pointSetFunction(keyFtion=metKey, key=self.keyV, par=newPar)
 
         self.dataChanged(force=True)
@@ -611,13 +611,13 @@ class InfoMarixGui(ttk.Frame):
         self.npU      = np.array([])       # np array for quiver re value
         self.npV      = np.array([])       # np array for quiver im value
 
-        logger.info(f'{self.name}.reset: done')
+        self.logger.info(f'{self.name}.reset: done')
 
     #--------------------------------------------------------------------------
     def clear(self):
         "Clears all data but structure is preserved"
 
-        logger.debug(f'{self.name}.clear:')
+        self.logger.debug(f'{self.name}.clear:')
 
         #----------------------------------------------------------------------
         # Clear InfoMatrix base data
@@ -637,12 +637,12 @@ class InfoMarixGui(ttk.Frame):
 
         self.clear()
         self.dat = dat
-        logger.info(f'{self.name}.setData: New data name = {self.dat.name}')
+        self.logger.info(f'{self.name}.setData: New data name = {self.dat.name}')
 
     #--------------------------------------------------------------------------
     def setPoint(self, c):
 
-        logger.info(f'{self.name}.setPoint: {self.actPoint} = {c}')
+        self.logger.info(f'{self.name}.setPoint: {self.actPoint} = {c}')
 
         self.actPoint.setComp(c)
         self.dataChanged()
@@ -669,7 +669,7 @@ class InfoMarixGui(ttk.Frame):
     def getObjScatter(self):
         "Returns plotable data for Object value"
 
-        logger.info( f"{self.name}.getObjScatter" )
+        self.logger.info( f"{self.name}.getObjScatter" )
 
 #        return lib.squareData(baseObj=self.obj, vec=self.obj.prtLst)
 #        return lib.spiralData(baseObj=self.obj, vec=self.obj.prtLst)
@@ -689,9 +689,6 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Test of the InfoMarixGui class
     #--------------------------------------------------------------------------
-    logger.setLevel('INFO')
-    logger.info('Test of InfoMarixGui class')
-
     win = tk.Tk()
     win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
     win.title('Test of InfoModelGui class')
@@ -706,6 +703,8 @@ if __name__ == '__main__':
     # Zaciatok testu
     #--------------------------------------------------------------------------
     matrix = InfoMatrix('Test field', 'ipTest')
+    matrix.logger.setLevel('INFO')
+    matrix.logger.info('Test of InfoMarixGui class')
 
     matrix.setAxe('x', 'Epoch')
     matrix.setAxe('y', 'L-dist')
@@ -721,11 +720,11 @@ if __name__ == '__main__':
     matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
     matrixGui.sub2D = {'z':1}
-    logger.setLevel('DEBUG')
+    matrixGui.logger.setLevel('DEBUG')
 
     win.mainloop()
 
-    logger.info('Stop of InfoMarixGui test')
+    matrixGui.logger.info('Stop of InfoMarixGui test')
 
 #==============================================================================
 #                              END OF FILE

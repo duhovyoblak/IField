@@ -31,7 +31,7 @@ _PADY           = 5
 # Class InfoModelGui
 #------------------------------------------------------------------------------
 class InfoModelGui:
-    
+
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
@@ -45,14 +45,14 @@ class InfoModelGui:
 
         self.cwd     = os.getcwd()           # Lokalny folder pre pracu s datami
 
-         
+
 
     #==========================================================================
     # Internal methods
     #--------------------------------------------------------------------------
     def formatJson(self, txt):
-            
-        logger.debug(f"{self.model.name}.formatJson:")
+
+        self.logger.debug(f"{self.model.name}.formatJson:")
 
         try:
             txt = literal_eval(txt)
@@ -60,10 +60,10 @@ class InfoModelGui:
         except Exception as e:
             # SyntaxError: invalid syntax
             messagebox.showerror('Invalid input', 'Not a valid JSON',parent=self.parent)
-            logger.info(f"{self.model.name}.formatJson: {e}")
+            self.logger.info(f"{self.model.name}.formatJson: {e}")
             return False
-        
-        logger.debug(f"{self.model.name}.formatJson: done")
+
+        self.logger.debug(f"{self.model.name}.formatJson: done")
         return True
 
     #==========================================================================
@@ -71,17 +71,17 @@ class InfoModelGui:
     #--------------------------------------------------------------------------
     def load(self):
 
-        logger.debug(f"{self.model.name}.load:")
+        self.logger.debug(f"{self.model.name}.load:")
 
-        fileName = filedialog.askopenfilename(parent=self.parent, title='Select IMF file', initialdir=self.cwd, 
+        fileName = filedialog.askopenfilename(parent=self.parent, title='Select IMF file', initialdir=self.cwd,
                                               filetypes=(('IModel files', '*.imf'), ('All files', '*.*')) )
 
         if not fileName:
-             logger.info('Load cancelled')
-           
-        else:   
+             self.logger.info('Load cancelled')
+
+        else:
             self.cwd = os.path.normpath(os.path.split(fileName)[0])
-            
+
             with open(fileName,'r',encoding='utf8',errors='ignore') as f:
                 txt = f.read()
 
@@ -89,16 +89,16 @@ class InfoModelGui:
 
                 self.model = InfoModel(name='InfoModel', json=txt)
 
-         
+
         return self.model
-    
+
     #--------------------------------------------------------------------------
     def save(self):
-            
-        logger.debug(f"{self.model.name}.save:")
 
-        fileName =  filedialog.asksaveasfilename(parent=self.parent, initialfile = fileName, 
-                                                 title='Select IMF file', initialdir=self.cwd, defaultextension=".imf", 
+        self.logger.debug(f"{self.model.name}.save:")
+
+        fileName =  filedialog.asksaveasfilename(parent=self.parent, initialfile = fileName,
+                                                 title='Select IMF file', initialdir=self.cwd, defaultextension=".imf",
                                                  filetypes=(('IMF files', '*.imf'), ('All files', '*.*')) )
         if fileName:
 
@@ -107,12 +107,12 @@ class InfoModelGui:
             with open(fileName,'w',encoding='utf8') as f:
                 f.write(self.model.toJson())
 
-            logger.info(f"{self.model.name}.save: Saved into {fileName}")
+            self.logger.info(f"{self.model.name}.save: Saved into {fileName}")
 
         else:
-            logger.info(f"{self.model.name}.save: Save cancelled")
+            self.logger.info(f"{self.model.name}.save: Save cancelled")
 
-         
+
 
 #==============================================================================
 #   Inicializacia kniznice

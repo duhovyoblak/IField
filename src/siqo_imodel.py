@@ -34,29 +34,29 @@ class InfoModel:
     def __init__(self):
         "Calls constructor of InfoModel"
 
-        logger.debug("InfoModel.constructor:")
-        
+        self.logger.debug("InfoModel.constructor:")
+
         #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
         self.name      = _NAME            # Name of the model
         self.fName     = _FNAME           # FileName of the model
-        
-        logger.debug(f"{self.name}.constructor: done")
+
+        self.logger.debug(f"{self.name}.constructor: done")
 
     #--------------------------------------------------------------------------
     def copy(self, name):
         "Creates copy of this InfoModel"
-        
-        logger.debug(f"{self.name}.copy: To {name}")
-        
 
-         
-        
+        self.logger.debug(f"{self.name}.copy: To {name}")
+
+
+
+
     #--------------------------------------------------------------------------
     def info(self, indent=0):
         "Creates info about this InfoModel"
-        
+
         dat = {}
         msg = []
 
@@ -65,7 +65,7 @@ class InfoModel:
         #----------------------------------------------------------------------
         dat['name'       ] = self.name
         dat['fName'      ] = self.fName
-    
+
         #----------------------------------------------------------------------
         # info o dimenzii
         #----------------------------------------------------------------------
@@ -75,10 +75,10 @@ class InfoModel:
         #----------------------------------------------------------------------
         # info
         #----------------------------------------------------------------------
-        
+
         #----------------------------------------------------------------------
         return {'res':'OK', 'dat':dat, 'msg':msg}
-        
+
     #--------------------------------------------------------------------------
     def __str__(self):
         "Prints info about this InfoModel"
@@ -92,12 +92,12 @@ class InfoModel:
     #--------------------------------------------------------------------------
     def reset(self):
         "Clears InfoModel and reset it to dimension=1"
-        
-        logger.debug(f"{self.name}.reset:")
-        
-        
-         
-        
+
+        self.logger.debug(f"{self.name}.reset:")
+
+
+
+
     #==========================================================================
     # API
     #--------------------------------------------------------------------------
@@ -106,12 +106,12 @@ class InfoModel:
     #--------------------------------------------------------------------------
     def toJson(self):
         "Converts model into json structure"
-        
-        logger.debug(f'{self.name}.toJson:')
-        
+
+        self.logger.debug(f'{self.name}.toJson:')
+
         toRet = {}
 
-        logger.debug(f'{self.name}.toJson: Converted')
+        self.logger.debug(f'{self.name}.toJson: Converted')
         return toRet
 
 #------------------------------------------------------------------------------

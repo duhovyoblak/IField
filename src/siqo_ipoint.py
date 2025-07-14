@@ -31,7 +31,7 @@ _SCHEMA   = {'ipReal   ':{'axes':_SCH_AXES.copy()
 #==============================================================================
 # package's variables
 #------------------------------------------------------------------------------
-logger = SiqoLogger('InfoPoint test', level='INFO')
+_logger = SiqoLogger('InfoPoint test', level='INFO')
 
 #==============================================================================
 # InfoPoint
@@ -41,7 +41,8 @@ class InfoPoint:
     #==========================================================================
     # Static variables & methods
     #--------------------------------------------------------------------------
-    _schema  = _SCHEMA.copy()                      # Schema for InfoPoint
+    _schema = _SCHEMA.copy()                      # Schema for InfoPoint
+    logger  = _logger                            # Logger for InfoPoint
 
     #--------------------------------------------------------------------------
     # Schema methods
@@ -51,7 +52,7 @@ class InfoPoint:
         "Resets schema of InfoPoint to default values"
 
         InfoPoint._schema = _SCHEMA.copy()
-        logger.info("InfoPoint.resetSchema:")
+        InfoPoint.logger.info("InfoPoint.resetSchema:")
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -70,7 +71,7 @@ class InfoPoint:
 
         InfoPoint.checkSchema(ipType)
         InfoPoint._schema[ipType] = {'axes':_SCH_AXES.copy(), 'vals':_SCH_VALS.copy()}
-        logger.info(f"InfoPoint.setAxe: clearSchema ipType '{ipType}'")
+        InfoPoint.logger.info(f"InfoPoint.setAxe: clearSchema ipType '{ipType}'")
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -78,7 +79,7 @@ class InfoPoint:
         "Returns True if schema has defined all axes and vals otherwise returns False"
 
         if ipType not in InfoPoint._schema.keys():
-            logger.warning(f"InfoPoint.isInSchema: ipType '{ipType}' is not defined InfoPoint type")
+            InfoPoint.logger.warning(f"InfoPoint.isInSchema: ipType '{ipType}' is not defined InfoPoint type")
             return False
 
         #----------------------------------------------------------------------
@@ -89,7 +90,7 @@ class InfoPoint:
             for axe in axes:
 
                 if axe not in InfoPoint._schema[ipType]['axes'].keys():
-                    logger.warning(f"InfoPoint.isInSchema: Axe '{axe}' is not defined in schema axes {InfoPoint._schema[ipType]['axes']}")
+                    InfoPoint.logger.warning(f"InfoPoint.isInSchema: Axe '{axe}' is not defined in schema axes {InfoPoint._schema[ipType]['axes']}")
                     return False
 
         #----------------------------------------------------------------------
@@ -100,7 +101,7 @@ class InfoPoint:
             for val in vals:
 
                 if val not in InfoPoint._schema[ipType]['vals'].keys():
-                    logger.warning(f"InfoPoint.isInSchema: Value '{val}' is not defined in schema values {InfoPoint._schema[ipType]['vals']}")
+                    InfoPoint.logger.warning(f"InfoPoint.isInSchema: Value '{val}' is not defined in schema values {InfoPoint._schema[ipType]['vals']}")
                     return False
 
         #----------------------------------------------------------------------
@@ -131,7 +132,7 @@ class InfoPoint:
 
         InfoPoint.checkSchema(ipType)
         InfoPoint._schema[ipType]['axes'][key] = name
-        logger.debug(f"InfoPoint.setAxe: set key '{key}' for axe '{name}'")
+        InfoPoint.logger.debug(f"InfoPoint.setAxe: set key '{key}' for axe '{name}'")
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -142,7 +143,7 @@ class InfoPoint:
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            logger.warning(f"InfoPoint.axeIdxByKey: ipType '{ipType}' is not defined InfoPoint type")
+            InfoPoint.logger.warning(f"InfoPoint.axeIdxByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
@@ -150,13 +151,13 @@ class InfoPoint:
         #----------------------------------------------------------------------
         for i, keyAxe in enumerate(InfoPoint._schema[ipType]['axes'].keys()):
             if key==keyAxe:
-                logger.debug(f"InfoPoint.axeIdxByKey: Key '{key}' found in axes {InfoPoint._schema[ipType]['axes']} at index {i}")
+                InfoPoint.logger.debug(f"InfoPoint.axeIdxByKey: Key '{key}' found in axes {InfoPoint._schema[ipType]['axes']} at index {i}")
                 return i
 
         #----------------------------------------------------------------------
         # Key not found
         #----------------------------------------------------------------------
-        logger.warning(f"InfoPoint.axeIdxByKey: Key '{key}' not found in axes {InfoPoint._schema[ipType]['axes']}")
+        InfoPoint.logger.warning(f"InfoPoint.axeIdxByKey: Key '{key}' not found in axes {InfoPoint._schema[ipType]['axes']}")
         return None
 
     #--------------------------------------------------------------------------
@@ -168,14 +169,14 @@ class InfoPoint:
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            logger.warning(f"InfoPoint.axeKeyByIdx: ipType '{ipType}' is not defined InfoPoint type")
+            InfoPoint.logger.warning(f"InfoPoint.axeKeyByIdx: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
         # Check if idx is not out of the range
         #----------------------------------------------------------------------
         if idx >= len(InfoPoint._schema[ipType]['axes'].keys()):
-            logger.warning(f"InfoPoint.axeKeyByIdx: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['axes']}")
+            InfoPoint.logger.warning(f"InfoPoint.axeKeyByIdx: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['axes']}")
             return None
 
         #----------------------------------------------------------------------
@@ -193,14 +194,14 @@ class InfoPoint:
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            logger.warning(f"InfoPoint.axeNameByKey: ipType '{ipType}' is not defined InfoPoint type")
+            InfoPoint.logger.warning(f"InfoPoint.axeNameByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
         # Find name of the axe's key
         #----------------------------------------------------------------------
         if key not in InfoPoint._schema[ipType]['axes'].keys():
-            logger.warning(f"InfoPoint.axeNameByKey: Key '{key}' not found in axes {InfoPoint._schema[ipType]['axes']}")
+            InfoPoint.logger.warning(f"InfoPoint.axeNameByKey: Key '{key}' not found in axes {InfoPoint._schema[ipType]['axes']}")
             return None
 
         else:
@@ -215,7 +216,7 @@ class InfoPoint:
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            logger.warning(f"InfoPoint.axeNameByKey: ipType '{ipType}' is not defined InfoPoint type")
+            InfoPoint.logger.warning(f"InfoPoint.axeNameByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
@@ -224,11 +225,11 @@ class InfoPoint:
         for key, axeName in InfoPoint._schema[ipType]['axes'].items():
 
             if axeName == name:
-                logger.debug(f"InfoPoint.axeKeyByName: Name '{name}' found in axes {InfoPoint._schema[ipType]['axes']} for key '{key}'")
+                InfoPoint.logger.debug(f"InfoPoint.axeKeyByName: Name '{name}' found in axes {InfoPoint._schema[ipType]['axes']} for key '{key}'")
                 return key
 
         #----------------------------------------------------------------------
-        logger.warning(f"InfoPoint.axeKeyByName: Name '{name}' not found in axes {InfoPoint._schema[ipType]['axes']}")
+        InfoPoint.logger.warning(f"InfoPoint.axeKeyByName: Name '{name}' not found in axes {InfoPoint._schema[ipType]['axes']}")
         return None
 
     #--------------------------------------------------------------------------
@@ -248,7 +249,7 @@ class InfoPoint:
 
         InfoPoint.checkSchema(ipType)
         InfoPoint._schema[ipType]['vals'][key] = name
-        logger.debug(f"InfoPoint.setVal: set key '{key}' for value '{name}'")
+        InfoPoint.logger.debug(f"InfoPoint.setVal: set key '{key}' for value '{name}'")
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -259,7 +260,7 @@ class InfoPoint:
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            logger.warning(f"InfoPoint.valIdxByKey: ipType '{ipType}' is not defined InfoPoint type")
+            InfoPoint.logger.warning(f"InfoPoint.valIdxByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
@@ -271,7 +272,7 @@ class InfoPoint:
         #----------------------------------------------------------------------
         # Key not found
         #----------------------------------------------------------------------
-        logger.warning(f"InfoPoint.valIdxByKey: Key '{key}' not found in valus {InfoPoint._schema[ipType]['vals']}")
+        InfoPoint.logger.warning(f"InfoPoint.valIdxByKey: Key '{key}' not found in valus {InfoPoint._schema[ipType]['vals']}")
         return None
 
     #--------------------------------------------------------------------------
@@ -283,14 +284,14 @@ class InfoPoint:
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            logger.warning(f"InfoPoint.valKeyByIdx: ipType '{ipType}' is not defined InfoPoint type")
+            InfoPoint.logger.warning(f"InfoPoint.valKeyByIdx: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
         # Check if idx is not out of the range
         #----------------------------------------------------------------------
         if idx >= len(InfoPoint._schema[ipType]['vals'].keys()):
-            logger.warning(f"InfoPoint.valKeyByIdx: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['vals']}")
+            InfoPoint.logger.warning(f"InfoPoint.valKeyByIdx: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['vals']}")
             return None
 
         #----------------------------------------------------------------------
@@ -308,14 +309,14 @@ class InfoPoint:
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            logger.warning(f"InfoPoint.valNameByKey: ipType '{ipType}' is not defined InfoPoint type")
+            InfoPoint.logger.warning(f"InfoPoint.valNameByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
         # Find name of the value's key
         #----------------------------------------------------------------------
         if key not in InfoPoint._schema[ipType]['vals'].keys():
-            logger.warning(f"InfoPoint.valNameByKey: Key '{key}' not found in valus {InfoPoint._schema[ipType]['vals']}")
+            InfoPoint.logger.warning(f"InfoPoint.valNameByKey: Key '{key}' not found in valus {InfoPoint._schema[ipType]['vals']}")
             return None
 
         else:
@@ -330,7 +331,7 @@ class InfoPoint:
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            logger.warning(f"InfoPoint.valKeyByName: ipType '{ipType}' is not defined InfoPoint type")
+            InfoPoint.logger.warning(f"InfoPoint.valKeyByName: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
@@ -339,11 +340,11 @@ class InfoPoint:
         for key, valName in InfoPoint._schema[ipType]['vals'].items():
 
             if valName == name:
-                logger.debug(f"InfoPoint.valKeyByName: Name '{name}' found in axes {InfoPoint._schema[ipType]['vals']} for key '{key}'")
+                InfoPoint.logger.debug(f"InfoPoint.valKeyByName: Name '{name}' found in axes {InfoPoint._schema[ipType]['vals']} for key '{key}'")
                 return key
 
         #----------------------------------------------------------------------
-        logger.warning(f"InfoPoint.valKeyByName: Name '{name}' not found in axes {InfoPoint._schema[ipType]['vals']}")
+        InfoPoint.logger.warning(f"InfoPoint.valKeyByName: Name '{name}' not found in axes {InfoPoint._schema[ipType]['vals']}")
         return None
 
     #--------------------------------------------------------------------------
@@ -486,7 +487,7 @@ class InfoPoint:
         # Key check
         #----------------------------------------------------------------------
         if key not in InfoPoint._schema[self._ipType]['axes'].keys():
-            logger.warning(f"InfoPoint.get: Key '{key}' not found in axes {InfoPoint._schema[self._ipType]['axes']}")
+            self.logger.warning(f"InfoPoint.get: Key '{key}' not found in axes {InfoPoint._schema[self._ipType]['axes']}")
             return None
 
         #----------------------------------------------------------------------
@@ -507,7 +508,7 @@ class InfoPoint:
         # Key check
         #----------------------------------------------------------------------
         if key not in InfoPoint._schema[self._ipType]['vals'].keys():
-            logger.warning(f"InfoPoint.get: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
+            self.logger.warning(f"InfoPoint.get: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
             return None
 
         #----------------------------------------------------------------------
@@ -532,7 +533,7 @@ class InfoPoint:
                     if key != 'None': self._pos[key] = pos[key]
 
             except KeyError:
-                logger.error(f"InfoPoint.set: Position '{self._posStr()}' is not compatible with schema axes {InfoPoint._schema[self._ipType]['axes']}")
+                self.logger.error(f"InfoPoint.set: Position '{self._posStr()}' is not compatible with schema axes {InfoPoint._schema[self._ipType]['axes']}")
                 return False
 
         #----------------------------------------------------------------------
@@ -546,11 +547,11 @@ class InfoPoint:
                     self._vals[key] = val
 
                 else:
-                    logger.warning(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
+                    self.logger.warning(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
                     return False
 
         #----------------------------------------------------------------------
-        logger.debug(f"InfoPoint.set: pos={self._posStr()}, vals {self._valStr()}")
+        self.logger.debug(f"InfoPoint.set: pos={self._posStr()}, vals {self._valStr()}")
         return True
 
     #--------------------------------------------------------------------------
@@ -565,12 +566,12 @@ class InfoPoint:
                     self._vals[key] = val
 
                 else:
-                    logger.warning(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
+                    self.logger.warning(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
                     return False
 
         else: self._vals = {}
 
-        logger.debug(f"InfoPoint.clear: with vals {vals}")
+        self.logger.debug(f"InfoPoint.clear: with vals {vals}")
         return self
 
     #==========================================================================
@@ -723,7 +724,7 @@ class InfoPoint:
                 pairs.append( (val, toP._pos[key]) )
 
         except KeyError:
-            logger.error(f"InfoPoints have different number of coordinates!")
+            self.logger.error(f"InfoPoints have different number of coordinates!")
             return None
 
         #----------------------------------------------------------------------
@@ -825,7 +826,7 @@ if __name__ == '__main__':
         print('axe(x) ', p2.pos('x'))
         print('axe(y) ', p2.pos('y'))
         print('axe(r) ', p2.pos('r'))
-        print() 
+        print()
 
         pc = p2.copy()
         print('Copied ', pc)
