@@ -85,9 +85,9 @@ class InfoMatrix:
         self.points     = []       # List of InfoPoints
 
         self.actVal     = None     # Key of the current InfoPoint's dat value
-        self.actSub     = {}       # Current active submatrix definition as dict of freezed axesKeys with values
+        self.actSubIdxs = {}       # Current active submatrix definition as dict of freezed axesKeys with values
         self.actList    = []       # Current active list of points in submatrix
-        self.actChanged = True     # Current sub settings was changed and actSub needs refresh
+        self.actChanged = True     # Current sub settings was changed and actSubMatrix needs refresh
 
         #----------------------------------------------------------------------
         # Private datove polozky triedy
@@ -151,9 +151,9 @@ class InfoMatrix:
         self.staticEdge = False    # Static edge means value of the edge nodes is fixed
 
         self.actVal     = None     # Key of the InfoPoint's current dat value
-        self.actSub     = {}       # Current active submatrix defined as dict of freezed axesKeys with values
+        self.actSubIdxs = {}       # Current active submatrix defined as dict of freezed axesKeys with values
         self.actList    = []       # Current active submatrix/subvector
-        self.actChanged = True     # Current sub settings was changed and actSub needs refresh
+        self.actChanged = True     # Current sub settings was changed and actSubMatrix needs refresh
 
         self._cnts      = {}       # Number of InfoPoints in respective axes
         self._origs     = {}       # Origin's coordinates of the InfoMatrix
@@ -181,7 +181,7 @@ class InfoMatrix:
         dat['staticEdge'    ] = self.staticEdge
 
         dat['actVal'        ] = self.actVal
-        dat['actSub'        ] = self.actSub
+        dat['actSubIdxs'    ] = self.actSubIdxs
         dat['cnt of actList'] = len(self.actList)
         dat['actChanged'    ] = self.actChanged
 
@@ -254,9 +254,9 @@ class InfoMatrix:
         toRet.staticEdge = self.staticEdge     # Static edge means value of the edge nodes is fixed
 
         toRet.actVal     = self.actVal         # Key of the InfoPoint's dat value
-        toRet.actSub     = self.actSub.copy()  # Current active submatrix defined as dict of freezed axesKeys with values
+        toRet.actSubIdxs = self.actSubIdxs.copy()  # Current active submatrix defined as dict of freezed axesKeys with values
         toRet.actList    = []                  # Current active submatrix/subvector
-        toRet.actChanged = True                # Current sub settings was changed and actSub needs refresh
+        toRet.actChanged = True                # Current sub settings was changed and actSubMatrix needs refresh
 
         toRet._cnts      = self._cnts.copy()   # Number of InfoPoints in respective axes
         toRet._origs     = self._origs.copy()  # Origin's coordinates of the InfoMatrix
@@ -517,6 +517,7 @@ class InfoMatrix:
         for i, idx in enumerate(idxs):
             pos += idx * subProd[i]
 
+        self.logger.debug(f"{self.name}._posByIdxs: {idxs} -> pos={pos}")
         return pos
 
     #--------------------------------------------------------------------------
@@ -555,6 +556,7 @@ class InfoMatrix:
         "Returns InfoPoint in field for respective position"
 
         toRet = self.points[pos]
+        #self.logger.debug(f"{self.name}.pointByPos: pos={pos} is at {id(toRet)}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -568,7 +570,7 @@ class InfoMatrix:
     def pointByCoord(self, coord:dict) -> InfoPoint:
         "Returns nearest InfoPoint in field to respective coordinates"
 
-        self.logger.debug(f"{self.name}.pointByCoord: coord sent={coord}")
+        self.logger.debug(f"{self.name}.pointByCoord: coord sent={coord} and actSubIdxs={self.actSubIdxs}")
 
         vals = []  # List of axe values for debugging
         idxs = []  # List of indices for respective axes
@@ -582,8 +584,8 @@ class InfoMatrix:
             #------------------------------------------------------------------
             # Ak je os zmrazena, pouzijem zmrazenu hodnotu ako jeden z koordinatov
             #------------------------------------------------------------------
-            if   axe in self.actSub.keys() and self.actSub[axe]: axeVal = self.actSub[axe]
-            elif axe in       coord.keys() and       coord[axe]: axeVal = coord[axe]
+            if   axe in self.actSubIdxs.keys() and self.actSubIdxs[axe]: axeVal = self.actSubIdxs[axe]
+            elif axe in           coord.keys() and           coord[axe]: axeVal =           coord[axe]
             else:
                 #--------------------------------------------------------------
                 # Ak nie je os zmrazena ani v koordinatoch, pouzijem hodnotu z origu
@@ -610,52 +612,56 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     # Active submatrix definition
     #--------------------------------------------------------------------------
-    def _actSubSet(self, actSub:dict):
+    def _actSubSet(self, actSubIdxs:dict):
         """Sets active submatrix definition as dict of freezed axesKeys with values.
-           If actSub definition changed from current definition, sets actChanged to True.
+           If actSubIdxs definition changed from current definition, sets actChanged to True.
         """
 
-        self.logger.info(f"{self.name}._actSubSet: To {actSub}")
+        self.logger.info(f"{self.name}._actSubSet: To {actSubIdxs}")
+        oldActSubIdxs = self.actSubIdxs.copy()
 
         #----------------------------------------------------------------------
         # Kontrola zmeny definicie
         #----------------------------------------------------------------------
-        if self.actSub == actSub:
-            self.logger.debug(f"{self.name}._actSubSet: actSub definition was not changed")
+        if self.actSubIdxs == actSubIdxs:
+
+            self.actChanged = False
+            self.logger.debug(f"{self.name}._actSubSet: actSubIdxs definition was not changed")
             return
+
+        else: self.actChanged = True
 
         #----------------------------------------------------------------------
         # Kontrola novej definicie
         #----------------------------------------------------------------------
-        for axe, axeIdx in actSub.items():
+        for axe, axeIdx in actSubIdxs.items():
 
             if axe not in self._cnts.keys():
                 self.logger.error(f"{self.name}._actSubSet: Axe '{axe}' is not in InfoMatrix axes {list(self._cnts.keys())}, change denied")
                 return
 
         #----------------------------------------------------------------------
-        # Nastavenie aktivnej submatice
+        # Nastavenie prazdnej aktivnej submatice
         #----------------------------------------------------------------------
-        self.actSub     = actSub.copy()
-        self.actList    = []
-        self.actChanged = True
+        self.actSubIdxs  = actSubIdxs.copy()
+        self.actList = []
 
         #----------------------------------------------------------------------
-        self.logger.debug(f"{self.name}._actSubSet: definition was changed to {self.actSub}")
+        self.logger.warning(f"{self.name}._actSubSet: definition was changed {oldActSubIdxs} -> {self.actSubIdxs}")
 
     #--------------------------------------------------------------------------
     # Active subsmatrix retrieval
     #--------------------------------------------------------------------------
-    def actSubmatrix(self, actSub=None, force=False) -> list:
+    def actSubmatrix(self, actSubIdxs=None, force=False) -> list:
         """Returns active submatrix of InfoPoints as list of InfoPoints
         """
 
-        self.logger.info(f"{self.name}.actSubmatrix: actSub={actSub}, force={force}")
+        self.logger.info(f"{self.name}.actSubmatrix: actSubIdxs={actSubIdxs}, force={force}")
 
         #----------------------------------------------------------------------
         # Nastavenie aktivnej submatice ak bola dodana definicia
         #----------------------------------------------------------------------
-        if actSub is not None: self._actSubSet(actSub)
+        if actSubIdxs: self._actSubSet(actSubIdxs)
 
         #----------------------------------------------------------------------
         # Kontrola potreby obnovenia
@@ -665,7 +671,7 @@ class InfoMatrix:
             return self.actList
 
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.actSubmatrix: Refresh for actSub={self.actSub}, force={force}")
+        self.logger.info(f"{self.name}.actSubmatrix: Refresh for actSubIdxs={self.actSubIdxs}, force={force}")
 
         #----------------------------------------------------------------------
         # Prejdem vsetky osi s definovanou hodnotou idx
@@ -673,7 +679,7 @@ class InfoMatrix:
         poss  = set()  # Set of positions of InfoPoints in the active submatrix
         first = True   # Flag for first axe
 
-        for axe, axeIdx in self.actSub.items():
+        for axe, axeIdx in self.actSubIdxs.items():
 
             #------------------------------------------------------------------
             # Kontrola, ci je daná os freezed
@@ -711,7 +717,7 @@ class InfoMatrix:
             self.actList.append(self.pointByPos(pos))
 
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.actSubmatrix: Found {len(self.actList)} positions in active submatrix for actSub={self.actSub}")
+        self.logger.info(f"{self.name}.actSubmatrix: Found {len(self.actList)} positions in active submatrix for actSubIdxs={self.actSubIdxs}")
         return self.actList
 
     #==========================================================================
@@ -946,7 +952,14 @@ if __name__ == '__main__':
     # Vytvorenie, generovanie osi
     #--------------------------------------------------------------------------
     im = InfoMatrix('Test matrix', ipType='ipTest')
+
     im.logger.debug('Test of InfoMatrix class')
+    print(f'logger.frameDepth = {im.logger.frameDepth}')
+
+    im.gener(cnts={'a':5}, origs={'a':0.0}, rects={'a':1.0})
+    im.gener(cnts={'a':5}, origs={'a':0.0}, rects={'a':1.0})
+    im.gener(cnts={'a':5}, origs={'a':0.0}, rects={'a':1.0})
+    im.gener(cnts={'a':5}, origs={'a':0.0}, rects={'a':1.0})
 
 
     print(im)

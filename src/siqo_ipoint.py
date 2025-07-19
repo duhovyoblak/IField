@@ -587,7 +587,7 @@ class InfoPoint:
                     return False
 
         #----------------------------------------------------------------------
-        self.logger.debug(f"InfoPoint.set: pos={self._posStr()}, vals {self._valStr()}")
+        #self.logger.debug(f"InfoPoint.set: @{id(self)} pos: {pos}->{self._posStr()}, vals: {vals}->{self._valStr()}")
         return True
 
     #--------------------------------------------------------------------------

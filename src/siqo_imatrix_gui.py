@@ -59,7 +59,6 @@ class InfoMarixGui(ttk.Frame):
         self.h        =  600               # Height of the chart in px
 
         self.type     = '2D'               # Actual type of the chart
-        self.iPoints  = []                 # List of InfoPoints to show
         self.actPoint = None               # Actual working InfoPoint
 
         self.keyS     = 'None'             # key for methods for value to show
@@ -70,12 +69,6 @@ class InfoMarixGui(ttk.Frame):
         if 'keyV' in kwargs.keys(): self.keyV = kwargs['keyV']
         if 'keyX' in kwargs.keys(): self.keyX = kwargs['keyX']
         if 'keyY' in kwargs.keys(): self.keyY = kwargs['keyY']
-
-        self.npX      = np.array([])       # np array for coordinate X
-        self.npY      = np.array([])       # np array for coordinate Y
-        self.npC      = np.array([])       # np array for value color
-        self.npU      = np.array([])       # np array for quiver re value
-        self.npV      = np.array([])       # np array for quiver im value
 
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
@@ -138,7 +131,7 @@ class InfoMarixGui(ttk.Frame):
         self.cbX = ttk.Combobox(frmBtn, textvariable=self.strX, width=_COMBO_WIDTH)
         self.cbX['values'] = axesLst
         self.cbX['state' ] = 'readonly'
-        self.cbX.bind('<<ComboboxSelected>>', self.dataChanged)
+        self.cbX.bind('<<ComboboxSelected>>', self.viewChanged)
         self.cbX.grid(column=1, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.varLogX = tk.BooleanVar(value=False)
@@ -156,7 +149,7 @@ class InfoMarixGui(ttk.Frame):
         self.cbY = ttk.Combobox(frmBtn, textvariable=self.strY, width=_COMBO_WIDTH)
         self.cbY['values'] = axesLst
         self.cbY['state' ] = 'readonly'
-        self.cbY.bind('<<ComboboxSelected>>', self.dataChanged)
+        self.cbY.bind('<<ComboboxSelected>>', self.viewChanged)
         self.cbY.grid(column=2, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.varLogY = tk.BooleanVar(value=False)
@@ -176,14 +169,14 @@ class InfoMarixGui(ttk.Frame):
         self.cbVP['values'] = list(self.dat.mapShowMethods().keys())
         self.cbVP['state' ] = 'readonly'
         self.cbVP.current(0)
-        self.cbVP.bind('<<ComboboxSelected>>', self.dataChanged)
+        self.cbVP.bind('<<ComboboxSelected>>', self.viewChanged)
         self.cbVP.grid(column=3, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbVX = ttk.Combobox(frmBtn, textvariable=self.strVX, width=_COMBO_WIDTH)
         self.cbVX['values'] = list(self.dat.getVals().values())
         self.cbVX['state' ] = 'readonly'
         self.cbVX.current(0)
-        self.cbVX.bind('<<ComboboxSelected>>', self.dataChanged)
+        self.cbVX.bind('<<ComboboxSelected>>', self.viewChanged)
         self.cbVX.grid(column=3, row=1, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
@@ -215,7 +208,7 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Initialisation
         #----------------------------------------------------------------------
-        self.dataChanged()
+        self.viewChanged()
 
         self.logger.audit(f'{name}.init: Done')
 
@@ -232,7 +225,7 @@ class InfoMarixGui(ttk.Frame):
         return toRet
 
     #--------------------------------------------------------------------------
-    def dataChanged(self, event=None, force=False):
+    def viewChanged(self, event=None, force=False):
         "Prepares npData to show"
 
         #----------------------------------------------------------------------
@@ -243,7 +236,7 @@ class InfoMarixGui(ttk.Frame):
         aKeyX = self.dat.axeKeyByName( self.strX.get() )  # Key for Name of the X-axis dimension from ipType.axis, 'None' means nothing to show in this axis
         aKeyY = self.dat.axeKeyByName( self.strY.get() )  # Key for Name of the Y-axis dimension from ipType.axis, 'None' means nothing to show in this axis
 
-        self.logger.info(f'{self.name}.dataChanged: method={aKeyS}->{self.keyS}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
+        self.logger.info(f'{self.name}.viewChanged: method={aKeyS}->{self.keyS}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY} with sub2D={self.sub2D}')
         self.needShow = False
 
         #----------------------------------------------------------------------
@@ -264,19 +257,19 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             # Ziskam list InfoPoints (whole object) patriacich subsetu
             #------------------------------------------------------------------
-            self.iPoints = self.dat.actSubmatrix(actSub=self.sub2D)
+            self.dat.actSubmatrix(actSubIdxs=self.sub2D)
 
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
         #----------------------------------------------------------------------
-        self.logger.info(f'{self.name}.dataChanged: needShow = {self.needShow}')
+        self.logger.info(f'{self.name}.viewChanged: needShow = {self.needShow}')
         self.show()
 
     #==========================================================================
     # Show the chart
     #--------------------------------------------------------------------------
     def show(self, event=None):
-        """Vykresli chart na zaklade aktualneho listu self.cIP
+        """Vykresli chart na zaklade aktualneho listu actList
         """
         self.logger.info(f"{self.name}.show: axisX='{self.keyX}', axisY='{self.keyY}', value='{self.keyV}', method='{self.keyS}'")
 
@@ -290,22 +283,22 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Check list of InfoPoints to show
         #----------------------------------------------------------------------
-        if len(self.iPoints) == 0:
-            self.logger.info(f'{self.name}.show: No InfoPoints, nothig to show')
+        if len(self.dat.actList) == 0:
+            self.logger.warning(f'{self.name}.show: No InfoPoints, nothig to show')
             return
 
         #----------------------------------------------------------------------
         # Check value to show
         #----------------------------------------------------------------------
         if not self.keyV:
-            self.logger.info(f'{self.name}.show: No value selected, nothig to show')
+            self.logger.warning(f'{self.name}.show: No value selected, nothig to show')
             return
 
         #----------------------------------------------------------------------
         # Check axis to show
         #----------------------------------------------------------------------
         if not self.keyX and not self.keyY:
-            self.logger.info(f'{self.name}.show: No axis selected, nothig to show')
+            self.logger.warning(f'{self.name}.show: No axis selected, nothig to show')
             return
 
         #----------------------------------------------------------------------
@@ -322,8 +315,10 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         showFtion = self.dat.mapShowMethods()[self.keyS]
 
-        self.logger.debug(f'{self.name}.show: Iterating iPoints for showFtion={self.keyS} with keyV={self.keyV}')
-        for point in self.iPoints:
+        self.logger.debug(f'{self.name}.show: Iterating {len(self.dat.actList)} iPoints for showFtion={self.keyS} with keyV={self.keyV}')
+        for i, point in enumerate(self.dat.actList):
+
+            if i ==0: self.logger.warning(f'{self.name}.show: actList[0] = {point}@{id(point)}')
 
             valueToShow = showFtion(point, self.keyV)
             listC.append(valueToShow)
@@ -334,22 +329,22 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Skonvertujem do npArrays
         #----------------------------------------------------------------------
-        self.npC = np.array(listC)
-        self.npX = np.array(listX)
-        self.npY = np.array(listY)
+        npC = np.array(listC)
+        npX = np.array(listX)
+        npY = np.array(listY)
 
         #----------------------------------------------------------------------
         # Kontrola npArrays
         #----------------------------------------------------------------------
-        if self.npC.size==0:
+        if npC.size==0:
             self.logger.info(f'{self.name}.show: No values to show')
             return
 
-        if self.keyX and self.npX.size==0:
+        if self.keyX and npX.size==0:
             self.logger.info(f'{self.name}.show: Axe X is selected but has no data to show')
             return
 
-        if self.keyY and self.npY.size==0:
+        if self.keyY and npY.size==0:
             self.logger.info(f'{self.name}.show: Axe Y is selected but has no data to show')
             return
 
@@ -357,23 +352,23 @@ class InfoMarixGui(ttk.Frame):
         # Prepare the chart
         #----------------------------------------------------------------------
         self.figure.clear()
-        self.chart = self.figure.add_subplot()
+        chart = self.figure.add_subplot()
 
 #        self.chart.set_title(val, fontsize=14)
-        self.chart.grid(False)
-        self.chart.set_facecolor('white')
+        chart.grid(False)
+        chart.set_facecolor('white')
 
         #----------------------------------------------------------------------
         # Nazvy osi podla aktualneho vyberu
         #----------------------------------------------------------------------
-        if self.keyX: self.chart.set_xlabel(self.dat.axeNameByKey(self.keyX))
-        if self.keyY: self.chart.set_ylabel(self.dat.axeNameByKey(self.keyY))
+        if self.keyX: chart.set_xlabel(self.dat.axeNameByKey(self.keyX))
+        if self.keyY: chart.set_ylabel(self.dat.axeNameByKey(self.keyY))
 
         #----------------------------------------------------------------------
         # Log axis X, Y
         #----------------------------------------------------------------------
-        if 'selected' in self.cbLogX.state(): self.chart.set_xscale('log')
-        if 'selected' in self.cbLogY.state(): self.chart.set_yscale('log')
+        if 'selected' in self.cbLogX.state(): chart.set_xscale('log')
+        if 'selected' in self.cbLogY.state(): chart.set_yscale('log')
 
         #----------------------------------------------------------------------
         # Show the chart
@@ -382,19 +377,20 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             # Chart 1D
             #------------------------------------------------------------------
-            if self.keyX: axis = self.npX
-            else        : axis = self.npY
+            if self.keyX: axis = npX
+            else        : axis = npY
 
-#            chrtObj = self.chart.scatter( x=self.C, y=self.Y, linewidths=1 ) #, edgecolors='gray')
-            chrtObj = self.chart.plot( self.npC, axis ) #, edgecolors='gray')
+            self.logger.debug(f'{self.name}.show: Chart 1D')
+            chrtObj = chart.plot( npC, axis ) #, linewidths=1, edgecolors='gray')
 
         elif self.dims() == 2:
             #------------------------------------------------------------------
             # Chart 2D
             #------------------------------------------------------------------
-            chrtObj = self.chart.scatter( x=self.npX, y=self.npY, c=self.npC, marker="s", cmap='RdYlBu_r')
-#            chrtObj = self.chart.scatter( x=self.X, y=self.Y, c=self.C, marker="s", lw=0, s=(72./self.figure.dpi)**2, cmap='RdYlBu_r')
-            self.figure.colorbar(chrtObj, ax=self.chart)
+            self.logger.debug(f'{self.name}.show: Chart 2D')
+
+            chrtObj = chart.scatter( x=npX, y=npY, c=npC, marker="s", cmap='RdYlBu_r') # , lw=0, s=(72./self.figure.dpi)**2
+            self.figure.colorbar(chrtObj, ax=chart)
 
         else:
             self.logger.error(f'{self.name}.show: Chart with {self.dims()} dimensions is not supported')
@@ -430,6 +426,7 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             coord = {self.keyX: x, self.keyY: y}
             self.actPoint = self.dat.pointByCoord(coord)
+            self.logger.warning(f'{self.name}.onClick: Actual point = {self.actPoint}@{id(self.actPoint)}')
 
             #------------------------------------------------------------------
             # Left button
@@ -465,8 +462,14 @@ class InfoMarixGui(ttk.Frame):
 
                    self.actPoint.set(vals={self.keyV:inp})
 
-            #------------------------------------------------------------------
+                #--------------------------------------------------------------
+                # Data was changed, so show the chart
+                #--------------------------------------------------------------
+                self.logger.warning(f'{self.name}.onClick: Data changed, need to show the chart')
+                self.needShow = True
+                self.show()
 
+            #------------------------------------------------------------------
         else:
             self.actPoint = None
             self.logger.warning(f'{self.name}.onClick: Clicked ouside axes bounds but inside plot window')
@@ -534,7 +537,7 @@ class InfoMarixGui(ttk.Frame):
 
         #----------------------------------------------------------------------
         self.dat.gener(cnts=cnts, origs=origs, rect=rect)
-        self.dataChanged(force=True)
+        self.viewChanged(force=True)
 
         return
 
@@ -588,7 +591,7 @@ class InfoMarixGui(ttk.Frame):
         self.logger.info(f"{self.name}.method: {metKey}(key='{self.keyV}', par={newPar})")
         self.dat.pointSetFunction(keyFtion=metKey, key=self.keyV, par=newPar)
 
-        self.dataChanged(force=True)
+        self.viewChanged(force=True)
 
         #----------------------------------------------------------------------
 
@@ -597,18 +600,11 @@ class InfoMarixGui(ttk.Frame):
     def reset(self):
         "Reset all data into default values"
 
-        self.iPoints  = []                 # List of InfoPoints to show
         self.actPoint = None               # Actual working InfoPoint
 
         self.keyV     = 'None'             # key for value to show
         self.keyX     = 'None'             # Default key for Axis X to show
         self.keyY     = 'None'             # Default key for Axis Y to show
-
-        self.npX      = np.array([])       # np array for coordinate X
-        self.npY      = np.array([])       # np array for coordinate Y
-        self.npC      = np.array([])       # np array for value color
-        self.npU      = np.array([])       # np array for quiver re value
-        self.npV      = np.array([])       # np array for quiver im value
 
         self.logger.info(f'{self.name}.reset: done')
 
@@ -628,8 +624,6 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         self.reset()
 
-
-
     #--------------------------------------------------------------------------
     def setData(self, dat:InfoMatrix):
         "Reset matrix and set new data"
@@ -644,7 +638,7 @@ class InfoMarixGui(ttk.Frame):
         self.logger.info(f'{self.name}.setPoint: {self.actPoint} = {c}')
 
         self.actPoint.setComp(c)
-        self.dataChanged()
+        self.viewChanged()
 
     #==========================================================================
     # Tools for figure setting
@@ -703,6 +697,10 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     matrix = InfoMatrix('Test field', 'ipTest')
     matrix.logger.setLevel('INFO')
+
+    matrix.logger.frameDepth = 2
+    print(f'logger.frameDepth = {matrix.logger.frameDepth}')
+
     matrix.logger.info('Test of InfoMarixGui class')
 
     matrix.setAxe('x', 'Epoch')
