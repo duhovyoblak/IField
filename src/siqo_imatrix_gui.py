@@ -104,12 +104,12 @@ class InfoMarixGui(ttk.Frame):
         frmBtn = ttk.Frame(self)
         frmBtn.pack(fill=tk.X, expand=True, side=tk.TOP, anchor=tk.N)
 
-        frmBtn.columnconfigure(0, weight=0)
+        frmBtn.columnconfigure(0, weight=3)
         frmBtn.columnconfigure(1, weight=3)
-        frmBtn.columnconfigure(2, weight=3)
+        frmBtn.columnconfigure(2, weight=4)
         frmBtn.columnconfigure(3, weight=3)
-        frmBtn.columnconfigure(4, weight=2)
-        frmBtn.columnconfigure(5, weight=0)
+        frmBtn.columnconfigure(4, weight=3)
+        frmBtn.columnconfigure(5, weight=3)
 
         frmBtn.rowconfigure(0, weight=1)
         frmBtn.rowconfigure(1, weight=1)
@@ -123,76 +123,92 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # X axis dimension selector
         #----------------------------------------------------------------------
+        colX = 0
         self.strX   = tk.StringVar(value='None') # Name of the X-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
 
         lblX = ttk.Label(frmBtn, text="Dim for X axis:")
-        lblX.grid(column=1, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+        lblX.grid(column=colX, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbX = ttk.Combobox(frmBtn, textvariable=self.strX, width=_COMBO_WIDTH)
         self.cbX['values'] = axesLst
         self.cbX['state' ] = 'readonly'
         self.cbX.bind('<<ComboboxSelected>>', self.viewChanged)
-        self.cbX.grid(column=1, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+        self.cbX.grid(column=colX, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.varLogX = tk.BooleanVar(value=False)
         self.cbLogX = ttk.Checkbutton(frmBtn, text='LogX', variable=self.varLogX, command=self.show)
-        self.cbLogX.grid(column=1, row=1, pady=_PADY)
+        self.cbLogX.grid(column=colX, row=1, sticky=tk.E, pady=_PADY)
 
         #----------------------------------------------------------------------
         # Y axis dimension selector
         #----------------------------------------------------------------------
+        colY = 1
         self.strY   = tk.StringVar(value='None') # Name of the Y-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
 
         lblY = ttk.Label(frmBtn, text="Dim for Y axis:")
-        lblY.grid(column=2, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+        lblY.grid(column=colY, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbY = ttk.Combobox(frmBtn, textvariable=self.strY, width=_COMBO_WIDTH)
         self.cbY['values'] = axesLst
         self.cbY['state' ] = 'readonly'
         self.cbY.bind('<<ComboboxSelected>>', self.viewChanged)
-        self.cbY.grid(column=2, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+        self.cbY.grid(column=colY, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.varLogY = tk.BooleanVar(value=False)
         self.cbLogY = ttk.Checkbutton(frmBtn, text='LogY', variable=self.varLogY, command=self.show)
-        self.cbLogY.grid(column=2, row=1, pady=_PADY)
+        self.cbLogY.grid(column=colY, row=1, sticky=tk.E, pady=_PADY)
 
         #----------------------------------------------------------------------
         # Value to show selector
         #----------------------------------------------------------------------
+        colS = 2
         self.strVP = tk.StringVar() # Name of the method for value to show in the chart
         self.strVX = tk.StringVar() # Name of the value to show in the chart
 
         lblVal = ttk.Label(frmBtn, text="Value to show:")
-        lblVal.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+        lblVal.grid(column=colS, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbVP = ttk.Combobox(frmBtn, textvariable=self.strVP, width=int(_COMBO_WIDTH))
         self.cbVP['values'] = list(self.dat.mapShowMethods().keys())
         self.cbVP['state' ] = 'readonly'
         self.cbVP.current(0)
         self.cbVP.bind('<<ComboboxSelected>>', self.viewChanged)
-        self.cbVP.grid(column=3, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+        self.cbVP.grid(column=colS, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbVX = ttk.Combobox(frmBtn, textvariable=self.strVX, width=_COMBO_WIDTH)
         self.cbVX['values'] = list(self.dat.getVals().values())
         self.cbVX['state' ] = 'readonly'
         self.cbVX.current(0)
         self.cbVX.bind('<<ComboboxSelected>>', self.viewChanged)
-        self.cbVX.grid(column=3, row=1, padx=_PADX, pady=_PADY)
+        self.cbVX.grid(column=colS, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
         # Method to apply selector
         #----------------------------------------------------------------------
+        colM = 3
         self.strM = tk.StringVar() # Name of the method to apply to the data
 
         lblMet = ttk.Label(frmBtn, text="Set values:")
-        lblMet.grid(column=4, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+        lblMet.grid(column=colM, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbM = ttk.Combobox(frmBtn, textvariable=self.strM, width=int(2*_COMBO_WIDTH))
         self.cbM['values'] = list(self.dat.mapSetMethods().keys())
         self.cbM['state' ] = 'readonly'
         self.cbM.current(0)
         self.cbM.bind('<<ComboboxSelected>>', self.method)
-        self.cbM.grid(column=4, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+        self.cbM.grid(column=colM, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        #----------------------------------------------------------------------
+        # Frozen axis indexes
+        #----------------------------------------------------------------------
+        colFA = 4
+        self.strFA = tk.StringVar() # Frozen axis indexes, e.g. 'x:4, t:17'
+
+        lblFax = ttk.Label(frmBtn, text="Frozen axis:")
+        lblFax.grid(column=colFA, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        valFax = ttk.Label(frmBtn, textvariable=self.strFA)
+        valFax.grid(column=colFA, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
         # Create a figure with the navigator bar and bind it to mouse events
@@ -208,8 +224,6 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Initialisation
         #----------------------------------------------------------------------
-        self.viewChanged()
-
         self.logger.audit(f'{name}.init: Done')
 
     #--------------------------------------------------------------------------
@@ -244,7 +258,35 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         if (self.keyS!=aKeyS) or (self.keyV!=aKeyV) or (self.keyX!=aKeyX) or (self.keyY!=aKeyY) or force:
 
+            self.logger.info(f'{self.name}.viewChanged: {self.keyS}->{aKeyS}, {self.keyV}->{aKeyV}, {self.keyX}->{aKeyX}, {self.keyY}->{aKeyY} - need to show the chart')
             self.needShow = True
+
+            #------------------------------------------------------------------
+            # Ak sa zmenili osy, zresetujem sub2D
+            #------------------------------------------------------------------
+            if (self.keyX != aKeyX) or (self.keyY != aKeyY):
+
+                self.logger.info(f'{self.name}.viewChanged: X or Y axis changed, resetting sub2D')
+                self.sub2D = {}
+
+                #--------------------------------------------------------------
+                # Nastavim zmrazene indexy pre osi, ktore sa nezobrazia
+                #--------------------------------------------------------------
+                for axe, axeName in self.dat.getAxes().items():
+
+                    # Preskocim zobrazene osi
+                    if axe==aKeyX or axe==aKeyY: continue
+
+                    #----------------------------------------------------------
+                    # Zamrazim index pre danu os
+                    #----------------------------------------------------------
+                    inp = askInt(container=self, title=f'Zadaj zmrazenú hodnotu pre {axeName}', prompt=axe, initialvalue=0, min=0, max=self.dat._cnts[axe]-1)
+
+                    if inp is None:
+                       self.logger.audit(f'{self.name}.viewChanged: User input for axe {axeName} cancelled by user')
+                       continue
+
+                    self.setSub2D({axe: inp})
 
             #------------------------------------------------------------------
             # Vytvorim predpis pre aktualny subset
@@ -264,6 +306,30 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         self.logger.info(f'{self.name}.viewChanged: needShow = {self.needShow}')
         self.show()
+
+    #--------------------------------------------------------------------------
+    def setSub2D(self, axeFreezeIdxs: dict):
+        "Set frozen axes for the chart, e.g. {'x':4, 't':17}"
+
+        self.logger.info(f'{self.name}.setSub2D: Set sub2D = {axeFreezeIdxs}')
+
+        #----------------------------------------------------------------------
+        # Prejdem vsetky zmrazene osi
+        #----------------------------------------------------------------------
+        for axe, idx in axeFreezeIdxs.items():
+
+            if axe not in self.dat.getAxes():
+                self.logger.warning(f'{self.name}.setSub2D: Axis {axe} not in axes {self.dat.getAxes()}, skipping')
+
+            else:
+                self.sub2D[axe] = idx
+                self.logger.audit(f'{self.name}.setSub2D: Axe {axe} was frozen to index {idx}')
+
+        #----------------------------------------------------------------------
+        # Update the string variable for frozen axes
+        #----------------------------------------------------------------------
+        if len(self.sub2D) > 0: self.strFA.set(', '.join([f'{axe}:{idx}' for axe, idx in self.sub2D.items()]))
+        else                  : self.strFA.set('None')
 
     #==========================================================================
     # Show the chart
