@@ -581,16 +581,31 @@ class InfoMatrix:
         for axe in self._cnts.keys():
 
             print(f"{self.name}.pointByCoord: axe={axe}, coord={coord}")
+
             #------------------------------------------------------------------
-            # Ak je os zmrazena, pouzijem zmrazenu hodnotu ako jeden z koordinatov
+            # Ziskanie value pre danu os
             #------------------------------------------------------------------
-            if   axe in self.actSubIdxs.keys() and self.actSubIdxs[axe]: axeVal = self.actSubIdxs[axe]
-            elif axe in           coord.keys() and           coord[axe]: axeVal =           coord[axe]
+            if axe in coord.keys() and coord[axe]:
+                #--------------------------------------------------------------
+                # Ak je dodana value pre danu os, pouzijem ju
+                #--------------------------------------------------------------
+                axeVal = coord[axe]
+                self.logger.debug(f"{self.name}.pointByCoord: Axe '{axe}' found in coord, using value {axeVal}")
+
+            elif axe in self.actSubIdxs.keys() and self.actSubIdxs[axe]:
+                #--------------------------------------------------------------
+                # Ak nie je dodana value pre danu os, pouzijem zmrazenu hodnotu pre danu os
+                #--------------------------------------------------------------
+                axeIdx = self.actSubIdxs[axe]
+                axeVal = self._axeValByIdx(axeKey=axe, axeIdx=axeIdx)
+                self.logger.warning(f"{self.name}.pointByCoord: Axe '{axe}' not in coord, using value {axeVal} for freezed index {axeIdx} ")
+
             else:
                 #--------------------------------------------------------------
-                # Ak nie je os zmrazena ani v koordinatoch, pouzijem hodnotu z origu
+                # Ak nie je dodana value a ani nie je os zmrazena, pouzijem hodnotu z origu
                 #--------------------------------------------------------------
                 axeVal = self._origs[axe]
+                self.logger.warning(f"{self.name}.pointByCoord: Axe '{axe}' is not in coord and not freezed, using origin value {axeVal}")
 
             #------------------------------------------------------------------
             # Z axeVal vypocitam index v osi a vlozim ho do zoznamu idxs
@@ -759,12 +774,9 @@ class InfoMatrix:
 
         self._diffs    = {}                       # List of distances between two points in respective axes in lambda units
         for key, cnt in self._cnts.items():
-            self._diffs[key] = self._rects[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
 
-        self.actCol    = None                     # Current axes in role of the columns for 2D matrix
-        self.actRow    = None                     # Current axes in role of the rows for 2D matrix
-        if len(self._cnts) <= 1: self.actRow = list(self._cnts.keys())[0]
-        if len(self._cnts) == 2: self.actCol = list(self._cnts.keys())[1]
+            if cnt > 1: self._diffs[key] = self._rects[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
+            else      : self._diffs[key] = 0                         # If only one point, distance is zero
 
         #----------------------------------------------------------------------
         # Generate InfoPoints at respective positions

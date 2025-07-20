@@ -318,8 +318,6 @@ class InfoMarixGui(ttk.Frame):
         self.logger.debug(f'{self.name}.show: Iterating {len(self.dat.actList)} iPoints for showFtion={self.keyS} with keyV={self.keyV}')
         for i, point in enumerate(self.dat.actList):
 
-            if i ==0: self.logger.warning(f'{self.name}.show: actList[0] = {point}@{id(point)}')
-
             valueToShow = showFtion(point, self.keyV)
             listC.append(valueToShow)
 
@@ -426,7 +424,7 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             coord = {self.keyX: x, self.keyY: y}
             self.actPoint = self.dat.pointByCoord(coord)
-            self.logger.warning(f'{self.name}.onClick: Actual point = {self.actPoint}@{id(self.actPoint)}')
+            self.logger.debug(f'{self.name}.onClick: Actual point = {self.actPoint}@{id(self.actPoint)}')
 
             #------------------------------------------------------------------
             # Left button
@@ -456,11 +454,12 @@ class InfoMarixGui(ttk.Frame):
 
                    inp = askReal(container=self, title=f'Zadaj hodnotu pre {valName}', prompt=self.keyV, initialvalue=val)
 
-                   if not inp:
-                       self.logger.info(f'{self.name}.onClick: User input cancelled by user')
+                   if inp is None:
+                       self.logger.audit(f'{self.name}.onClick: User input cancelled by user')
                        return
 
                    self.actPoint.set(vals={self.keyV:inp})
+                   self.logger.audit(f'{self.name}.onClick: Set {self.keyV} = {inp} for {self.actPoint}')
 
                 #--------------------------------------------------------------
                 # Data was changed, so show the chart
@@ -515,7 +514,7 @@ class InfoMarixGui(ttk.Frame):
         # Zistenie pociatkov a dlzok jednotlivych osi
         #----------------------------------------------------------------------
         origs = {}
-        rect  = {}
+        rects = {}
 
         for axe, oOrig in self.dat._origs.items():
 
@@ -527,16 +526,16 @@ class InfoMarixGui(ttk.Frame):
 
             origs[axe] = orig
 
-            len = askReal(container=self, title='Zadaj dĺžku osi', prompt=axe)
+            len = askReal(container=self, title='Zadaj dĺžku osi', prompt=axe, initialvalue=cnts[axe])
 
             if len is None:
                 self.logger.debug(f'{self.name}.onNew: cancelled by user')
                 return
 
-            rect[axe] = len
+            rects[axe] = len
 
         #----------------------------------------------------------------------
-        self.dat.gener(cnts=cnts, origs=origs, rect=rect)
+        self.dat.gener(cnts=cnts, origs=origs, rects=rects)
         self.viewChanged(force=True)
 
         return
