@@ -9,7 +9,7 @@ from   tkinter                import (ttk, font, PanedWindow)
 from   tkinter                import (messagebox, filedialog, scrolledtext)
 
 
-from   siqo_imodel    import InfoModel
+from   imodel    import InfoModel
 
 #==============================================================================
 # package's constants

@@ -10,7 +10,7 @@ import tkinter        as tk
 from   tkinter        import ttk
 
 from   siqo_imatrix_gui    import InfoMarixGui
-from   siqo_imodel    import InfoModel
+from   imodel    import InfoModel
 
 #------------------------------------------------------------------------------
 def resource_path(relative_path):
