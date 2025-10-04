@@ -23,7 +23,7 @@ _SCH_VALS = {}                         # Default values for InfoPoint schema
 _SCHEMA   = {'ipReal   ':{'axes':_SCH_AXES.copy()
                          ,'vals':_SCH_VALS.copy()
                          }
-            ,'ipComplex':{'axes':{'None':'None', 'x':'os X', 'y':'os Y'}
+            ,'ipComplex':{'axes':{'x':'os X', 'y':'os Y'}
                          ,'vals':{'r':'real Value'}
                          }
             }                          # Default built-in Schema for InfoPoint
@@ -74,6 +74,29 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
+    def equalSchema(ipType, schema) -> bool:
+        "Returns True if schema is equal to the schema of respective InfoPoint type otherwise returns False"
+
+        #----------------------------------------------------------------------
+        # Check if ipType is defined
+        #----------------------------------------------------------------------
+        if ipType not in InfoPoint._schema.keys():
+            InfoPoint.logger.warning(f"InfoPoint.equalSchema: ipType '{ipType}' is not defined InfoPoint type")
+            return False
+
+        #----------------------------------------------------------------------
+        # Check if schema has defined axes and vals
+        #----------------------------------------------------------------------
+        if ('axes' in schema.keys()) and ('vals' in schema.keys()):
+
+            if (InfoPoint._schema[ipType]['axes'] == schema['axes']) and (InfoPoint._schema[ipType]['vals'] == schema['vals']):
+                return True
+
+        return False
+
+
+    #--------------------------------------------------------------------------
+    @staticmethod
     def isInSchema(ipType, *, axes:list=None, vals:list=None):
         "Returns True if schema has defined all axes and vals otherwise returns False"
 
@@ -115,6 +138,14 @@ class InfoPoint:
         return InfoPoint._schema[ipType].copy()
 
     #--------------------------------------------------------------------------
+    @staticmethod
+    def setSchema(ipType, schema):
+        "Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
+
+        InfoPoint.checkSchema(ipType)
+        InfoPoint._schema[ipType] = schema.copy()
+
+    #--------------------------------------------------------------------------
     # Axes methods
     #--------------------------------------------------------------------------
     @staticmethod
@@ -126,12 +157,31 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
+    def delAxe(ipType, key):
+        "Delete axe for respective key in the dict of axes for respective ipType"
+
+        InfoPoint.checkSchema(ipType)
+        if key in InfoPoint._schema[ipType]['axes'].keys():
+            InfoPoint._schema[ipType]['axes'].pop(key)
+
+        InfoPoint.logger.debug(f"InfoPoint.delAxe: key '{key}' was deleted from axes")
+
+    #--------------------------------------------------------------------------
+    @staticmethod
     def setAxe(ipType, key, name):
         "Sets axe's key and name for respective ipType. If axe exists already, redefine name."
 
         InfoPoint.checkSchema(ipType)
-        InfoPoint._schema[ipType]['axes'][key] = name
-        InfoPoint.logger.debug(f"InfoPoint.setAxe: set key '{key}' for axe '{name}'")
+
+        if (key not in InfoPoint._schema[ipType]['axes'].keys()) or (InfoPoint._schema[ipType]['axes'][key] != name):
+
+            InfoPoint._schema[ipType]['axes'][key] = name
+            InfoPoint.logger.debug(f"InfoPoint.setAxe: set key '{key}' for axe '{name}'")
+            return True
+
+        else:
+            InfoPoint.logger.debug(f"InfoPoint.setAxe: axe '{name}' for key '{key}' is already defined, no change")
+            return False
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -243,12 +293,31 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
+    def delVal(ipType, key):
+        "Delete value for respective key in the dict of values for respective ipType"
+
+        InfoPoint.checkSchema(ipType)
+        if key in InfoPoint._schema[ipType]['vals'].keys():
+            InfoPoint._schema[ipType]['vals'].pop(key)
+
+        InfoPoint.logger.debug(f"InfoPoint.delVal: key '{key}' was deleted from values")
+
+    #--------------------------------------------------------------------------
+    @staticmethod
     def setVal(ipType, key, name):
         "Sets value key and name for respective ipType. If value exists already, redefine name."
 
         InfoPoint.checkSchema(ipType)
-        InfoPoint._schema[ipType]['vals'][key] = name
-        InfoPoint.logger.debug(f"InfoPoint.setVal: set key '{key}' for value '{name}'")
+
+        if (key not in InfoPoint._schema[ipType]['vals'].keys()) or (InfoPoint._schema[ipType]['vals'][key] != name):
+
+            InfoPoint._schema[ipType]['vals'][key] = name
+            InfoPoint.logger.debug(f"InfoPoint.setVal: set key '{key}' for value '{name}'")
+            return True
+
+        else:
+            InfoPoint.logger.debug(f"InfoPoint.setVal: value '{name}' for key '{key}' is already defined, no change")
+            return False
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -475,6 +544,12 @@ class InfoPoint:
         toRet._vals = self._vals.copy()
 
         return toRet
+
+    #--------------------------------------------------------------------------
+    def ipType(self):
+        "Returns type of this InfoPoint"
+
+        return self._ipType
 
     #==========================================================================
     # Value retrieval

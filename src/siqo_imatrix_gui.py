@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------------
 import tkinter                as tk
 from   tkinter                import (ttk, font, PanedWindow)
-from   tkinter.messagebox     import showinfo
+from   tkinter.messagebox     import showinfo, askokcancel
 
 from   matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 #from   mpl_toolkits                      import mplot3d
@@ -14,6 +14,7 @@ import matplotlib.pyplot      as plt
 from   siqolib.logger         import SiqoLogger
 from   siqolib.message        import SiqoMessage, askInt, askReal
 from   siqo_imatrix           import InfoMatrix
+from   siqo_ipoint_gui        import InfoPointGui
 
 #==============================================================================
 # package's constants
@@ -90,7 +91,8 @@ class InfoMarixGui(ttk.Frame):
 
         # Pridanie Data menu
         dataMenu = tk.Menu(mainMenu, tearoff=0)
-        mainMenu.add_cascade(label="Data", menu=dataMenu)
+        mainMenu.add_cascade(label="Point/Data", menu=dataMenu)
+        dataMenu.add_command(label="Point Schema", command=self.onSchema)
         dataMenu.add_command(label="New data", command=self.onNew)
 
         # Pridanie Help menu
@@ -555,7 +557,30 @@ class InfoMarixGui(ttk.Frame):
         return
 
     #==========================================================================
-    # Data menu
+    # Point/Data menu
+    #--------------------------------------------------------------------------
+    def onSchema(self, event=None):
+
+        self.logger.debug(f'{self.name}.onSchema:')
+
+        origSchema = self.dat.getSchema()
+
+        gui = InfoPointGui(name=f'Schema {self.dat.ipType}', container=self, ipType=self.dat.ipType)
+
+        #----------------------------------------------------------------------
+        # Vyhodnotenie zmien v scheme
+        #----------------------------------------------------------------------
+        if self.dat.diffSchema(origSchema):
+
+            if askokcancel(title='Schema changed', message='Schema was changed. Reset all data?'):
+
+                self.logger.warning(f'{self.name}.onSchema: Schema changed from {origSchema} to {self.dat.getSchema()}, clearing all data')
+
+
+
+
+        self.logger.debug(f'{self.name}.onSchema: InfoPointGui window closed')
+
     #--------------------------------------------------------------------------
     def onNew(self, event=None):
 
