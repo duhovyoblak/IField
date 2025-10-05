@@ -102,7 +102,8 @@ class InfoMarixGui(ttk.Frame):
         # Pridanie Help menu
         helpMenu = tk.Menu(mainMenu, tearoff=0)
         mainMenu.add_cascade(label="Info", menu=helpMenu)
-        helpMenu.add_command(label="Matrix info", command=self.onInfo)
+        helpMenu.add_command(label="Matrix info short", command=lambda: self.onInfo(mode='short'))
+        helpMenu.add_command(label="Matrix info full",  command=lambda: self.onInfo(mode='full' ))
 
         #----------------------------------------------------------------------
         # Create and show display bar
@@ -279,7 +280,7 @@ class InfoMarixGui(ttk.Frame):
         aKeyX = self.dat.axeKeyByName( self.strX.get() )  # Key for Name of the X-axis dimension from ipType.axis, 'None' means nothing to show in this axis
         aKeyY = self.dat.axeKeyByName( self.strY.get() )  # Key for Name of the Y-axis dimension from ipType.axis, 'None' means nothing to show in this axis
 
-        self.logger.info(f'{self.name}.viewChanged: method={aKeyS}->{self.keyS}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY} with sub2D={self.sub2D}')
+        self.logger.info(f'{self.name}.viewChanged: method={aKeyS}->{self.keyS}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
         self.needShow = False
 
         #----------------------------------------------------------------------
@@ -338,7 +339,7 @@ class InfoMarixGui(ttk.Frame):
 
     #--------------------------------------------------------------------------
     def setSub2D(self, axeFreezeIdxs: dict):
-        "Set frozen axes for the chart, e.g. {'x':4, 't':17}"
+        "Add frozen axes for the chart, e.g. {'x':4, 't':17}"
 
         self.logger.info(f'{self.name}.setSub2D: Set sub2D = {axeFreezeIdxs}')
 
@@ -693,13 +694,15 @@ class InfoMarixGui(ttk.Frame):
     #==========================================================================
     # Info menu
     #--------------------------------------------------------------------------
-    def onInfo(self, event=None):
+    def onInfo(self, event=None, mode='short'):
         "Show information about the InfoMatrix data"
 
         self.logger.debug(f'{self.name}.onInfo:')
 
+        if   mode=='short': text = self.dat.info(short=True)['msg']
+        elif mode=='full' : text = self.dat.info(full=True)['msg']
+        else: text = [f'Unknown mode {mode}']
 
-        text = self.dat.info()['msg']
         text = text.split('\n')
 
         msgWin = SiqoMessage(name=self.dat.name, text=text, wpix=800)

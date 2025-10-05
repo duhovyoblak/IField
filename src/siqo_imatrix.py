@@ -713,7 +713,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Nastavenie aktivnej submatice ak bola dodana definicia
         #----------------------------------------------------------------------
-        if actSubIdxs: self._actSubSet(actSubIdxs)
+        if actSubIdxs is not None: self._actSubSet(actSubIdxs)
 
         #----------------------------------------------------------------------
         # Kontrola potreby obnovenia
@@ -726,11 +726,13 @@ class InfoMatrix:
         self.logger.info(f"{self.name}.actSubmatrix: Refresh for actSubIdxs={self.actSubIdxs}, force={force}")
 
         #----------------------------------------------------------------------
-        # Prejdem vsetky osi s definovanou hodnotou idx
+        # Inicializujem mnozinu pozicii submatrixu vsetkymi bodmi
         #----------------------------------------------------------------------
-        poss  = set()  # Set of positions of InfoPoints in the active submatrix
-        first = True   # Flag for first axe
+        poss = set(range(self.count())) # Set of positions of InfoPoints in the active submatrix
 
+        #----------------------------------------------------------------------
+        # Prejdem vsetky osi so zmrazenou hodnotou idx
+        #----------------------------------------------------------------------
         for axe, axeIdx in self.actSubIdxs.items():
 
             #------------------------------------------------------------------
@@ -746,20 +748,9 @@ class InfoMatrix:
             actPoss = self._possByAxeIdx(axeKey=axe, axeIdx=axeIdx)
 
             #------------------------------------------------------------------
-            # Ak uz existuje nejaka mnozina pozicii, vytvorim prienik s touto mnozinou
+            # Vytvorim prienik poss s touto mnozinou pozicii
             #------------------------------------------------------------------
-            if first:
-                #----------------------------------------------------------------
-                # Prva os, nastavim mnozinu pozicii na tuto mnozinu
-                #----------------------------------------------------------------
-                poss  = actPoss
-                first = False
-
-            else:
-                #----------------------------------------------------------------
-                # Dalsia os, vytvorim prienik s touto poss mnozinou
-                #----------------------------------------------------------------
-                poss = poss.intersection(actPoss)
+            poss = poss.intersection(actPoss)
 
         #----------------------------------------------------------------------
         # Create vector of InfoPoints for respective positions

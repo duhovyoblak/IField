@@ -505,8 +505,8 @@ class InfoPoint:
             #----------------------------------------------------------------------
             # Create string representation of the position of this InfoPoint
             #----------------------------------------------------------------------
-            if i == 0: toRet +=  f"{axeName}={self._format(val)}"
-            else     : toRet += f"|{axeName}={self._format(val)}"
+            if i == 0: toRet +=  f"{axe}={self._format(val)}"
+            else     : toRet += f"|{axe}={self._format(val)}"
             i += 1
 
         toRet += ']'
