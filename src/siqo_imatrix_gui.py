@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------------
 import tkinter                as tk
 from   tkinter                import (ttk, font, PanedWindow)
-from   tkinter.messagebox     import showinfo, askokcancel
+from   tkinter.messagebox     import showinfo, askokcancel, askyesno
 
 from   matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 #from   mpl_toolkits                      import mplot3d
@@ -566,19 +566,31 @@ class InfoMarixGui(ttk.Frame):
         origSchema = self.dat.getSchema()
 
         gui = InfoPointGui(name=f'Schema {self.dat.ipType}', container=self, ipType=self.dat.ipType)
+        gui.grab_set()
+        self.wait_window(gui)
 
         #----------------------------------------------------------------------
         # Vyhodnotenie zmien v scheme
         #----------------------------------------------------------------------
-        if self.dat.diffSchema(origSchema):
+        test = self.dat.equalSchema(origSchema)
 
-            if askokcancel(title='Schema changed', message='Schema was changed. Reset all data?'):
+        if test['exists']:
 
-                self.logger.warning(f'{self.name}.onSchema: Schema changed from {origSchema} to {self.dat.getSchema()}, clearing all data')
+            if not test['equalAxes']:
 
+                #--------------------------------------------------------------
+                # Zmena osí
+                #--------------------------------------------------------------
+                if askyesno(title='Axes changed', message='Axes was changed. Apply changes and reset  data?'):
 
+                    self.logger.warning(f'{self.name}.onSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, reset data')
 
+                else:
+                    self.dat.setSchema(origSchema)
+                    self.logger.warning(f'{self.name}.onSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, but user cancelled changes, schema restored')
+                    return
 
+        #----------------------------------------------------------------------
         self.logger.debug(f'{self.name}.onSchema: InfoPointGui window closed')
 
     #--------------------------------------------------------------------------

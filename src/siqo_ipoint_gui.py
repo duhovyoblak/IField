@@ -40,8 +40,6 @@ class InfoPointGui(tk.Toplevel):
 
         self.name     = name               # Name of this chart
         self.ipType   = ipType             # InfoPoint type to work with
-        self.axeChg   = False              # True if axes were changed
-        self.valChg   = False              # True if values were changed
 
         #----------------------------------------------------------------------
         # Internal objects
@@ -82,6 +80,11 @@ class InfoPointGui(tk.Toplevel):
 
         btnCancel = ttk.Button(frmBtn, text="Cancel", command=self.cancel)
         btnCancel.pack(side=tk.RIGHT, padx=_PADX, pady=_PADY)
+
+        #----------------------------------------------------------------------
+        # Bind the close window event
+        #----------------------------------------------------------------------
+        self.protocol("WM_DELETE_WINDOW", self.cancel)
 
         #----------------------------------------------------------------------
         # Initialisation
@@ -162,16 +165,16 @@ class InfoPointGui(tk.Toplevel):
         # Add Axe
         #----------------------------------------------------------------------
         if paramType == 'axes':
-
-            self.axeChg = InfoPoint.setAxe(self.ipType, key, val) or self.axeChg
+            InfoPoint.setAxe(self.ipType, key, val)
+            self.logger.info(f'{self.name}.setParam: {paramType}.{key}={val} was set')
             self.showParams(self.tabAxe, 'axes', InfoPoint.getAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
 
         #----------------------------------------------------------------------
         # Add Value
         #----------------------------------------------------------------------
         elif paramType == 'vals':
-
-            self.valChg = InfoPoint.setVal(self.ipType, key, val) or self.valChg
+            InfoPoint.setVal(self.ipType, key, val)
+            self.logger.info(f'{self.name}.setParam: {paramType}.{key}={val} was set')
             self.showParams(self.tabVal, 'vals', InfoPoint.getVals(self.ipType), lblParam='Value', lblName='Value Name')
 
         #----------------------------------------------------------------------
@@ -179,9 +182,6 @@ class InfoPointGui(tk.Toplevel):
         #----------------------------------------------------------------------
         else:
             self.logger.error(f'{self.name}.setParam: Unknown paramType {paramType}')
-            return
-
-        self.logger.info(f'{self.name}.setParam: {paramType} {key} : {val} was set')
 
     #--------------------------------------------------------------------------
     def delParam(self, paramType:str, key:str):
@@ -190,19 +190,19 @@ class InfoPointGui(tk.Toplevel):
         self.logger.debug(f'{self.name}.delParam: {paramType} : {key}')
 
         #----------------------------------------------------------------------
-        # Add Axe
+        # Del Axe
         #----------------------------------------------------------------------
         if paramType == 'axes':
             InfoPoint.delAxe(self.ipType, key)
-            self.axeChg = True
+            self.logger.info(f'{self.name}.delParam: {paramType}.{key} deleted')
             self.showParams(self.tabAxe, 'axes', InfoPoint.getAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
 
         #----------------------------------------------------------------------
-        # Add Value
+        # Del Value
         #----------------------------------------------------------------------
         elif paramType == 'vals':
             InfoPoint.delVal(self.ipType, key)
-            self.valChg = True
+            self.logger.info(f'{self.name}.delParam: {paramType}.{key} deleted')
             self.showParams(self.tabVal, 'vals', InfoPoint.getVals(self.ipType), lblParam='Value', lblName='Value Name')
 
         #----------------------------------------------------------------------
@@ -210,23 +210,13 @@ class InfoPointGui(tk.Toplevel):
         #----------------------------------------------------------------------
         else:
             self.logger.error(f'{self.name}.delParam: Unknown paramType {paramType}')
-            return
-
-        self.logger.info(f'{self.name}.delParam: {paramType} {key} deleted')
 
     #--------------------------------------------------------------------------
     def cancel(self):
         "Cancel changes and restore original schema"
 
-        self.logger.debug(f'{self.name}.cancel:')
-
-        if self.axeChg or self.valChg:
-
-            InfoPoint.setSchema(self.ipType, self.origSchema)
-            self.logger.info(f'{self.name}.cancel: Changes were cancelled')
-
-        else:
-            self.logger.info(f'{self.name}.cancel: No changes to cancel')
+        InfoPoint.setSchema(self.ipType, self.origSchema)
+        self.logger.info(f'{self.name}.cancel: Changes were cancelled, schema restored')
 
         self.destroy()
 

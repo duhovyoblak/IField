@@ -1,6 +1,7 @@
 #==============================================================================
 # Siqo class InfoPoint
 #------------------------------------------------------------------------------
+import copy
 import math
 import cmath
 import random                 as rnd
@@ -40,7 +41,7 @@ class InfoPoint:
     #==========================================================================
     # Static variables & methods
     #--------------------------------------------------------------------------
-    _schema = _SCHEMA.copy()                               # Schema for InfoPoint
+    _schema = copy.deepcopy(_SCHEMA)                               # Schema for InfoPoint
     logger  = SiqoLogger('InfoPoint test', level='INFO')   # Logger for InfoPoint
 
     #--------------------------------------------------------------------------
@@ -50,7 +51,7 @@ class InfoPoint:
     def resetSchema():
         "Resets schema of InfoPoint to default values"
 
-        InfoPoint._schema = _SCHEMA.copy()
+        InfoPoint._schema = copy.deepcopy(_SCHEMA)
         InfoPoint.logger.info("InfoPoint.resetSchema:")
 
     #--------------------------------------------------------------------------
@@ -61,7 +62,7 @@ class InfoPoint:
         """
 
         if ipType not in InfoPoint._schema.keys():
-            InfoPoint._schema[ipType] = {'axes':_SCH_AXES.copy(), 'vals':_SCH_VALS.copy()}
+            InfoPoint._schema[ipType] = {'axes':copy.deepcopy(_SCH_AXES), 'vals':copy.deepcopy(_SCH_VALS)}
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -69,31 +70,39 @@ class InfoPoint:
         "Clears schema of InfoPoint for respective ipType to {'axes':{}, 'vals':{}}"
 
         InfoPoint.checkSchema(ipType)
-        InfoPoint._schema[ipType] = {'axes':_SCH_AXES.copy(), 'vals':_SCH_VALS.copy()}
+        InfoPoint._schema[ipType] = {'axes':copy.deepcopy(_SCH_AXES), 'vals':copy.deepcopy(_SCH_VALS)}
         InfoPoint.logger.info(f"InfoPoint.setAxe: clearSchema ipType '{ipType}'")
 
     #--------------------------------------------------------------------------
     @staticmethod
     def equalSchema(ipType, schema) -> bool:
-        "Returns True if schema is equal to the schema of respective InfoPoint type otherwise returns False"
+        "Check if schema is equal to the schema of respective InfoPoint type"
+
+        toRet = {'exists':False, 'equalAxes':False, 'equalVals':False}
 
         #----------------------------------------------------------------------
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
             InfoPoint.logger.warning(f"InfoPoint.equalSchema: ipType '{ipType}' is not defined InfoPoint type")
-            return False
+            return toRet
+
+        else: toRet['exists'] = True
 
         #----------------------------------------------------------------------
-        # Check if schema has defined axes and vals
+        # Check axes
         #----------------------------------------------------------------------
-        if ('axes' in schema.keys()) and ('vals' in schema.keys()):
+        if 'axes' in schema.keys():
+            if InfoPoint._schema[ipType]['axes'].keys() == schema['axes'].keys(): toRet['equalAxes'] = True
 
-            if (InfoPoint._schema[ipType]['axes'] == schema['axes']) and (InfoPoint._schema[ipType]['vals'] == schema['vals']):
-                return True
+        #----------------------------------------------------------------------
+        # Check vals
+        #----------------------------------------------------------------------
+        if 'vals' in schema.keys():
+            if InfoPoint._schema[ipType]['vals'].keys() == schema['vals'].keys(): toRet['equalVals'] = True
 
-        return False
-
+        #----------------------------------------------------------------------
+        return toRet
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -135,7 +144,7 @@ class InfoPoint:
         "Returns schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
 
         InfoPoint.checkSchema(ipType)
-        return InfoPoint._schema[ipType].copy()
+        return copy.deepcopy(InfoPoint._schema[ipType])
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -143,7 +152,7 @@ class InfoPoint:
         "Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
 
         InfoPoint.checkSchema(ipType)
-        InfoPoint._schema[ipType] = schema.copy()
+        InfoPoint._schema[ipType] = copy.deepcopy(schema)
 
     #--------------------------------------------------------------------------
     # Axes methods
@@ -153,7 +162,7 @@ class InfoPoint:
         "Returns axes keys and names as dict {key: name} for respective ipType"
 
         InfoPoint.checkSchema(ipType)
-        return InfoPoint._schema[ipType]['axes'].copy()
+        return copy.deepcopy(InfoPoint._schema[ipType]['axes'])
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -289,7 +298,7 @@ class InfoPoint:
         "Returns values keys and names as dict {key: name} for respective ipType"
 
         InfoPoint.checkSchema(ipType)
-        return InfoPoint._schema[ipType]['vals'].copy()
+        return copy.deepcopy(InfoPoint._schema[ipType]['vals'])
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -540,8 +549,8 @@ class InfoPoint:
 
         toRet = InfoPoint(self._ipType)
 
-        toRet._pos  = self._pos.copy()
-        toRet._vals = self._vals.copy()
+        toRet._pos  = copy.deepcopy(self._pos)
+        toRet._vals = copy.deepcopy(self._vals)
 
         return toRet
 
@@ -939,7 +948,7 @@ if __name__ == '__main__':
         print('axe(r) ', p2.pos('r'))
         print()
 
-        pc = p2.copy()
+        pc = copy.deepcopy(p2)
         print('Copied ', pc)
 
         pc = pc.clear()

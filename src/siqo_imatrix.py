@@ -282,6 +282,12 @@ class InfoMatrix:
         return InfoPoint.clearSchema(self.ipType)
 
     #--------------------------------------------------------------------------
+    def equalSchema(self, schema) -> bool:
+        "Check if schema is equal to the schema of respective InfoPoint type"
+
+        return InfoPoint.equalSchema(self.ipType, schema)
+
+    #--------------------------------------------------------------------------
     def isInSchema(self, *, axes:list=None, vals:list=None) -> bool:
 
         return InfoPoint.isInSchema(self.ipType, axes=axes, vals=vals)
