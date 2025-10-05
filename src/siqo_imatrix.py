@@ -70,7 +70,7 @@ class InfoMatrix:
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, name, ipType):
+    def __init__(self, name):
         "Calls constructor of InfoMatrix"
 
         self.logger = SiqoLogger(name, level='DEBUG')
@@ -80,7 +80,7 @@ class InfoMatrix:
         # Public datove polozky triedy
         #----------------------------------------------------------------------
         self.name       = name     # Name of the InfoMatrix
-        self.ipType     = ipType   # Type of the InfoPoint in this InfoMatrix
+        self.ipType     = None     # Type of the InfoPoint in this InfoMatrix
         self.staticEdge = False    # Static edge means value of the edge points is fixed in some methods
         self.points     = []       # List of InfoPoints
 
@@ -100,7 +100,6 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Inicializacia
         #----------------------------------------------------------------------
-        InfoPoint.checkSchema(ipType)
 
         #----------------------------------------------------------------------
         self.logger.info(f"{self.name}.constructor: done")
@@ -129,24 +128,28 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         return np.array(mtrx)
 
-    #--------------------------------------------------------------------------
-    def reset(self, ipType=None):
-        "Resets all InfoMatrix's data and destroys all points. Count of points will be 0"
+     #--------------------------------------------------------------------------
+    def setIpType(self, ipType:dict, force:bool=False):
+        "Apply InfoPoint.schema to internal structures _cnts, _origs, _rects for respective ipType"
 
-        self.logger.warning(f"{self.name}.reset: ipType={ipType}")
+        self.logger.warning(f"{self.name}.setIpType: ipType={ipType}")
 
         #----------------------------------------------------------------------
-        # Reset ipType if it is not None
+        # Kontrola zmeny ipType
         #----------------------------------------------------------------------
-        if ipType is not None:
+        if (self.ipType == ipType) and (not force):
+            self.logger.warning(f"{self.name}.setIpType: ipType was not changed, no need to reset")
+            return
 
-            self.ipType = ipType
-            InfoPoint.checkSchema(ipType)
-            self.logger.warning(f"{self.name}.reset: ipType changed to {self.ipType}")
+        #----------------------------------------------------------------------
+        # Inicializacia
+        #----------------------------------------------------------------------
+        InfoPoint.checkSchema(ipType)
 
         #----------------------------------------------------------------------
         # Reset all InfoMatrix's data
         #----------------------------------------------------------------------
+        self.ipType     = ipType
         self.points     = []       # List of rows of lists of InfoPoints
         self.staticEdge = False    # Static edge means value of the edge nodes is fixed
 
@@ -156,13 +159,28 @@ class InfoMatrix:
         self.actChanged = True     # Current sub settings was changed and actSubMatrix needs refresh
 
         self._cnts      = {}       # Number of InfoPoints in respective axes
-        self._origs     = {}       # Origin's coordinates of the InfoMatrix
+        self._origs     = {}       # Origin's coordinates of the InfoMatrix for respective axes in lambda units
         self._rects     = {}       # Lenghts of the InfoMatrix for respective axes in lambda units
         self._diffs     = {}       # Distance between two points in respective axes in lambda units
 
-        self.logger.info(f"{self.name}.reset: done")
+        #----------------------------------------------------------------------
+        # Nastavenie axes
+        #----------------------------------------------------------------------
+        for key in ipType['axes'].keys():
 
-    #--------------------------------------------------------------------------
+            self._cnts [key] = 5
+            self._origs[key] = 0
+            self._rects[key] = 1
+
+        #----------------------------------------------------------------------
+        # Vypocet diffs
+        #----------------------------------------------------------------------
+        for key, cnt in self._cnts.items():
+
+            if cnt > 1: self._diffs[key] = self._rects[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
+            else      : self._diffs[key] = 0                         # If only one point, distance is zero
+
+   #--------------------------------------------------------------------------
     def info(self, indent=0, full=False):
         "Creates info about this InfoMatrix"
 
@@ -230,8 +248,7 @@ class InfoMatrix:
         # Kontrola, ci sa pocet bodov zhoduje s dlzkou zoznamu points
         #----------------------------------------------------------------------
         if check and (toRet != len(self.points)):
-            self.logger.critical(f"{self.name}.count: Count of points {toRet} is not equal to len(points) {len(self.points)}, Matrix terminated")
-            self.reset()
+            self.logger.critical(f"{self.name}.count: Count of points {toRet} is not equal to len(points) {len(self.points)}")
             toRet = 0
 
         #----------------------------------------------------------------------
@@ -278,8 +295,8 @@ class InfoMatrix:
     def clearSchema(self):
         "Clears schema of InfoPoint for respective ipType to {'axes':{'None':'None'}, 'vals':{}}"
 
-        self.reset()
-        return InfoPoint.clearSchema(self.ipType)
+        InfoPoint.clearSchema(self.ipType)
+        self.setIpType(self.ipType, force=True)
 
     #--------------------------------------------------------------------------
     def equalSchema(self, schema) -> bool:
@@ -295,6 +312,7 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def getSchema(self) -> dict:
         "Returns schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
+
         return InfoPoint.getSchema(self.ipType)
 
     #--------------------------------------------------------------------------
@@ -302,37 +320,38 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def getAxes(self) -> dict:
         "Returns axes keys and names as dict {key: name}"
+
         return InfoPoint.getAxes(self.ipType)
 
     #--------------------------------------------------------------------------
     def setAxe(self, key, name):
         "Add axe key and name"
 
-        if key not in self._cnts. keys(): self._cnts [key] = 0
-        if key not in self._origs.keys(): self._origs[key] = 0
-        if key not in self._rects.keys(): self._rects[key] = 0
-        if key not in self._diffs.keys(): self._origs[key] = 0
-
-        return InfoPoint.setAxe(self.ipType, key, name)
+        InfoPoint.setAxe(self.ipType, key, name)
+        self.setIpType(self.ipType, force=True)
 
     #--------------------------------------------------------------------------
     def axeIdxByKey(self, key) -> int:
         "Returns axe's idx for respective key as position in the list of axes othewise None"
+
         return InfoPoint.axeIdxByKey(self.ipType, key)
 
     #--------------------------------------------------------------------------
     def axeKeyByIdx(self, idx) -> str:
         "Returns axe's key for respective position in the list of axes othewise None"
+
         return InfoPoint.axeKeyByIdx(self.ipType, idx)
 
     #--------------------------------------------------------------------------
     def axeNameByKey(self, key) -> str:
         "Returns axe's Name for respective key as string othewise None"
+
         return InfoPoint.axeNameByKey(self.ipType, key)
 
      #--------------------------------------------------------------------------
     def axeKeyByName(self, name) -> str:
         "Returns axe's key for respective Name, othewise None"
+
         return InfoPoint.axeKeyByName(self.ipType, name)
 
     #--------------------------------------------------------------------------
@@ -340,31 +359,37 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def getVals(self) -> dict:
         "Returns values keys and names as dict {key: name}"
+
         return InfoPoint.getVals(self.ipType)
 
     #--------------------------------------------------------------------------
     def setVal(self, key, name):
         "Sets value key and name"
+
         return InfoPoint.setVal(self.ipType, key, name)
 
     #--------------------------------------------------------------------------
     def valIdxByKey(self, key) -> int:
         "Returns value's idx for respective key as position in the list of axes othewise None"
+
         return InfoPoint.valIdxByKey(self.ipType, key)
 
     #--------------------------------------------------------------------------
     def valKeyByIdx(self, idx) -> str:
         "Returns value's key for respective position in the list of valus othewise None"
+
         return InfoPoint.valKeyByIdx(self.ipType, idx)
 
     #--------------------------------------------------------------------------
     def valNameByKey(self, key) -> str:
         "Returns value's Name for respective key as string othewise None"
+
         return InfoPoint.valNameByKey(self.ipType, key)
 
     #--------------------------------------------------------------------------
     def valKeyByName(self, name) -> str:
         "Returns val's key for respective Name, othewise None"
+
         return InfoPoint.valKeyByName(self.ipType, name)
 
     #--------------------------------------------------------------------------
@@ -372,11 +397,13 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def mapShowMethods(self) -> dict:
         "Returns map of methods returning float number from keyed value"
+
         return InfoPoint.mapShowMethods()
 
     #--------------------------------------------------------------------------
     def mapSetMethods(self) -> dict:
         "Returns map of methods setting keyed value to function value for respective parameters"
+
         return InfoPoint.mapSetMethods()
 
     #==========================================================================
@@ -742,7 +769,7 @@ class InfoMatrix:
         return self.actList
 
     #==========================================================================
-    # Value modification
+    # Structure/Value modification
     #--------------------------------------------------------------------------
     def clear(self, *, defs:dict={}):
         "Set all InfoPoint's values to default value"
@@ -752,37 +779,19 @@ class InfoMatrix:
         for point in self.points: point.clear(dat=defs)
 
     #--------------------------------------------------------------------------
-    def gener(self, *, cnts:dict, origs:dict, rects:dict, ipType:str=None, defs:dict={} ):
-        """Creates new InfoMatrix with respective cnts, origs and rect. Expecting valid
-           ipType scheme. If ipType is not in arguments, uses existing ipType"""
+    def init(self, defs:dict={} ):
+        """Initialise InfoMatrix data to default values."""
 
-        if ipType is not None: self.ipType = ipType
-        self.logger.info(f"{self.name}.gener: {cnts} points of type {self.ipType} on rect {rects} from {origs} with values {defs}")
-
-        #----------------------------------------------------------------------
-        # Check validity of InfoPoint's schema
-        #--- -------------------------------------------------------------------
-        if not self.isInSchema(axes=list(cnts.keys()), vals=list(defs.keys())):
-            self.logger.error(f"{self.name}.gener: Schema for {self.ipType} is not comaptible with arguments")
+        if self.ipType is None:
+            self.logger.error(f"{self.name}.init: InfoPoint type is not defined, cannot initialise InfoMatrix")
             return
+
+        self.logger.info(f"{self.name}.init: {self._cnts} points of type {self.ipType} on rect {self._rects} from {self._origs} with values {defs}")
 
         #----------------------------------------------------------------------
         # Destroy old data
         #----------------------------------------------------------------------
-        self.points.clear()                    # Clear all points in the InfoMatrix
-
-        #----------------------------------------------------------------------
-        # InfoMatrix settings
-        #----------------------------------------------------------------------
-        self._cnts     = cnts.copy()              # List of number of InfoPoints in respective axes
-        self._origs    = origs.copy()             # List of origin's coordinates of the InfoMatrix
-        self._rects    = rects.copy()             # List of lenghts of the InfoMatrix's axes
-
-        self._diffs    = {}                       # List of distances between two points in respective axes in lambda units
-        for key, cnt in self._cnts.items():
-
-            if cnt > 1: self._diffs[key] = self._rects[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
-            else      : self._diffs[key] = 0                         # If only one point, distance is zero
+        self.points.clear()                     # Clear all points in the InfoMatrix
 
         #----------------------------------------------------------------------
         # Generate InfoPoints at respective positions
@@ -794,13 +803,13 @@ class InfoMatrix:
             # Compute coordinates of the InfoPoint for respective position and indices
             #------------------------------------------------------------------
             idxs = self._idxsByPos(pos)          # Get indices of the InfoPoint for respective position
-            coos = {}
+            coos = {}                            # Coordinates of the InfoPoint in lambda units
 
             for i, key in enumerate(self._cnts.keys()):
                 coos[key] = self._origs[key] + (idxs[i] * self._diffs[key])
 
             #------------------------------------------------------------------
-            # Create new row of InfoPoint at respective coordinates
+            # Create new InfoPoint at respective coordinates
             #------------------------------------------------------------------
             point = InfoPoint(self.ipType, pos=coos, vals=defs)
             self.points.append(point)
@@ -808,7 +817,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Final adjustments
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.gener: Created {len(self.points)} InfoPoints")
+        self.logger.info(f"{self.name}.init: Created {len(self.points)} InfoPoints")
 
     #--------------------------------------------------------------------------
 
@@ -970,6 +979,8 @@ if __name__ == '__main__':
     # Vytvorenie, generovanie osi
     #--------------------------------------------------------------------------
     im = InfoMatrix('Test matrix', ipType='ipTest')
+
+    #im.setIpType('ipTest')
 
     im.logger.debug('Test of InfoMatrix class')
     print(f'logger.frameDepth = {im.logger.frameDepth}')
