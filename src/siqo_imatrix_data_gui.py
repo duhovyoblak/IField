@@ -44,7 +44,9 @@ class InfoMatrixDataGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self.origSchema = InfoPoint.getSchema(self.ipType)  # Original schema pre prikaz Cancel
+        self.origCnts  = self.matrix._cnts.copy()   # Original _cnts  pre prikaz Cancel
+        self.origRects = self.matrix._rects.copy()  # Original _rects pre prikaz Cancel
+        self.origOrigs = self.matrix._origs.copy()  # Original _origs pre prikaz Cancel
 
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
@@ -59,15 +61,20 @@ class InfoMatrixDataGui(tk.Toplevel):
         notebook = ttk.Notebook(self)
         notebook.pack(fill=tk.BOTH, expand=True)
 
-        # TabAxes
-        self.tabAxe = ttk.Frame(notebook)
-        notebook.add(self.tabAxe, text="Axes definition")
-        self.showParams(self.tabAxe, 'axes', InfoPoint.getAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
+        # TabCnts
+        self.tabCnts = ttk.Frame(notebook)
+        notebook.add(self.tabCnts, text="Points counts")
+        self.showParams(self.tabCnts, 'cnts', matrix._cnts, lblParam='Axe', lblName='Points count')
 
-        # TabValues
-        self.tabVal = ttk.Frame(notebook)
-        notebook.add(self.tabVal, text="Values definition")
-        self.showParams(self.tabVal, 'vals', InfoPoint.getVals(self.ipType), lblParam='Value', lblName='Value Name')
+        # TabRects
+        self.tabRects = ttk.Frame(notebook)
+        notebook.add(self.tabRects, text="Lengths of axes")
+        self.showParams(self.tabRects, 'rects', matrix._rects, lblParam='Axe', lblName='Axe length')
+
+        # TabOrigs
+        self.tabOrigs = ttk.Frame(notebook)
+        notebook.add(self.tabOrigs, text="Origins of axes")
+        self.showParams(self.tabOrigs, 'origs', matrix._origs, lblParam='Axe', lblName='Axe origin')
 
         #----------------------------------------------------------------------
         # Create bottom buttons bar
@@ -75,8 +82,8 @@ class InfoMatrixDataGui(tk.Toplevel):
         frmBtn = ttk.Frame(self)
         frmBtn.pack(fill=tk.X, expand=True, side=tk.BOTTOM, anchor=tk.S)
 
-        btnOk = ttk.Button(frmBtn, text="OK", command=self.destroy)
-        btnOk.pack(side=tk.RIGHT, padx=_PADX, pady=_PADY)
+        btnInit = ttk.Button(frmBtn, text="Initialise", command=self.apply)
+        btnInit.pack(side=tk.RIGHT, padx=_PADX, pady=_PADY)
 
         btnCancel = ttk.Button(frmBtn, text="Cancel", command=self.cancel)
         btnCancel.pack(side=tk.RIGHT, padx=_PADX, pady=_PADY)
@@ -122,7 +129,7 @@ class InfoMatrixDataGui(tk.Toplevel):
         row = 1
         for key, val in params.items():
 
-            self.logger.debug(f'{self.name}.showParams: {key} : {val}')
+            self.logger.debug(f'{self.name}.showParams: {paramType}: {key} = {val}')
 
             lbl = ttk.Label(tab, text=str(key))
             lbl.grid(column=0, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -132,50 +139,61 @@ class InfoMatrixDataGui(tk.Toplevel):
             ent.bind("<FocusOut>", lambda event, key=key, entry=ent: self.setParam(paramType, key, entry.get()))
             ent.grid(column=1, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-            btnDelete = ttk.Button(tab, text="Delete", command=lambda key=key: self.delParam(paramType, key))
-            btnDelete.grid(column=2, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
-
             row += 1
-
-        #----------------------------------------------------------------------
-        # Add button for new parameter
-        #----------------------------------------------------------------------
-        separator = ttk.Separator(tab, orient='horizontal')
-        separator.grid(column=0, row=row, columnspan=3, sticky=tk.EW, padx=_PADX, pady=_PADY)
-        row += 1
-
-        entPar = ttk.Entry(tab)
-        entPar.insert(0, 'NewParam')
-        entPar.grid(column=0, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        entNam = ttk.Entry(tab)
-        entNam.insert(0, 'New Param Name')
-        entNam.grid(column=1, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        btnAdd = ttk.Button(tab, text="Add new", command=lambda: self.setParam(paramType, entPar.get(), entNam.get()))
-        btnAdd.grid(column=2, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
 
     #--------------------------------------------------------------------------
     def setParam(self, paramType:str, key:str, val:str):
-        "Update or Add new parameter to the InfoPoint"
+        "Update or Add new parameter to the matrix setting"
 
         self.logger.debug(f'{self.name}.setParam: {paramType} : {key} : {val}')
 
         #----------------------------------------------------------------------
-        # Add Axe
+        # Set cnts
         #----------------------------------------------------------------------
-        if paramType == 'axes':
-            InfoPoint.setAxe(self.ipType, key, val)
-            self.logger.info(f'{self.name}.setParam: {paramType}.{key}={val} was set')
-            self.showParams(self.tabAxe, 'axes', InfoPoint.getAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
+        if paramType == 'cnts':
+
+            try:
+                val = int(val)
+                self.matrix._cnts[key] = val
+                self.logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
+
+            except ValueError:
+                self.logger.error(f"{self.name}.setParam: '{val}' is not an integer, can not change counts of points")
+
+            finally:
+                self.showParams(self.tabCnts, 'cnts', self.matrix._cnts, lblParam='Axe', lblName='Points count')
 
         #----------------------------------------------------------------------
-        # Add Value
+        # Set rects
         #----------------------------------------------------------------------
-        elif paramType == 'vals':
-            InfoPoint.setVal(self.ipType, key, val)
-            self.logger.info(f'{self.name}.setParam: {paramType}.{key}={val} was set')
-            self.showParams(self.tabVal, 'vals', InfoPoint.getVals(self.ipType), lblParam='Value', lblName='Value Name')
+        elif paramType == 'rects':
+
+            try:
+                val = float(val)
+                self.matrix._rects[key] = val
+                self.logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
+
+            except ValueError:
+                self.logger.error(f"{self.name}.setParam: '{val}' is not a real value, can not change length of the axe")
+
+            finally:
+                self.showParams(self.tabRects, 'rects', self.matrix._rects, lblParam='Axe', lblName='Axe length')
+
+        #----------------------------------------------------------------------
+        # Set origs
+        #----------------------------------------------------------------------
+        elif paramType == 'origs':
+
+            try:
+                val = float(val)
+                self.matrix._origs[key] = val
+                self.logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
+
+            except ValueError:
+                self.logger.error(f"{self.name}.setParam: '{val}' is not a real value, can not change origin of the axe")
+
+            finally:
+                self.showParams(self.tabOrigs, 'origs', self.matrix._origs, lblParam='Axe', lblName='Axe origin')
 
         #----------------------------------------------------------------------
         # Unknown parameter type
@@ -184,40 +202,23 @@ class InfoMatrixDataGui(tk.Toplevel):
             self.logger.error(f'{self.name}.setParam: Unknown paramType {paramType}')
 
     #--------------------------------------------------------------------------
-    def delParam(self, paramType:str, key:str):
-        "Delete parameter from the InfoPoint"
+    def apply(self):
+        "Apply inputs and initialise the matrix"
 
-        self.logger.debug(f'{self.name}.delParam: {paramType} : {key}')
+        self.matrix.init()
 
-        #----------------------------------------------------------------------
-        # Del Axe
-        #----------------------------------------------------------------------
-        if paramType == 'axes':
-            InfoPoint.delAxe(self.ipType, key)
-            self.logger.info(f'{self.name}.delParam: {paramType}.{key} deleted')
-            self.showParams(self.tabAxe, 'axes', InfoPoint.getAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
-
-        #----------------------------------------------------------------------
-        # Del Value
-        #----------------------------------------------------------------------
-        elif paramType == 'vals':
-            InfoPoint.delVal(self.ipType, key)
-            self.logger.info(f'{self.name}.delParam: {paramType}.{key} deleted')
-            self.showParams(self.tabVal, 'vals', InfoPoint.getVals(self.ipType), lblParam='Value', lblName='Value Name')
-
-        #----------------------------------------------------------------------
-        # Unknown parameter type
-        #----------------------------------------------------------------------
-        else:
-            self.logger.error(f'{self.name}.delParam: Unknown paramType {paramType}')
+        self.logger.warning(f'{self.name}.apply: Changes were applied, matrix initialised')
+        self.destroy()
 
     #--------------------------------------------------------------------------
     def cancel(self):
-        "Cancel changes and restore original schema"
+        "Cancel changes and restore original settings"
 
-        InfoPoint.setSchema(self.ipType, self.origSchema)
-        self.logger.info(f'{self.name}.cancel: Changes were cancelled, schema restored')
+        self.matrix._cnts  = self.origCnts      # Original _cnts
+        self.matrix._rects = self.origRects     # Original _rects
+        self.matrix._origs = self.origOrigs     # Original _origs
 
+        self.logger.info(f'{self.name}.cancel: Changes were cancelled, settings restored')
         self.destroy()
 
     #--------------------------------------------------------------------------
@@ -229,7 +230,8 @@ print(f'SIQO InfoMatrixDataGui library ver {_VER}')
 
 if __name__ == '__main__':
 
-    from   siqo_ipoint           import InfoPoint
+    from   siqo_ipoint            import InfoPoint
+    from   siqo_imatrix           import InfoMatrix
 
     #--------------------------------------------------------------------------
     # Test of the InfoMatrixDataGui class
@@ -244,17 +246,19 @@ if __name__ == '__main__':
     #tk.Grid.columnconfigure(win, 1, weight=1)
     #tk.Grid.rowconfigure   (win, 2, weight=1)
 
+
     #--------------------------------------------------------------------------
     # Zaciatok testu
     #--------------------------------------------------------------------------
-    ipn = InfoPoint(ipType='ipComplex')
-    ipn.logger.setLevel('DEBUG')
-    ipn.logger.frameDepth = 2
+    im = InfoMatrix('Test matrix')
+    im.setIpType('ipTest')
+    im.logger.setLevel('DEBUG')
+    im.logger.frameDepth = 2
 
-    ipnGui = InfoMatrixDataGui(name='Schema test', container=win, ipType='ipComplex')
+    matGui = InfoMatrixDataGui(name='Schema test', container=win, matrix=im)
 
     win.mainloop()
-    ipnGui.logger.info('Stop of InfoMatrixDataGui test')
+    matGui.logger.info('Stop of InfoMatrixDataGui test')
 
 #==============================================================================
 #                              END OF FILE

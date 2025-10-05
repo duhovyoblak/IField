@@ -15,6 +15,7 @@ from   siqolib.logger         import SiqoLogger
 from   siqolib.message        import SiqoMessage, askInt, askReal
 from   siqo_imatrix           import InfoMatrix
 from   siqo_ipoint_gui        import InfoPointGui
+from   siqo_imatrix_data_gui  import InfoMatrixDataGui
 
 #==============================================================================
 # package's constants
@@ -71,6 +72,8 @@ class InfoMarixGui(ttk.Frame):
         if 'keyX' in kwargs.keys(): self.keyX = kwargs['keyX']
         if 'keyY' in kwargs.keys(): self.keyY = kwargs['keyY']
 
+        self.axesLst  = list()             # List of axes names for combo boxes
+
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
         #----------------------------------------------------------------------
@@ -92,8 +95,9 @@ class InfoMarixGui(ttk.Frame):
         # Pridanie Data menu
         dataMenu = tk.Menu(mainMenu, tearoff=0)
         mainMenu.add_cascade(label="Point/Data", menu=dataMenu)
-        dataMenu.add_command(label="Point Schema", command=self.onSchema)
-        dataMenu.add_command(label="New data", command=self.onNew)
+        dataMenu.add_command(label="Point Schema",      command=self.onSchema)
+        dataMenu.add_command(label="Matrix properties", command=self.onProp  )
+        dataMenu.add_command(label="New data",          command=self.onNew   )
 
         # Pridanie Help menu
         helpMenu = tk.Menu(mainMenu, tearoff=0)
@@ -101,116 +105,11 @@ class InfoMarixGui(ttk.Frame):
         helpMenu.add_command(label="Matrix info", command=self.onInfo)
 
         #----------------------------------------------------------------------
-        # Create head buttons bar
+        # Create and show display bar
         #----------------------------------------------------------------------
-        frmBtn = ttk.Frame(self)
-        frmBtn.pack(fill=tk.X, expand=True, side=tk.TOP, anchor=tk.N)
-
-        frmBtn.columnconfigure(0, weight=3)
-        frmBtn.columnconfigure(1, weight=3)
-        frmBtn.columnconfigure(2, weight=4)
-        frmBtn.columnconfigure(3, weight=3)
-        frmBtn.columnconfigure(4, weight=3)
-        frmBtn.columnconfigure(5, weight=3)
-
-        frmBtn.rowconfigure(0, weight=1)
-        frmBtn.rowconfigure(1, weight=1)
-
-        #----------------------------------------------------------------------
-        # List of axis
-        #----------------------------------------------------------------------
-        axesLst = list(self.dat.getAxes().values())
-        axesLst.insert(0, 'None') # Insert 'None' as first item
-
-        #----------------------------------------------------------------------
-        # X axis dimension selector
-        #----------------------------------------------------------------------
-        colX = 0
-        self.strX   = tk.StringVar(value='None') # Name of the X-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
-
-        lblX = ttk.Label(frmBtn, text="Dim for X axis:")
-        lblX.grid(column=colX, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        self.cbX = ttk.Combobox(frmBtn, textvariable=self.strX, width=_COMBO_WIDTH)
-        self.cbX['values'] = axesLst
-        self.cbX['state' ] = 'readonly'
-        self.cbX.bind('<<ComboboxSelected>>', self.viewChanged)
-        self.cbX.grid(column=colX, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        self.varLogX = tk.BooleanVar(value=False)
-        self.cbLogX = ttk.Checkbutton(frmBtn, text='LogX', variable=self.varLogX, command=self.show)
-        self.cbLogX.grid(column=colX, row=1, sticky=tk.E, pady=_PADY)
-
-        #----------------------------------------------------------------------
-        # Y axis dimension selector
-        #----------------------------------------------------------------------
-        colY = 1
-        self.strY   = tk.StringVar(value='None') # Name of the Y-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
-
-        lblY = ttk.Label(frmBtn, text="Dim for Y axis:")
-        lblY.grid(column=colY, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        self.cbY = ttk.Combobox(frmBtn, textvariable=self.strY, width=_COMBO_WIDTH)
-        self.cbY['values'] = axesLst
-        self.cbY['state' ] = 'readonly'
-        self.cbY.bind('<<ComboboxSelected>>', self.viewChanged)
-        self.cbY.grid(column=colY, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        self.varLogY = tk.BooleanVar(value=False)
-        self.cbLogY = ttk.Checkbutton(frmBtn, text='LogY', variable=self.varLogY, command=self.show)
-        self.cbLogY.grid(column=colY, row=1, sticky=tk.E, pady=_PADY)
-
-        #----------------------------------------------------------------------
-        # Value to show selector
-        #----------------------------------------------------------------------
-        colS = 2
-        self.strVP = tk.StringVar() # Name of the method for value to show in the chart
-        self.strVX = tk.StringVar() # Name of the value to show in the chart
-
-        lblVal = ttk.Label(frmBtn, text="Value to show:")
-        lblVal.grid(column=colS, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        self.cbVP = ttk.Combobox(frmBtn, textvariable=self.strVP, width=int(_COMBO_WIDTH))
-        self.cbVP['values'] = list(self.dat.mapShowMethods().keys())
-        self.cbVP['state' ] = 'readonly'
-        self.cbVP.current(0)
-        self.cbVP.bind('<<ComboboxSelected>>', self.viewChanged)
-        self.cbVP.grid(column=colS, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        self.cbVX = ttk.Combobox(frmBtn, textvariable=self.strVX, width=_COMBO_WIDTH)
-        self.cbVX['values'] = list(self.dat.getVals().values())
-        self.cbVX['state' ] = 'readonly'
-        self.cbVX.current(0)
-        self.cbVX.bind('<<ComboboxSelected>>', self.viewChanged)
-        self.cbVX.grid(column=colS, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
-
-        #----------------------------------------------------------------------
-        # Method to apply selector
-        #----------------------------------------------------------------------
-        colM = 3
-        self.strM = tk.StringVar() # Name of the method to apply to the data
-
-        lblMet = ttk.Label(frmBtn, text="Set values:")
-        lblMet.grid(column=colM, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        self.cbM = ttk.Combobox(frmBtn, textvariable=self.strM, width=int(2*_COMBO_WIDTH))
-        self.cbM['values'] = list(self.dat.mapSetMethods().keys())
-        self.cbM['state' ] = 'readonly'
-        self.cbM.current(0)
-        self.cbM.bind('<<ComboboxSelected>>', self.method)
-        self.cbM.grid(column=colM, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        #----------------------------------------------------------------------
-        # Frozen axis indexes
-        #----------------------------------------------------------------------
-        colFA = 4
-        self.strFA = tk.StringVar() # Frozen axis indexes, e.g. 'x:4, t:17'
-
-        lblFax = ttk.Label(frmBtn, text="Frozen axis:")
-        lblFax.grid(column=colFA, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        valFax = ttk.Label(frmBtn, textvariable=self.strFA)
-        valFax.grid(column=colFA, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+        self.frmDispBar = ttk.Frame(self)
+        self.frmDispBar.pack(fill=tk.X, expand=True, side=tk.TOP, anchor=tk.N)
+        self.showDisplayBar()
 
         #----------------------------------------------------------------------
         # Create a figure with the navigator bar and bind it to mouse events
@@ -227,6 +126,134 @@ class InfoMarixGui(ttk.Frame):
         # Initialisation
         #----------------------------------------------------------------------
         self.logger.audit(f'{name}.init: Done')
+
+    #--------------------------------------------------------------------------
+    def updateDisplayBar(self):
+
+        self.axesLst = list(self.dat.getAxes().values())
+        self.axesLst.insert(0, 'None')        # Insert 'None' as first item
+
+        self.cbX['values'] = self.axesLst
+        self.cbX.current(0)
+
+        self.cbY['values'] = self.axesLst
+        self.cbY.current(0)
+
+        self.cbM['values'] = list(self.dat.mapSetMethods().keys())
+        self.cbM.current(0)
+
+        self.cbVP['values'] = list(self.dat.mapShowMethods().keys())
+        self.cbVP.current(0)
+
+        self.cbVX['values'] = list(self.dat.getVals().values())
+        self.cbVX.current(0)
+
+    #--------------------------------------------------------------------------
+    def showDisplayBar(self):
+        "Show diplay options bar"
+
+        self.frmDispBar.columnconfigure(0, weight=3)
+        self.frmDispBar.columnconfigure(1, weight=3)
+        self.frmDispBar.columnconfigure(2, weight=4)
+        self.frmDispBar.columnconfigure(3, weight=3)
+        self.frmDispBar.columnconfigure(4, weight=3)
+        self.frmDispBar.columnconfigure(5, weight=3)
+
+        self.frmDispBar.rowconfigure(0, weight=1)
+        self.frmDispBar.rowconfigure(1, weight=1)
+
+        #----------------------------------------------------------------------
+        # X axis dimension selector
+        #----------------------------------------------------------------------
+        colX = 0
+        self.strX   = tk.StringVar(value='None') # Name of the X-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
+
+        lblX = ttk.Label(self.frmDispBar, text="Dim for X axis:")
+        lblX.grid(column=colX, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        self.cbX = ttk.Combobox(self.frmDispBar, textvariable=self.strX, width=_COMBO_WIDTH)
+        self.cbX['values'] = self.axesLst
+        self.cbX['state' ] = 'readonly'
+        self.cbX.bind('<<ComboboxSelected>>', self.viewChanged)
+        self.cbX.grid(column=colX, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        self.varLogX = tk.BooleanVar(value=False)
+        self.cbLogX = ttk.Checkbutton(self.frmDispBar, text='LogX', variable=self.varLogX, command=self.show)
+        self.cbLogX.grid(column=colX, row=1, sticky=tk.E, pady=_PADY)
+
+        #----------------------------------------------------------------------
+        # Y axis dimension selector
+        #----------------------------------------------------------------------
+        colY = 1
+        self.strY   = tk.StringVar(value='None') # Name of the Y-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
+
+        lblY = ttk.Label(self.frmDispBar, text="Dim for Y axis:")
+        lblY.grid(column=colY, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        self.cbY = ttk.Combobox(self.frmDispBar, textvariable=self.strY, width=_COMBO_WIDTH)
+        self.cbY['values'] = self.axesLst
+        self.cbY['state' ] = 'readonly'
+        self.cbY.bind('<<ComboboxSelected>>', self.viewChanged)
+        self.cbY.grid(column=colY, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        self.varLogY = tk.BooleanVar(value=False)
+        self.cbLogY = ttk.Checkbutton(self.frmDispBar, text='LogY', variable=self.varLogY, command=self.show)
+        self.cbLogY.grid(column=colY, row=1, sticky=tk.E, pady=_PADY)
+
+        #----------------------------------------------------------------------
+        # Value to show selector
+        #----------------------------------------------------------------------
+        colS = 2
+        self.strVP = tk.StringVar() # Name of the method for value to show in the chart
+        self.strVX = tk.StringVar() # Name of the value to show in the chart
+
+        lblVal = ttk.Label(self.frmDispBar, text="Value to show:")
+        lblVal.grid(column=colS, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        self.cbVP = ttk.Combobox(self.frmDispBar, textvariable=self.strVP, width=int(_COMBO_WIDTH))
+        self.cbVP['values'] = list(self.dat.mapShowMethods().keys())
+        self.cbVP['state' ] = 'readonly'
+        self.cbVP.bind('<<ComboboxSelected>>', self.viewChanged)
+        self.cbVP.grid(column=colS, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        self.cbVX = ttk.Combobox(self.frmDispBar, textvariable=self.strVX, width=_COMBO_WIDTH)
+        self.cbVX['values'] = list(self.dat.getVals().values())
+        self.cbVX['state' ] = 'readonly'
+        self.cbVX.bind('<<ComboboxSelected>>', self.viewChanged)
+        self.cbVX.grid(column=colS, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
+
+        #----------------------------------------------------------------------
+        # Method to apply selector
+        #----------------------------------------------------------------------
+        colM = 3
+        self.strM = tk.StringVar() # Name of the method to apply to the data
+
+        lblMet = ttk.Label(self.frmDispBar, text="Set values:")
+        lblMet.grid(column=colM, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        self.cbM = ttk.Combobox(self.frmDispBar, textvariable=self.strM, width=int(2*_COMBO_WIDTH))
+        self.cbM['values'] = list(self.dat.mapSetMethods().keys())
+        self.cbM['state' ] = 'readonly'
+        self.cbM.bind('<<ComboboxSelected>>', self.method)
+        self.cbM.grid(column=colM, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        #----------------------------------------------------------------------
+        # Frozen axis indexes
+        #----------------------------------------------------------------------
+        colFA = 4
+        self.strFA = tk.StringVar() # Frozen axis indexes, e.g. 'x:4, t:17'
+
+        lblFax = ttk.Label(self.frmDispBar, text="Frozen axis:")
+        lblFax.grid(column=colFA, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        valFax = ttk.Label(self.frmDispBar, textvariable=self.strFA)
+        valFax.grid(column=colFA, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        #----------------------------------------------------------------------
+        # Update display bar with actual data
+        #----------------------------------------------------------------------
+        self.updateDisplayBar()
+
 
     #--------------------------------------------------------------------------
     def dims(self):
@@ -583,6 +610,9 @@ class InfoMarixGui(ttk.Frame):
                 #--------------------------------------------------------------
                 if askyesno(title='Axes changed', message='Axes was changed. Apply changes and reset  data?'):
 
+                    self.dat.setIpType(self.dat.ipType, force=True)
+                    self.dat.init()
+                    self.updateDisplayBar()
                     self.logger.warning(f'{self.name}.onSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, reset data')
 
                 else:
@@ -592,6 +622,23 @@ class InfoMarixGui(ttk.Frame):
 
         #----------------------------------------------------------------------
         self.logger.debug(f'{self.name}.onSchema: InfoPointGui window closed')
+
+    #--------------------------------------------------------------------------
+    def onProp(self, event=None):
+
+        self.logger.debug(f'{self.name}.onProp:')
+
+        gui = InfoMatrixDataGui(name=f'Matrix {self.dat.name}', container=self, matrix=self.dat)
+        gui.grab_set()
+        self.wait_window(gui)
+
+        #----------------------------------------------------------------------
+        # Vyhodnotenie zmien v scheme
+        #----------------------------------------------------------------------
+        self.updateDisplayBar()
+
+        #----------------------------------------------------------------------
+        self.logger.debug(f'{self.name}.onProp: Matrix properties set')
 
     #--------------------------------------------------------------------------
     def onNew(self, event=None):
@@ -797,29 +844,21 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Zaciatok testu
     #--------------------------------------------------------------------------
-    matrix = InfoMatrix('Test field', 'ipTest')
+    matrix = InfoMatrix('Test field')
     matrix.logger.setLevel('INFO')
-
     matrix.logger.frameDepth = 2
     print(f'logger.frameDepth = {matrix.logger.frameDepth}')
 
     matrix.logger.info('Test of InfoMarixGui class')
+    matrix.setIpType('ipTest')
+    print(matrix.info(full=True)['msg'])
 
-    matrix.setAxe('x', 'Epoch')
-    matrix.setAxe('y', 'L-dist')
-    matrix.setAxe('z', 'Os Z')
-
-    matrix.setVal('m', 'hmotnosť')
-    matrix.setVal('v', 'rýchlosť')
-
-    matrix.gener(cnts={'x':10, 'y':40, 'z':2}, origs={'x':0, 'y':0, 'z':0}, rects={'x':5, 'y':5, 'z':2}, defs={'m':1, 'v':2})
-    print(matrix)
 
     matrixGui = InfoMarixGui(name='Test of InfoModelGui class', container=win, dat=matrix)
     matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
     matrixGui.sub2D = {'z':1}
-    matrixGui.logger.setLevel('DEBUG')
+#    matrixGui.logger.setLevel('DEBUG')
 
     win.mainloop()
 

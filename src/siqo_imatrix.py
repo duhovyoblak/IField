@@ -142,11 +142,6 @@ class InfoMatrix:
             return
 
         #----------------------------------------------------------------------
-        # Inicializacia
-        #----------------------------------------------------------------------
-        InfoPoint.checkSchema(ipType)
-
-        #----------------------------------------------------------------------
         # Reset all InfoMatrix's data
         #----------------------------------------------------------------------
         self.ipType     = ipType
@@ -166,7 +161,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Nastavenie axes
         #----------------------------------------------------------------------
-        for key in ipType['axes'].keys():
+        for key in InfoPoint.getAxes(self.ipType).keys():
 
             self._cnts [key] = 5
             self._origs[key] = 0
@@ -248,8 +243,8 @@ class InfoMatrix:
         # Kontrola, ci sa pocet bodov zhoduje s dlzkou zoznamu points
         #----------------------------------------------------------------------
         if check and (toRet != len(self.points)):
-            self.logger.critical(f"{self.name}.count: Count of points {toRet} is not equal to len(points) {len(self.points)}")
-            toRet = 0
+            self.logger.warning(f"{self.name}.count: Count of points {toRet} is not equal to len(points) {len(self.points)}, initialisation needed")
+            self.init()
 
         #----------------------------------------------------------------------
         self.logger.debug(f"{self.name}.count: Count of points is {toRet}")
@@ -314,6 +309,12 @@ class InfoMatrix:
         "Returns schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
 
         return InfoPoint.getSchema(self.ipType)
+
+    #--------------------------------------------------------------------------
+    def setSchema(self, schema:dict):
+        "Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
+
+        return InfoPoint.setSchema(self.ipType, schema)
 
     #--------------------------------------------------------------------------
     # Schema axes methods
@@ -588,8 +589,11 @@ class InfoMatrix:
     def pointByPos(self, pos:int) -> InfoPoint:
         "Returns InfoPoint in field for respective position"
 
+        if (pos<0) or (pos>=len(self.points)):
+            self.logger.error(f"{self.name}.pointByPos: pos={pos} is out of range <0,{len(self.points)-1}>")
+            return None
+
         toRet = self.points[pos]
-        #self.logger.debug(f"{self.name}.pointByPos: pos={pos} is at {id(toRet)}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -978,63 +982,30 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Vytvorenie, generovanie osi
     #--------------------------------------------------------------------------
-    im = InfoMatrix('Test matrix', ipType='ipTest')
-
-    #im.setIpType('ipTest')
-
-    im.logger.debug('Test of InfoMatrix class')
-    print(f'logger.frameDepth = {im.logger.frameDepth}')
-
-    im.gener(cnts={'a':5}, origs={'a':0.0}, rects={'a':1.0})
-    im.gener(cnts={'a':5}, origs={'a':0.0}, rects={'a':1.0})
-    im.gener(cnts={'a':5}, origs={'a':0.0}, rects={'a':1.0})
-    im.gener(cnts={'a':5}, origs={'a':0.0}, rects={'a':1.0})
-
-
+    im = InfoMatrix('Test matrix')
     print(im)
     input('Press Enter to continue...')
 
-    im.gener(cnts={'a':5}, origs={'a':0.0}, rects={'a':1.0})
-    print(im.info(full=True)['msg'])
+    im.init()
     input('Press Enter to continue...')
+
+    im.setIpType('ipTest')
+    im.init()
+    input('Press Enter to continue...')
+
 
     im.setAxe('a', 'Os A')
     im.setAxe('a', 'Os A')
     print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 
-    im.gener(cnts={'a':3}, origs={'a':0.0}, rects={'a':1.0})
+    im.init()
     print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 
-    im.setAxe('b', 'Os B')
-    im.gener(cnts={'a':3, 'b':4}, origs={'a':0.0, 'b':0}, rects={'a':10, 'b':10})
+    im.setVal('m', 'Hodnota M')
     print(im.info(full=True)['msg'])
-    input('Press Enter to continue...')
 
-    im.setAxe('c', 'Os C')
-    im.gener(cnts={'a':3, 'b':4, 'c':2}, origs={'a':0.0, 'b':0, 'c':0}, rects={'a':1.0, 'b':2, 'c':3})
-    im.setVal('v', 'Rýchlosť')
-    im.setVal('m', 'Hmotnosť')
-    input('Press Enter to continue...')
-    print()
-
-    im.logger.setLevel('DEBUG')
-
-    print(im.info(full=True)['msg'])
-    print('possA0', im._possByAxeIdx(axeKey='a', axeIdx=0))
-    print('possA1', im._possByAxeIdx(axeKey='a', axeIdx=1))
-    print()
-    print('possB0', im._possByAxeIdx(axeKey='b', axeIdx=0))
-    print('possB1', im._possByAxeIdx(axeKey='b', axeIdx=1))
-    print()
-    print('possC0', im._possByAxeIdx(axeKey='c', axeIdx=0))
-    print('possC1', im._possByAxeIdx(axeKey='c', axeIdx=1))
-    input('Press Enter to continue...')
-    print()
-
-    im.actSubmatrix({'a':0, 'b':1, 'c':None})
-    print(im.actList)
 
     #--------------------------------------------------------------------------
     # generovanie hodnot
@@ -1042,17 +1013,6 @@ if __name__ == '__main__':
     im.pointSetFunction('BRandom fuuniform', 'm', par={'all':True, 'min':0, 'max':5})
     im.pointSetFunction('Random uniform', 'm', par={'all':True, 'min':0, 'max':5})
     print(im.info(full=True)['msg'])
-    input('Press Enter to continue...')
-
-    #--------------------------------------------------------------------------
-    # generovanie hodnot
-    #--------------------------------------------------------------------------
-    print('point')
-    print('pos=16 ', im.pointByPos(16))
-    input('Press Enter to continue...')
-
-
-    print('[1, 3, 0] ', im.pointByIdxs([1, 3, 0]))
     input('Press Enter to continue...')
 
     #--------------------------------------------------------------------------

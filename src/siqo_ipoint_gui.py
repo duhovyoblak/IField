@@ -122,7 +122,7 @@ class InfoPointGui(tk.Toplevel):
         row = 1
         for key, val in params.items():
 
-            self.logger.debug(f'{self.name}.showParams: {key} : {val}')
+            self.logger.debug(f'{self.name}.showParams: {paramType}: {key} = {val}')
 
             lbl = ttk.Label(tab, text=str(key))
             lbl.grid(column=0, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -166,7 +166,7 @@ class InfoPointGui(tk.Toplevel):
         #----------------------------------------------------------------------
         if paramType == 'axes':
             InfoPoint.setAxe(self.ipType, key, val)
-            self.logger.info(f'{self.name}.setParam: {paramType}.{key}={val} was set')
+            self.logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
             self.showParams(self.tabAxe, 'axes', InfoPoint.getAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
 
         #----------------------------------------------------------------------
@@ -174,7 +174,7 @@ class InfoPointGui(tk.Toplevel):
         #----------------------------------------------------------------------
         elif paramType == 'vals':
             InfoPoint.setVal(self.ipType, key, val)
-            self.logger.info(f'{self.name}.setParam: {paramType}.{key}={val} was set')
+            self.logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
             self.showParams(self.tabVal, 'vals', InfoPoint.getVals(self.ipType), lblParam='Value', lblName='Value Name')
 
         #----------------------------------------------------------------------
@@ -194,7 +194,7 @@ class InfoPointGui(tk.Toplevel):
         #----------------------------------------------------------------------
         if paramType == 'axes':
             InfoPoint.delAxe(self.ipType, key)
-            self.logger.info(f'{self.name}.delParam: {paramType}.{key} deleted')
+            self.logger.warning(f'{self.name}.delParam: {paramType}.{key} deleted')
             self.showParams(self.tabAxe, 'axes', InfoPoint.getAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
 
         #----------------------------------------------------------------------
@@ -202,7 +202,7 @@ class InfoPointGui(tk.Toplevel):
         #----------------------------------------------------------------------
         elif paramType == 'vals':
             InfoPoint.delVal(self.ipType, key)
-            self.logger.info(f'{self.name}.delParam: {paramType}.{key} deleted')
+            self.logger.warning(f'{self.name}.delParam: {paramType}.{key} deleted')
             self.showParams(self.tabVal, 'vals', InfoPoint.getVals(self.ipType), lblParam='Value', lblName='Value Name')
 
         #----------------------------------------------------------------------

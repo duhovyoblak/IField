@@ -21,11 +21,11 @@ _F_DECIM  = 3                          # Number of digits after decimal point in
 _SCH_AXES = {}                         # Default axes for InfoPoint schema
 _SCH_VALS = {}                         # Default values for InfoPoint schema
 
-_SCHEMA   = {'ipReal   ':{'axes':_SCH_AXES.copy()
+_SCHEMA   = {'ipReal'   :{'axes':_SCH_AXES.copy()
                          ,'vals':_SCH_VALS.copy()
                          }
-            ,'ipComplex':{'axes':{'x':'os X', 'y':'os Y'}
-                         ,'vals':{'r':'real Value'}
+            ,'ipTest'   :{'axes':{'x':'os X', 'y':'os Y', 'z':'os Z'}
+                         ,'vals':{'a':'real Value A', 'b':'real Value B'}
                          }
             }                          # Default built-in Schema for InfoPoint
 
