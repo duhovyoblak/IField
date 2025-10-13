@@ -32,19 +32,19 @@ class InfoMatrixDisplayGui(tk.Toplevel):
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, name, container, matrix, **kwargs):
+    def __init__(self, name, container, display, **kwargs):
         "Call constructor of InfoMatrixDisplayGui and initialise it for respective data"
 
         self.logger = SiqoLogger(name)
         self.logger.audit(f'{name}.init:')
 
-        self.name     = name               # Name of this chart
-        self.matrix   = matrix             # Matrix type to work with
+        self.name     = name                    # Name of this chart
+        self.display  = display                 # Display options to be edited
 
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self.axes     = self.matrix.getAxes()
+        self.origDisplay = self.display.copy()  # Original display options
 
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
@@ -59,13 +59,6 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         frmDisp = ttk.Frame(self)
         frmDisp.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
-        # Získaj mená (hodnoty) a kluce k nim z dict self.axes
-        axeKeys  = list(self.axes.keys()  )
-        axeKeys.append ('Not used')
-
-        axeNames = list(self.axes.values())
-        axeNames.append('Not used')
-
         #----------------------------------------------------------------------
         # List of axes
         #----------------------------------------------------------------------
@@ -73,7 +66,7 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         lblAxe.grid(column=0, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         row = 1
-        for name in axeNames:
+        for name in self.display['axeNames']:
             lblAxe = ttk.Label(frmDisp, text=name)
             lblAxe.grid(column=0, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
             row += 1
@@ -81,13 +74,13 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Show on X
         #----------------------------------------------------------------------
-        self.selX = tk.StringVar(value=axeKeys[0] if len(axeNames)>0 else 'Not used')
+        self.selX = tk.StringVar(value=self.display['axeKeys'][0] if len(self.display['axeKeys'])>0 else 'Not used')
 
         lbl = ttk.Label(frmDisp, text="on X")
         lbl.grid(column=1, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         row = 1
-        for key in axeKeys:
+        for key in self.display['axeKeys']:
             rbtn = ttk.Radiobutton(frmDisp, text='', variable=self.selX, value=key)
             rbtn.grid(column=1, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
             row += 1
@@ -95,13 +88,13 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Show on Y
         #----------------------------------------------------------------------
-        self.selY = tk.StringVar(value=axeKeys[1] if len(axeNames)>1 else 'Not used')
+        self.selY = tk.StringVar(value=self.display['axeKeys'][1] if len(self.display['axeKeys'])>1 else 'Not used')
 
         lbl = ttk.Label(frmDisp, text="on Y")
         lbl.grid(column=2, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         row = 1
-        for key in axeKeys:
+        for key in self.display['axeKeys']:
             rbtn = ttk.Radiobutton(frmDisp, text='', variable=self.selY, value=key)
             rbtn.grid(column=2, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
             row += 1
@@ -109,13 +102,13 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Show on Z
         #----------------------------------------------------------------------
-        self.selZ = tk.StringVar(value=axeKeys[2] if len(axeNames)>2 else 'Not used')
+        self.selZ = tk.StringVar(value=self.display['axeKeys'][2] if len(self.display['axeKeys'])>2 else 'Not used')
 
         lbl = ttk.Label(frmDisp, text="on Z")
         lbl.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         row = 1
-        for key in axeKeys:
+        for key in self.display['axeKeys']:
             rbtn = ttk.Radiobutton(frmDisp, text='', variable=self.selZ, value=key)
             rbtn.grid(column=3, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
             row += 1
@@ -123,13 +116,13 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Run
         #----------------------------------------------------------------------
-        self.selRun = tk.StringVar(value=axeKeys[3] if len(axeNames)>3 else 'Not used')
+        self.selRun = tk.StringVar(value=self.display['axeKeys'][3] if len(self.display['axeKeys'])>3 else 'Not used')
 
         lbl = ttk.Label(frmDisp, text="Run")
         lbl.grid(column=4, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         row = 1
-        for key in axeKeys:
+        for key in self.display['axeKeys']:
             rbtn = ttk.Radiobutton(frmDisp, text='', variable=self.selRun, value=key)
             rbtn.grid(column=4, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
             row += 1
@@ -137,7 +130,7 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Freeze
         #----------------------------------------------------------------------
-        self.selRun = tk.StringVar(value=axeKeys[3] if len(axeNames)>3 else 'Not used')
+        self.selRun = tk.StringVar(value=self.display['axeKeys'][3] if len(self.display['axeKeys'])>3 else 'Not used')
 
         lbl = ttk.Label(frmDisp, text="Freeze")
         lbl.grid(column=5, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -173,17 +166,25 @@ class InfoMatrixDisplayGui(tk.Toplevel):
 
     #--------------------------------------------------------------------------
     def ok(self):
-        "Apply inputs"
+        "Parse user inputs into disply options and close the dialog"
 
+        #----------------------------------------------------------------------
+        # Vyhodnotenie radio buttons
+        #----------------------------------------------------------------------
+        self.display['keyX'] = self.selX.get()
+        self.display['keyY'] = self.selY.get()
+        self.display['keyZ'] = self.selZ.get()
 
-        self.logger.warning(f'{self.name}.ok: ')
+        #----------------------------------------------------------------------
+        self.logger.warning(f'{self.name}.ok: {self.display}')
         self.destroy()
 
     #--------------------------------------------------------------------------
     def cancel(self):
         "Cancel changes and restore original settings"
 
-        self.logger.info(f'{self.name}.cancel: ')
+        self.display = self.origDisplay.copy()
+        self.logger.info(f'{self.name}.cancel: Display options restored to {self.display}')
         self.destroy()
 
     #--------------------------------------------------------------------------
@@ -220,7 +221,21 @@ if __name__ == '__main__':
     im.logger.setLevel('DEBUG')
     im.logger.frameDepth = 2
 
-    matGui = InfoMatrixDisplayGui(name='Display test', container=win, matrix=im)
+
+    display  = {'type'     : '2D'   # Actual type of the chart
+               ,'needShow' : False  # Flag to show the chart, True means data changed and need to be shown
+               ,'axeKeys'  : list(im.getAxes().keys()) # List of axes keys
+               ,'axeNames' : list(im.getAxes().values()) # List of axes names
+               ,'keyS'     : 'None' # key for methods for value to show
+               ,'keyV'     : 'None' # key for value to show
+               ,'keyX'     : 'None' # key for Axis X to show
+               ,'keyY'     : 'None' # key for Axis Y to show
+            }
+
+    display['axeKeys' ].append('None')
+    display['axeNames'].append('None')
+
+    matGui = InfoMatrixDisplayGui(name='Display test', container=win, display=display)
 
     win.mainloop()
     matGui.logger.info('Stop of InfoMatrixDisplayGui test')

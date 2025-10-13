@@ -8,14 +8,15 @@ from   tkinter.messagebox     import showinfo, askokcancel, askyesno
 from   matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 #from   mpl_toolkits                      import mplot3d
 
-import numpy                  as np
-import matplotlib.pyplot      as plt
+import numpy                    as np
+import matplotlib.pyplot        as plt
 
-from   siqolib.logger         import SiqoLogger
-from   siqolib.message        import SiqoMessage, askInt, askReal
-from   siqo_imatrix           import InfoMatrix
-from   siqo_ipoint_gui        import InfoPointGui
-from   siqo_imatrix_data_gui  import InfoMatrixDataGui
+from   siqolib.logger           import SiqoLogger
+from   siqolib.message          import SiqoMessage, askInt, askReal
+from   siqo_imatrix             import InfoMatrix
+from   siqo_ipoint_gui          import InfoPointGui
+from   siqo_imatrix_data_gui    import InfoMatrixDataGui
+from   siqo_imatrix_display_gui import InfoMatrixDisplayGui
 
 #==============================================================================
 # package's constants
@@ -27,7 +28,7 @@ _DPI            = 100
 _FIG_W          = 0.8    # Figure width
 _FIG_H          = 1.0    # Figure height
 
-_COMBO_WIDTH    = 12
+_COMBO_WIDTH    = 32
 _PADX           =  5
 _PADY           =  5
 
@@ -49,30 +50,26 @@ class InfoMarixGui(ttk.Frame):
         self.logger = SiqoLogger(name, level='DEBUG')
         self.logger.audit(f'{name}.init:')
 
-        self.name     = name               # Name of this chart
-        self.dat      = dat                # InfoMatrix base data
-        self.sub2D    = {}                 # Subset of InfoMatrix data defined as frozen axes with desired values e.g. {'x':4, 't':17}
-        self.needShow = False              # Flag to show the chart, True means data changed and need to be shown
+        self.name     = name                # Name of this chart
+        self.dat      = dat                 # InfoMatrix base data
+        self.sub2D    = {}                  # Subset of InfoMatrix data defined as frozen axes with desired values e.g. {'x':4, 't':17}
+        self.display  = {}                  # Display options
+
+        self.resetDisplay()                 # Display options
 
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self.w        = 1600               # Width of the chart in px
-        self.h        =  600               # Height of the chart in px
+        self.w        = 1600                # Width of the chart in px
+        self.h        =  600                # Height of the chart in px
 
-        self.type     = '2D'               # Actual type of the chart
-        self.actPoint = None               # Actual working InfoPoint
+        self.actPoint = None                # Actual working InfoPoint
 
-        self.keyS     = 'None'             # key for methods for value to show
-        self.keyV     = 'None'             # key for value to show
-        self.keyX     = 'None'             # Default key for Axis X to show
-        self.keyY     = 'None'             # Default key for Axis Y to show
 
-        if 'keyV' in kwargs.keys(): self.keyV = kwargs['keyV']
-        if 'keyX' in kwargs.keys(): self.keyX = kwargs['keyX']
-        if 'keyY' in kwargs.keys(): self.keyY = kwargs['keyY']
+        #if 'keyV' in kwargs.keys(): self.display['showValue'] = kwargs['keyV']
+        #if 'keyX' in kwargs.keys(): self.display['keyX'] = kwargs['keyX']
+        #if 'keyY' in kwargs.keys(): self.display['keyY'] = kwargs['keyY']
 
-        self.axesLst  = list()             # List of axes names for combo boxes
 
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
@@ -95,9 +92,10 @@ class InfoMarixGui(ttk.Frame):
         # Pridanie Data menu
         dataMenu = tk.Menu(mainMenu, tearoff=0)
         mainMenu.add_cascade(label="Point/Data", menu=dataMenu)
-        dataMenu.add_command(label="Point Schema",      command=self.onSchema)
-        dataMenu.add_command(label="Matrix properties", command=self.onProp  )
-        dataMenu.add_command(label="New data",          command=self.onNew   )
+        dataMenu.add_command(label="Point Schema",       command=self.onPointSchema)
+        dataMenu.add_command(label="Matrix properties",  command=self.onMatrixProp )
+        dataMenu.add_command(label="Display properties", command=self.onDisplay    )
+        dataMenu.add_command(label="New data",           command=self.onNew        )
 
         # Pridanie Help menu
         helpMenu = tk.Menu(mainMenu, tearoff=0)
@@ -111,6 +109,7 @@ class InfoMarixGui(ttk.Frame):
         self.frmDispBar = ttk.Frame(self)
         self.frmDispBar.pack(fill=tk.X, expand=True, side=tk.TOP, anchor=tk.N)
         self.showDisplayBar()
+        self.updateDisplayBar()
 
         #----------------------------------------------------------------------
         # Create a figure with the navigator bar and bind it to mouse events
@@ -129,131 +128,99 @@ class InfoMarixGui(ttk.Frame):
         self.logger.audit(f'{name}.init: Done')
 
     #--------------------------------------------------------------------------
-    def updateDisplayBar(self):
+    def resetDisplay(self):
+        "Reset display options to default values based on matrix data"
 
-        self.axesLst = list(self.dat.getAxes().values())
-        self.axesLst.insert(0, 'None')        # Insert 'None' as first item
+        self.display  = {'type'       : '2D'                              # Actual type of the chart
+                        ,'needShow'   : False                             # Flag to show the chart, True means data changed and need to be shown
+                        ,'axeKeys'    : list(self.dat.getAxes().keys())   # List of axes keys
+                        ,'axeNames'   : list(self.dat.getAxes().values()) # List of axes names
+                        ,'keyX'       : 'None'                            # key for Axis X to show
+                        ,'keyY'       : 'None'                            # key for Axis Y to show
+                        ,'showMethod' : 'None'                            # key for methods for value to show
+                        ,'showValue'  : 'None'                            # Name value to show
+                        }
 
-        self.cbX['values'] = self.axesLst
-        self.cbX.current(0)
+        self.display['axeKeys' ].append('None')
+        self.display['axeNames'].append('None')
 
-        self.cbY['values'] = self.axesLst
-        self.cbY.current(0)
-
-        self.cbM['values'] = list(self.dat.mapSetMethods().keys())
-        self.cbM.current(0)
-
-        self.cbVP['values'] = list(self.dat.mapShowMethods().keys())
-        self.cbVP.current(0)
-
-        self.cbVX['values'] = list(self.dat.getVals().values())
-        self.cbVX.current(0)
+        self.logger.info(f'{self.name}.resetDisplay: Display options reset to {self.display}')
 
     #--------------------------------------------------------------------------
     def showDisplayBar(self):
         "Show diplay options bar"
 
-        self.frmDispBar.columnconfigure(0, weight=3)
-        self.frmDispBar.columnconfigure(1, weight=3)
-        self.frmDispBar.columnconfigure(2, weight=4)
-        self.frmDispBar.columnconfigure(3, weight=3)
-        self.frmDispBar.columnconfigure(4, weight=3)
-        self.frmDispBar.columnconfigure(5, weight=3)
+        self.frmDispBar.columnconfigure(0, weight=1)
+        self.frmDispBar.columnconfigure(1, weight=1)
+        self.frmDispBar.columnconfigure(2, weight=1)
+        self.frmDispBar.columnconfigure(3, weight=1)
 
         self.frmDispBar.rowconfigure(0, weight=1)
         self.frmDispBar.rowconfigure(1, weight=1)
 
         #----------------------------------------------------------------------
-        # X axis dimension selector
+        # X axis dimension
         #----------------------------------------------------------------------
-        colX = 0
-        self.strX   = tk.StringVar(value='None') # Name of the X-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
-
-        lblX = ttk.Label(self.frmDispBar, text="Dim for X axis:")
-        lblX.grid(column=colX, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        self.cbX = ttk.Combobox(self.frmDispBar, textvariable=self.strX, width=_COMBO_WIDTH)
-        self.cbX['values'] = self.axesLst
-        self.cbX['state' ] = 'readonly'
-        self.cbX.bind('<<ComboboxSelected>>', self.viewChanged)
-        self.cbX.grid(column=colX, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
-
         self.varLogX = tk.BooleanVar(value=False)
-        self.cbLogX = ttk.Checkbutton(self.frmDispBar, text='LogX', variable=self.varLogX, command=self.show)
-        self.cbLogX.grid(column=colX, row=1, sticky=tk.E, pady=_PADY)
+        cbLog = ttk.Checkbutton(self.frmDispBar, text='Log X:', variable=self.varLogX, command=self.show)
+        cbLog.grid(column=0, row=0, sticky=tk.E, pady=_PADY)
+
+        self.lblX = ttk.Label(self.frmDispBar, text="None")
+        self.lblX.grid(column=1, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
-        # Y axis dimension selector
+        # Y axis dimension
         #----------------------------------------------------------------------
-        colY = 1
-        self.strY   = tk.StringVar(value='None') # Name of the Y-axis dimesion from ipType.axis, 'None' means nothing to show in this axis
-
-        lblY = ttk.Label(self.frmDispBar, text="Dim for Y axis:")
-        lblY.grid(column=colY, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        self.cbY = ttk.Combobox(self.frmDispBar, textvariable=self.strY, width=_COMBO_WIDTH)
-        self.cbY['values'] = self.axesLst
-        self.cbY['state' ] = 'readonly'
-        self.cbY.bind('<<ComboboxSelected>>', self.viewChanged)
-        self.cbY.grid(column=colY, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
-
         self.varLogY = tk.BooleanVar(value=False)
-        self.cbLogY = ttk.Checkbutton(self.frmDispBar, text='LogY', variable=self.varLogY, command=self.show)
-        self.cbLogY.grid(column=colY, row=1, sticky=tk.E, pady=_PADY)
+        cbLog = ttk.Checkbutton(self.frmDispBar, text='Log Y:', variable=self.varLogY, command=self.show)
+        cbLog.grid(column=0, row=1, sticky=tk.E, pady=_PADY)
+
+        self.lblY = ttk.Label(self.frmDispBar, text="None")
+        self.lblY.grid(column=1, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
         # Value to show selector
         #----------------------------------------------------------------------
-        colS = 2
-        self.strVP = tk.StringVar() # Name of the method for value to show in the chart
-        self.strVX = tk.StringVar() # Name of the value to show in the chart
+        self.varValMet  = tk.StringVar(value='Float value') # Name of the method for value to show in the chart
+        self.varValName = tk.StringVar()                    # Name of the value to show in the chart
 
         lblVal = ttk.Label(self.frmDispBar, text="Value to show:")
-        lblVal.grid(column=colS, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+        lblVal.grid(column=2, row=0, sticky=tk.E, padx=_PADX, pady=_PADY)
 
-        self.cbVP = ttk.Combobox(self.frmDispBar, textvariable=self.strVP, width=int(_COMBO_WIDTH))
-        self.cbVP['values'] = list(self.dat.mapShowMethods().keys())
-        self.cbVP['state' ] = 'readonly'
-        self.cbVP.bind('<<ComboboxSelected>>', self.viewChanged)
-        self.cbVP.grid(column=colS, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+        self.cbValMet = ttk.Combobox(self.frmDispBar, textvariable=self.varValMet, width=int(_COMBO_WIDTH))
+        self.cbValMet['values'] = list(self.dat.mapShowMethods().keys())
+        self.cbValMet['state' ] = 'readonly'
+        self.cbValMet.bind('<<ComboboxSelected>>', self.viewChanged)
+        self.cbValMet.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        self.cbVX = ttk.Combobox(self.frmDispBar, textvariable=self.strVX, width=_COMBO_WIDTH)
-        self.cbVX['values'] = list(self.dat.getVals().values())
-        self.cbVX['state' ] = 'readonly'
-        self.cbVX.bind('<<ComboboxSelected>>', self.viewChanged)
-        self.cbVX.grid(column=colS, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
+        lblVal = ttk.Label(self.frmDispBar, text="of")
+        lblVal.grid(column=4, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        self.cbValName = ttk.Combobox(self.frmDispBar, textvariable=self.varValName, width=_COMBO_WIDTH)
+        self.cbValName['values'] = list(self.dat.getVals().values())
+        self.cbValName['state' ] = 'readonly'
+        self.cbValName.bind('<<ComboboxSelected>>', self.viewChanged)
+        self.cbValName.grid(column=5, row=0, sticky=tk.E, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
         # Method to apply selector
         #----------------------------------------------------------------------
-        colM = 3
-        self.strM = tk.StringVar() # Name of the method to apply to the data
+        self.varSetMet = tk.StringVar() # Name of the method to apply to the data
 
         lblMet = ttk.Label(self.frmDispBar, text="Set values:")
-        lblMet.grid(column=colM, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+        lblMet.grid(column=2, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
 
-        self.cbM = ttk.Combobox(self.frmDispBar, textvariable=self.strM, width=int(2*_COMBO_WIDTH))
-        self.cbM['values'] = list(self.dat.mapSetMethods().keys())
-        self.cbM['state' ] = 'readonly'
-        self.cbM.bind('<<ComboboxSelected>>', self.method)
-        self.cbM.grid(column=colM, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+        self.cbSetMet = ttk.Combobox(self.frmDispBar, textvariable=self.varSetMet, width=int(_COMBO_WIDTH))
+        self.cbSetMet['values'] = list(self.dat.mapSetMethods().keys())
+        self.cbSetMet['state' ] = 'readonly'
+        self.cbSetMet.bind('<<ComboboxSelected>>', self.setMethod)
+        self.cbSetMet.grid(column=3, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        #----------------------------------------------------------------------
-        # Frozen axis indexes
-        #----------------------------------------------------------------------
-        colFA = 4
-        self.strFA = tk.StringVar() # Frozen axis indexes, e.g. 'x:4, t:17'
+    #--------------------------------------------------------------------------
+    def updateDisplayBar(self):
 
-        lblFax = ttk.Label(self.frmDispBar, text="Frozen axis:")
-        lblFax.grid(column=colFA, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        valFax = ttk.Label(self.frmDispBar, textvariable=self.strFA)
-        valFax.grid(column=colFA, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        #----------------------------------------------------------------------
-        # Update display bar with actual data
-        #----------------------------------------------------------------------
-        self.updateDisplayBar()
+        self.lblX['text'] = self.dat.axeNameByKey(self.display['keyX']) if self.display['keyX'] != 'None' else 'None'
+        self.lblY['text'] = self.dat.axeNameByKey(self.display['keyY']) if self.display['keyY'] != 'None' else 'None'
 
 
     #--------------------------------------------------------------------------
@@ -262,69 +229,35 @@ class InfoMarixGui(ttk.Frame):
 
         toRet = 0
 
-        if self.keyX: toRet += 1
-        if self.keyY: toRet += 1
+        if self.display['keyX']: toRet += 1
+        if self.display['keyY']: toRet += 1
 
         self.logger.debug(f'{self.name}.dims: Chart has {toRet} dimensions')
         return toRet
 
     #--------------------------------------------------------------------------
     def viewChanged(self, event=None, force=False):
-        "Prepares npData to show"
+        "Prepares npData to show according to axes and value to show"
 
         #----------------------------------------------------------------------
-        # Read actual settings
+        # Check for Changes in show options
         #----------------------------------------------------------------------
-        aKeyS = self.strVP.get()
-        aKeyV = self.dat.valKeyByName( self.strVX.get())  # Key for Name of the value to show in the chart, 'None' means nothing to show
-        aKeyX = self.dat.axeKeyByName( self.strX.get() )  # Key for Name of the X-axis dimension from ipType.axis, 'None' means nothing to show in this axis
-        aKeyY = self.dat.axeKeyByName( self.strY.get() )  # Key for Name of the Y-axis dimension from ipType.axis, 'None' means nothing to show in this axis
+        if self.display['showMethod'] != self.varValMet:
+            self.display['showMethod'] = self.varValMet.get()
+            self.display['needShow']   = True
 
-        self.logger.info(f'{self.name}.viewChanged: method={aKeyS}->{self.keyS}, value={self.keyV}->{aKeyV}, X-axis={self.keyX}->{aKeyX}, Y-axis={self.keyY}->{aKeyY}')
-        self.needShow = False
+        if self.display['showValue'] != self.varValName:
+            self.display['showValue'] = self.varValName.get()
+            self.display['needShow']  = True
+
+        self.logger.info(f"{self.name}.viewChanged: Show {self.display['showMethod']}({self.display['showValue']}) in X:{self.display['keyX']}, Y:{self.display['keyY']}")
 
         #----------------------------------------------------------------------
         # Changes in any key required data refresh
         #----------------------------------------------------------------------
-        if (self.keyS!=aKeyS) or (self.keyV!=aKeyV) or (self.keyX!=aKeyX) or (self.keyY!=aKeyY) or force:
+        if self.display['needShow'] or force:
 
-            self.logger.info(f'{self.name}.viewChanged: {self.keyS}->{aKeyS}, {self.keyV}->{aKeyV}, {self.keyX}->{aKeyX}, {self.keyY}->{aKeyY} - need to show the chart')
-            self.needShow = True
-
-            #------------------------------------------------------------------
-            # Ak sa zmenili osy, zresetujem sub2D
-            #------------------------------------------------------------------
-            if (self.keyX != aKeyX) or (self.keyY != aKeyY):
-
-                self.logger.info(f'{self.name}.viewChanged: X or Y axis changed, resetting sub2D')
-                self.sub2D = {}
-
-                #--------------------------------------------------------------
-                # Nastavim zmrazene indexy pre osi, ktore sa nezobrazia
-                #--------------------------------------------------------------
-                for axe, axeName in self.dat.getAxes().items():
-
-                    # Preskocim zobrazene osi
-                    if axe==aKeyX or axe==aKeyY: continue
-
-                    #----------------------------------------------------------
-                    # Zamrazim index pre danu os
-                    #----------------------------------------------------------
-                    inp = askInt(container=self, title=f'Zadaj zmrazenú hodnotu pre {axeName}', prompt=axe, initialvalue=0, min=0, max=self.dat._cnts[axe]-1)
-
-                    if inp is None:
-                       self.logger.audit(f'{self.name}.viewChanged: User input for axe {axeName} cancelled by user')
-                       continue
-
-                    self.setSub2D({axe: inp})
-
-            #------------------------------------------------------------------
-            # Vytvorim predpis pre aktualny subset
-            #------------------------------------------------------------------
-            self.keyS = aKeyS
-            self.keyV = aKeyV
-            self.keyX = aKeyX
-            self.keyY = aKeyY
+            self.display['needShow'] = True
 
             #------------------------------------------------------------------
             # Ziskam list InfoPoints (whole object) patriacich subsetu
@@ -334,7 +267,7 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
         #----------------------------------------------------------------------
-        self.logger.info(f'{self.name}.viewChanged: needShow = {self.needShow}')
+        self.logger.info(f'{self.name}.viewChanged: needShow = {self.display['needShow']}')
         self.show()
 
     #--------------------------------------------------------------------------
@@ -367,12 +300,12 @@ class InfoMarixGui(ttk.Frame):
     def show(self, event=None):
         """Vykresli chart na zaklade aktualneho listu actList
         """
-        self.logger.info(f"{self.name}.show: axisX='{self.keyX}', axisY='{self.keyY}', value='{self.keyV}', method='{self.keyS}'")
+        self.logger.info(f"{self.name}.show: axisX='{self.display['keyX']}', axisY='{self.display['keyY']}', value='{self.display['showValue']}', method='{self.display['showMethod']}'")
 
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
         #----------------------------------------------------------------------
-        if not self.needShow:
+        if not self.display['needShow']:
             self.logger.info(f'{self.name}.show: Data have not changed, no need for show')
             return
 
@@ -386,14 +319,14 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Check value to show
         #----------------------------------------------------------------------
-        if not self.keyV:
+        if not self.display['showValue']:
             self.logger.warning(f'{self.name}.show: No value selected, nothig to show')
             return
 
         #----------------------------------------------------------------------
         # Check axis to show
         #----------------------------------------------------------------------
-        if not self.keyX and not self.keyY:
+        if not self.display['keyX'] and not self.display['keyY']:
             self.logger.warning(f'{self.name}.show: No axis selected, nothig to show')
             return
 
@@ -409,16 +342,16 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Prejdem vsetky vybrane body na zobrazenie
         #----------------------------------------------------------------------
-        showFtion = self.dat.mapShowMethods()[self.keyS]
+        showFtion = self.dat.mapShowMethods()[self.display['showMethod']]
 
-        self.logger.debug(f'{self.name}.show: Iterating {len(self.dat.actList)} iPoints for showFtion={self.keyS} with keyV={self.keyV}')
+        self.logger.debug(f'{self.name}.show: Iterating {len(self.dat.actList)} iPoints for showFtion={self.display['showMethod']} with keyV={self.display['showValue']}')
         for i, point in enumerate(self.dat.actList):
 
-            valueToShow = showFtion(point, self.keyV)
+            valueToShow = showFtion(point, self.display['showValue'])
             listC.append(valueToShow)
 
-            if self.keyX: listX.append(point.pos(self.keyX))
-            if self.keyY: listY.append(point.pos(self.keyY))
+            if self.display['keyX']: listX.append(point.pos(self.display['keyX']))
+            if self.display['keyY']: listY.append(point.pos(self.display['keyY']))
 
         #----------------------------------------------------------------------
         # Skonvertujem do npArrays
@@ -434,11 +367,11 @@ class InfoMarixGui(ttk.Frame):
             self.logger.info(f'{self.name}.show: No values to show')
             return
 
-        if self.keyX and npX.size==0:
+        if self.display['keyX'] and npX.size==0:
             self.logger.info(f'{self.name}.show: Axe X is selected but has no data to show')
             return
 
-        if self.keyY and npY.size==0:
+        if self.display['keyY'] and npY.size==0:
             self.logger.info(f'{self.name}.show: Axe Y is selected but has no data to show')
             return
 
@@ -455,14 +388,14 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Nazvy osi podla aktualneho vyberu
         #----------------------------------------------------------------------
-        if self.keyX: chart.set_xlabel(self.dat.axeNameByKey(self.keyX))
-        if self.keyY: chart.set_ylabel(self.dat.axeNameByKey(self.keyY))
+        if self.display['keyX']: chart.set_xlabel(self.dat.axeNameByKey(self.display['keyX']))
+        if self.display['keyY']: chart.set_ylabel(self.dat.axeNameByKey(self.display['keyY']))
 
         #----------------------------------------------------------------------
         # Log axis X, Y
         #----------------------------------------------------------------------
-        if 'selected' in self.cbLogX.state(): chart.set_xscale('log')
-        if 'selected' in self.cbLogY.state(): chart.set_yscale('log')
+        if self.varLogX.get(): chart.set_xscale('log')
+        if self.varLogX.get(): chart.set_yscale('log')
 
         #----------------------------------------------------------------------
         # Show the chart
@@ -471,7 +404,7 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             # Chart 1D
             #------------------------------------------------------------------
-            if self.keyX: axis = npX
+            if self.display['keyX']: axis = npX
             else        : axis = npY
 
             self.logger.debug(f'{self.name}.show: Chart 1D')
@@ -518,7 +451,7 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             # Get the actual point by coordinates
             #------------------------------------------------------------------
-            coord = {self.keyX: x, self.keyY: y}
+            coord = {self.display['keyX']: x, self.display['keyY']: y}
             self.actPoint = self.dat.pointByCoord(coord)
             self.logger.debug(f'{self.name}.onClick: Actual point = {self.actPoint}@{id(self.actPoint)}')
 
@@ -538,30 +471,30 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             elif btn == 3: #MouseButton.RIGHT:
 
-                val     = self.actPoint.val(self.keyV)
-                valName = self.actPoint.valName(self.keyV)
+                val     = self.actPoint.val(self.display['showValue'])
+                valName = self.actPoint.valName(self.display['showValue'])
 
-                self.logger.info(f'{self.name}.onClick: right click for {self.keyV}[{valName}] = {val} {type(val)}')
+                self.logger.info(f'{self.name}.onClick: right click for {self.display['showValue']}[{valName}] = {val} {type(val)}')
 
                 #--------------------------------------------------------------
                 # User input based on value type
                 #--------------------------------------------------------------
                 if type(val) in [int, float]:
 
-                   inp = askReal(container=self, title=f'Zadaj hodnotu pre {valName}', prompt=self.keyV, initialvalue=val)
+                   inp = askReal(container=self, title=f'Zadaj hodnotu pre {valName}', prompt=self.display['showValue'], initialvalue=val)
 
                    if inp is None:
                        self.logger.audit(f'{self.name}.onClick: User input cancelled by user')
                        return
 
-                   self.actPoint.set(vals={self.keyV:inp})
-                   self.logger.audit(f'{self.name}.onClick: Set {self.keyV} = {inp} for {self.actPoint}')
+                   self.actPoint.set(vals={self.display['showValue']:inp})
+                   self.logger.audit(f'{self.name}.onClick: Set {self.display['showValue']} = {inp} for {self.actPoint}')
 
                 #--------------------------------------------------------------
                 # Data was changed, so show the chart
                 #--------------------------------------------------------------
                 self.logger.warning(f'{self.name}.onClick: Data changed, need to show the chart')
-                self.needShow = True
+                self.display['needShow'] = True
                 self.show()
 
             #------------------------------------------------------------------
@@ -587,9 +520,9 @@ class InfoMarixGui(ttk.Frame):
     #==========================================================================
     # Point/Data menu
     #--------------------------------------------------------------------------
-    def onSchema(self, event=None):
+    def onPointSchema(self, event=None):
 
-        self.logger.debug(f'{self.name}.onSchema:')
+        self.logger.debug(f'{self.name}.onPointSchema:')
 
         origSchema = self.dat.getSchema()
 
@@ -614,20 +547,20 @@ class InfoMarixGui(ttk.Frame):
                     self.dat.setIpType(self.dat.ipType, force=True)
                     self.dat.init()
                     self.updateDisplayBar()
-                    self.logger.warning(f'{self.name}.onSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, reset data')
+                    self.logger.warning(f'{self.name}.onPointSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, reset data')
 
                 else:
                     self.dat.setSchema(origSchema)
-                    self.logger.warning(f'{self.name}.onSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, but user cancelled changes, schema restored')
+                    self.logger.warning(f'{self.name}.onPointSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, but user cancelled changes, schema restored')
                     return
 
         #----------------------------------------------------------------------
-        self.logger.debug(f'{self.name}.onSchema: InfoPointGui window closed')
+        self.logger.debug(f'{self.name}.onPointSchema: InfoPointGui window closed')
 
     #--------------------------------------------------------------------------
-    def onProp(self, event=None):
+    def onMatrixProp(self, event=None):
 
-        self.logger.debug(f'{self.name}.onProp:')
+        self.logger.debug(f'{self.name}.onMatrixProp:')
 
         gui = InfoMatrixDataGui(name=f'Matrix {self.dat.name}', container=self, matrix=self.dat)
         gui.grab_set()
@@ -639,7 +572,59 @@ class InfoMarixGui(ttk.Frame):
         self.updateDisplayBar()
 
         #----------------------------------------------------------------------
-        self.logger.debug(f'{self.name}.onProp: Matrix properties set')
+        self.logger.debug(f'{self.name}.onMatrixProp: Matrix properties set')
+
+    #--------------------------------------------------------------------------
+    def onDisplay(self, event=None):
+
+        self.logger.debug(f'{self.name}.onDisplay:')
+
+        gui = InfoMatrixDisplayGui(name=f'Display options', container=self, display=self.display)
+        gui.grab_set()
+        self.wait_window(gui)
+
+        #----------------------------------------------------------------------
+        # Ak sa zmenili osy, zresetujem sub2D
+        #----------------------------------------------------------------------
+        if (self.display['keyX'] != gui.display['keyX']) or (self.display['keyY'] != gui.display['keyY']):
+
+                self.logger.info(f"{self.name}.viewChanged: X:{self.display['keyX']}->{gui.display['keyX']} Y:{self.display['keyY']}->{gui.display['keyY']}, resetting sub2D")
+                self.display = gui.display.copy()
+
+                self.sub2D = {}
+
+                #--------------------------------------------------------------
+                # Nastavim zmrazene indexy pre osi, ktore sa nezobrazia
+                #--------------------------------------------------------------
+                for axe, axeName in self.dat.getAxes().items():
+
+                    # Preskocim zobrazene osi
+                    if axe==aKeyX or axe==aKeyY: continue
+
+                    #----------------------------------------------------------
+                    # Zamrazim index pre danu os
+                    #----------------------------------------------------------
+                    inp = askInt(container=self, title=f'Zadaj zmrazenú hodnotu pre {axeName}', prompt=axe, initialvalue=0, min=0, max=self.dat._cnts[axe]-1)
+
+                    if inp is None:
+                       self.logger.audit(f'{self.name}.viewChanged: User input for axe {axeName} cancelled by user')
+                       continue
+
+                    self.setSub2D({axe: inp})
+
+
+
+
+
+
+
+
+
+
+
+        #----------------------------------------------------------------------
+        self.updateDisplayBar()
+        self.show()
 
     #--------------------------------------------------------------------------
     def onNew(self, event=None):
@@ -712,13 +697,13 @@ class InfoMarixGui(ttk.Frame):
     #==========================================================================
     # Method to apply
     #--------------------------------------------------------------------------
-    def method(self, event=None):
+    def setMethod(self, event=None):
         "Apply data in active cut"
 
-        metKey = self.strM.get()
+        metKey = self.varSetMet.get()
         if metKey == 'None': return
 
-        self.logger.debug(f'{self.name}.method: Value {self.keyV} will be set by {metKey} with subset = {self.sub2D}')
+        self.logger.debug(f'{self.name}.method: Value {self.display['showValue']} will be set by {metKey} with subset = {self.sub2D}')
 
         #----------------------------------------------------------------------
         # Zistenie detailov metody
@@ -740,8 +725,8 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Vykonanie metody
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.method: {metKey}(key='{self.keyV}', par={newPar})")
-        self.dat.pointSetFunction(keyFtion=metKey, key=self.keyV, par=newPar)
+        self.logger.info(f"{self.name}.method: {metKey}(key='{self.display['showValue']}', par={newPar})")
+        self.dat.pointSetFunction(keyFtion=metKey, key=self.display['showValue'], par=newPar)
 
         self.viewChanged(force=True)
 
@@ -754,9 +739,9 @@ class InfoMarixGui(ttk.Frame):
 
         self.actPoint = None               # Actual working InfoPoint
 
-        self.keyV     = 'None'             # key for value to show
-        self.keyX     = 'None'             # Default key for Axis X to show
-        self.keyY     = 'None'             # Default key for Axis Y to show
+        self.display['showValue']     = 'None'             # key for value to show
+        self.display['keyX']     = 'None'             # Default key for Axis X to show
+        self.display['keyY']     = 'None'             # Default key for Axis Y to show
 
         self.logger.info(f'{self.name}.reset: done')
 
