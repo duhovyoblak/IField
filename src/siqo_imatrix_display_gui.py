@@ -36,7 +36,7 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         "Call constructor of InfoMatrixDisplayGui and initialise it for respective data"
 
         self.logger = SiqoLogger(name)
-        self.logger.audit(f'{name}.init:')
+        self.logger.audit(f'{name}.init: {display}')
 
         self.name     = name                    # Name of this chart
         self.display  = display                 # Display options to be edited
@@ -74,7 +74,7 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Show on X
         #----------------------------------------------------------------------
-        self.selX = tk.StringVar(value=self.display['axeKeys'][0] if len(self.display['axeKeys'])>0 else 'Not used')
+        self.selX = tk.StringVar(value=self.display['keyX'])
 
         lbl = ttk.Label(frmDisp, text="on X")
         lbl.grid(column=1, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -88,7 +88,7 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Show on Y
         #----------------------------------------------------------------------
-        self.selY = tk.StringVar(value=self.display['axeKeys'][1] if len(self.display['axeKeys'])>1 else 'Not used')
+        self.selY = tk.StringVar(value=self.display['keyY'])
 
         lbl = ttk.Label(frmDisp, text="on Y")
         lbl.grid(column=2, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -102,7 +102,7 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Show on Z
         #----------------------------------------------------------------------
-        self.selZ = tk.StringVar(value=self.display['axeKeys'][2] if len(self.display['axeKeys'])>2 else 'Not used')
+        self.selZ = tk.StringVar(value=self.display['keyZ'])
 
         lbl = ttk.Label(frmDisp, text="on Z")
         lbl.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)

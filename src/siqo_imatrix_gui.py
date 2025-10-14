@@ -28,7 +28,7 @@ _DPI            = 100
 _FIG_W          = 0.8    # Figure width
 _FIG_H          = 1.0    # Figure height
 
-_COMBO_WIDTH    = 32
+_COMBO_WIDTH    = 27
 _PADX           =  5
 _PADY           =  5
 
@@ -66,7 +66,7 @@ class InfoMarixGui(ttk.Frame):
         self.actPoint = None                # Actual working InfoPoint
 
 
-        #if 'keyV' in kwargs.keys(): self.display['showValue'] = kwargs['keyV']
+        #if 'keyV' in kwargs.keys(): self.display['valName'] = kwargs['keyV']
         #if 'keyX' in kwargs.keys(): self.display['keyX'] = kwargs['keyX']
         #if 'keyY' in kwargs.keys(): self.display['keyY'] = kwargs['keyY']
 
@@ -95,7 +95,7 @@ class InfoMarixGui(ttk.Frame):
         dataMenu.add_command(label="Point Schema",       command=self.onPointSchema)
         dataMenu.add_command(label="Matrix properties",  command=self.onMatrixProp )
         dataMenu.add_command(label="Display properties", command=self.onDisplay    )
-        dataMenu.add_command(label="New data",           command=self.onNew        )
+        dataMenu.add_command(label="Set data",           command=self.onSetData    )
 
         # Pridanie Help menu
         helpMenu = tk.Menu(mainMenu, tearoff=0)
@@ -131,14 +131,19 @@ class InfoMarixGui(ttk.Frame):
     def resetDisplay(self):
         "Reset display options to default values based on matrix data"
 
-        self.display  = {'type'       : '2D'                              # Actual type of the chart
-                        ,'needShow'   : False                             # Flag to show the chart, True means data changed and need to be shown
-                        ,'axeKeys'    : list(self.dat.getAxes().keys())   # List of axes keys
-                        ,'axeNames'   : list(self.dat.getAxes().values()) # List of axes names
-                        ,'keyX'       : 'None'                            # key for Axis X to show
-                        ,'keyY'       : 'None'                            # key for Axis Y to show
-                        ,'showMethod' : 'None'                            # key for methods for value to show
-                        ,'showValue'  : 'None'                            # Name value to show
+        axeKeys  = list(self.dat.getAxes().keys())
+        axeNames = list(self.dat.getAxes().values())
+
+        self.display  = {'type'       : '2D'                                 # Actual type of the chart
+                        ,'needShow'   : False                                # Flag to show the chart, True means data changed and need to be shown
+                        ,'axeKeys'    : axeKeys                              # List of axes keys
+                        ,'axeNames'   : axeNames                             # List of axes names
+                        ,'keyX'       : axeKeys[0] if len(axeKeys)>0 else '' # key for Axis X to show
+                        ,'keyY'       : axeKeys[1] if len(axeKeys)>1 else '' # key for Axis Y to show
+                        ,'keyZ'       : axeKeys[2] if len(axeKeys)>2 else '' # key for Axis Z to show
+                        ,'showMethod' : ''                                   # key for methods for value to show
+                        ,'valName'    : ''                                   # Value name to show
+                        ,'valKey'     : ''                                   # Value key to show
                         }
 
         self.display['axeKeys' ].append('None')
@@ -162,7 +167,7 @@ class InfoMarixGui(ttk.Frame):
         # X axis dimension
         #----------------------------------------------------------------------
         self.varLogX = tk.BooleanVar(value=False)
-        cbLog = ttk.Checkbutton(self.frmDispBar, text='Log X:', variable=self.varLogX, command=self.show)
+        cbLog = ttk.Checkbutton(self.frmDispBar, text='Log    X:', variable=self.varLogX, command=self.show)
         cbLog.grid(column=0, row=0, sticky=tk.E, pady=_PADY)
 
         self.lblX = ttk.Label(self.frmDispBar, text="None")
@@ -172,7 +177,7 @@ class InfoMarixGui(ttk.Frame):
         # Y axis dimension
         #----------------------------------------------------------------------
         self.varLogY = tk.BooleanVar(value=False)
-        cbLog = ttk.Checkbutton(self.frmDispBar, text='Log Y:', variable=self.varLogY, command=self.show)
+        cbLog = ttk.Checkbutton(self.frmDispBar, text='Log    Y:', variable=self.varLogY, command=self.show)
         cbLog.grid(column=0, row=1, sticky=tk.E, pady=_PADY)
 
         self.lblY = ttk.Label(self.frmDispBar, text="None")
@@ -246,11 +251,17 @@ class InfoMarixGui(ttk.Frame):
             self.display['showMethod'] = self.varValMet.get()
             self.display['needShow']   = True
 
-        if self.display['showValue'] != self.varValName:
-            self.display['showValue'] = self.varValName.get()
+        if self.display['valName'] != self.varValName:
+            self.display['valName'] = self.varValName.get()
             self.display['needShow']  = True
 
-        self.logger.info(f"{self.name}.viewChanged: Show {self.display['showMethod']}({self.display['showValue']}) in X:{self.display['keyX']}, Y:{self.display['keyY']}")
+        self.display['valKey'] = self.dat.valKeyByName(self.display['valName'])
+        if not self.display['valKey']:
+            self.logger.warning(f"{self.name}.viewChanged: Value '{self.display['valName']}' not in values {list(self.dat.getVals().values())}, setting to 'None'")
+            return
+
+        #----------------------------------------------------------------------
+        self.logger.info(f"{self.name}.viewChanged: Show {self.display['showMethod']}({self.display['valName']}[{self.display['valKey']}]) in X:{self.display['keyX']}, Y:{self.display['keyY']}")
 
         #----------------------------------------------------------------------
         # Changes in any key required data refresh
@@ -300,7 +311,7 @@ class InfoMarixGui(ttk.Frame):
     def show(self, event=None):
         """Vykresli chart na zaklade aktualneho listu actList
         """
-        self.logger.info(f"{self.name}.show: axisX='{self.display['keyX']}', axisY='{self.display['keyY']}', value='{self.display['showValue']}', method='{self.display['showMethod']}'")
+        self.logger.info(f"{self.name}.show: axisX='{self.display['keyX']}', axisY='{self.display['keyY']}', value='{self.display['valKey']}', method='{self.display['showMethod']}'")
 
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
@@ -319,7 +330,7 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Check value to show
         #----------------------------------------------------------------------
-        if not self.display['showValue']:
+        if not self.display['valKey']:
             self.logger.warning(f'{self.name}.show: No value selected, nothig to show')
             return
 
@@ -344,14 +355,16 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         showFtion = self.dat.mapShowMethods()[self.display['showMethod']]
 
-        self.logger.debug(f'{self.name}.show: Iterating {len(self.dat.actList)} iPoints for showFtion={self.display['showMethod']} with keyV={self.display['showValue']}')
+        self.logger.debug(f'{self.name}.show: Iterating {len(self.dat.actList)} iPoints for showFtion={self.display['showMethod']} with keyV={self.display['valKey']}')
         for i, point in enumerate(self.dat.actList):
 
-            valueToShow = showFtion(point, self.display['showValue'])
-            listC.append(valueToShow)
+            valueToShow = showFtion(point, self.display['valKey'])
 
-            if self.display['keyX']: listX.append(point.pos(self.display['keyX']))
-            if self.display['keyY']: listY.append(point.pos(self.display['keyY']))
+            if valueToShow:
+
+                listC.append(valueToShow)
+                if self.display['keyX']: listX.append(point.pos(self.display['keyX']))
+                if self.display['keyY']: listY.append(point.pos(self.display['keyY']))
 
         #----------------------------------------------------------------------
         # Skonvertujem do npArrays
@@ -436,7 +449,7 @@ class InfoMarixGui(ttk.Frame):
     def onClick(self, event):
         "Print information about mouse-given position"
 
-        self.logger.debug(f'{self.name}.onClick:')
+        self.logger.info(f'{self.name}.onClick:')
 
         if event.inaxes is not None:
 
@@ -471,24 +484,24 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             elif btn == 3: #MouseButton.RIGHT:
 
-                val     = self.actPoint.val(self.display['showValue'])
-                valName = self.actPoint.valName(self.display['showValue'])
+                val     = self.actPoint.val(self.display['valName'])
+                valName = self.actPoint.valName(self.display['valName'])
 
-                self.logger.info(f'{self.name}.onClick: right click for {self.display['showValue']}[{valName}] = {val} {type(val)}')
+                self.logger.info(f'{self.name}.onClick: right click for {self.display['valName']}[{valName}] = {val} {type(val)}')
 
                 #--------------------------------------------------------------
                 # User input based on value type
                 #--------------------------------------------------------------
                 if type(val) in [int, float]:
 
-                   inp = askReal(container=self, title=f'Zadaj hodnotu pre {valName}', prompt=self.display['showValue'], initialvalue=val)
+                   inp = askReal(container=self, title=f'Zadaj hodnotu pre {valName}', prompt=self.display['valName'], initialvalue=val)
 
                    if inp is None:
                        self.logger.audit(f'{self.name}.onClick: User input cancelled by user')
                        return
 
-                   self.actPoint.set(vals={self.display['showValue']:inp})
-                   self.logger.audit(f'{self.name}.onClick: Set {self.display['showValue']} = {inp} for {self.actPoint}')
+                   self.actPoint.set(vals={self.display['valName']:inp})
+                   self.logger.audit(f'{self.name}.onClick: Set {self.display['valName']} = {inp} for {self.actPoint}')
 
                 #--------------------------------------------------------------
                 # Data was changed, so show the chart
@@ -522,7 +535,7 @@ class InfoMarixGui(ttk.Frame):
     #--------------------------------------------------------------------------
     def onPointSchema(self, event=None):
 
-        self.logger.debug(f'{self.name}.onPointSchema:')
+        self.logger.info(f'{self.name}.onPointSchema:')
 
         origSchema = self.dat.getSchema()
 
@@ -560,7 +573,7 @@ class InfoMarixGui(ttk.Frame):
     #--------------------------------------------------------------------------
     def onMatrixProp(self, event=None):
 
-        self.logger.debug(f'{self.name}.onMatrixProp:')
+        self.logger.info(f'{self.name}.onMatrixProp:')
 
         gui = InfoMatrixDataGui(name=f'Matrix {self.dat.name}', container=self, matrix=self.dat)
         gui.grab_set()
@@ -577,7 +590,7 @@ class InfoMarixGui(ttk.Frame):
     #--------------------------------------------------------------------------
     def onDisplay(self, event=None):
 
-        self.logger.debug(f'{self.name}.onDisplay:')
+        self.logger.info(f'{self.name}.onDisplay:')
 
         gui = InfoMatrixDisplayGui(name=f'Display options', container=self, display=self.display)
         gui.grab_set()
@@ -627,54 +640,45 @@ class InfoMarixGui(ttk.Frame):
         self.show()
 
     #--------------------------------------------------------------------------
-    def onNew(self, event=None):
+    def onSetData(self, event=None):
 
-        self.logger.debug(f'{self.name}.onNew:')
+        metKey = self.varSetMet.get()
+        if not metKey:
+            self.logger.warning(f'{self.name}.method: No method selected, nothing to do')
+            return
+
+        if not self.display['valKey']:
+            self.logger.warning(f'{self.name}.method: No value selected, nothing to set to')
+            return
 
         #----------------------------------------------------------------------
-        # Zistenie poctov bodov v jednotlivych osiach
+        self.logger.info(f'{self.name}.method: Value {self.display['valName']}({self.display['valKey']}) will be set by {metKey} with subset = {self.sub2D}')
+
         #----------------------------------------------------------------------
-        cnts = {}
+        # Ziskanie hodnot parametrov metody od usera
+        #----------------------------------------------------------------------
+        metDef = self.dat.mapSetMethods()[metKey]
+        params = metDef['par']
+        usrPar = {}
 
-        for axe, oCnt in self.dat._cnts.items():
+        for par, entry in params.items():
 
-            cnt = askInt(container=self, title='Zadaj počet bodov v osi', prompt=axe, initialvalue=oCnt, min=1, max=1000)
+            newEntry = askReal(container=self, title=f"Parameter of {metKey}", prompt=par, initialvalue=entry)
 
-            if cnt is None:
-                self.logger.debug(f'{self.name}.onNew: cancelled by user')
+            if newEntry is None:
+                self.logger.info(f"{self.name}.method: {metKey} cancelled by user")
                 return
 
-            cnts[axe] = cnt
+            usrPar[par] = newEntry
 
         #----------------------------------------------------------------------
-        # Zistenie pociatkov a dlzok jednotlivych osi
+        # Vykonanie metody
         #----------------------------------------------------------------------
-        origs = {}
-        rects = {}
 
-        for axe, oOrig in self.dat._origs.items():
+        self.logger.info(f"{self.name}.method: {metKey}(key={self.display['valKey']}), par={usrPar})")
+        self.dat.setData(methodKey=metKey, valueKey=self.display['valKey'], params=usrPar)
 
-            orig = askReal(container=self, title='Zadaj počiatok v osi', prompt=axe, initialvalue=oOrig)
-
-            if orig is None:
-                self.logger.debug(f'{self.name}.onNew: cancelled by user')
-                return
-
-            origs[axe] = orig
-
-            len = askReal(container=self, title='Zadaj dĺžku osi', prompt=axe, initialvalue=cnts[axe])
-
-            if len is None:
-                self.logger.debug(f'{self.name}.onNew: cancelled by user')
-                return
-
-            rects[axe] = len
-
-        #----------------------------------------------------------------------
-        self.dat.gener(cnts=cnts, origs=origs, rects=rects)
         self.viewChanged(force=True)
-
-        return
 
     #==========================================================================
     # Info menu
@@ -700,36 +704,6 @@ class InfoMarixGui(ttk.Frame):
     def setMethod(self, event=None):
         "Apply data in active cut"
 
-        metKey = self.varSetMet.get()
-        if metKey == 'None': return
-
-        self.logger.debug(f'{self.name}.method: Value {self.display['showValue']} will be set by {metKey} with subset = {self.sub2D}')
-
-        #----------------------------------------------------------------------
-        # Zistenie detailov metody
-        #----------------------------------------------------------------------
-        metDef = self.dat.mapSetMethods()[metKey]
-        params = metDef['par']
-        newPar = {}
-
-        for par, entry in params.items():
-
-            newEntry = askReal(container=self, title=f"Parameter of {metKey}", prompt=par, initialvalue=entry)
-
-            if newEntry is None:
-                self.logger.info(f"{self.name}.method: {metKey} cancelled by user")
-                return
-
-            newPar[par] = newEntry
-
-        #----------------------------------------------------------------------
-        # Vykonanie metody
-        #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.method: {metKey}(key='{self.display['showValue']}', par={newPar})")
-        self.dat.pointSetFunction(keyFtion=metKey, key=self.display['showValue'], par=newPar)
-
-        self.viewChanged(force=True)
-
         #----------------------------------------------------------------------
 
 
@@ -739,7 +713,7 @@ class InfoMarixGui(ttk.Frame):
 
         self.actPoint = None               # Actual working InfoPoint
 
-        self.display['showValue']     = 'None'             # key for value to show
+        self.display['valName']     = 'None'             # key for value to show
         self.display['keyX']     = 'None'             # Default key for Axis X to show
         self.display['keyY']     = 'None'             # Default key for Axis Y to show
 

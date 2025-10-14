@@ -613,7 +613,10 @@ class InfoPoint:
         #----------------------------------------------------------------------
         # Return value of this InfoPoint for respective key
         #----------------------------------------------------------------------
-        return self._vals[key]
+        try: return self._vals.get(key, None)
+        except KeyError as err:
+            self.logger.error(f"InfoPoint.get: Key='{key}' for {self.info()['msg']} caused {str(err)}")
+            return None
 
     #--------------------------------------------------------------------------
     def valName(self, key:str=None) -> str:

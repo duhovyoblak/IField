@@ -876,25 +876,25 @@ class InfoMatrix:
         return self
 
     #--------------------------------------------------------------------------
-    def pointSetFunction(self, keyFtion:str, key:str, par:dict=None) -> bool:
+    def setData(self, methodKey:str, valueKey:str, params:dict=None) -> bool:
         "Apply respective function for all points or points in active substructure to set the value for key"
 
-        self.logger.info(f"{self.name}.pointSetFunction: {keyFtion}(key={key}, par={par}) for {len(self.actList)} active Points]")
+        self.logger.info(f"{self.name}.setData: {methodKey}(key={valueKey}, par={params}) for {len(self.actList)} active Points]")
 
         #----------------------------------------------------------------------
         # Ziskanie vykonavanej funkcie
         #----------------------------------------------------------------------
-        if keyFtion in self.mapSetMethods().keys():
-            function = self.mapSetMethods()[keyFtion]['ftion']
+        if methodKey in self.mapSetMethods().keys():
+            function = self.mapSetMethods()[methodKey]['ftion']
 
         else:
-            self.logger.error(f"{self.name}.pointSetFunction: '{keyFtion}' is not in defined functions")
+            self.logger.error(f"{self.name}.setData: '{methodKey}' is not in defined functions")
             return False
 
         #----------------------------------------------------------------------
         # Ziskanie listu bodov na aplikovanie funkcie
         #----------------------------------------------------------------------
-        if 'all' in par.keys() and par['all'] == True:
+        if 'all' in params.keys() and params['all'] == True:
             tgtStr = 'all'
             tgtList = self.points
 
@@ -908,11 +908,11 @@ class InfoMatrix:
         pts = 0  # Counter of points
 
         for point in tgtList:
-            function(self=point, key=key, par=par)
+            function(self=point, key=valueKey, par=params)
             pts += 1
 
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.pointSetFunction: {keyFtion} was applied to {tgtStr} {pts} InfoPoints")
+        self.logger.info(f"{self.name}.setData: {methodKey} was applied to {tgtStr} {pts} InfoPoints")
         return True
 
     #==========================================================================
@@ -1001,8 +1001,8 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # generovanie hodnot
     #--------------------------------------------------------------------------
-    im.pointSetFunction('BRandom fuuniform', 'm', par={'all':True, 'min':0, 'max':5})
-    im.pointSetFunction('Random uniform', 'm', par={'all':True, 'min':0, 'max':5})
+    im.setData('BRandom fuuniform', 'm', par={'all':True, 'min':0, 'max':5})
+    im.setData('Random uniform', 'm', par={'all':True, 'min':0, 'max':5})
     print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 
