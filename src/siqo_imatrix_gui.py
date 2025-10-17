@@ -65,6 +65,10 @@ class InfoMarixGui(ttk.Frame):
 
         self.actPoint = None                # Actual working InfoPoint
 
+        self.style = ttk.Style()            # Style for ttk widgets
+        self.style.configure("Default.TButton", foreground="black")
+        self.style.configure("Red.TButton"    , foreground="red"  )
+
 
         #if 'keyV' in kwargs.keys(): self.display['valName'] = kwargs['keyV']
         #if 'keyX' in kwargs.keys(): self.display['keyX'] = kwargs['keyX']
@@ -95,13 +99,18 @@ class InfoMarixGui(ttk.Frame):
         dataMenu.add_command(label="Point Schema",       command=self.onPointSchema)
         dataMenu.add_command(label="Matrix properties",  command=self.onMatrixProp )
         dataMenu.add_command(label="Display properties", command=self.onDisplay    )
-        dataMenu.add_command(label="Set data",           command=self.onSetData    )
 
-        # Pridanie Help menu
+        # Pridanie Info menu
         helpMenu = tk.Menu(mainMenu, tearoff=0)
         mainMenu.add_cascade(label="Info", menu=helpMenu)
         helpMenu.add_command(label="Matrix info short", command=lambda: self.onInfo(mode='short'))
         helpMenu.add_command(label="Matrix info full",  command=lambda: self.onInfo(mode='full' ))
+        helpMenu.add_separator()
+        helpMenu.add_command(label="Set Logger to   AUDIT", command=lambda: self.logger.setLevel('AUDIT')  )
+        helpMenu.add_command(label="Set Logger to   ERROR", command=lambda: self.logger.setLevel('ERROR')  )
+        helpMenu.add_command(label="Set Logger to WARNING", command=lambda: self.logger.setLevel('WARNING'))
+        helpMenu.add_command(label="Set Logger to    INFO", command=lambda: self.logger.setLevel('INFO')   )
+        helpMenu.add_command(label="Set Logger to   DEBUG", command=lambda: self.logger.setLevel('DEBUG')  )
 
         #----------------------------------------------------------------------
         # Create and show display bar
@@ -167,7 +176,7 @@ class InfoMarixGui(ttk.Frame):
         # X axis dimension
         #----------------------------------------------------------------------
         self.varLogX = tk.BooleanVar(value=False)
-        cbLog = ttk.Checkbutton(self.frmDispBar, text='Log    X:', variable=self.varLogX, command=self.show)
+        cbLog = ttk.Checkbutton(self.frmDispBar, text='Log    X:', variable=self.varLogX, command=self.showChart)
         cbLog.grid(column=0, row=0, sticky=tk.E, pady=_PADY)
 
         self.lblX = ttk.Label(self.frmDispBar, text="None")
@@ -177,7 +186,7 @@ class InfoMarixGui(ttk.Frame):
         # Y axis dimension
         #----------------------------------------------------------------------
         self.varLogY = tk.BooleanVar(value=False)
-        cbLog = ttk.Checkbutton(self.frmDispBar, text='Log    Y:', variable=self.varLogY, command=self.show)
+        cbLog = ttk.Checkbutton(self.frmDispBar, text='Log    Y:', variable=self.varLogY, command=self.showChart)
         cbLog.grid(column=0, row=1, sticky=tk.E, pady=_PADY)
 
         self.lblY = ttk.Label(self.frmDispBar, text="None")
@@ -212,14 +221,31 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         self.varSetMet = tk.StringVar() # Name of the method to apply to the data
 
-        lblMet = ttk.Label(self.frmDispBar, text="Set values:")
+        lblMet = ttk.Label(self.frmDispBar, text="Apply method:")
         lblMet.grid(column=2, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
 
         self.cbSetMet = ttk.Combobox(self.frmDispBar, textvariable=self.varSetMet, width=int(_COMBO_WIDTH))
         self.cbSetMet['values'] = list(self.dat.mapSetMethods().keys())
         self.cbSetMet['state' ] = 'readonly'
-        self.cbSetMet.bind('<<ComboboxSelected>>', self.setMethod)
+        self.cbSetMet.bind('<<ComboboxSelected>>', self.onMethodPick)
         self.cbSetMet.grid(column=3, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        #----------------------------------------------------------------------
+        # Method play/stop buttons
+        #----------------------------------------------------------------------
+        self.varCounter = tk.IntVar(value=0)
+        spinBox = ttk.Spinbox(self.frmDispBar, from_=0, to=1000, textvariable=self.varCounter, width=10)
+        spinBox.grid(column=4, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
+        spinBox['state'] = 'normal'
+
+        self.btnPlay = ttk.Button(self.frmDispBar, text="▶ Play", command=self.onMethodPlay)
+        self.btnPlay.grid(column=5, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        self.btnStop = ttk.Button(self.frmDispBar, text="■ Stop", command=self.onMethodStop)
+        self.btnStop.grid(column=5, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
+
+        #----------------------------------------------------------------------
+
 
     #--------------------------------------------------------------------------
     def updateDisplayBar(self):
@@ -264,7 +290,7 @@ class InfoMarixGui(ttk.Frame):
         self.logger.info(f"{self.name}.viewChanged: Show {self.display['showMethod']}({self.display['valName']}[{self.display['valKey']}]) in X:{self.display['keyX']}, Y:{self.display['keyY']}")
 
         #----------------------------------------------------------------------
-        # Changes in any key required data refresh
+        # Changes in any key or force required data refresh
         #----------------------------------------------------------------------
         if self.display['needShow'] or force:
 
@@ -279,7 +305,7 @@ class InfoMarixGui(ttk.Frame):
         # Ak nenastala zmena, vyskocim
         #----------------------------------------------------------------------
         self.logger.info(f'{self.name}.viewChanged: needShow = {self.display['needShow']}')
-        self.show()
+        self.showChart()
 
     #--------------------------------------------------------------------------
     def setSub2D(self, axeFreezeIdxs: dict):
@@ -308,37 +334,37 @@ class InfoMarixGui(ttk.Frame):
     #==========================================================================
     # Show the chart
     #--------------------------------------------------------------------------
-    def show(self, event=None):
+    def showChart(self, event=None):
         """Vykresli chart na zaklade aktualneho listu actList
         """
-        self.logger.info(f"{self.name}.show: axisX='{self.display['keyX']}', axisY='{self.display['keyY']}', value='{self.display['valKey']}', method='{self.display['showMethod']}'")
+        self.logger.info(f"{self.name}.showChart: axisX='{self.display['keyX']}', axisY='{self.display['keyY']}', value='{self.display['valKey']}', method='{self.display['showMethod']}'")
 
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
         #----------------------------------------------------------------------
         if not self.display['needShow']:
-            self.logger.info(f'{self.name}.show: Data have not changed, no need for show')
+            self.logger.info(f'{self.name}.showChart: Data have not changed, no need for show')
             return
 
         #----------------------------------------------------------------------
         # Check list of InfoPoints to show
         #----------------------------------------------------------------------
         if len(self.dat.actList) == 0:
-            self.logger.warning(f'{self.name}.show: No InfoPoints, nothig to show')
+            self.logger.warning(f'{self.name}.showChart: No InfoPoints, nothig to show')
             return
 
         #----------------------------------------------------------------------
         # Check value to show
         #----------------------------------------------------------------------
         if not self.display['valKey']:
-            self.logger.warning(f'{self.name}.show: No value selected, nothig to show')
+            self.logger.warning(f'{self.name}.showChart: No value selected, nothig to show')
             return
 
         #----------------------------------------------------------------------
         # Check axis to show
         #----------------------------------------------------------------------
         if not self.display['keyX'] and not self.display['keyY']:
-            self.logger.warning(f'{self.name}.show: No axis selected, nothig to show')
+            self.logger.warning(f'{self.name}.showChart: No axis selected, nothig to show')
             return
 
         #----------------------------------------------------------------------
@@ -355,7 +381,7 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         showFtion = self.dat.mapShowMethods()[self.display['showMethod']]
 
-        self.logger.debug(f'{self.name}.show: Iterating {len(self.dat.actList)} iPoints for showFtion={self.display['showMethod']} with keyV={self.display['valKey']}')
+        self.logger.debug(f'{self.name}.showChart: Iterating {len(self.dat.actList)} iPoints for showFtion={self.display['showMethod']} with keyV={self.display['valKey']}')
         for i, point in enumerate(self.dat.actList):
 
             valueToShow = showFtion(point, self.display['valKey'])
@@ -377,15 +403,15 @@ class InfoMarixGui(ttk.Frame):
         # Kontrola npArrays
         #----------------------------------------------------------------------
         if npC.size==0:
-            self.logger.info(f'{self.name}.show: No values to show')
+            self.logger.info(f'{self.name}.showChart: No values to show')
             return
 
         if self.display['keyX'] and npX.size==0:
-            self.logger.info(f'{self.name}.show: Axe X is selected but has no data to show')
+            self.logger.info(f'{self.name}.showChart: Axe X is selected but has no data to show')
             return
 
         if self.display['keyY'] and npY.size==0:
-            self.logger.info(f'{self.name}.show: Axe Y is selected but has no data to show')
+            self.logger.info(f'{self.name}.showChart: Axe Y is selected but has no data to show')
             return
 
         #----------------------------------------------------------------------
@@ -420,20 +446,20 @@ class InfoMarixGui(ttk.Frame):
             if self.display['keyX']: axis = npX
             else        : axis = npY
 
-            self.logger.debug(f'{self.name}.show: Chart 1D')
+            self.logger.debug(f'{self.name}.showChart: Chart 1D')
             chrtObj = chart.plot( npC, axis ) #, linewidths=1, edgecolors='gray')
 
         elif self.dims() == 2:
             #------------------------------------------------------------------
             # Chart 2D
             #------------------------------------------------------------------
-            self.logger.debug(f'{self.name}.show: Chart 2D')
+            self.logger.debug(f'{self.name}.showChart: Chart 2D')
 
             chrtObj = chart.scatter( x=npX, y=npY, c=npC, marker="s", cmap='RdYlBu_r') # , lw=0, s=(72./self.figure.dpi)**2
             self.figure.colorbar(chrtObj, ax=chart)
 
         else:
-            self.logger.error(f'{self.name}.show: Chart with {self.dims()} dimensions is not supported')
+            self.logger.error(f'{self.name}.showChart: Chart with {self.dims()} dimensions is not supported')
 
         #----------------------------------------------------------------------
         # Vykreslenie noveho grafu
@@ -443,7 +469,7 @@ class InfoMarixGui(ttk.Frame):
         self.canvas.draw()
 
         #----------------------------------------------------------------------
-        self.logger.info(f'{self.name}.show: Chart with {self.dims()} dimensions is shown')
+        self.logger.info(f'{self.name}.showChart: Chart with {self.dims()} dimensions is shown')
 
     #--------------------------------------------------------------------------
     def onClick(self, event):
@@ -508,7 +534,7 @@ class InfoMarixGui(ttk.Frame):
                 #--------------------------------------------------------------
                 self.logger.warning(f'{self.name}.onClick: Data changed, need to show the chart')
                 self.display['needShow'] = True
-                self.show()
+                self.showChart()
 
             #------------------------------------------------------------------
         else:
@@ -637,22 +663,63 @@ class InfoMarixGui(ttk.Frame):
 
         #----------------------------------------------------------------------
         self.updateDisplayBar()
-        self.show()
+        self.showChart()
+
+    #==========================================================================
+    # Info menu
+    #--------------------------------------------------------------------------
+    def onInfo(self, event=None, mode='short'):
+        "Show information about the InfoMatrix data"
+
+        self.logger.debug(f'{self.name}.onInfo:')
+
+        if   mode=='short': text = self.dat.info(full=False)['msg']
+        elif mode=='full' : text = self.dat.info(full=True )['msg']
+        else: text = [f'Unknown mode {mode}']
+
+        text = text.split('\n')
+
+        msgWin = SiqoMessage(name=self.dat.name, text=text, wpix=800)
+
+        self.logger.debug(f'{self.name}.onInfo: Show info about {self.dat.name}')
+
+    #==========================================================================
+    # Method to apply
+    #--------------------------------------------------------------------------
+    def onMethodPick(self, event=None):
+        "Apply data in active cut"
+
+        return
 
     #--------------------------------------------------------------------------
-    def onSetData(self, event=None):
+    def onMethodPlay(self, event=None):
+        "Start applying method in loop until counter is 0"
 
+        #----------------------------------------------------------------------
+        # Kontrola metody a hodnoty
+        #----------------------------------------------------------------------
         metKey = self.varSetMet.get()
         if not metKey:
-            self.logger.warning(f'{self.name}.method: No method selected, nothing to do')
+            self.logger.warning(f'{self.name}.onMethodPlay: No method selected, nothing to do')
+            showinfo(title="Warning", message="No method selected, nothing to do")
             return
 
         if not self.display['valKey']:
-            self.logger.warning(f'{self.name}.method: No value selected, nothing to set to')
+            self.logger.warning(f'{self.name}.onMethodPlay: No value selected, nothing to apply to')
+            showinfo(title="Warning", message="No value selected, nothing to apply to")
             return
 
         #----------------------------------------------------------------------
-        self.logger.info(f'{self.name}.method: Value {self.display['valName']}({self.display['valKey']}) will be set by {metKey} with subset = {self.sub2D}')
+        # Kontrola poctu cyklov
+        #----------------------------------------------------------------------
+        cycles = self.varCounter.get()
+        if cycles <= 0:
+            self.logger.warning(f'{self.name}.onMethodPlay: Number of cycles is {cycles}, nothing to do')
+            showinfo(title="Warning", message="Number of cycles must be greater than 0")
+            return
+
+        #----------------------------------------------------------------------
+        self.logger.info(f'{self.name}.onMethodPlay: Value {self.display['valName']}({self.display['valKey']}) will be set by {metKey} with subset = {self.sub2D}')
 
         #----------------------------------------------------------------------
         # Ziskanie hodnot parametrov metody od usera
@@ -666,47 +733,68 @@ class InfoMarixGui(ttk.Frame):
             newEntry = askReal(container=self, title=f"Parameter of {metKey}", prompt=par, initialvalue=entry)
 
             if newEntry is None:
-                self.logger.info(f"{self.name}.method: {metKey} cancelled by user")
+                self.logger.info(f"{self.name}.onMethodPlay: {metKey} cancelled by user")
                 return
 
             usrPar[par] = newEntry
 
         #----------------------------------------------------------------------
-        # Vykonanie metody
+        # Vsetko je pripravene: Press button PLAY
         #----------------------------------------------------------------------
-
-        self.logger.info(f"{self.name}.method: {metKey}(key={self.display['valKey']}), par={usrPar})")
-        self.dat.setData(methodKey=metKey, valueKey=self.display['valKey'], params=usrPar)
-
-        self.viewChanged(force=True)
-
-    #==========================================================================
-    # Info menu
-    #--------------------------------------------------------------------------
-    def onInfo(self, event=None, mode='short'):
-        "Show information about the InfoMatrix data"
-
-        self.logger.debug(f'{self.name}.onInfo:')
-
-        if   mode=='short': text = self.dat.info(short=True)['msg']
-        elif mode=='full' : text = self.dat.info(full=True)['msg']
-        else: text = [f'Unknown mode {mode}']
-
-        text = text.split('\n')
-
-        msgWin = SiqoMessage(name=self.dat.name, text=text, wpix=800)
-
-        self.logger.debug(f'{self.name}.onInfo: Show info about {self.dat.name}')
-
-    #==========================================================================
-    # Method to apply
-    #--------------------------------------------------------------------------
-    def setMethod(self, event=None):
-        "Apply data in active cut"
+        self.btnPlay.configure(style="Red.TButton")
+        self.btnPlay['text'      ] = "▶ Playing"
+        self.btnPlay['state'     ] = tk.DISABLED
+        self.logger.info(f'{self.name}.onMethodPlay: Play starting for {cycles} cycles')
 
         #----------------------------------------------------------------------
+        # Main loop for method application
+        #----------------------------------------------------------------------
+        while (cycles > 0) and (self.btnPlay.instate(['disabled'])):
 
+            self.logger.info(f'{self.name}.onMethodPlay: Cycle started')
 
+            #--------------------------------------------------------------
+            # Apply the method and update the chart
+            #--------------------------------------------------------------
+            self.logger.info(f"{self.name}.methodApply: {metKey}(key={self.display['valKey']}), par={usrPar})")
+
+            self.dat.setData(methodKey=metKey, valueKey=self.display['valKey'], params=usrPar)
+            self.viewChanged(force=True)
+
+            #--------------------------------------------------------------
+            # Process GUI events to keep the interface responsive
+            #--------------------------------------------------------------
+            self.update_idletasks()
+            self.update()
+
+            #--------------------------------------------------------------
+            # Decrease the counter
+            #--------------------------------------------------------------
+            cycles -= 1
+            self.varCounter.set(cycles)
+            self.logger.info(f'{self.name}.onMethodPlay: {cycles} cycle left')
+
+        #----------------------------------------------------------------------
+        self.btnPlay.configure(style="Default.TButton")
+        self.btnPlay['text'      ] = "▶ Play"
+        self.btnPlay['state'     ] = tk.NORMAL
+
+        self.logger.info(f'{self.name}.onMethodPlay: Play finished with {cycles} cycles left')
+        return
+
+    #--------------------------------------------------------------------------
+    def onMethodStop(self, event=None):
+        "Stop applying method in loop"
+
+        #----------------------------------------------------------------------
+        # Reset the button state
+        #----------------------------------------------------------------------
+        self.btnPlay.configure(style="Default.TButton")
+        self.btnPlay['text'      ] = "▶ Play"
+        self.btnPlay['state'     ] = tk.NORMAL
+
+    #==========================================================================
+    # Internal methods
     #--------------------------------------------------------------------------
     def reset(self):
         "Reset all data into default values"

@@ -912,7 +912,7 @@ class InfoMatrix:
             pts += 1
 
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.setData: {methodKey} was applied to {tgtStr} {pts} InfoPoints")
+        self.logger.warning(f"{self.name}.setData: {methodKey} was applied to {tgtStr} {pts} InfoPoints")
         return True
 
     #==========================================================================
