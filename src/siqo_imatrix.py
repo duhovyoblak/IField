@@ -402,10 +402,14 @@ class InfoMatrix:
         return InfoPoint.mapShowMethods()
 
     #--------------------------------------------------------------------------
-    def mapSetMethods(self) -> dict:
+    def mapMethods(self) -> dict:
         "Returns map of methods setting keyed value to function value for respective parameters"
 
-        return InfoPoint.mapSetMethods()
+        methods = InfoPoint.mapMethods()
+
+        methods['<Matrix Methods>'] = {'matrixMethod': self.nullMethod, 'pointMethod':None,  'params':{}}
+
+        return methods
 
     #==========================================================================
     # Position and indices tools
@@ -875,21 +879,63 @@ class InfoMatrix:
         self.logger.info(f"{self.name}.copyFrom: Copied {i} points")
         return self
 
+    #==========================================================================
+    # Dynamic Methods application
     #--------------------------------------------------------------------------
-    def setData(self, methodKey:str, valueKey:str, params:dict=None) -> bool:
-        "Apply respective function for all points or points in active substructure to set the value for key"
+    def applyMatrixMethod(self, methodKey:str, valueKey:str, params:dict=None) -> bool:
+        """Special matrix method for applying dynamic matrix methods.
+           pointMethod : Name of the Point method to apply
+           valueKey    : Key of the value to be set by the method
+           params      : Parameters for the method as dict
+        """
 
-        self.logger.info(f"{self.name}.setData: {methodKey}(key={valueKey}, par={params}) for {len(self.actList)} active Points]")
+        self.logger.info(f"{self.name}.applyMatrixMethod: {methodKey}(params={params})")
 
         #----------------------------------------------------------------------
         # Ziskanie vykonavanej funkcie
         #----------------------------------------------------------------------
-        if methodKey in self.mapSetMethods().keys():
-            function = self.mapSetMethods()[methodKey]['ftion']
+        methods = self.mapMethods()
+
+        if methodKey in methods.keys():
+
+            matrixMethod = methods[methodKey]['matrixMethod']
+            pointMethod  = methods[methodKey]['pointMethod' ]
 
         else:
-            self.logger.error(f"{self.name}.setData: '{methodKey}' is not in defined functions")
+            self.logger.error(f"{self.name}.applyMatrixMethod: '{methodKey}' is not in defined functions")
             return False
+
+        #----------------------------------------------------------------------
+        # Ak je definovana pointMethod, aplikujem ju pomocou matrixMethod = applyPointMethod
+        #----------------------------------------------------------------------
+        if pointMethod:
+
+            self.logger.info(f"{self.name}.applyMatrixMethod: Applying pointMethod '{pointMethod.__name__}' via matrixMethod '{matrixMethod.__name__}'")
+
+            matrixMethod(self=self, valueKey=valueKey, params=params)
+
+
+        else:
+            #------------------------------------------------------------------
+            # Inak aplikujem priamo matrixMethod
+            #------------------------------------------------------------------
+            self.logger.info(f"{self.name}.applyMatrixMethod: Applying matrixMethod '{matrixMethod.__name__}' directly")
+
+            matrixMethod(self=self, valueKey=valueKey, params=params)
+
+        #----------------------------------------------------------------------
+        self.logger.warning(f"{self.name}.applyMatrixMethod: {methodKey} was applied to InfoMatrix with {len(self.points)} InfoPoints")
+        return True
+
+    #--------------------------------------------------------------------------
+    def applyPointMethod(self, pointMethod:str, valueKey:str, params:dict=None) -> bool:
+        """Special matrix method for applying Point methods to all or active subset of InfoPoints.
+           pointMethod : Name of the Point method to apply
+           valueKey    : Key of the value to be set by the method
+           params      : Parameters for the method as dict
+        """
+
+        self.logger.info(f"{self.name}.applyPointMethod: {pointMethod.__name__}(key={valueKey}, par={params}) for {len(self.actList)} active Points]")
 
         #----------------------------------------------------------------------
         # Ziskanie listu bodov na aplikovanie funkcie
@@ -908,15 +954,21 @@ class InfoMatrix:
         pts = 0  # Counter of points
 
         for point in tgtList:
-            function(self=point, key=valueKey, par=params)
+            pointMethod(self=point, key=valueKey, par=params)
             pts += 1
 
         #----------------------------------------------------------------------
-        self.logger.warning(f"{self.name}.setData: {methodKey} was applied to {tgtStr} {pts} InfoPoints")
+        self.logger.warning(f"{self.name}.applyPointMethod: {pointMethod.__name__} was applied to {tgtStr} {pts} InfoPoints")
         return True
 
     #==========================================================================
-    # Normalisation methods
+    # Matrix methods to apply in Dynamics methods
+    #--------------------------------------------------------------------------
+    def nullMethod(self, valueKey:str, params:dict):
+        "Default null method for InfoPoint for keyed value (do nothing)"
+
+        self.logger.debug(f"InfoPoint.nullMethod: do nothing for key '{valueKey}' with params {params}")
+
     #--------------------------------------------------------------------------
     def normAbs(self, nods, norm=None):
         "Normalise set of the nodes by sum of absolute values"
@@ -1001,8 +1053,8 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # generovanie hodnot
     #--------------------------------------------------------------------------
-    im.setData('BRandom fuuniform', 'm', par={'all':True, 'min':0, 'max':5})
-    im.setData('Random uniform', 'm', par={'all':True, 'min':0, 'max':5})
+    im.applyPointMethod('BRandom fuuniform', 'm', params={'all':True, 'min':0, 'max':5})
+    im.applyPointMethod('Random uniform', 'm', params={'all':True, 'min':0, 'max':5})
     print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 

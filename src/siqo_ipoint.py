@@ -440,16 +440,17 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def mapSetMethods() -> dict:
-        "Returns map of methods setting keyed value to function value for respective parameters"
+    def mapMethods(matrixMethod) -> dict:
+        "Returns map of methods for one InfoPoint setting keyed value to function value for respective parameters"
 
-        return {'Real constant'          : {'ftion':InfoPoint.fltConst,    'par':{'const' :0                                                 }}
-               ,'Random uniform'         : {'ftion':InfoPoint.fltRandUni,  'par':{'min'   :0, 'max'   :1                                     }}
-               ,'Random bit'             : {'ftion':InfoPoint.fltRandBit,  'par':{'prob1' :0.1                                               }}
-               ,'Comp constant (re/im)'  : {'ftion':InfoPoint.cmpConstR,   'par':{'real'  :0, 'imag'  :0                                     }}
-               ,'Comp constant (abs/phs)': {'ftion':InfoPoint.cmpConstP,   'par':{'abs'   :0, 'phase' :0                                     }}
-               ,'Comp random (re/im)'    : {'ftion':InfoPoint.cmpRandUniR, 'par':{'reMin' :0, 'reMax' :1, 'imMin'   :0, 'imMax'   :1         }}
-               ,'Comp random (abs/phs)'  : {'ftion':InfoPoint.cmpRandUniP, 'par':{'absMin':0, 'absMax':1, 'phaseMin':0, 'phaseMax':2*cmath.pi}}
+        return {'<Point Methods>'        : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.nullMethod,  'params':{}}
+               ,'Real constant'          : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.fltConst,    'params':{'const' :0                                                 }}
+               ,'Random uniform'         : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.fltRandUni,  'params':{'min'   :0, 'max'   :1                                     }}
+               ,'Random bit'             : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.fltRandBit,  'params':{'prob1' :0.1                                               }}
+               ,'Comp constant (re/im)'  : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.cmpConstR,   'params':{'real'  :0, 'imag'  :0                                     }}
+               ,'Comp constant (abs/phs)': {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.cmpConstP,   'params':{'abs'   :0, 'phase' :0                                     }}
+               ,'Comp random (re/im)'    : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.cmpRandUniR, 'params':{'reMin' :0, 'reMax' :1, 'imMin'   :0, 'imMax'   :1         }}
+               ,'Comp random (abs/phs)'  : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.cmpRandUniP, 'params':{'absMin':0, 'absMax':1, 'phaseMin':0, 'phaseMax':2*cmath.pi}}
                }
 
     #==========================================================================
@@ -765,71 +766,77 @@ class InfoPoint:
         return x
 
     #==========================================================================
-    # Methods generating keyed value
+    # Points methods to apply in Dynamics methods
     #--------------------------------------------------------------------------
-    def fltConst(self, key:str, par:dict):
+    def nullMethod(self, valueKey:str, params:dict):
+        "Default null method for InfoPoint for keyed value (do nothing)"
+
+        self.logger.debug(f"InfoPoint.nullMethod: do nothing for key '{valueKey}' with params {params}")
+
+    #--------------------------------------------------------------------------
+    def fltConst(self, valueKey:str, params:dict):
         "Sets constant value for keyed value"
 
-        self.set(vals={key:par['const']})
+        self.set(vals={valueKey:params['const']})
 
     #--------------------------------------------------------------------------
-    def fltRandUni(self, key:str, par:dict):
+    def fltRandUni(self, valueKey:str, params:dict):
         "Generates uniform random float value from interval for keyed value"
 
-        if 'min' in par.keys(): min_val = par['min']
-        else                  : min_val = 0
+        if 'min' in params.keys(): min_val = params['min']
+        else                     : min_val = 0
 
-        if 'max' in par.keys(): max_val = par['max']
-        else                  : max_val = 1
+        if 'max' in params.keys(): max_val = params['max']
+        else                     : max_val = 1
 
         val = rnd.uniform(min_val, max_val)
 
-        self.set(vals={key:val})
+        self.set(vals={valueKey:val})
 
     #--------------------------------------------------------------------------
-    def fltRandBit(self, key:str, par:dict):
+    def fltRandBit(self, valueKey:str, params:dict):
         "Sets value 0/1 with respective probability for keyed value"
 
         x = rnd.randint(0, 9999)
 
-        if x <= par['prob1']*10000: val = 1
-        else                      : val = 0
+        if x <= params['prob1']*10000: val = 1
+        else                         : val = 0
 
-        self.set(vals={key:val})
+        self.set(vals={valueKey:val})
 
     #--------------------------------------------------------------------------
-    def cmpConstR(self, key:str, par:dict):
+    def cmpConstR(self, valueKey:str, params:dict):
         "Sets constant real and imaginary value for keyed value"
 
-        c = complex(par['real'], par['imag'])
-        self.set(vals={key:c})
+        c = complex(params['real'], params['imag'])
+        self.set(vals={valueKey:c})
 
     #--------------------------------------------------------------------------
-    def cmpConstP(self, key:str, par:dict):
+    def cmpConstP(self, valueKey:str, params:dict):
         "Sets constant absolute value and phase value for keyed value"
 
-        c = cmath.rect(par['abs'], par['phase'])
-        self.set(vals={key:c})
+        c = cmath.rect(params['abs'], params['phase'])
+        self.set(vals={valueKey:c})
 
     #--------------------------------------------------------------------------
-    def cmpRandUniR(self, key:str, par:dict):
+    def cmpRandUniR(self, valueKey:str, params:dict):
         "Generates random uniform real and imaginary values from respective intervals for keyed value"
 
         real = rnd.random()
         imag = rnd.random()
         c = complex(real, imag)
 
-        self.set(vals={key:c})
+        self.set(vals={valueKey:c})
 
     #--------------------------------------------------------------------------
-    def cmpRandUniP(self, key:str, par:dict):
+    def cmpRandUniP(self, valueKey:str, params:dict):
         "Generates random uniform absolute value and phase from respective intervals for keyed value"
 
         abs   = rnd.random()
         phase = rnd.random()
         c = cmath.rect(abs, phase)
 
-        self.set(vals={key:c})
+        self.set(vals={valueKey:c})
 
     #==========================================================================
     # Two-points methods

@@ -60,7 +60,7 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         frmDisp.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
         #----------------------------------------------------------------------
-        # List of axes
+        # List of axes in rows
         #----------------------------------------------------------------------
         lblAxe = ttk.Label(frmDisp, text="Axe:")
         lblAxe.grid(column=0, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -72,46 +72,52 @@ class InfoMatrixDisplayGui(tk.Toplevel):
             row += 1
 
         #----------------------------------------------------------------------
-        # Show on X
+        # Key to axis show on X stored in self.selX
         #----------------------------------------------------------------------
-        self.selX = tk.StringVar(value=self.display['keyX'])
+        if 'keyX' in self.display.keys():
 
-        lbl = ttk.Label(frmDisp, text="on X")
-        lbl.grid(column=1, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+            self.selX = tk.StringVar(value=self.display['keyX'])
 
-        row = 1
-        for key in self.display['axeKeys']:
-            rbtn = ttk.Radiobutton(frmDisp, text='', variable=self.selX, value=key)
-            rbtn.grid(column=1, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
-            row += 1
+            lbl = ttk.Label(frmDisp, text="on X")
+            lbl.grid(column=1, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        #----------------------------------------------------------------------
-        # Show on Y
-        #----------------------------------------------------------------------
-        self.selY = tk.StringVar(value=self.display['keyY'])
-
-        lbl = ttk.Label(frmDisp, text="on Y")
-        lbl.grid(column=2, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
-
-        row = 1
-        for key in self.display['axeKeys']:
-            rbtn = ttk.Radiobutton(frmDisp, text='', variable=self.selY, value=key)
-            rbtn.grid(column=2, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
-            row += 1
+            row = 1
+            for key in self.display['axeKeys']:
+                rbtn = ttk.Radiobutton(frmDisp, text='', variable=self.selX, value=key)
+                rbtn.grid(column=1, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+                row += 1
 
         #----------------------------------------------------------------------
-        # Show on Z
+        # Key to axis show on Y stored in self.selY
         #----------------------------------------------------------------------
-        self.selZ = tk.StringVar(value=self.display['keyZ'])
+        if 'keyY' in self.display.keys():
 
-        lbl = ttk.Label(frmDisp, text="on Z")
-        lbl.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+            self.selY = tk.StringVar(value=self.display['keyY'])
 
-        row = 1
-        for key in self.display['axeKeys']:
-            rbtn = ttk.Radiobutton(frmDisp, text='', variable=self.selZ, value=key)
-            rbtn.grid(column=3, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
-            row += 1
+            lbl = ttk.Label(frmDisp, text="on Y")
+            lbl.grid(column=2, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+            row = 1
+            for key in self.display['axeKeys']:
+                rbtn = ttk.Radiobutton(frmDisp, text='', variable=self.selY, value=key)
+                rbtn.grid(column=2, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+                row += 1
+
+        #----------------------------------------------------------------------
+        # Key to axis show on Z stored in self.selZ
+        #----------------------------------------------------------------------
+        if 'keyZ' in self.display.keys():
+
+            self.selZ = tk.StringVar(value=self.display['keyZ'])
+
+            lbl = ttk.Label(frmDisp, text="on Z")
+            lbl.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+            row = 1
+            for key in self.display['axeKeys']:
+                rbtn = ttk.Radiobutton(frmDisp, text='', variable=self.selZ, value=key)
+                rbtn.grid(column=3, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+                row += 1
 
         #----------------------------------------------------------------------
         # Run
@@ -171,9 +177,9 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Vyhodnotenie radio buttons
         #----------------------------------------------------------------------
-        self.display['keyX'] = self.selX.get()
-        self.display['keyY'] = self.selY.get()
-        self.display['keyZ'] = self.selZ.get()
+        if 'keyX' in self.display.keys(): self.display['keyX'] = self.selX.get()
+        if 'keyY' in self.display.keys(): self.display['keyY'] = self.selY.get()
+        if 'keyZ' in self.display.keys(): self.display['keyZ'] = self.selZ.get()
 
         #----------------------------------------------------------------------
         self.logger.warning(f'{self.name}.ok: {self.display}')

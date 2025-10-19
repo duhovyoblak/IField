@@ -89,22 +89,27 @@ class InfoMarixGui(ttk.Frame):
         # Pridanie File menu
         fileMenu = tk.Menu(mainMenu, tearoff=0)
         mainMenu.add_cascade(label="File", menu=fileMenu)
-        fileMenu.add_command(label="Open", command=self.onOpen)
-        fileMenu.add_command(label="Save", command=self.onSave)
+        fileMenu.add_command(label="Open",                  command=self.onOpen)
+        fileMenu.add_command(label="Save",                  command=self.onSave)
         fileMenu.add_separator()
 
         # Pridanie Data menu
         dataMenu = tk.Menu(mainMenu, tearoff=0)
-        mainMenu.add_cascade(label="Point/Data", menu=dataMenu)
-        dataMenu.add_command(label="Point Schema",       command=self.onPointSchema)
-        dataMenu.add_command(label="Matrix properties",  command=self.onMatrixProp )
-        dataMenu.add_command(label="Display properties", command=self.onDisplay    )
+        mainMenu.add_cascade(label="Data", menu=dataMenu)
+        dataMenu.add_command(label="Data Point Schema",     command=self.onDataSchema   )
+        dataMenu.add_command(label="Matrix properties",     command=self.onDataMatrix   )
+        dataMenu.add_command(label="Display properties",    command=self.onDataDisplay  )
+
+        # Pridanie Method menu
+        dataMeth = tk.Menu(mainMenu, tearoff=0)
+        mainMenu.add_cascade(label="Method", menu=dataMeth)
+        dataMeth.add_command(label="Parameters",            command=self.onMethParams)
 
         # Pridanie Info menu
         helpMenu = tk.Menu(mainMenu, tearoff=0)
         mainMenu.add_cascade(label="Info", menu=helpMenu)
-        helpMenu.add_command(label="Matrix info short", command=lambda: self.onInfo(mode='short'))
-        helpMenu.add_command(label="Matrix info full",  command=lambda: self.onInfo(mode='full' ))
+        helpMenu.add_command(label="Matrix info short",     command=lambda: self.onInfo(mode='short'))
+        helpMenu.add_command(label="Matrix info full",      command=lambda: self.onInfo(mode='full' ))
         helpMenu.add_separator()
         helpMenu.add_command(label="Set Logger to   AUDIT", command=lambda: self.logger.setLevel('AUDIT')  )
         helpMenu.add_command(label="Set Logger to   ERROR", command=lambda: self.logger.setLevel('ERROR')  )
@@ -225,7 +230,7 @@ class InfoMarixGui(ttk.Frame):
         lblMet.grid(column=2, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
 
         self.cbSetMet = ttk.Combobox(self.frmDispBar, textvariable=self.varSetMet, width=int(_COMBO_WIDTH))
-        self.cbSetMet['values'] = list(self.dat.mapSetMethods().keys())
+        self.cbSetMet['values'] = list(self.dat.mapPointMethods().keys())
         self.cbSetMet['state' ] = 'readonly'
         self.cbSetMet.bind('<<ComboboxSelected>>', self.onMethodPick)
         self.cbSetMet.grid(column=3, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -557,11 +562,11 @@ class InfoMarixGui(ttk.Frame):
         return
 
     #==========================================================================
-    # Point/Data menu
+    # Data menu
     #--------------------------------------------------------------------------
-    def onPointSchema(self, event=None):
+    def onDataSchema(self, event=None):
 
-        self.logger.info(f'{self.name}.onPointSchema:')
+        self.logger.info(f'{self.name}.onDataSchema:')
 
         origSchema = self.dat.getSchema()
 
@@ -586,20 +591,20 @@ class InfoMarixGui(ttk.Frame):
                     self.dat.setIpType(self.dat.ipType, force=True)
                     self.dat.init()
                     self.updateDisplayBar()
-                    self.logger.warning(f'{self.name}.onPointSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, reset data')
+                    self.logger.warning(f'{self.name}.onDataSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, reset data')
 
                 else:
                     self.dat.setSchema(origSchema)
-                    self.logger.warning(f'{self.name}.onPointSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, but user cancelled changes, schema restored')
+                    self.logger.warning(f'{self.name}.onDataSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, but user cancelled changes, schema restored')
                     return
 
         #----------------------------------------------------------------------
-        self.logger.debug(f'{self.name}.onPointSchema: InfoPointGui window closed')
+        self.logger.debug(f'{self.name}.onDataSchema: InfoPointGui window closed')
 
     #--------------------------------------------------------------------------
-    def onMatrixProp(self, event=None):
+    def onDataMatrix(self, event=None):
 
-        self.logger.info(f'{self.name}.onMatrixProp:')
+        self.logger.info(f'{self.name}.onDataMatrix:')
 
         gui = InfoMatrixDataGui(name=f'Matrix {self.dat.name}', container=self, matrix=self.dat)
         gui.grab_set()
@@ -611,12 +616,12 @@ class InfoMarixGui(ttk.Frame):
         self.updateDisplayBar()
 
         #----------------------------------------------------------------------
-        self.logger.debug(f'{self.name}.onMatrixProp: Matrix properties set')
+        self.logger.debug(f'{self.name}.onDataMatrix: Matrix properties set')
 
     #--------------------------------------------------------------------------
-    def onDisplay(self, event=None):
+    def onDataDisplay(self, event=None):
 
-        self.logger.info(f'{self.name}.onDisplay:')
+        self.logger.info(f'{self.name}.onDataDisplay:')
 
         gui = InfoMatrixDisplayGui(name=f'Display options', container=self, display=self.display)
         gui.grab_set()
@@ -651,19 +656,25 @@ class InfoMarixGui(ttk.Frame):
 
                     self.setSub2D({axe: inp})
 
-
-
-
-
-
-
-
-
-
-
         #----------------------------------------------------------------------
         self.updateDisplayBar()
         self.showChart()
+
+    #==========================================================================
+    # Method menu
+    #--------------------------------------------------------------------------
+    def onMethParams(self, event=None):
+        "Set parameters for methods to apply"
+
+        self.logger.info(f'{self.name}.onMethParams:')
+
+        gui = InfoMatrixMethodsGui(name=f'Methods for {self.dat.name}', container=self, matrix=self.dat)
+        gui.grab_set()
+        self.wait_window(gui)
+
+        #----------------------------------------------------------------------
+        self.logger.debug(f'{self.name}.onMethParams: Methods parameters window closed')
+
 
     #==========================================================================
     # Info menu
@@ -724,7 +735,7 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Ziskanie hodnot parametrov metody od usera
         #----------------------------------------------------------------------
-        metDef = self.dat.mapSetMethods()[metKey]
+        metDef = self.dat.mapPointMethods()[metKey]
         params = metDef['par']
         usrPar = {}
 
@@ -758,7 +769,7 @@ class InfoMarixGui(ttk.Frame):
             #--------------------------------------------------------------
             self.logger.info(f"{self.name}.methodApply: {metKey}(key={self.display['valKey']}), par={usrPar})")
 
-            self.dat.setData(methodKey=metKey, valueKey=self.display['valKey'], params=usrPar)
+            self.dat.applyMatrixMethod(methodKey=metKey, valueKey=self.display['valKey'], params=usrPar)
             self.viewChanged(force=True)
 
             #--------------------------------------------------------------
@@ -824,12 +835,12 @@ class InfoMarixGui(ttk.Frame):
         self.reset()
 
     #--------------------------------------------------------------------------
-    def setData(self, dat:InfoMatrix):
+    def applyPointMethod(self, dat:InfoMatrix):
         "Reset matrix and set new data"
 
         self.clear()
         self.dat = dat
-        self.logger.info(f'{self.name}.setData: New data name = {self.dat.name}')
+        self.logger.info(f'{self.name}.applyPointMethod: New data name = {self.dat.name}')
 
     #--------------------------------------------------------------------------
     def setPoint(self, c):
