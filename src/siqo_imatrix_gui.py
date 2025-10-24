@@ -230,7 +230,7 @@ class InfoMarixGui(ttk.Frame):
         lblMet.grid(column=2, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
 
         self.cbSetMet = ttk.Combobox(self.frmDispBar, textvariable=self.varSetMet, width=int(_COMBO_WIDTH))
-        self.cbSetMet['values'] = list(self.dat.mapPointMethods().keys())
+        self.cbSetMet['values'] = list(self.dat.mapMethods().keys())
         self.cbSetMet['state' ] = 'readonly'
         self.cbSetMet.bind('<<ComboboxSelected>>', self.onMethodPick)
         self.cbSetMet.grid(column=3, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -735,19 +735,19 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Ziskanie hodnot parametrov metody od usera
         #----------------------------------------------------------------------
-        metDef = self.dat.mapPointMethods()[metKey]
-        params = metDef['par']
+        metDef = self.dat.mapMethods()[metKey]
+        params = metDef['params']
         usrPar = {}
 
-        for par, entry in params.items():
+        for param, entry in params.items():
 
-            newEntry = askReal(container=self, title=f"Parameter of {metKey}", prompt=par, initialvalue=entry)
+            newEntry = askReal(container=self, title=f"Parameter of {metKey}", prompt=param, initialvalue=entry)
 
             if newEntry is None:
                 self.logger.info(f"{self.name}.onMethodPlay: {metKey} cancelled by user")
                 return
 
-            usrPar[par] = newEntry
+            usrPar[param] = newEntry
 
         #----------------------------------------------------------------------
         # Vsetko je pripravene: Press button PLAY

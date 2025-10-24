@@ -892,50 +892,57 @@ class InfoMatrix:
         self.logger.info(f"{self.name}.applyMatrixMethod: {methodKey}(params={params})")
 
         #----------------------------------------------------------------------
-        # Ziskanie vykonavanej funkcie
+        # Ziskanie vykonavanej funkcie a parametrov
         #----------------------------------------------------------------------
         methods = self.mapMethods()
 
-        if methodKey in methods.keys():
-
-            matrixMethod = methods[methodKey]['matrixMethod']
-            pointMethod  = methods[methodKey]['pointMethod' ]
-
-        else:
+        if methodKey not in methods.keys():
             self.logger.error(f"{self.name}.applyMatrixMethod: '{methodKey}' is not in defined functions")
             return False
 
-        #----------------------------------------------------------------------
-        # Ak je definovana pointMethod, aplikujem ju pomocou matrixMethod = applyPointMethod
-        #----------------------------------------------------------------------
-        if pointMethod:
-
-            self.logger.info(f"{self.name}.applyMatrixMethod: Applying pointMethod '{pointMethod.__name__}' via matrixMethod '{matrixMethod.__name__}'")
-
-            matrixMethod(self=self, valueKey=valueKey, params=params)
-
-
         else:
-            #------------------------------------------------------------------
-            # Inak aplikujem priamo matrixMethod
-            #------------------------------------------------------------------
-            self.logger.info(f"{self.name}.applyMatrixMethod: Applying matrixMethod '{matrixMethod.__name__}' directly")
-
-            matrixMethod(self=self, valueKey=valueKey, params=params)
+            method = methods[methodKey]
 
         #----------------------------------------------------------------------
-        self.logger.warning(f"{self.name}.applyMatrixMethod: {methodKey} was applied to InfoMatrix with {len(self.points)} InfoPoints")
+        # Ak je definovana pointMethod, aplikujem ju pomocou applyPointMethod()
+        #----------------------------------------------------------------------
+        if 'pointMethod' in method.keys() and method['pointMethod'] is not None:
+
+            pointMethod = method['pointMethod']
+            self.logger.info(f"{self.name}.applyMatrixMethod: Applying pointMethod '{pointMethod.__name__}'")
+
+            self._applyPointMethod(pointMethod=pointMethod, valueKey=valueKey, params=params)
+
+        #----------------------------------------------------------------------
+        # Ak je definovana matrixMethod, aplikujem ju priamo
+        #----------------------------------------------------------------------
+        elif 'matrixMethod' in method.keys() and method['matrixMethod'] is not None:
+
+            matrixMethod = method['matrixMethod']
+            self.logger.info(f"{self.name}.applyMatrixMethod: {matrixMethod.__name__}({params}) for value key='{valueKey}'")
+
+            matrixMethod(valueKey=valueKey, params=params)   # self uz bolo predane pri priradeni do premennej matrixMethod
+
+        #----------------------------------------------------------------------
+        # Nie je definovana ziadna metoda
+        #----------------------------------------------------------------------
+        else:
+            self.logger.error(f"{self.name}.applyMatrixMethod: '{methodKey}' has neither pointMethod nor matrixMethod defined")
+            return False
+
+        #----------------------------------------------------------------------
+        self.logger.warning(f"{self.name}.applyMatrixMethod: {methodKey}({params}) for value key='{valueKey}' was applied to InfoMatrix")
         return True
 
     #--------------------------------------------------------------------------
-    def applyPointMethod(self, pointMethod:str, valueKey:str, params:dict=None) -> bool:
+    def _applyPointMethod(self, pointMethod, valueKey:str, params:dict=None) -> bool:
         """Special matrix method for applying Point methods to all or active subset of InfoPoints.
            pointMethod : Name of the Point method to apply
            valueKey    : Key of the value to be set by the method
            params      : Parameters for the method as dict
         """
 
-        self.logger.info(f"{self.name}.applyPointMethod: {pointMethod.__name__}(key={valueKey}, par={params}) for {len(self.actList)} active Points]")
+        self.logger.info(f"{self.name}._applyPointMethod: {pointMethod.__name__}({params}) for value key='{valueKey}'")
 
         #----------------------------------------------------------------------
         # Ziskanie listu bodov na aplikovanie funkcie
@@ -954,11 +961,11 @@ class InfoMatrix:
         pts = 0  # Counter of points
 
         for point in tgtList:
-            pointMethod(self=point, key=valueKey, par=params)
+            pointMethod(self=point, valueKey=valueKey, params=params)
             pts += 1
 
         #----------------------------------------------------------------------
-        self.logger.warning(f"{self.name}.applyPointMethod: {pointMethod.__name__} was applied to {tgtStr} {pts} InfoPoints")
+        self.logger.warning(f"{self.name}._applyPointMethod: {pointMethod.__name__} was applied to {tgtStr} {pts} InfoPoints")
         return True
 
     #==========================================================================

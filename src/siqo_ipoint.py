@@ -440,17 +440,17 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def mapMethods(matrixMethod) -> dict:
+    def mapMethods() -> dict:
         "Returns map of methods for one InfoPoint setting keyed value to function value for respective parameters"
 
-        return {'<Point Methods>'        : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.nullMethod,  'params':{}}
-               ,'Real constant'          : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.fltConst,    'params':{'const' :0                                                 }}
-               ,'Random uniform'         : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.fltRandUni,  'params':{'min'   :0, 'max'   :1                                     }}
-               ,'Random bit'             : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.fltRandBit,  'params':{'prob1' :0.1                                               }}
-               ,'Comp constant (re/im)'  : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.cmpConstR,   'params':{'real'  :0, 'imag'  :0                                     }}
-               ,'Comp constant (abs/phs)': {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.cmpConstP,   'params':{'abs'   :0, 'phase' :0                                     }}
-               ,'Comp random (re/im)'    : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.cmpRandUniR, 'params':{'reMin' :0, 'reMax' :1, 'imMin'   :0, 'imMax'   :1         }}
-               ,'Comp random (abs/phs)'  : {'matrixMethod': matrixMethod,'pointMethod':InfoPoint.cmpRandUniP, 'params':{'absMin':0, 'absMax':1, 'phaseMin':0, 'phaseMax':2*cmath.pi}}
+        return {'<Point Methods>'        : {'pointMethod':InfoPoint.nullMethod,  'params':{}}
+               ,'Real constant'          : {'pointMethod':InfoPoint.fltConst,    'params':{'const' :0                                                 }}
+               ,'Random uniform'         : {'pointMethod':InfoPoint.fltRandUni,  'params':{'min'   :0, 'max'   :1                                     }}
+               ,'Random bit'             : {'pointMethod':InfoPoint.fltRandBit,  'params':{'prob1' :0.1                                               }}
+               ,'Comp constant (re/im)'  : {'pointMethod':InfoPoint.cmpConstR,   'params':{'real'  :0, 'imag'  :0                                     }}
+               ,'Comp constant (abs/phs)': {'pointMethod':InfoPoint.cmpConstP,   'params':{'abs'   :0, 'phase' :0                                     }}
+               ,'Comp random (re/im)'    : {'pointMethod':InfoPoint.cmpRandUniR, 'params':{'reMin' :0, 'reMax' :1, 'imMin'   :0, 'imMax'   :1         }}
+               ,'Comp random (abs/phs)'  : {'pointMethod':InfoPoint.cmpRandUniP, 'params':{'absMin':0, 'absMax':1, 'phaseMin':0, 'phaseMax':2*cmath.pi}}
                }
 
     #==========================================================================
