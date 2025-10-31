@@ -159,7 +159,7 @@ class InfoMatrix:
         self._diffs     = {}       # Distance between two points in respective axes in lambda units
 
         #----------------------------------------------------------------------
-        # Nastavenie axes
+        # Default nastavenie axes a inicializacia
         #----------------------------------------------------------------------
         for key in InfoPoint.getAxes(self.ipType).keys():
 
@@ -167,13 +167,10 @@ class InfoMatrix:
             self._origs[key] = 0
             self._rects[key] = 1
 
-        #----------------------------------------------------------------------
-        # Vypocet diffs
-        #----------------------------------------------------------------------
-        for key, cnt in self._cnts.items():
+        self.init()
 
-            if cnt > 1: self._diffs[key] = self._rects[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
-            else      : self._diffs[key] = 0                         # If only one point, distance is zero
+        #----------------------------------------------------------------------
+        self.logger.info(f"{self.name}.setIpType: done")
 
    #--------------------------------------------------------------------------
     def info(self, indent=0, full=False):
@@ -677,15 +674,18 @@ class InfoMatrix:
         oldActSubIdxs = self.actSubIdxs.copy()
 
         #----------------------------------------------------------------------
-        # Kontrola zmeny definicie
+        # Kontrola zmeny definicie (self.actChanged moze mat hodnotu True z inych dovodov)
         #----------------------------------------------------------------------
-        if self.actSubIdxs == actSubIdxs:
+        if self.actSubIdxs != actSubIdxs:
+            self.actChanged = True
+            self.logger.debug(f"{self.name}._actSubSet: actSubIdxs definition was changed")
 
-            self.actChanged = False
-            self.logger.debug(f"{self.name}._actSubSet: actSubIdxs definition was not changed")
+        #----------------------------------------------------------------------
+        # Ak nie je submatica zmenena, vratim sa
+        #----------------------------------------------------------------------
+        if not self.actChanged:
+            self.logger.debug(f"{self.name}._actSubSet: actSubIdxs definition was not changed, no need to update")
             return
-
-        else: self.actChanged = True
 
         #----------------------------------------------------------------------
         # Kontrola novej definicie
@@ -720,7 +720,7 @@ class InfoMatrix:
         if actSubIdxs is not None: self._actSubSet(actSubIdxs)
 
         #----------------------------------------------------------------------
-        # Kontrola potreby obnovenia
+        # Kontrola potreby obnovenia aktivnej submatice pri zmene definicie submatice
         #----------------------------------------------------------------------
         if not self.actChanged and not force:
             self.logger.debug(f"{self.name}.actSubmatrix: subMatrix definition was not changed, no need to refresh")
@@ -752,7 +752,7 @@ class InfoMatrix:
             actPoss = self._possByAxeIdx(axeKey=axe, axeIdx=axeIdx)
 
             #------------------------------------------------------------------
-            # Vytvorim prienik poss s touto mnozinou pozicii
+            # Vytvorim prienik poss s touto mnozinou pozicii = odstranim body, ktore nepatria do danej osi
             #------------------------------------------------------------------
             poss = poss.intersection(actPoss)
 
@@ -771,7 +771,7 @@ class InfoMatrix:
     # Structure/Value modification
     #--------------------------------------------------------------------------
     def clear(self, *, defs:dict={}):
-        "Set all InfoPoint's values to default value"
+        "Set all InfoPoint's values to default values. No change of structure."
 
         self.logger.info(f"{self.name}.clear: defs={defs}")
 
@@ -779,7 +779,7 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def init(self, defs:dict={} ):
-        """Initialise InfoMatrix data to default values."""
+        """Initialise InfoMatrix structure and set values to defaults."""
 
         if self.ipType is None:
             self.logger.error(f"{self.name}.init: InfoPoint type is not defined, cannot initialise InfoMatrix")
@@ -791,6 +791,14 @@ class InfoMatrix:
         # Destroy old data
         #----------------------------------------------------------------------
         self.points.clear()                     # Clear all points in the InfoMatrix
+
+        #----------------------------------------------------------------------
+        # Vypocet diffs
+        #----------------------------------------------------------------------
+        for key, cnt in self._cnts.items():
+
+            if cnt > 1: self._diffs[key] = self._rects[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
+            else      : self._diffs[key] = 0                         # If only one point, distance is zero
 
         #----------------------------------------------------------------------
         # Generate InfoPoints at respective positions
@@ -816,6 +824,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Final adjustments
         #----------------------------------------------------------------------
+        self.actChanged = True     # Current sub settings was changed and actSubMatrix needs refresh
         self.logger.info(f"{self.name}.init: Created {len(self.points)} InfoPoints")
 
     #--------------------------------------------------------------------------

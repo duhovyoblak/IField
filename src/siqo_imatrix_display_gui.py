@@ -1,6 +1,8 @@
 #==============================================================================
 # Info tkChart library
 #------------------------------------------------------------------------------
+from   copy                   import deepcopy
+
 import tkinter                as tk
 from   tkinter                import (ttk, font, PanedWindow)
 from   tkinter.messagebox     import showinfo
@@ -44,7 +46,8 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self.origDisplay = self.display.copy()  # Original display options
+
+        self.origDisplay = deepcopy(self.display)  # Original display options
 
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
@@ -60,7 +63,7 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         frmDisp.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
         #----------------------------------------------------------------------
-        # List of axes in rows
+        # List of axe's names in rows
         #----------------------------------------------------------------------
         lblAxe = ttk.Label(frmDisp, text="Axe:")
         lblAxe.grid(column=0, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -120,27 +123,48 @@ class InfoMatrixDisplayGui(tk.Toplevel):
                 row += 1
 
         #----------------------------------------------------------------------
+        # Freeze
+        #----------------------------------------------------------------------
+        self.frzBool = {}
+        self.frzIdxs = {}
+
+        lbl = ttk.Label(frmDisp, text="Freeze")
+        lbl.grid(column=4, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        lbl = ttk.Label(frmDisp, text="in index")
+        lbl.grid(column=5, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        row = 1
+        for key in self.display['axeKeys']:
+
+            # Boolean variable storing freeze state for given axis
+            self.frzBool[key] = tk.BooleanVar(value=(key in self.display.get('sub2D', {}).keys()))
+            cbtn = ttk.Checkbutton(frmDisp, text='', variable= self.frzBool[key])
+            cbtn.grid(column=4, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+            # Integer variable storing freeze index for given axis
+            maxIndex = 99 #self.display.get('axeMaxIdxs', {}).get(key, 0)
+
+            self.frzIdxs[key] = tk.IntVar(value=self.display.get('sub2D', {}).get(key, 0))
+            spnIdx = ttk.Spinbox(frmDisp, from_=0, to=maxIndex, width=6, textvariable=self.frzIdxs[key])
+            spnIdx.grid(column=5, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+
+            row += 1
+
+        #----------------------------------------------------------------------
         # Run
         #----------------------------------------------------------------------
         self.selRun = tk.StringVar(value=self.display['axeKeys'][3] if len(self.display['axeKeys'])>3 else 'Not used')
 
         lbl = ttk.Label(frmDisp, text="Run")
-        lbl.grid(column=4, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+        lbl.grid(column=6, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         row = 1
         for key in self.display['axeKeys']:
             rbtn = ttk.Radiobutton(frmDisp, text='', variable=self.selRun, value=key)
-            rbtn.grid(column=4, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+            rbtn.grid(column=6, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
             row += 1
-
-        #----------------------------------------------------------------------
-        # Freeze
-        #----------------------------------------------------------------------
-        self.selRun = tk.StringVar(value=self.display['axeKeys'][3] if len(self.display['axeKeys'])>3 else 'Not used')
-
-        lbl = ttk.Label(frmDisp, text="Freeze")
-        lbl.grid(column=5, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
-
 
         #----------------------------------------------------------------------
         # Create bottom buttons bar
@@ -180,6 +204,16 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         if 'keyX' in self.display.keys(): self.display['keyX'] = self.selX.get()
         if 'keyY' in self.display.keys(): self.display['keyY'] = self.selY.get()
         if 'keyZ' in self.display.keys(): self.display['keyZ'] = self.selZ.get()
+
+        #----------------------------------------------------------------------
+        # Vyhodnotenie freezed axes
+        #----------------------------------------------------------------------
+        self.display['sub2D'].clear()
+
+        for key, boolVar in self.frzBool.items():
+
+            if boolVar.get():
+                self.display['sub2D'][key] = self.frzIdxs[key].get()
 
         #----------------------------------------------------------------------
         self.logger.warning(f'{self.name}.ok: {self.display}')
@@ -236,6 +270,7 @@ if __name__ == '__main__':
                ,'keyV'     : 'None' # key for value to show
                ,'keyX'     : 'None' # key for Axis X to show
                ,'keyY'     : 'None' # key for Axis Y to show
+               ,'sub2D'    : {'y':2}     # Subset of freezed axes {key: index
             }
 
     display['axeKeys' ].append('None')

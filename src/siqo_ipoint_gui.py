@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------------
 import tkinter                as tk
 from   tkinter                import (ttk, font, PanedWindow)
-from   tkinter.messagebox     import showinfo
+from   tkinter.messagebox     import showinfo, askokcancel, askyesno
 
 from   siqolib.logger         import SiqoLogger
 from   siqolib.message        import SiqoMessage, askInt, askReal
@@ -40,6 +40,7 @@ class InfoPointGui(tk.Toplevel):
 
         self.name     = name               # Name of this chart
         self.ipType   = ipType             # InfoPoint type to work with
+        self.changed  = False              # Flag if setting was changed
 
         #----------------------------------------------------------------------
         # Internal objects
@@ -75,7 +76,7 @@ class InfoPointGui(tk.Toplevel):
         frmBtn = ttk.Frame(self)
         frmBtn.pack(fill=tk.X, expand=True, side=tk.BOTTOM, anchor=tk.S)
 
-        btnOk = ttk.Button(frmBtn, text="OK", command=self.destroy)
+        btnOk = ttk.Button(frmBtn, text="OK", command=self.ok)
         btnOk.pack(side=tk.RIGHT, padx=_PADX, pady=_PADY)
 
         btnCancel = ttk.Button(frmBtn, text="Cancel", command=self.cancel)
@@ -210,6 +211,45 @@ class InfoPointGui(tk.Toplevel):
         #----------------------------------------------------------------------
         else:
             self.logger.error(f'{self.name}.delParam: Unknown paramType {paramType}')
+
+    #--------------------------------------------------------------------------
+    def ok(self):
+        "Parse user inputs"
+
+        newSchema = InfoPoint.getSchema(self.ipType)
+        self.logger.info(f'{self.name}.ok: New schema = {newSchema}')
+
+        #----------------------------------------------------------------------
+        # Porovnanie aktualnych hodnot s povodnymi
+        #----------------------------------------------------------------------
+        test = InfoPoint.equalSchema(self.ipType, self.origSchema)
+        self.logger.debug(f'{self.name}.onDataSchema: Schema test = {test}')
+
+        #----------------------------------------------------------------------
+        # Ak ipType existuje
+        #----------------------------------------------------------------------
+        if test['exists']:
+
+            if not test['equalAxes']:
+
+                #--------------------------------------------------------------
+                # Zmena osí
+                #--------------------------------------------------------------
+                if askyesno(title='Axes changed', message='Axes was changed. Apply changes and reset  data?'):
+
+                    self.changed = True
+                    self.logger.warning(f'{self.name}.onDataSchema: Axes changed from {self.origSchema} to {newSchema}, reset data')
+
+                else:
+                    self.dat.setSchema(self.origSchema)
+                    self.changed = False
+                    self.logger.warning(f'{self.name}.onDataSchema: Axes changed from {self.origSchema} to {newSchema}, but user cancelled changes, schema restored')
+
+            else:
+                self.logger.info(f'{self.name}.ok: {self.ipType} schema unchanged')
+
+        #----------------------------------------------------------------------
+        self.destroy()
 
     #--------------------------------------------------------------------------
     def cancel(self):

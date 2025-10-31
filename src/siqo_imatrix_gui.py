@@ -152,6 +152,7 @@ class InfoMarixGui(ttk.Frame):
                         ,'needShow'   : False                                # Flag to show the chart, True means data changed and need to be shown
                         ,'axeKeys'    : axeKeys                              # List of axes keys
                         ,'axeNames'   : axeNames                             # List of axes names
+                        ,'sub2D'      : self.sub2D.copy()                    # Subset of frozen axes with desired values e.g. {'x':4, 't':17}
                         ,'keyX'       : axeKeys[0] if len(axeKeys)>0 else '' # key for Axis X to show
                         ,'keyY'       : axeKeys[1] if len(axeKeys)>1 else '' # key for Axis Y to show
                         ,'keyZ'       : axeKeys[2] if len(axeKeys)>2 else '' # key for Axis Z to show
@@ -307,7 +308,7 @@ class InfoMarixGui(ttk.Frame):
             self.dat.actSubmatrix(actSubIdxs=self.sub2D)
 
         #----------------------------------------------------------------------
-        # Ak nenastala zmena, vyskocim
+        # Vykreslim chart podla aktualnych nastaveni
         #----------------------------------------------------------------------
         self.logger.info(f'{self.name}.viewChanged: needShow = {self.display['needShow']}')
         self.showChart()
@@ -352,6 +353,13 @@ class InfoMarixGui(ttk.Frame):
             return
 
         #----------------------------------------------------------------------
+        # Clear the chart
+        #----------------------------------------------------------------------
+        self.figure.clear()
+        #self.update()
+        self.canvas.draw()
+
+        #----------------------------------------------------------------------
         # Check list of InfoPoints to show
         #----------------------------------------------------------------------
         if len(self.dat.actList) == 0:
@@ -391,7 +399,7 @@ class InfoMarixGui(ttk.Frame):
 
             valueToShow = showFtion(point, self.display['valKey'])
 
-            if valueToShow:
+            if valueToShow is not None:
 
                 listC.append(valueToShow)
                 if self.display['keyX']: listX.append(point.pos(self.display['keyX']))
@@ -422,7 +430,6 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Prepare the chart
         #----------------------------------------------------------------------
-        self.figure.clear()
         chart = self.figure.add_subplot()
 
 #        self.chart.set_title(val, fontsize=14)
@@ -565,6 +572,7 @@ class InfoMarixGui(ttk.Frame):
     # Data menu
     #--------------------------------------------------------------------------
     def onDataSchema(self, event=None):
+        "Set schema for data points: axes {key:name}, values {key:name}"
 
         self.logger.info(f'{self.name}.onDataSchema:')
 
@@ -575,34 +583,27 @@ class InfoMarixGui(ttk.Frame):
         self.wait_window(gui)
 
         #----------------------------------------------------------------------
-        # Vyhodnotenie zmien v scheme
+        # Zmeny v nazvoch axes/values
         #----------------------------------------------------------------------
-        test = self.dat.equalSchema(origSchema)
+        self.updateDisplayBar()
 
-        if test['exists']:
+        #----------------------------------------------------------------------
+        #  Zmeny v hodnotach axes/values
+        #----------------------------------------------------------------------
+        if gui.changed:
 
-            if not test['equalAxes']:
+                self.dat.setIpType(self.dat.ipType, force=True)
+                self.dat.init()
+                self.viewChanged()
 
-                #--------------------------------------------------------------
-                # Zmena osí
-                #--------------------------------------------------------------
-                if askyesno(title='Axes changed', message='Axes was changed. Apply changes and reset  data?'):
-
-                    self.dat.setIpType(self.dat.ipType, force=True)
-                    self.dat.init()
-                    self.updateDisplayBar()
-                    self.logger.warning(f'{self.name}.onDataSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, reset data')
-
-                else:
-                    self.dat.setSchema(origSchema)
-                    self.logger.warning(f'{self.name}.onDataSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, but user cancelled changes, schema restored')
-                    return
+                self.logger.warning(f'{self.name}.onDataSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, reset data')
 
         #----------------------------------------------------------------------
         self.logger.debug(f'{self.name}.onDataSchema: InfoPointGui window closed')
 
     #--------------------------------------------------------------------------
     def onDataMatrix(self, event=None):
+        "Set axes parameters: self._cnts, self._origs, self._rects"
 
         self.logger.info(f'{self.name}.onDataMatrix:')
 
@@ -611,9 +612,10 @@ class InfoMarixGui(ttk.Frame):
         self.wait_window(gui)
 
         #----------------------------------------------------------------------
-        # Vyhodnotenie zmien v scheme
+        # Zobrazene zmien v matrixe
         #----------------------------------------------------------------------
         self.updateDisplayBar()
+        self.viewChanged()
 
         #----------------------------------------------------------------------
         self.logger.debug(f'{self.name}.onDataMatrix: Matrix properties set')
@@ -628,37 +630,19 @@ class InfoMarixGui(ttk.Frame):
         self.wait_window(gui)
 
         #----------------------------------------------------------------------
-        # Ak sa zmenili osy, zresetujem sub2D
+        # Ak sa zmenili osy alebo sub2D
         #----------------------------------------------------------------------
-        if (self.display['keyX'] != gui.display['keyX']) or (self.display['keyY'] != gui.display['keyY']):
+        if (self.display['keyX'] != gui.display['keyX']) or (self.display['keyY'] != gui.display['keyY']) or (self.sub2D != gui.display['sub2D']):
 
-                self.logger.info(f"{self.name}.viewChanged: X:{self.display['keyX']}->{gui.display['keyX']} Y:{self.display['keyY']}->{gui.display['keyY']}, resetting sub2D")
+                self.logger.info(f"{self.name}.viewChanged: X:{self.display['keyX']}->{gui.display['keyX']} Y:{self.display['keyY']}->{gui.display['keyY']}, sub2D:{self.sub2D}->{gui.display['sub2D']}")
+
                 self.display = gui.display.copy()
+                self.sub2D   = gui.display['sub2D'].copy()
 
-                self.sub2D = {}
-
-                #--------------------------------------------------------------
-                # Nastavim zmrazene indexy pre osi, ktore sa nezobrazia
-                #--------------------------------------------------------------
-                for axe, axeName in self.dat.getAxes().items():
-
-                    # Preskocim zobrazene osi
-                    if axe==aKeyX or axe==aKeyY: continue
-
-                    #----------------------------------------------------------
-                    # Zamrazim index pre danu os
-                    #----------------------------------------------------------
-                    inp = askInt(container=self, title=f'Zadaj zmrazenú hodnotu pre {axeName}', prompt=axe, initialvalue=0, min=0, max=self.dat._cnts[axe]-1)
-
-                    if inp is None:
-                       self.logger.audit(f'{self.name}.viewChanged: User input for axe {axeName} cancelled by user')
-                       continue
-
-                    self.setSub2D({axe: inp})
+                self.updateDisplayBar()
+                self.viewChanged()
 
         #----------------------------------------------------------------------
-        self.updateDisplayBar()
-        self.showChart()
 
     #==========================================================================
     # Method menu

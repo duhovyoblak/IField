@@ -417,11 +417,11 @@ class InfoPoint:
         for key, valName in InfoPoint._schema[ipType]['vals'].items():
 
             if valName == name:
-                InfoPoint.logger.debug(f"InfoPoint.valKeyByName: Name '{name}' found in axes {InfoPoint._schema[ipType]['vals']} for key '{key}'")
+                InfoPoint.logger.debug(f"InfoPoint.valKeyByName: Name '{name}' found in values {InfoPoint._schema[ipType]['vals']} for key '{key}'")
                 return key
 
         #----------------------------------------------------------------------
-        InfoPoint.logger.warning(f"InfoPoint.valKeyByName: Name '{name}' not found in axes {InfoPoint._schema[ipType]['vals']}")
+        InfoPoint.logger.warning(f"InfoPoint.valKeyByName: Name '{name}' not found in values {InfoPoint._schema[ipType]['vals']}")
         return None
 
     #--------------------------------------------------------------------------
