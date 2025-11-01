@@ -664,15 +664,14 @@ class InfoMatrix:
            If actSubIdxs definition changed from current definition, sets actChanged to True.
         """
 
-        self.logger.info(f"{self.name}._actSubSet: To {actSubIdxs}")
         oldActSubIdxs = self.actSubIdxs.copy()
+        self.logger.debug(f"{self.name}._actSubSet: {oldActSubIdxs}->{actSubIdxs}")
 
         #----------------------------------------------------------------------
         # Kontrola zmeny definicie (self.actChanged moze mat hodnotu True z inych dovodov)
         #----------------------------------------------------------------------
-        if self.actSubIdxs != actSubIdxs:
-            self.actChanged = True
-            self.logger.debug(f"{self.name}._actSubSet: actSubIdxs definition was changed")
+        if self.actSubIdxs != actSubIdxs: self.actChanged = True
+        else                            : self.actChanged = False
 
         #----------------------------------------------------------------------
         # Ak nie je submatica zmenena, vratim sa
@@ -706,7 +705,7 @@ class InfoMatrix:
         """Returns active submatrix of InfoPoints as list of InfoPoints
         """
 
-        self.logger.info(f"{self.name}.actSubmatrix: actSubIdxs={actSubIdxs}, force={force}")
+        self.logger.debug(f"{self.name}.actSubmatrix: actSubIdxs={actSubIdxs}, force={force}")
 
         #----------------------------------------------------------------------
         # Nastavenie aktivnej submatice ak bola dodana definicia
@@ -721,7 +720,7 @@ class InfoMatrix:
             return self.actList
 
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.actSubmatrix: Refresh for actSubIdxs={self.actSubIdxs}, force={force}")
+        self.logger.debug(f"{self.name}.actSubmatrix: Refresh for actSubIdxs={self.actSubIdxs}, force={force}")
 
         #----------------------------------------------------------------------
         # Inicializujem mnozinu pozicii submatrixu vsetkymi bodmi
@@ -909,7 +908,7 @@ class InfoMatrix:
            params      : Parameters for the method as dict
         """
 
-        self.logger.info(f"{self.name}.applyMatrixMethod: '{valueKey}' = {methodKey}(params={params})")
+        self.logger.debug(f"{self.name}.applyMatrixMethod: '{valueKey}' = {methodKey}(params={params})")
 
         #----------------------------------------------------------------------
         # Ziskanie vykonavanej funkcie a parametrov
@@ -939,7 +938,7 @@ class InfoMatrix:
         elif 'matrixMethod' in method.keys() and method['matrixMethod'] is not None:
 
             matrixMethod = method['matrixMethod']
-            self.logger.info(f"{self.name}.applyMatrixMethod: {matrixMethod.__name__}({params}) for value key='{valueKey}'")
+            self.logger.debug(f"{self.name}.applyMatrixMethod: {matrixMethod.__name__}({params}) for value key='{valueKey}'")
 
             matrixMethod(valueKey=valueKey, params=params)   # self uz bolo predane pri priradeni do premennej matrixMethod
 
@@ -951,7 +950,7 @@ class InfoMatrix:
             return False
 
         #----------------------------------------------------------------------
-        self.logger.warning(f"{self.name}.applyMatrixMethod: {methodKey}({params}) for value key='{valueKey}' was applied to InfoMatrix")
+        self.logger.warning(f"{self.name}.applyMatrixMethod: '{valueKey}'<-{methodKey}({params}) applied")
         return True
 
     #--------------------------------------------------------------------------
@@ -994,7 +993,7 @@ class InfoMatrix:
     def nullMethod(self, valueKey:str, params:dict):
         "Default null method for InfoPoint for keyed value (do nothing)"
 
-        self.logger.debug(f"InfoPoint.nullMethod: do nothing for key '{valueKey}' with params {params}")
+        self.logger.debug(f"{self.name}.nullMethod: do nothing for key '{valueKey}' with params {params}")
 
     #--------------------------------------------------------------------------
     def normAbs(self, nods, norm=None):

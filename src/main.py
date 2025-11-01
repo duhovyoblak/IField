@@ -4,8 +4,8 @@
 import tkinter                  as tk
 
 from   siqolib.logger           import SiqoLogger
-from   siqo_imatrix             import InfoMatrix
 from   siqo_imatrix_gui         import InfoMatrixGui
+from   ifield_imatrix           import InfoFieldMatrix
 
 #==============================================================================
 # package's constants
@@ -39,7 +39,7 @@ if __name__ =='__main__':
     #--------------------------------------------------------------------------
     # Zaciatok testu
     #--------------------------------------------------------------------------
-    matrix = InfoMatrix('Test field')
+    matrix = InfoFieldMatrix('IField')
 
     logger.setLevel('INFO')
     logger.info('Test of InfoMatrixGui class')
@@ -48,15 +48,15 @@ if __name__ =='__main__':
     matrix.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
     matrix.init(cnts={'l':100, 'e':50})
 
-    logger.setLevel('DEBUG')
+    #logger.setLevel('DEBUG')
 
     matrix.applyMatrixMethod(methodKey='Real constant', valueKey='s', params={'const': 0.0})
     print(matrix.info(full=False)['msg'])
 
-    matrixGui = InfoMatrixGui(name='Test of InfoModelGui class', container=win, dat=matrix)
+    matrixGui = InfoMatrixGui(container=win, dat=matrix)
     matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
-    logger.setLevel('DEBUG')
+    logger.setLevel('INFO')
     win.mainloop()
     logger.info('Stop of InfoMatrixGui test')
 

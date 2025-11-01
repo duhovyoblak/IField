@@ -44,13 +44,15 @@ class InfoMatrixGui(ttk.Frame):
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, name, container, dat:InfoMatrix, **kwargs):
+    def __init__(self, container, dat:InfoMatrix, **kwargs):
         "Call constructor of InfoMatrixGui and initialise it for respective data"
+
+        name = f'{dat.name} GUI'
 
         self.logger = SiqoLogger(name, level='DEBUG')
         self.logger.audit(f'{name}.init:')
 
-        self.name     = name                # Name of this chart
+        self.name     = name                # Name of this GUI
         self.dat      = dat                 # InfoMatrix base data
         self.sub2D    = {}                  # Subset of InfoMatrix data defined as frozen axes with desired values e.g. {'x':4, 't':17}
         self.display  = {}                  # Display options
@@ -293,7 +295,7 @@ class InfoMatrixGui(ttk.Frame):
             return
 
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.viewChanged: Show {self.display['showMethod']}({self.display['valName']}[{self.display['valKey']}]) in X:{self.display['keyX']}, Y:{self.display['keyY']}")
+        self.logger.debug(f"{self.name}.viewChanged: Show {self.display['showMethod']}({self.display['valName']}[{self.display['valKey']}]) in X:{self.display['keyX']}, Y:{self.display['keyY']}")
 
         #----------------------------------------------------------------------
         # Changes in any key or force required data refresh
@@ -343,7 +345,7 @@ class InfoMatrixGui(ttk.Frame):
     def showChart(self, event=None):
         """Vykresli chart na zaklade aktualneho listu actList
         """
-        self.logger.info(f"{self.name}.showChart: axisX='{self.display['keyX']}', axisY='{self.display['keyY']}', value='{self.display['valKey']}', method='{self.display['showMethod']}'")
+        self.logger.debug(f"{self.name}.showChart: axisX='{self.display['keyX']}', axisY='{self.display['keyY']}', value='{self.display['valKey']}', method='{self.display['showMethod']}'")
 
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
@@ -481,7 +483,7 @@ class InfoMatrixGui(ttk.Frame):
         self.canvas.draw()
 
         #----------------------------------------------------------------------
-        self.logger.info(f'{self.name}.showChart: Chart with {self.dims()} dimensions is shown')
+        self.logger.info(f'{self.name}.showChart: Shown')
 
     #--------------------------------------------------------------------------
     def onClick(self, event):
@@ -740,12 +742,12 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         while (cycles > 0) and (self.btnPlay.instate(['disabled'])):
 
-            self.logger.info(f'{self.name}.onMethodPlay: Cycle started')
+            self.logger.debug(f'{self.name}.onMethodPlay: Cycle started')
 
             #--------------------------------------------------------------
             # Apply the method and update the chart
             #--------------------------------------------------------------
-            self.logger.info(f"{self.name}.methodApply: {metKey}(key={self.display['valKey']}), par={usrPar})")
+            self.logger.debug(f"{self.name}.methodApply: {metKey}(key={self.display['valKey']}), par={usrPar})")
 
             self.dat.applyMatrixMethod(methodKey=metKey, valueKey=self.display['valKey'], params=usrPar)
             self.viewChanged(force=True)
@@ -761,7 +763,7 @@ class InfoMatrixGui(ttk.Frame):
             #--------------------------------------------------------------
             cycles -= 1
             self.varCounter.set(cycles)
-            self.logger.info(f'{self.name}.onMethodPlay: {cycles} cycle left')
+            self.logger.debug(f'{self.name}.onMethodPlay: {cycles} cycle left')
 
         #----------------------------------------------------------------------
         self.btnPlay.configure(style="Default.TButton")
@@ -883,7 +885,7 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Zaciatok testu
     #--------------------------------------------------------------------------
-    matrix = InfoMatrix('Test field')
+    matrix = InfoMatrix('IMatrix test')
     matrix.logger.setLevel('INFO')
     matrix.logger.frameDepth = 2
     print(f'logger.frameDepth = {matrix.logger.frameDepth}')
@@ -900,7 +902,7 @@ if __name__ == '__main__':
     print(matrix.info(full=False)['msg'])
 
 
-    matrixGui = InfoMatrixGui(name='Test of InfoModelGui class', container=win, dat=matrix)
+    matrixGui = InfoMatrixGui(container=win, dat=matrix)
     matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
     matrixGui.logger.setLevel('DEBUG')
