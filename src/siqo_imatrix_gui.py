@@ -37,15 +37,15 @@ _PADY           =  5
 #------------------------------------------------------------------------------
 
 #==============================================================================
-# Class InfoMarixGui
+# Class InfoMatrixGui
 #------------------------------------------------------------------------------
-class InfoMarixGui(ttk.Frame):
+class InfoMatrixGui(ttk.Frame):
 
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, name, container, dat:InfoMatrix, **kwargs):
-        "Call constructor of InfoMarixGui and initialise it for respective data"
+        "Call constructor of InfoMatrixGui and initialise it for respective data"
 
         self.logger = SiqoLogger(name, level='DEBUG')
         self.logger.audit(f'{name}.init:')
@@ -861,14 +861,14 @@ class InfoMarixGui(ttk.Frame):
 #==============================================================================
 #   Inicializacia kniznice
 #------------------------------------------------------------------------------
-print(f'SIQO InfoMarixGui library ver {_VER}')
+print(f'SIQO InfoMatrixGui library ver {_VER}')
 
 if __name__ == '__main__':
 
     from   siqo_imatrix           import InfoMatrix
 
     #--------------------------------------------------------------------------
-    # Test of the InfoMarixGui class
+    # Test of the InfoMatrixGui class
     #--------------------------------------------------------------------------
     win = tk.Tk()
     win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
@@ -888,7 +888,7 @@ if __name__ == '__main__':
     matrix.logger.frameDepth = 2
     print(f'logger.frameDepth = {matrix.logger.frameDepth}')
 
-    matrix.logger.info('Test of InfoMarixGui class')
+    matrix.logger.info('Test of InfoMatrixGui class')
 
     matrix.setIpType('ipTest')
     matrix.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
@@ -900,13 +900,13 @@ if __name__ == '__main__':
     print(matrix.info(full=False)['msg'])
 
 
-    matrixGui = InfoMarixGui(name='Test of InfoModelGui class', container=win, dat=matrix)
+    matrixGui = InfoMatrixGui(name='Test of InfoModelGui class', container=win, dat=matrix)
     matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
     matrixGui.logger.setLevel('DEBUG')
     win.mainloop()
 
-    matrixGui.logger.info('Stop of InfoMarixGui test')
+    matrixGui.logger.info('Stop of InfoMatrixGui test')
 
 #==============================================================================
 #                              END OF FILE

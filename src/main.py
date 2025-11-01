@@ -1,11 +1,11 @@
 #==============================================================================
 #  IField: main file
 #------------------------------------------------------------------------------
-from   siqolib.logger          import Siqologger
+import tkinter                  as tk
 
-from   inf_gui                  import IFieldGui
-#from   siqo_ifield              import InfoField, _LIN, _LOG
+from   siqolib.logger           import SiqoLogger
 from   siqo_imatrix             import InfoMatrix
+from   siqo_imatrix_gui         import InfoMatrixGui
 
 #==============================================================================
 # package's constants
@@ -22,28 +22,43 @@ _VALS_MAX  = 100000
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
 
-    logger = Siqologger('IField', debug=3)
-    self.logger.I('Main loop')
+    logger = SiqoLogger(name='IField', level='INFO')
+    logger.frameDepth = 2
+    print(f'logger.frameDepth = {logger.frameDepth}')
 
-#    dat = InfoMatrix(logger, 'Test field')
+    #--------------------------------------------------------------------------
+    # Test of the InfoMatrixGui class
+    #--------------------------------------------------------------------------
+    win = tk.Tk()
+    win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
+    win.title('Test of InfoModelGui class')
+    #win.maxsize(width=1200, height=800)
+    win.minsize(width=600, height=300)
+    win.config(highlightbackground = "green", highlightcolor= "green")
 
-#    dat.gener(count=200, offMin=0.1, offMax=20, dim=2, spread=_LIN)
+    #--------------------------------------------------------------------------
+    # Zaciatok testu
+    #--------------------------------------------------------------------------
+    matrix = InfoMatrix('Test field')
 
-#    print(dat)
-#    dat = InfoField.gener(logger, 'Test field', count=200, offMin=0.0, offMax=20, dim=1, spread=_LIN)
-#    dat.extend(count=200, offMin=0.1, offMax=20, spread=_LIN)
-#    print(dat)
+    logger.setLevel('INFO')
+    logger.info('Test of InfoMatrixGui class')
 
-#    dat.cut = [-1, -1, -1]
-#    dat.rndBit(0.5)
+    matrix.setIpType('ipTest')
+    matrix.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
+    matrix.init(cnts={'l':100, 'e':50})
 
+    logger.setLevel('DEBUG')
 
-    # Vytvorim GUI
-    self.logger.setDepth(3)
-    gui = IFieldGui(logger, name='IField GUI')
-    gui.mainloop()
+    matrix.applyMatrixMethod(methodKey='Real constant', valueKey='s', params={'const': 0.0})
+    print(matrix.info(full=False)['msg'])
 
-    self.logger.O('Main end')
+    matrixGui = InfoMatrixGui(name='Test of InfoModelGui class', container=win, dat=matrix)
+    matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
+
+    logger.setLevel('DEBUG')
+    win.mainloop()
+    logger.info('Stop of InfoMatrixGui test')
 
 #==============================================================================
 #                              END OF FILE
