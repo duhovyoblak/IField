@@ -14,7 +14,7 @@ from   siqo_ipoint            import InfoPoint
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-_VER            = '1.0'
+_VER            = '1.1'
 _WIN            = '800x540'
 _DPI            = 100
 
@@ -40,13 +40,12 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         self.logger = SiqoLogger(name)
         self.logger.audit(f'{name}.init: {display}')
 
-        self.name     = name                    # Name of this chart
-        self.display  = display                 # Display options to be edited
+        self.name     = name                       # Name of this chart
+        self.display  = deepcopy(display)          # Display options to be edited
 
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-
         self.origDisplay = deepcopy(self.display)  # Original display options
 
         #----------------------------------------------------------------------
@@ -193,8 +192,6 @@ class InfoMatrixDisplayGui(tk.Toplevel):
     #==========================================================================
     # Show the chart
     #--------------------------------------------------------------------------
-
-    #--------------------------------------------------------------------------
     def ok(self):
         "Parse user inputs into disply options and close the dialog"
 
@@ -264,8 +261,8 @@ if __name__ == '__main__':
 
     display  = {'type'     : '2D'   # Actual type of the chart
                ,'needShow' : False  # Flag to show the chart, True means data changed and need to be shown
-               ,'axeKeys'  : list(im.getAxes().keys()) # List of axes keys
-               ,'axeNames' : list(im.getAxes().values()) # List of axes names
+               ,'axeKeys'  : list(im.getSchemaAxes().keys()) # List of axes keys
+               ,'axeNames' : list(im.getSchemaAxes().values()) # List of axes names
                ,'keyS'     : 'None' # key for methods for value to show
                ,'keyV'     : 'None' # key for value to show
                ,'keyX'     : 'None' # key for Axis X to show

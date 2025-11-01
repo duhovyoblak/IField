@@ -13,7 +13,7 @@ from   siqo_ipoint            import InfoPoint
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-_VER    = '3.03'
+_VER    = '3.2'
 _IND    = '|  '       # Info indentation
 _UPP    = 10          # distance units per period
 
@@ -161,12 +161,6 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Default nastavenie axes a inicializacia
         #----------------------------------------------------------------------
-        for key in InfoPoint.getAxes(self.ipType).keys():
-
-            self._cnts [key] = 5
-            self._origs[key] = 0
-            self._rects[key] = 1
-
         self.init()
 
         #----------------------------------------------------------------------
@@ -316,16 +310,16 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     # Schema axes methods
     #--------------------------------------------------------------------------
-    def getAxes(self) -> dict:
+    def getSchemaAxes(self) -> dict:
         "Returns axes keys and names as dict {key: name}"
 
-        return InfoPoint.getAxes(self.ipType)
+        return InfoPoint.getSchemaAxes(self.ipType)
 
     #--------------------------------------------------------------------------
-    def setAxe(self, key, name):
+    def setSchemaAxe(self, key, name):
         "Add axe key and name"
 
-        InfoPoint.setAxe(self.ipType, key, name)
+        InfoPoint.setSchemaAxe(self.ipType, key, name)
         self.setIpType(self.ipType, force=True)
 
     #--------------------------------------------------------------------------
@@ -355,16 +349,16 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     # Schema vals methods
     #--------------------------------------------------------------------------
-    def getVals(self) -> dict:
+    def getSchemaVals(self) -> dict:
         "Returns values keys and names as dict {key: name}"
 
-        return InfoPoint.getVals(self.ipType)
+        return InfoPoint.getSchemaVals(self.ipType)
 
     #--------------------------------------------------------------------------
-    def setVal(self, key, name):
+    def setSchemaVal(self, key, name):
         "Sets value key and name"
 
-        return InfoPoint.setVal(self.ipType, key, name)
+        return InfoPoint.setSchemaVal(self.ipType, key, name)
 
     #--------------------------------------------------------------------------
     def valIdxByKey(self, key) -> int:
@@ -778,19 +772,34 @@ class InfoMatrix:
         for point in self.points: point.clear(dat=defs)
 
     #--------------------------------------------------------------------------
-    def init(self, defs:dict={} ):
-        """Initialise InfoMatrix structure and set values to defaults."""
+    def init(self, *, cnts:dict=None, origs:dict=None, rects:dict=None ):
+        """Initialise InfoMatrix structure with already set parameters
+           or You can provide new matrix structure parameters"""
 
         if self.ipType is None:
             self.logger.error(f"{self.name}.init: InfoPoint type is not defined, cannot initialise InfoMatrix")
             return
 
-        self.logger.info(f"{self.name}.init: {self._cnts} points of type {self.ipType} on rect {self._rects} from {self._origs} with values {defs}")
+        self.logger.debug(f"{self.name}.init: ")
 
         #----------------------------------------------------------------------
         # Destroy old data
         #----------------------------------------------------------------------
         self.points.clear()                     # Clear all points in the InfoMatrix
+
+        #----------------------------------------------------------------------
+        # Matrix structure parameters
+        #----------------------------------------------------------------------
+        if cnts : self._cnts = cnts
+        if origs: self._origs = origs
+        if rects: self._rects = rects
+
+        for key, cnt in self._cnts.items():
+
+            if key not in self._origs.keys(): self._origs[key] = 0
+            if key not in self._rects.keys(): self._rects[key] = cnt
+
+        self.logger.info(f"{self.name}.init: {self._cnts} points of type {self.ipType} on rect {self._rects} from origins {self._origs}")
 
         #----------------------------------------------------------------------
         # Vypocet diffs
@@ -818,13 +827,15 @@ class InfoMatrix:
             #------------------------------------------------------------------
             # Create new InfoPoint at respective coordinates
             #------------------------------------------------------------------
-            point = InfoPoint(self.ipType, pos=coos, vals=defs)
+            point = InfoPoint(self.ipType, pos=coos)
             self.points.append(point)
 
         #----------------------------------------------------------------------
-        # Final adjustments
+        # Active subset je full matrix
         #----------------------------------------------------------------------
-        self.actChanged = True     # Current sub settings was changed and actSubMatrix needs refresh
+        self.actSubmatrix(actSubIdxs={}, force=True)
+
+        #----------------------------------------------------------------------
         self.logger.info(f"{self.name}.init: Created {len(self.points)} InfoPoints")
 
     #--------------------------------------------------------------------------
@@ -898,7 +909,7 @@ class InfoMatrix:
            params      : Parameters for the method as dict
         """
 
-        self.logger.info(f"{self.name}.applyMatrixMethod: {methodKey}(params={params})")
+        self.logger.info(f"{self.name}.applyMatrixMethod: '{valueKey}' = {methodKey}(params={params})")
 
         #----------------------------------------------------------------------
         # Ziskanie vykonavanej funkcie a parametrov
@@ -1053,8 +1064,8 @@ if __name__ == '__main__':
     input('Press Enter to continue...')
 
 
-    im.setAxe('a', 'Os A')
-    im.setAxe('a', 'Os A')
+    im.setSchemaAxe('a', 'Os A')
+    im.setSchemaAxe('a', 'Os A')
     print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 
@@ -1062,7 +1073,7 @@ if __name__ == '__main__':
     print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 
-    im.setVal('m', 'Hodnota M')
+    im.setSchemaVal('m', 'Hodnota M')
     print(im.info(full=True)['msg'])
 
 

@@ -11,7 +11,7 @@ from   siqolib.logger         import SiqoLogger
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-_VER      = '3.04'
+_VER      = '3.2'
 
 _IND      = '|  '                      # Info indentation
 _F_SCHEMA = 1                          # Format for ipType
@@ -23,9 +23,6 @@ _SCH_VALS = {}                         # Default values for InfoPoint schema
 
 _SCHEMA   = {'ipReal'   :{'axes':_SCH_AXES.copy()
                          ,'vals':_SCH_VALS.copy()
-                         }
-            ,'ipTest'   :{'axes':{'x':'os X', 'y':'os Y', 'z':'os Z'}
-                         ,'vals':{'a':'real Value A', 'b':'real Value B'}
                          }
             }                          # Default built-in Schema for InfoPoint
 
@@ -71,7 +68,7 @@ class InfoPoint:
 
         InfoPoint.checkSchema(ipType)
         InfoPoint._schema[ipType] = {'axes':copy.deepcopy(_SCH_AXES), 'vals':copy.deepcopy(_SCH_VALS)}
-        InfoPoint.logger.info(f"InfoPoint.setAxe: clearSchema ipType '{ipType}'")
+        InfoPoint.logger.info(f"InfoPoint.clearSchema: clearSchema ipType '{ipType}'")
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -158,7 +155,7 @@ class InfoPoint:
     # Axes methods
     #--------------------------------------------------------------------------
     @staticmethod
-    def getAxes(ipType) -> dict:
+    def getSchemaAxes(ipType) -> dict:
         "Returns axes keys and names as dict {key: name} for respective ipType"
 
         InfoPoint.checkSchema(ipType)
@@ -166,18 +163,18 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def delAxe(ipType, key):
+    def delSchemaAxe(ipType, key):
         "Delete axe for respective key in the dict of axes for respective ipType"
 
         InfoPoint.checkSchema(ipType)
         if key in InfoPoint._schema[ipType]['axes'].keys():
             InfoPoint._schema[ipType]['axes'].pop(key)
 
-        InfoPoint.logger.debug(f"InfoPoint.delAxe: key '{key}' was deleted from axes")
+        InfoPoint.logger.debug(f"InfoPoint.delSchemaAxe: key '{key}' was deleted from axes")
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def setAxe(ipType, key, name):
+    def setSchemaAxe(ipType, key, name):
         "Sets axe's key and name for respective ipType. If axe exists already, redefine name."
 
         InfoPoint.checkSchema(ipType)
@@ -185,11 +182,11 @@ class InfoPoint:
         if (key not in InfoPoint._schema[ipType]['axes'].keys()) or (InfoPoint._schema[ipType]['axes'][key] != name):
 
             InfoPoint._schema[ipType]['axes'][key] = name
-            InfoPoint.logger.debug(f"InfoPoint.setAxe: set key '{key}' for axe '{name}'")
+            InfoPoint.logger.debug(f"InfoPoint.setSchemaAxe: set key '{key}' for axe '{name}'")
             return True
 
         else:
-            InfoPoint.logger.debug(f"InfoPoint.setAxe: axe '{name}' for key '{key}' is already defined, no change")
+            InfoPoint.logger.debug(f"InfoPoint.setSchemaAxe: axe '{name}' for key '{key}' is already defined, no change")
             return False
 
     #--------------------------------------------------------------------------
@@ -294,7 +291,7 @@ class InfoPoint:
     # Values methods
     #--------------------------------------------------------------------------
     @staticmethod
-    def getVals(ipType) -> dict:
+    def getSchemaVals(ipType) -> dict:
         "Returns values keys and names as dict {key: name} for respective ipType"
 
         InfoPoint.checkSchema(ipType)
@@ -302,18 +299,18 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def delVal(ipType, key):
+    def delSchemaVal(ipType, key):
         "Delete value for respective key in the dict of values for respective ipType"
 
         InfoPoint.checkSchema(ipType)
         if key in InfoPoint._schema[ipType]['vals'].keys():
             InfoPoint._schema[ipType]['vals'].pop(key)
 
-        InfoPoint.logger.debug(f"InfoPoint.delVal: key '{key}' was deleted from values")
+        InfoPoint.logger.debug(f"InfoPoint.delSchemaVal: key '{key}' was deleted from values")
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def setVal(ipType, key, name):
+    def setSchemaVal(ipType, key, name):
         "Sets value key and name for respective ipType. If value exists already, redefine name."
 
         InfoPoint.checkSchema(ipType)
@@ -321,11 +318,11 @@ class InfoPoint:
         if (key not in InfoPoint._schema[ipType]['vals'].keys()) or (InfoPoint._schema[ipType]['vals'][key] != name):
 
             InfoPoint._schema[ipType]['vals'][key] = name
-            InfoPoint.logger.debug(f"InfoPoint.setVal: set key '{key}' for value '{name}'")
+            InfoPoint.logger.debug(f"InfoPoint.setSchemaVal: set key '{key}' for value '{name}'")
             return True
 
         else:
-            InfoPoint.logger.debug(f"InfoPoint.setVal: value '{name}' for key '{key}' is already defined, no change")
+            InfoPoint.logger.debug(f"InfoPoint.setSchemaVal: value '{name}' for key '{key}' is already defined, no change")
             return False
 
     #--------------------------------------------------------------------------
@@ -540,9 +537,12 @@ class InfoPoint:
     def info(self, indent=0):
         "Creates info about this InfoPoint"
 
-        msg = f"{indent*_IND}{self._ipType:{_F_SCHEMA}}{self._posStr()}: {self._valStr()}"
+        posStr = self._posStr()
+        valStr = self._valStr()
 
-        return {'res':'OK', 'val':self._vals, 'msg':msg}
+        msg = f"{indent*_IND}{self._ipType:{_F_SCHEMA}}{posStr}: {valStr}"
+
+        return {'res':'OK', 'msg':msg, 'vals':self._vals.copy(), 'posStr':posStr, 'valStr':valStr}
 
     #--------------------------------------------------------------------------
     def copy(self):
@@ -643,6 +643,26 @@ class InfoPoint:
     #==========================================================================
     # Dat Value modification
     #--------------------------------------------------------------------------
+    def clear(self, *, vals:dict=None):
+        "Sets all values to default values"
+
+        if (vals is not None) and (len(vals) > 0):
+
+            for key, val in vals.items():
+
+                if key in InfoPoint._schema[self._ipType]['vals'].keys():
+                    self._vals[key] = val
+
+                else:
+                    self.logger.warning(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
+                    return False
+
+        else: self._vals = {}
+
+        self.logger.debug(f"InfoPoint.clear: with vals {vals}")
+        return self
+
+    #--------------------------------------------------------------------------
     def set(self, *, pos=None, vals=None):
         "Sets position and data of this InfoPoint"
 
@@ -679,24 +699,30 @@ class InfoPoint:
         return True
 
     #--------------------------------------------------------------------------
-    def clear(self, *, vals:dict=None):
-        "Sets all values to default values"
+    def setVal(self, key, valStr) -> bool:
+        "Sets value of this InfoPoint for respective key"
 
-        if (vals is not None) and (len(vals) > 0):
+        if key in InfoPoint._schema[self._ipType]['vals'].keys():
 
-            for key, val in vals.items():
+            try:
 
-                if key in InfoPoint._schema[self._ipType]['vals'].keys():
-                    self._vals[key] = val
-
+                if   isinstance(self._vals[key], int    ): self._vals[key] = int(valStr)
+                elif isinstance(self._vals[key], float  ): self._vals[key] = float(valStr)
+                elif isinstance(self._vals[key], complex): self._vals[key] = complex(valStr)
                 else:
-                    self.logger.warning(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
+                    self.logger.info(f"InfoPoint.setVal: Unknown type of value for key '{key}'")
                     return False
 
-        else: self._vals = {}
+            except ValueError as err:
+                self.logger.error(f"InfoPoint.setVal: Setting value '{valStr}' for key '{key}' caused {str(err)}")
+                return False
 
-        self.logger.debug(f"InfoPoint.clear: with vals {vals}")
-        return self
+            self.logger.info(f"InfoPoint.setVal: '{key}'->'{valStr}'")
+            return True
+
+        else:
+            self.logger.warning(f"InfoPoint.setVal: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
+            return False
 
     #==========================================================================
     # Methods returning float for keyed value
@@ -899,10 +925,10 @@ if __name__ == '__main__':
         print('Schema creating')
         print(40*'-')
 
-        InfoPoint.setAxe('ipTest', 'x', 'os X')
-        InfoPoint.setAxe('ipTest', 'y', 'os Y')
-        InfoPoint.setVal('ipTest', 'm', 'hmotnost')
-        InfoPoint.setVal('ipTest', 'v', 'rychlost')
+        InfoPoint.setSchemaAxe('ipTest', 'x', 'os X')
+        InfoPoint.setSchemaAxe('ipTest', 'y', 'os Y')
+        InfoPoint.setSchemaVal('ipTest', 'm', 'hmotnost')
+        InfoPoint.setSchemaVal('ipTest', 'v', 'rychlost')
 
         print('Test of InfoPoint class')
         print('_IND      =', _IND)
@@ -910,8 +936,8 @@ if __name__ == '__main__':
 
         print()
         print('Schema for ipTest')
-        print('axes      =', InfoPoint.getAxes('ipTest'))
-        print('vals      =', InfoPoint.getVals('ipTest'))
+        print('axes      =', InfoPoint.getSchemaAxes('ipTest'))
+        print('vals      =', InfoPoint.getSchemaVals('ipTest'))
 
     if True:
 

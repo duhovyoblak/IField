@@ -14,14 +14,14 @@ import matplotlib.pyplot        as plt
 from   siqolib.logger           import SiqoLogger
 from   siqolib.message          import SiqoMessage, askInt, askReal
 from   siqo_imatrix             import InfoMatrix
-from   siqo_ipoint_gui          import InfoPointGui
+from   siqo_ipoint_gui          import InfoPointGui, InfoPointValsGui
 from   siqo_imatrix_data_gui    import InfoMatrixDataGui
 from   siqo_imatrix_display_gui import InfoMatrixDisplayGui
 
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-_VER            = '2.0'
+_VER            = '2.1'
 _WIN            = '1300x740'
 _DPI            = 100
 
@@ -145,8 +145,8 @@ class InfoMarixGui(ttk.Frame):
     def resetDisplay(self):
         "Reset display options to default values based on matrix data"
 
-        axeKeys  = list(self.dat.getAxes().keys())
-        axeNames = list(self.dat.getAxes().values())
+        axeKeys  = list(self.dat.getSchemaAxes().keys())
+        axeNames = list(self.dat.getSchemaAxes().values())
 
         self.display  = {'type'       : '2D'                                 # Actual type of the chart
                         ,'needShow'   : False                                # Flag to show the chart, True means data changed and need to be shown
@@ -217,7 +217,7 @@ class InfoMarixGui(ttk.Frame):
         lblVal.grid(column=4, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbValName = ttk.Combobox(self.frmDispBar, textvariable=self.varValName, width=_COMBO_WIDTH)
-        self.cbValName['values'] = list(self.dat.getVals().values())
+        self.cbValName['values'] = list(self.dat.getSchemaVals().values())
         self.cbValName['state' ] = 'readonly'
         self.cbValName.bind('<<ComboboxSelected>>', self.viewChanged)
         self.cbValName.grid(column=5, row=0, sticky=tk.E, padx=_PADX, pady=_PADY)
@@ -289,7 +289,7 @@ class InfoMarixGui(ttk.Frame):
 
         self.display['valKey'] = self.dat.valKeyByName(self.display['valName'])
         if not self.display['valKey']:
-            self.logger.warning(f"{self.name}.viewChanged: Value '{self.display['valName']}' not in values {list(self.dat.getVals().values())}, setting to 'None'")
+            self.logger.warning(f"{self.name}.viewChanged: Value '{self.display['valName']}' not in values {list(self.dat.getSchemaVals().values())}, setting to 'None'")
             return
 
         #----------------------------------------------------------------------
@@ -324,8 +324,8 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         for axe, idx in axeFreezeIdxs.items():
 
-            if axe not in self.dat.getAxes():
-                self.logger.warning(f'{self.name}.setSub2D: Axis {axe} not in axes {self.dat.getAxes()}, skipping')
+            if axe not in self.dat.getSchemaAxes():
+                self.logger.warning(f'{self.name}.setSub2D: Axis {axe} not in axes {self.dat.getSchemaAxes()}, skipping')
 
             else:
                 self.sub2D[axe] = idx
@@ -522,31 +522,22 @@ class InfoMarixGui(ttk.Frame):
             #------------------------------------------------------------------
             elif btn == 3: #MouseButton.RIGHT:
 
-                val     = self.actPoint.val(self.display['valName'])
-                valName = self.actPoint.valName(self.display['valName'])
+                self.logger.info(f'{self.name}.onClick: right click for {self.actPoint}')
 
-                self.logger.info(f'{self.name}.onClick: right click for {self.display['valName']}[{valName}] = {val} {type(val)}')
+                tit = f'Nearest point to [{round(y,2)}, {round(x,2)}]'
 
-                #--------------------------------------------------------------
-                # User input based on value type
-                #--------------------------------------------------------------
-                if type(val) in [int, float]:
-
-                   inp = askReal(container=self, title=f'Zadaj hodnotu pre {valName}', prompt=self.display['valName'], initialvalue=val)
-
-                   if inp is None:
-                       self.logger.audit(f'{self.name}.onClick: User input cancelled by user')
-                       return
-
-                   self.actPoint.set(vals={self.display['valName']:inp})
-                   self.logger.audit(f'{self.name}.onClick: Set {self.display['valName']} = {inp} for {self.actPoint}')
+                gui = InfoPointValsGui(name=tit, container=self, point=self.actPoint)
+                gui.grab_set()
+                self.wait_window(gui)
 
                 #--------------------------------------------------------------
-                # Data was changed, so show the chart
+                # Zmeny v hodnotach axes/values
                 #--------------------------------------------------------------
-                self.logger.warning(f'{self.name}.onClick: Data changed, need to show the chart')
-                self.display['needShow'] = True
-                self.showChart()
+                if gui.changed:
+
+                    self.logger.warning(f'{self.name}.onClick: Data changed, need to show the chart')
+                    self.display['needShow'] = True
+                    self.showChart()
 
             #------------------------------------------------------------------
         else:
@@ -623,7 +614,7 @@ class InfoMarixGui(ttk.Frame):
     #--------------------------------------------------------------------------
     def onDataDisplay(self, event=None):
 
-        self.logger.info(f'{self.name}.onDataDisplay:')
+        self.logger.info(f'{self.name}.onDataDisplay: Orig display = {self.display}')
 
         gui = InfoMatrixDisplayGui(name=f'Display options', container=self, display=self.display)
         gui.grab_set()
@@ -634,13 +625,16 @@ class InfoMarixGui(ttk.Frame):
         #----------------------------------------------------------------------
         if (self.display['keyX'] != gui.display['keyX']) or (self.display['keyY'] != gui.display['keyY']) or (self.sub2D != gui.display['sub2D']):
 
-                self.logger.info(f"{self.name}.viewChanged: X:{self.display['keyX']}->{gui.display['keyX']} Y:{self.display['keyY']}->{gui.display['keyY']}, sub2D:{self.sub2D}->{gui.display['sub2D']}")
+                self.logger.info(f"{self.name}.onDataDisplay: X:{self.display['keyX']}->{gui.display['keyX']} Y:{self.display['keyY']}->{gui.display['keyY']}, sub2D:{self.sub2D}->{gui.display['sub2D']}")
 
                 self.display = gui.display.copy()
                 self.sub2D   = gui.display['sub2D'].copy()
 
                 self.updateDisplayBar()
                 self.viewChanged()
+
+        else:
+            self.logger.info(f"{self.name}.onDataDisplay: No change")
 
         #----------------------------------------------------------------------
 
@@ -895,16 +889,21 @@ if __name__ == '__main__':
     print(f'logger.frameDepth = {matrix.logger.frameDepth}')
 
     matrix.logger.info('Test of InfoMarixGui class')
+
     matrix.setIpType('ipTest')
-    print(matrix.info(full=True)['msg'])
+    matrix.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
+    matrix.init(cnts={'l':100, 'e':50})
+
+    matrix.logger.setLevel('DEBUG')
+    matrix.applyMatrixMethod(methodKey='Real constant', valueKey='s', params={'const': 0.0})
+
+    print(matrix.info(full=False)['msg'])
 
 
     matrixGui = InfoMarixGui(name='Test of InfoModelGui class', container=win, dat=matrix)
     matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
-    matrixGui.sub2D = {'z':1}
-#    matrixGui.logger.setLevel('DEBUG')
-
+    matrixGui.logger.setLevel('DEBUG')
     win.mainloop()
 
     matrixGui.logger.info('Stop of InfoMarixGui test')

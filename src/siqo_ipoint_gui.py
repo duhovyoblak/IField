@@ -12,7 +12,7 @@ from   siqo_ipoint            import InfoPoint
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-_VER            = '1.0'
+_VER            = '1.1'
 _WIN            = '800x540'
 _DPI            = 100
 
@@ -25,7 +25,7 @@ _PADY           =  5
 #------------------------------------------------------------------------------
 
 #==============================================================================
-# Class InfoPointGui
+# Class InfoPointGui: Schema editor for InfoPoint
 #------------------------------------------------------------------------------
 class InfoPointGui(tk.Toplevel):
 
@@ -63,12 +63,12 @@ class InfoPointGui(tk.Toplevel):
         # TabAxes
         self.tabAxe = ttk.Frame(notebook)
         notebook.add(self.tabAxe, text="Axes definition")
-        self.showParams(self.tabAxe, 'axes', InfoPoint.getAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
+        self.showParams(self.tabAxe, 'axes', InfoPoint.getSchemaAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
 
         # TabValues
         self.tabVal = ttk.Frame(notebook)
         notebook.add(self.tabVal, text="Values definition")
-        self.showParams(self.tabVal, 'vals', InfoPoint.getVals(self.ipType), lblParam='Value', lblName='Value Name')
+        self.showParams(self.tabVal, 'vals', InfoPoint.getSchemaVals(self.ipType), lblParam='Value', lblName='Value Name')
 
         #----------------------------------------------------------------------
         # Create bottom buttons bar
@@ -166,17 +166,17 @@ class InfoPointGui(tk.Toplevel):
         # Add Axe
         #----------------------------------------------------------------------
         if paramType == 'axes':
-            InfoPoint.setAxe(self.ipType, key, val)
+            InfoPoint.setSchemaAxe(self.ipType, key, val)
             self.logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
-            self.showParams(self.tabAxe, 'axes', InfoPoint.getAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
+            self.showParams(self.tabAxe, 'axes', InfoPoint.getSchemaAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
 
         #----------------------------------------------------------------------
         # Add Value
         #----------------------------------------------------------------------
         elif paramType == 'vals':
-            InfoPoint.setVal(self.ipType, key, val)
+            InfoPoint.setSchemaVal(self.ipType, key, val)
             self.logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
-            self.showParams(self.tabVal, 'vals', InfoPoint.getVals(self.ipType), lblParam='Value', lblName='Value Name')
+            self.showParams(self.tabVal, 'vals', InfoPoint.getSchemaVals(self.ipType), lblParam='Value', lblName='Value Name')
 
         #----------------------------------------------------------------------
         # Unknown parameter type
@@ -194,17 +194,17 @@ class InfoPointGui(tk.Toplevel):
         # Del Axe
         #----------------------------------------------------------------------
         if paramType == 'axes':
-            InfoPoint.delAxe(self.ipType, key)
+            InfoPoint.delSchemaAxe(self.ipType, key)
             self.logger.warning(f'{self.name}.delParam: {paramType}.{key} deleted')
-            self.showParams(self.tabAxe, 'axes', InfoPoint.getAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
+            self.showParams(self.tabAxe, 'axes', InfoPoint.getSchemaAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
 
         #----------------------------------------------------------------------
         # Del Value
         #----------------------------------------------------------------------
         elif paramType == 'vals':
-            InfoPoint.delVal(self.ipType, key)
+            InfoPoint.delSchemaVal(self.ipType, key)
             self.logger.warning(f'{self.name}.delParam: {paramType}.{key} deleted')
-            self.showParams(self.tabVal, 'vals', InfoPoint.getVals(self.ipType), lblParam='Value', lblName='Value Name')
+            self.showParams(self.tabVal, 'vals', InfoPoint.getSchemaVals(self.ipType), lblParam='Value', lblName='Value Name')
 
         #----------------------------------------------------------------------
         # Unknown parameter type
@@ -246,6 +246,7 @@ class InfoPointGui(tk.Toplevel):
                     self.logger.warning(f'{self.name}.onDataSchema: Axes changed from {self.origSchema} to {newSchema}, but user cancelled changes, schema restored')
 
             else:
+                self.changed = False
                 self.logger.info(f'{self.name}.ok: {self.ipType} schema unchanged')
 
         #----------------------------------------------------------------------
@@ -256,6 +257,139 @@ class InfoPointGui(tk.Toplevel):
         "Cancel changes and restore original schema"
 
         InfoPoint.setSchema(self.ipType, self.origSchema)
+        self.changed = False
+        self.logger.info(f'{self.name}.cancel: Changes were cancelled, schema restored')
+
+        self.destroy()
+
+    #--------------------------------------------------------------------------
+
+#==============================================================================
+# Class InfoPointValsGui: Values editor for InfoPoint
+#------------------------------------------------------------------------------
+class InfoPointValsGui(tk.Toplevel):
+
+    #==========================================================================
+    # Constructor & utilities
+    #--------------------------------------------------------------------------
+    def __init__(self, name, container, point:InfoPoint):
+        "Call constructor of InfoPointValsGui and initialise it for respective data"
+
+        self.logger = SiqoLogger(name)
+        self.logger.audit(f'{name}.init:')
+
+        self.name     = name               # Name of this chart
+        self.point    = point              # InfoPoint to work with
+        self.changed  = False              # Flag if values was changed
+
+        #----------------------------------------------------------------------
+        # Internal objects
+        #----------------------------------------------------------------------
+        info = point.info()
+        self.origVals = info['vals']  # Original values pre prikaz Cancel
+
+        #----------------------------------------------------------------------
+        # Initialise original tkInter.Tk
+        #----------------------------------------------------------------------
+        super().__init__(container)
+        self.title(self.name)
+        self.focus_set()
+
+        #----------------------------------------------------------------------
+        # Create Values options frame
+        #----------------------------------------------------------------------
+        frmVals = ttk.Frame(self)
+        frmVals.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
+
+        #----------------------------------------------------------------------
+        # List of value's keys and values
+        #----------------------------------------------------------------------
+        lblVal = ttk.Label(frmVals, text=f"Point Values for {info['msg']}:")
+        lblVal.grid(column=0, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        lblVal = ttk.Label(frmVals, text="Key:")
+        lblVal.grid(column=0, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        lblVal = ttk.Label(frmVals, text="Value:")
+        lblVal.grid(column=1, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+        row = 2
+        for key, val in self.origVals.items():
+
+            lblVal = ttk.Label(frmVals, text=key)
+            lblVal.grid(column=0, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+            ent = ttk.Entry(frmVals)
+            ent.insert(0, str(val))
+            ent.bind("<FocusOut>", lambda event, key=key, entry=ent: self.setParam(key, entry.get()))
+            ent.grid(column=1, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+            row += 1
+
+        #----------------------------------------------------------------------
+        # Create bottom buttons bar
+        #----------------------------------------------------------------------
+        frmBtn = ttk.Frame(self)
+        frmBtn.pack(fill=tk.X, expand=True, side=tk.BOTTOM, anchor=tk.S)
+
+        btnOk = ttk.Button(frmBtn, text="OK", command=self.ok)
+        btnOk.pack(side=tk.RIGHT, padx=_PADX, pady=_PADY)
+
+        btnCancel = ttk.Button(frmBtn, text="Cancel", command=self.cancel)
+        btnCancel.pack(side=tk.RIGHT, padx=_PADX, pady=_PADY)
+
+        #----------------------------------------------------------------------
+        # Bind the close window event
+        #----------------------------------------------------------------------
+        self.protocol("WM_DELETE_WINDOW", self.cancel)
+
+        #----------------------------------------------------------------------
+        # Initialisation
+        #----------------------------------------------------------------------
+        self.logger.audit(f'{name}.init: Done')
+
+    #--------------------------------------------------------------------------
+    def setParam(self, key:str, val:str):
+        "Update value of the InfoPoint"
+
+        self.logger.debug(f'{self.name}.setParam: {key} : {val}')
+        self.point.setVal(key, val)
+
+    #--------------------------------------------------------------------------
+    def ok(self):
+        "Parse user inputs"
+
+        newVals = self.point.info()['vals']
+        self.logger.info(f'{self.name}.ok: New values = {newVals}')
+
+        #----------------------------------------------------------------------
+        # Porovnanie aktualnych hodnot s povodnymi
+        #----------------------------------------------------------------------
+        if newVals != self.origVals:
+
+            if askyesno(title='Vales changed', message=f'Values was changed {self.origVals}->{newVals}. Apply changes?'):
+
+                self.changed = True
+                self.logger.warning(f'{self.name}.ok: Values changed from {self.origVals}->{newVals}')
+
+            else:
+                self.point.set(vals=self.origVals)
+                self.changed = False
+                self.logger.warning(f'{self.name}.ok: Values changed from {self.origVals}->{newVals}, but user cancelled changes, values restored')
+
+        else:
+            self.changed = False
+            self.logger.info(f'{self.name}.ok: values unchanged')
+
+        #----------------------------------------------------------------------
+        self.destroy()
+
+    #--------------------------------------------------------------------------
+    def cancel(self):
+        "Cancel changes and restore original schema"
+
+        self.point.set(vals=self.origVals)
+        self.changed = False
         self.logger.info(f'{self.name}.cancel: Changes were cancelled, schema restored')
 
         self.destroy()
