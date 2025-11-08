@@ -12,7 +12,7 @@ import numpy                    as np
 import matplotlib.pyplot        as plt
 
 from   siqolib.logger           import SiqoLogger
-from   siqolib.message          import SiqoMessage, askInt, askReal
+from   siqolib.message          import SiqoMessage, askInt, askReal, askStr
 from   siqo_imatrix             import InfoMatrix
 from   siqo_ipoint_gui          import InfoPointGui, InfoPointValsGui
 from   siqo_imatrix_data_gui    import InfoMatrixDataGui
@@ -721,7 +721,9 @@ class InfoMatrixGui(ttk.Frame):
 
         for param, entry in params.items():
 
-            newEntry = askReal(container=self, title=f"Parameter of {metKey}", prompt=param, initialvalue=entry)
+            if   isinstance(entry, int  ): newEntry = askInt (container=self, title=f"Parameter of {metKey}", prompt=param, initialvalue=entry)
+            elif isinstance(entry, float): newEntry = askReal(container=self, title=f"Parameter of {metKey}", prompt=param, initialvalue=entry)
+            else                         : newEntry = askStr (container=self, title=f"Parameter of {metKey}", prompt=param, initialvalue=entry)
 
             if newEntry is None:
                 self.logger.info(f"{self.name}.onMethodPlay: {metKey} cancelled by user")

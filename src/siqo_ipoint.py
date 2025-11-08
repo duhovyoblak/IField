@@ -11,7 +11,7 @@ from   siqolib.logger         import SiqoLogger
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-_VER      = '3.2'
+_VER      = '3.2.1'
 
 _IND      = '|  '                      # Info indentation
 _F_SCHEMA = 1                          # Format for ipType
@@ -600,9 +600,9 @@ class InfoPoint:
         "Returns value of this InfoPoint for respective key"
 
         #----------------------------------------------------------------------
-        # Return this InfoPoint for key is None
+        # Return this InfoPoint._vals for key is None
         #----------------------------------------------------------------------
-        if key is None: return self
+        if key is None: return self._vals
 
         #----------------------------------------------------------------------
         # Key check
@@ -620,13 +620,8 @@ class InfoPoint:
             return None
 
     #--------------------------------------------------------------------------
-    def valName(self, key:str=None) -> str:
+    def valName(self, key:str) -> str:
         "Returns value's name of this InfoPoint for respective key"
-
-        #----------------------------------------------------------------------
-        # Return this InfoPoint for key is None
-        #----------------------------------------------------------------------
-        if key is None: return self
 
         #----------------------------------------------------------------------
         # Key check
@@ -646,20 +641,10 @@ class InfoPoint:
     def clear(self, *, vals:dict=None):
         "Sets all values to default values"
 
-        if (vals is not None) and (len(vals) > 0):
+        for keyVal in InfoPoint._schema[self._ipType]['vals'].keys():
+            self._vals[keyVal] = vals.get(keyVal, 0)
 
-            for key, val in vals.items():
-
-                if key in InfoPoint._schema[self._ipType]['vals'].keys():
-                    self._vals[key] = val
-
-                else:
-                    self.logger.warning(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
-                    return False
-
-        else: self._vals = {}
-
-        self.logger.debug(f"InfoPoint.clear: with vals {vals}")
+        self.logger.debug(f"InfoPoint.clear: {self._vals}")
         return self
 
     #--------------------------------------------------------------------------

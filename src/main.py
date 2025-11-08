@@ -46,7 +46,7 @@ if __name__ =='__main__':
 
     matrix.setIpType('ipTest')
     matrix.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
-    matrix.init(cnts={'l':100, 'e':50})
+    matrix.init(cnts={'l':30, 'e':10})
 
     #logger.setLevel('DEBUG')
 

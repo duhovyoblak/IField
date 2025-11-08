@@ -399,6 +399,7 @@ class InfoMatrix:
         methods = InfoPoint.mapMethods()
 
         methods['<Matrix Methods>'] = {'matrixMethod': self.nullMethod, 'pointMethod':None,  'params':{}}
+        methods['Move data'       ] = {'matrixMethod': self.moveData,   'pointMethod':None,  'params':{'axeKey':'x', 'startIdx':0, 'deltaIdx':1}}
 
         return methods
 
@@ -840,7 +841,7 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
 
     #==========================================================================
-    # Methods application
+    # Matrix methods
     #--------------------------------------------------------------------------
     def copyFrom(self, src, *, key=None, tgtSlice=(0,0,0,0), srcFrom=(0,0)) -> 'InfoMatrix':
         "Copy point's values from srcs 2D matrix into tgts 2D matrix"
@@ -897,6 +898,79 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         self.logger.info(f"{self.name}.copyFrom: Copied {i} points")
         return self
+
+    #--------------------------------------------------------------------------
+    def moveByAxe(self, axeKey, startIdx, deltaIdx, defVals={}) -> bool:
+        """Move whole matrix data by deltaIdx from start index in respective axe.
+           Positive deltaIdx moves data to higher indices, negative to lower indices.
+           Data moved out of matrix bounds are lost, new data positions are cleared to default values.
+        """
+        self.logger.debug(f"{self.name}.moveByAxe: From {startIdx} by {deltaIdx} for axe key={axeKey}")
+
+        #----------------------------------------------------------------------
+        # Kontrola existencie osi
+        #----------------------------------------------------------------------
+        if axeKey not in self._cnts.keys():
+            self.logger.error(f"{self.name}.moveByAxe: Axe '{axeKey}' is not in InfoMatrix axes {list(self._cnts.keys())}, change denied")
+            return False
+
+        #----------------------------------------------------------------------
+        # Ziskam poziciu axeKey v liste indexov osi
+        #----------------------------------------------------------------------
+        axePos = self.axeIdxByKey(axeKey)
+
+        #----------------------------------------------------------------------
+        # Ak index zvysujem, iterujem od najvyssieho indexu osi, inak od najnizsieho
+        #----------------------------------------------------------------------
+        if deltaIdx > 0: rng = range(self._cnts[axeKey]-1, startIdx-1, -1)
+        else           : rng = range(startIdx, self._cnts[axeKey])
+
+        #----------------------------------------------------------------------
+        # Prejdem vsetky indexy osi podla urceneho poradia v rng
+        #----------------------------------------------------------------------
+        for axeIdx in rng:
+
+            #------------------------------------------------------------------
+            # Vypocitam index v osi, z ktoreho budem kopirovat data
+            #------------------------------------------------------------------
+            srcIdx = axeIdx - deltaIdx
+            self.logger.info(f"{self.name}.moveByAxe: Moving {axeIdx}<-{srcIdx} for axe key={axeKey}")
+
+            #------------------------------------------------------------------
+            # Ziskam mnozinu pozicii bodov danej osi s indexom axeIdx
+            #------------------------------------------------------------------
+            poss = self._possByAxeIdx(axeKey=axeKey, axeIdx=axeIdx)
+
+            #------------------------------------------------------------------
+            # Prejdem cielove bodoy a skopirujem data zo zdrojovych bodov alebo clear
+            #------------------------------------------------------------------
+            for pos in poss:
+
+                point = self.pointByPos(pos)  # Ziskam bod na danej pozicii
+                idxs  = self._idxsByPos(pos)  # Ziskam indexy pre danu poziciu
+
+                #------------------------------------------------------------------
+                # Ak nie je source index v osi platny, nastavim avlues na defVals
+                #------------------------------------------------------------------
+                if (srcIdx < 0) or (srcIdx >= self._cnts[axeKey]): point.set(vals=defVals)
+                else:
+                    #----------------------------------------------------------
+                    # Ziskam bod na srcIdx pozicii v osi axeKey
+                    #----------------------------------------------------------
+                    idxs[axePos] = srcIdx
+                    srcPoint = self.pointByIdxs(idxs)
+
+                    #----------------------------------------------------------
+                    # Skopirujem data z povodneho bodu do noveho bodu
+                    #----------------------------------------------------------
+                    point.set(vals=srcPoint.val())
+
+            #------------------------------------------------------------------
+            self.logger.info(f"{self.name}.moveByAxe: Moved {axeIdx}<-{srcIdx} for axe key={axeKey}")
+
+        #----------------------------------------------------------------------
+        self.logger.info(f"{self.name}.moveByAxe: Data moved by {deltaIdx} from index {startIdx} for axe key={axeKey}")
+        return True
 
     #==========================================================================
     # Dynamic Methods application
@@ -994,6 +1068,13 @@ class InfoMatrix:
         "Default null method for InfoPoint for keyed value (do nothing)"
 
         self.logger.debug(f"{self.name}.nullMethod: do nothing for key '{valueKey}' with params {params}")
+
+    #--------------------------------------------------------------------------
+    def moveData(self, valueKey:str, params:dict):
+        "Move data in matrix by deltaIdx from startIdx in axeKey"
+
+        self.logger.debug(f"{self.name}.moveData: for key '{valueKey}' with params {params}")
+        self.moveByAxe(axeKey=params['axeKey'], startIdx=params['startIdx'], deltaIdx=params['deltaIdx'])
 
     #--------------------------------------------------------------------------
     def normAbs(self, nods, norm=None):
