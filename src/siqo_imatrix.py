@@ -922,8 +922,8 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Ak index zvysujem, iterujem od najvyssieho indexu osi, inak od najnizsieho
         #----------------------------------------------------------------------
-        if deltaIdx > 0: rng = range(self._cnts[axeKey]-1, startIdx-1, -1)
-        else           : rng = range(startIdx, self._cnts[axeKey])
+        if deltaIdx > 0: rng = range(self._cnts[axeKey]-1, startIdx-1,         -1)
+        else           : rng = range(startIdx + deltaIdx , self._cnts[axeKey],  1)
 
         #----------------------------------------------------------------------
         # Prejdem vsetky indexy osi podla urceneho poradia v rng
@@ -931,13 +931,17 @@ class InfoMatrix:
         for axeIdx in rng:
 
             #------------------------------------------------------------------
+            # Ak je cielovy index mimo rozsah, preskocim ho
+            #------------------------------------------------------------------
+            if (axeIdx < 0) or (axeIdx >= self._cnts[axeKey]): continue
+
+            #------------------------------------------------------------------
             # Vypocitam index v osi, z ktoreho budem kopirovat data
             #------------------------------------------------------------------
             srcIdx = axeIdx - deltaIdx
-            self.logger.info(f"{self.name}.moveByAxe: Moving {axeIdx}<-{srcIdx} for axe key={axeKey}")
 
             #------------------------------------------------------------------
-            # Ziskam mnozinu pozicii bodov danej osi s indexom axeIdx
+            # Ziskam mnozinu pozicii cielovych bodov danej osi s indexom axeIdx
             #------------------------------------------------------------------
             poss = self._possByAxeIdx(axeKey=axeKey, axeIdx=axeIdx)
 
@@ -950,9 +954,12 @@ class InfoMatrix:
                 idxs  = self._idxsByPos(pos)  # Ziskam indexy pre danu poziciu
 
                 #------------------------------------------------------------------
-                # Ak nie je source index v osi platny, nastavim avlues na defVals
+                # Ak som dosiahol zaciatok moved zony, nastavim values na defVals
                 #------------------------------------------------------------------
-                if (srcIdx < 0) or (srcIdx >= self._cnts[axeKey]): point.set(vals=defVals)
+                if ((deltaIdx > 0) and (srcIdx < startIdx)) or ((deltaIdx < 0) and (srcIdx >= self._cnts[axeKey])):
+
+                    point.clear(vals=defVals)
+
                 else:
                     #----------------------------------------------------------
                     # Ziskam bod na srcIdx pozicii v osi axeKey
@@ -966,10 +973,10 @@ class InfoMatrix:
                     point.set(vals=srcPoint.val())
 
             #------------------------------------------------------------------
-            self.logger.info(f"{self.name}.moveByAxe: Moved {axeIdx}<-{srcIdx} for axe key={axeKey}")
+            self.logger.debug(f"{self.name}.moveByAxe: {len(poss)}:{axeIdx}<-{srcIdx}")
 
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.moveByAxe: Data moved by {deltaIdx} from index {startIdx} for axe key={axeKey}")
+        self.logger.info(f"{self.name}.moveByAxe: From {startIdx} by {deltaIdx} for axe key={axeKey}")
         return True
 
     #==========================================================================
