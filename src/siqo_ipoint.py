@@ -597,7 +597,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     def val(self, key:str=None):
-        "Returns value of this InfoPoint for respective key"
+        "Returns value of this InfoPoint for respective key. If key is None, returns all values as dict. If key not found, returns None"
 
         #----------------------------------------------------------------------
         # Return this InfoPoint._vals for key is None

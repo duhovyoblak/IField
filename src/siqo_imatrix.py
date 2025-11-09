@@ -347,6 +347,12 @@ class InfoMatrix:
         return InfoPoint.axeKeyByName(self.ipType, name)
 
     #--------------------------------------------------------------------------
+    def axeCntByKey(self, key) -> int:
+        "Returns axe's count of points for respective key, othewise None"
+
+        return self._cnts.get(key, None)
+
+    #--------------------------------------------------------------------------
     # Schema vals methods
     #--------------------------------------------------------------------------
     def getSchemaVals(self) -> dict:
@@ -583,7 +589,7 @@ class InfoMatrix:
     # InfoPoint retrieval
     #--------------------------------------------------------------------------
     def pointByPos(self, pos:int) -> InfoPoint:
-        "Returns InfoPoint in field for respective position"
+        "Returns InfoPoint in field for respective position. If such point does not exist, returns None"
 
         if (pos<0) or (pos>=len(self.points)):
             self.logger.error(f"{self.name}.pointByPos: pos={pos} is out of range <0,{len(self.points)-1}>")
@@ -594,7 +600,7 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def pointByIdxs(self, idxs:list) -> InfoPoint:
-        "Returns InfoPoint in field at respective indexes"
+        "Returns InfoPoint in field at respective indexes. If such points do not exist, returns None"
 
         pos = self._posByIdxs(idxs)
         return self.pointByPos(pos)
@@ -922,8 +928,8 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Ak index zvysujem, iterujem od najvyssieho indexu osi, inak od najnizsieho
         #----------------------------------------------------------------------
-        if deltaIdx > 0: rng = range(self._cnts[axeKey]-1, startIdx-1,         -1)
-        else           : rng = range(startIdx + deltaIdx , self._cnts[axeKey],  1)
+        if deltaIdx > 0: rng = range(self.axeCntByKey(axeKey)-1, startIdx-1,         -1)
+        else           : rng = range(startIdx + deltaIdx , self.axeCntByKey(axeKey),  1)
 
         #----------------------------------------------------------------------
         # Prejdem vsetky indexy osi podla urceneho poradia v rng
@@ -933,7 +939,7 @@ class InfoMatrix:
             #------------------------------------------------------------------
             # Ak je cielovy index mimo rozsah, preskocim ho
             #------------------------------------------------------------------
-            if (axeIdx < 0) or (axeIdx >= self._cnts[axeKey]): continue
+            if (axeIdx < 0) or (axeIdx >= self.axeCntByKey(axeKey)): continue
 
             #------------------------------------------------------------------
             # Vypocitam index v osi, z ktoreho budem kopirovat data
@@ -956,7 +962,7 @@ class InfoMatrix:
                 #------------------------------------------------------------------
                 # Ak som dosiahol zaciatok moved zony, nastavim values na defVals
                 #------------------------------------------------------------------
-                if ((deltaIdx > 0) and (srcIdx < startIdx)) or ((deltaIdx < 0) and (srcIdx >= self._cnts[axeKey])):
+                if ((deltaIdx > 0) and (srcIdx < startIdx)) or ((deltaIdx < 0) and (srcIdx >= self.axeCntByKey(axeKey))):
 
                     point.clear(vals=defVals)
 
