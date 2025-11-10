@@ -4,7 +4,7 @@
 import tkinter                  as tk
 
 from   siqolib.logger           import SiqoLogger
-from   siqo_imatrix_gui         import InfoMatrixGui
+from   siqo_imatrix_gui         import IFieldMatrixGui
 from   ifield_imatrix           import InfoFieldMatrix
 
 #==============================================================================
@@ -27,7 +27,7 @@ if __name__ =='__main__':
     print(f'logger.frameDepth = {logger.frameDepth}')
 
     #--------------------------------------------------------------------------
-    # Test of the InfoMatrixGui class
+    # Test of the IFieldMatrixGui class
     #--------------------------------------------------------------------------
     win = tk.Tk()
     win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
@@ -42,23 +42,16 @@ if __name__ =='__main__':
     matrix = InfoFieldMatrix('IField')
 
     logger.setLevel('INFO')
-    logger.info('Test of InfoMatrixGui class')
+    logger.info('Test of IFieldMatrixGui class')
 
-    matrix.setIpType('ipTest')
-    matrix.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
-    matrix.init(cnts={'l':30, 'e':10})
-
-    #logger.setLevel('DEBUG')
-
-    matrix.applyMatrixMethod(methodKey='Real constant', valueKey='s', params={'const': 0.0})
     print(matrix.info(full=False)['msg'])
 
-    matrixGui = InfoMatrixGui(container=win, dat=matrix)
+    matrixGui = IFieldMatrixGui(container=win, dat=matrix)
     matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
     logger.setLevel('INFO')
     win.mainloop()
-    logger.info('Stop of InfoMatrixGui test')
+    logger.info('Stop of IFieldMatrixGui test')
 
 #==============================================================================
 #                              END OF FILE

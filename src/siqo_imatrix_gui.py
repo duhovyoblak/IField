@@ -128,6 +128,16 @@ class InfoMatrixGui(ttk.Frame):
         self.updateDisplayBar()
 
         #----------------------------------------------------------------------
+        # Create and show child frame
+        #----------------------------------------------------------------------
+        self.frmChild = ttk.Frame(self)
+        self.frmChild.configure(borderwidth=2, relief="solid")
+        self.frmChild.pack(fill=tk.Y, expand=False, side=tk.RIGHT, anchor=tk.N)
+
+        self.showChildFrame()
+        self.updateChildFrame()
+
+        #----------------------------------------------------------------------
         # Create a figure with the navigator bar and bind it to mouse events
         #----------------------------------------------------------------------
         self.figure = plt.figure(figsize=(self.w*_FIG_W/100, self.h*_FIG_H/100), dpi=_DPI)
@@ -170,7 +180,7 @@ class InfoMatrixGui(ttk.Frame):
 
     #--------------------------------------------------------------------------
     def showDisplayBar(self):
-        "Show diplay options bar"
+        "Show diplay options bar with axis selectors and method selectors"
 
         self.frmDispBar.columnconfigure(0, weight=1)
         self.frmDispBar.columnconfigure(1, weight=1)
@@ -254,13 +264,26 @@ class InfoMatrixGui(ttk.Frame):
 
         #----------------------------------------------------------------------
 
-
     #--------------------------------------------------------------------------
     def updateDisplayBar(self):
+        "Update display bar according to current display options"
 
         self.lblX['text'] = self.dat.axeNameByKey(self.display['keyX']) if self.display['keyX'] != 'None' else 'None'
         self.lblY['text'] = self.dat.axeNameByKey(self.display['keyY']) if self.display['keyY'] != 'None' else 'None'
 
+
+    #--------------------------------------------------------------------------
+    def showChildFrame(self):
+        "Show frame dedicated to child classes"
+
+        lbl = ttk.Label(self.frmChild, text="Child frame not implemented", foreground="red")
+        lbl.pack(fill=tk.X, expand=True, side=tk.TOP, anchor=tk.N)
+
+    #--------------------------------------------------------------------------
+    def updateChildFrame(self):
+        "Update frame dedicated to child classes. This method is called in self.viewChanged()"
+
+        pass
 
     #--------------------------------------------------------------------------
     def dims(self):
@@ -294,8 +317,12 @@ class InfoMatrixGui(ttk.Frame):
             self.logger.warning(f"{self.name}.viewChanged: Value '{self.display['valName']}' not in values {list(self.dat.getSchemaVals().values())}, setting to 'None'")
             return
 
-        #----------------------------------------------------------------------
         self.logger.debug(f"{self.name}.viewChanged: Show {self.display['showMethod']}({self.display['valName']}[{self.display['valKey']}]) in X:{self.display['keyX']}, Y:{self.display['keyY']}")
+
+        #----------------------------------------------------------------------
+        # Check for Changes in child frame
+        #----------------------------------------------------------------------
+        self.updateChildFrame()
 
         #----------------------------------------------------------------------
         # Changes in any key or force required data refresh

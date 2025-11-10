@@ -154,7 +154,7 @@ class InfoMatrixDataGui(tk.Toplevel):
 
             try:
                 val = int(val)
-                self.matrix.axeCntByKey(key) = val
+                val = self.matrix.axeCntByKey(key)
                 self.logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
 
             except ValueError:

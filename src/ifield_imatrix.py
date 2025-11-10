@@ -49,6 +49,11 @@ class InfoFieldMatrix(InfoMatrix):
         #----------------------------------------------------------------------
         # Inicializacia
         #----------------------------------------------------------------------
+        self.setIpType('ipTest')
+        self.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
+        self.init(cnts={'l':30, 'e':10})
+
+        self.applyMatrixMethod(methodKey='Real constant', valueKey='s', params={'const': 0.0})
 
         #----------------------------------------------------------------------
         self.logger.info(f"{self.name}.constructor: done")

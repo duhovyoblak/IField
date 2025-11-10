@@ -36,7 +36,7 @@ class InfoModelGui:
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, parent):
-        "Call constructor of InfoMatrixGui and initialise it for respective data"
+        "Call constructor of IFieldMatrixGui and initialise it for respective data"
 
         journal.I('InfoModelGui.init:')
 
