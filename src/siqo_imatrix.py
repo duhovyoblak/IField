@@ -97,6 +97,8 @@ class InfoMatrix:
         self._rects     = {}       # Lenghts of the InfoMatrix for respective axes in lambda units
         self._diffs     = {}       # Distance between two points in respective axes in lambda units
 
+        self._lastPos   = None     # Last position used in pointByPos for faster access
+
         #----------------------------------------------------------------------
         # Inicializacia
         #----------------------------------------------------------------------
@@ -588,8 +590,20 @@ class InfoMatrix:
     #==========================================================================
     # InfoPoint retrieval
     #--------------------------------------------------------------------------
+    def lastPosIdxs(self) -> list:
+        "Returns indices of the InfoPoint for last position used in pointByPos"
+
+        if self._lastPos is None:
+            self.logger.error(f"{self.name}.lastPosIdxs: No lastPos stored")
+            return None
+
+        return self._idxsByPos(self._lastPos)
+
+    #--------------------------------------------------------------------------
     def pointByPos(self, pos:int) -> InfoPoint:
         "Returns InfoPoint in field for respective position. If such point does not exist, returns None"
+
+        self._lastPos = pos
 
         if (pos<0) or (pos>=len(self.points)):
             self.logger.error(f"{self.name}.pointByPos: pos={pos} is out of range <0,{len(self.points)-1}>")
@@ -803,7 +817,7 @@ class InfoMatrix:
         for key, cnt in self._cnts.items():
 
             if key not in self._origs.keys(): self._origs[key] = 0
-            if key not in self._rects.keys(): self._rects[key] = cnt
+            if key not in self._rects.keys(): self._rects[key] = cnt-1
 
         self.logger.info(f"{self.name}.init: {self._cnts} points of type {self.ipType} on rect {self._rects} from origins {self._origs}")
 

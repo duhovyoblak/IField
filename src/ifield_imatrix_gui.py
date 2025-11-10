@@ -144,6 +144,39 @@ class IFieldMatrixGui(InfoMatrixGui):
         self.logger.info(f'{self.name}.onRule: Neighbors\' rule changed to {self.dat.rule}')
 
     #--------------------------------------------------------------------------
+    def onClickLeft(self, x, y):
+        "Print information about mouse-given position"
+
+        self.logger.info(f'{self.name}.onClick: left click for {self.actPoint}')
+
+        valueKey=self.display['valKey']
+        actState = self.actPoint.val(valueKey)
+
+        text = [f'Information about nearest point to [{round(y,2)}, {round(x,2)}] for value "{valueKey}"']
+        text.append('')
+
+        idxs = self.dat.lastPosIdxs()
+        text.append(f"{str(self.actPoint)} at {idxs}")
+        text.append('')
+
+        leftStates, rightStates = self.dat.getNeighStates(valueKey=valueKey, l=idxs[0], e=idxs[1])
+        text.append(f'Left states  : {leftStates}')
+        text.append(f'Right states : {rightStates}')
+        text.append('')
+
+        leftState = self.dat.aggStates(leftStates )
+        rightState= self.dat.aggStates(rightStates)
+        text.append(f'Aggregated left  state : {leftState}')
+        text.append(f'Aggregated right state : {rightState}')
+        text.append('')
+
+        newState = self.dat.aggNeighbors(leftState, actState, rightState)
+        text.append(f'New state after applying neighbors\' rule : {newState}')
+
+
+        msgWin = SiqoMessage(name=self.dat.name, text=text, wpix=800)
+
+    #--------------------------------------------------------------------------
 
 
 #==============================================================================

@@ -45,7 +45,7 @@ class InfoFieldMatrix(InfoMatrix):
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
-        self.l2e     = 0                           # Pocet posunu epochy pre jeden krok na osi Lambda = 1 / rychlost informacie
+        self.l2e     = 1                           # Pocet posunu epochy pre jeden krok na osi Lambda = 1 / rychlost informacie
         self.maxL    = 10                          # Maximalny pocet krokov na osi Lambda pri ziskani zoznamu stavov susednych bodov
 
         self.sType   = 'bool'                      # Typ stavu
@@ -54,7 +54,7 @@ class InfoFieldMatrix(InfoMatrix):
                        ,'complex'                  # Typ stavu je komplexne cislo, hodnoty su spocitatelne, posun na osi Lambda meni fazu
                        )                           # Podoporovane typy stavov
 
-        self.sAgg    = 'max'                       # Spôsob agregácie stavov do jednej hodnoty
+        self.sAgg    = 'nearest'                   # Spôsob agregácie stavov do jednej hodnoty
         self.sAggs   = ('nearest'                  # Prva nenulova/notFalse hodnota v zozname
                        ,'min'                      # Minimalna hodnota v zozname, pre bool funguje ako AND
                        ,'max'                      # Maximalna hodnota v zozname, pre bool funguje ako OR
@@ -87,22 +87,7 @@ class InfoFieldMatrix(InfoMatrix):
 
         methods = super().mapMethods()
 
-        methods['IField epoch step'] = {'matrixMethod': self.epochStep, 'pointMethod':None,
-                                        'params':{'lMax':10, 'eMax':10, 'eL':0, 'sType':'bool', 'sAggreg':'max', 'rule':'and'}}
-
-        '''
-        Agregovanie stavov do jednej hodnoty stavu:
-        sAggreg:
-            'nearest'     - hodnota stavu najblizsieho bodu v zozname
-            'max'         - maximalna hodnota stavu v zozname
-            'min'         - minimalna hodnota stavu v zozname
-            'sum'         - sucet hodnot stavov v zozname
-
-        Agregovanie stavov susednych bodov do jednej hodnoty statusu:
-        rule:
-            'and'         - ak su oba stavy rovnake, nastavi sa tato hodnota
-
-        '''
+        methods['IField epoch step'] = {'matrixMethod': self.epochStep, 'pointMethod':None, 'params':{}}
 
         return methods
 
@@ -118,12 +103,6 @@ class InfoFieldMatrix(InfoMatrix):
         #----------------------------------------------------------------------
         # Kontrola parametrov
         #----------------------------------------------------------------------
-        lMax = params.get('lMax',   None)
-        eMax = params.get('eMax',   None)
-        eL   = params.get('eL',     None)
-        sType= params.get('sType',  None)
-        sAgr = params.get('sAgr',   None)
-        rule = params.get('rule',   None)
 
         #----------------------------------------------------------------------
         # Posuniem celu maticu o jeden epoch krok
@@ -131,43 +110,28 @@ class InfoFieldMatrix(InfoMatrix):
         self.moveByAxe(axeKey='e', deltaIdx=1, startIdx=0)
 
         #----------------------------------------------------------------------
-        # Ziskam mnozinu pozicii cielovych bodov danej osi s indexom axeIdx
-        #----------------------------------------------------------------------
-        poss = self._possByAxeIdx(axeKey='e', axeIdx=0)
-
-        #----------------------------------------------------------------------
         # Prejdem body l in <1, cnt-2> v epoch=0 a nastavim im hodnoty podla pravidla a susednych bodov
         #----------------------------------------------------------------------
         for l in range( 1, self.axeCntByKey('l')-1 ):
 
-            actIdxs  = {'l':l, 'e':0}
-            actPoint = self.pointByIdxs(actIdxs)
+            actPoint = self.pointByIdxs([l, 0])
             actState = actPoint.val(valueKey)
 
             #--------------------------------------------------------------
             # Ziskam zoznamy stavov susednych bodov zlava a sprava +- lMax
             #--------------------------------------------------------------
-            leftStates  = []
-            rightStates = []
-
-            for dL in range(1, lMax+1):
-
-                leftPoint  = self.pointByIdxs( {'l':l - dL, 'e':0} )
-                rightPoint = self.pointByIdxs( {'l':l + dL, 'e':0} )
-
-                if leftPoint  is not None: leftPoint. append( leftPoint .val(valueKey) )
-                if rightPoint is not None: rightPoint.append( rightPoint.val(valueKey) )
+            leftStates, rightStates = self.getNeighStates(valueKey, l)
 
             #--------------------------------------------------------------
             # Agregujem zoznamy stavov do jednej hodnoty stavu
             #--------------------------------------------------------------
-            leftState = self.aggState(leftStates, sType, sAgr)
-            rightState= self.aggState(rightStates,sType, sAgr)
+            leftState = self.aggStates(leftStates )
+            rightState= self.aggStates(rightStates)
 
             #--------------------------------------------------------------
             # Agregujem stavy susednych bodov podla pravidla
             #--------------------------------------------------------------
-            newState = self.aggNeighbors(actState, leftState, rightState, rule)
+            newState = self.aggNeighbors(leftState, actState, rightState)
 
             #--------------------------------------------------------------
             # Nastavim novu hodnotu stavu spracovavaneho bodu
@@ -178,53 +142,96 @@ class InfoFieldMatrix(InfoMatrix):
         self.logger.debug(f"{self.name}.epochStep: done")
 
     #--------------------------------------------------------------------------
-    def aggNeighbors(self, actState, leftState, rightState, rule):
+    def getNeighStates(self, valueKey:str, l:int, e:int=0):
+        "Returns list of states of neighbor points along given axis at given position"
+
+        self.logger.debug(f"{self.name}.getNeighStates: For {valueKey} at [{l}, {e}]")
+
+        cntLambda = self.axeCntByKey('l')
+        cntEpoch  = self.axeCntByKey('e')
+
+        leftStates  = []
+        rightStates = []
+
+        #----------------------------------------------------------------------
+        # Ziskam zoznamy stavov susednych bodov zlava a sprava +- lMax
+        #----------------------------------------------------------------------
+        for dL in range(1, self.maxL+1):
+
+            #------------------------------------------------------------------
+            # Ziskam hodnotu Epoch podla dL a l2e
+            #------------------------------------------------------------------
+            eH = e + (dL * self.l2e)
+            if eH >= cntEpoch: break
+
+            #------------------------------------------------------------------
+            if (l-dL) > 0:
+                leftPoint  = self.pointByIdxs( [l-dL, eH] )
+                leftStates.append( leftPoint .val(valueKey) )
+
+            if (l+dL) < cntLambda:
+                rightPoint = self.pointByIdxs( [l+dL, eH] )
+                rightStates.append( rightPoint.val(valueKey) )
+
+        #----------------------------------------------------------------------
+        self.logger.debug(f"{self.name}.getNeighStates: leftStates={leftStates}, rightStates={rightStates}")
+        return leftStates, rightStates
+
+    #--------------------------------------------------------------------------
+    def aggNeighbors(self, leftState, actState, rightState):
         "Aggregates states of neighors into single state according to given rule"
 
-        self.logger.debug(f"{self.name}.aggNeighbors: actState={actState}, leftState={leftState}, rightState={rightState}, rule={rule}")
+        self.logger.debug(f"{self.name}.aggNeighbors: leftState={leftState}, actState={actState}, rightState={rightState}, rule={self.rule}")
         aggState = actState
 
-        if rule == 'and':
+        if self.rule == 'and':
 
             if (leftState == rightState): aggState = leftState
 
 
-        else: self.logger.warning(f"{self.name}.aggNeighbors: Unknown rule '{rule}', returning actState")
+        else: self.logger.warning(f"{self.name}.aggNeighbors: Unknown rule '{self.rule}', returning actState")
 
         #----------------------------------------------------------------------
-        self.logger.debug(f"{self.name}.aggNeighbors: {aggState}<-({actState},{leftState},{rightState})")
+        self.logger.debug(f"{self.name}.aggNeighbors: {aggState}<-({leftState},{actState},{rightState})")
         return aggState
 
     #--------------------------------------------------------------------------
-    def aggState(self, states:list, sType:str, sAgr:str):
+    def aggStates(self, states:list):
         "Aggregates list of states into single state according to given type and aggregation method"
 
-        self.logger.debug(f"{self.name}.aggState: states={states}, sType={sType}, sAgr={sAgr}")
+        self.logger.debug(f"{self.name}.aggStates: states={states}, sType={self.sType}, sAgg={self.sAgg}")
         aggState = None
 
         #----------------------------------------------------------------------
         # Ak je zoznam stavov prazdny, vratim None
         #----------------------------------------------------------------------
         if len(states) == 0:
-            self.logger.warning(f"{self.name}.aggState: empty states list, returning None")
+            self.logger.warning(f"{self.name}.aggStates: empty states list, returning None")
             return aggState
 
         #----------------------------------------------------------------------
         # Agregujem podla zadaneho pravidla
         #----------------------------------------------------------------------
-        if   sAgr == 'nearest': aggState = states[0]
-        elif sAgr == 'min'    : aggState = min(states)
-        elif sAgr == 'max'    : aggState = max(states)
-        elif sAgr == 'sum'    : aggState = sum(states)
+        if   self.sAgg == 'nearest':
+
+            for state in states:
+
+                if state:
+                    aggState = state
+                    break
+
+        elif self.sAgg == 'min'    : aggState = min(states)
+        elif self.sAgg == 'max'    : aggState = max(states)
+        elif self.sAgg == 'sum'    : aggState = sum(states)
 
         #----------------------------------------------------------------------
         # Korekcia podla typu stavu
         #----------------------------------------------------------------------
-        if   sType == 'bool'  : aggState = bool(aggState)
-        elif sType == 'int'   : aggState = int (aggState)
+        if   self.sType == 'bool'  : aggState = bool(aggState)
+        elif self.sType == 'int'   : aggState = int (aggState)
 
         #----------------------------------------------------------------------
-        self.logger.debug(f"{self.name}.aggState: {aggState}<-{states}")
+        self.logger.debug(f"{self.name}.aggStates: {aggState}<-{states}")
         return aggState
 
     #==========================================================================

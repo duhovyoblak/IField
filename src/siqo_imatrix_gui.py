@@ -277,7 +277,7 @@ class InfoMatrixGui(ttk.Frame):
         "Show frame dedicated to child classes"
 
         pass
-    
+
     #--------------------------------------------------------------------------
     def updateChildFrame(self):
         "Update frame dedicated to child classes. This method is called in self.viewChanged()"
@@ -535,37 +535,10 @@ class InfoMatrixGui(ttk.Frame):
             self.logger.debug(f'{self.name}.onClick: Actual point = {self.actPoint}@{id(self.actPoint)}')
 
             #------------------------------------------------------------------
-            # Left button
+            # Mouse button action
             #------------------------------------------------------------------
-            if btn == 1: #MouseButton.LEFT:
-
-               self.logger.info(f'{self.name}.onClick: left click for {self.actPoint}')
-
-               tit = f'Nearest point to [{round(y,2)}, {round(x,2)}]'
-               mes = str(self.actPoint)
-               showinfo(title=tit, message=mes)
-
-            #------------------------------------------------------------------
-            # Right button - edit value menu
-            #------------------------------------------------------------------
-            elif btn == 3: #MouseButton.RIGHT:
-
-                self.logger.info(f'{self.name}.onClick: right click for {self.actPoint}')
-
-                tit = f'Nearest point to [{round(y,2)}, {round(x,2)}]'
-
-                gui = InfoPointValsGui(name=tit, container=self, point=self.actPoint)
-                gui.grab_set()
-                self.wait_window(gui)
-
-                #--------------------------------------------------------------
-                # Zmeny v hodnotach axes/values
-                #--------------------------------------------------------------
-                if gui.changed:
-
-                    self.logger.warning(f'{self.name}.onClick: Data changed, need to show the chart')
-                    self.display['needShow'] = True
-                    self.showChart()
+            if   btn == 1: self.onClickLeft (x, y)  # MouseButton.LEFT
+            elif btn == 3: self.onClickRight(x, y)  # MouseButton.RIGHT
 
             #------------------------------------------------------------------
         else:
@@ -574,6 +547,37 @@ class InfoMatrixGui(ttk.Frame):
 
         #----------------------------------------------------------------------
         self.logger.debug(f'{self.name}.onClick: Done')
+
+    #--------------------------------------------------------------------------
+    def onClickLeft(self, x, y):
+        "Print information about mouse-given position"
+
+        self.logger.info(f'{self.name}.onClick: left click for {self.actPoint}')
+
+        tit = f'Nearest point to [{round(y,2)}, {round(x,2)}]'
+        mes = str(self.actPoint)
+        showinfo(title=tit, message=mes)
+
+    #--------------------------------------------------------------------------
+    def onClickRight(self, x, y):
+        "Set value of the point on mouse-given position"
+
+        self.logger.info(f'{self.name}.onClick: right click for {self.actPoint}')
+
+        tit = f'Nearest point to [{round(y,2)}, {round(x,2)}]'
+
+        gui = InfoPointValsGui(name=tit, container=self, point=self.actPoint)
+        gui.grab_set()
+        self.wait_window(gui)
+
+        #----------------------------------------------------------------------
+        # Zmeny v hodnotach axes/values
+        #----------------------------------------------------------------------
+        if gui.changed:
+
+            self.logger.warning(f'{self.name}.onClick: Data changed, need to show the chart')
+            self.display['needShow'] = True
+            self.showChart()
 
     #==========================================================================
     # File menu
