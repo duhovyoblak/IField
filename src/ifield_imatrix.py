@@ -45,6 +45,27 @@ class InfoFieldMatrix(InfoMatrix):
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
+        self.l2e     = 0                           # Pocet posunu epochy pre jeden krok na osi Lambda = 1 / rychlost informacie
+        self.maxL    = 10                          # Maximalny pocet krokov na osi Lambda pri ziskani zoznamu stavov susednych bodov
+
+        self.sType   = 'bool'                      # Typ stavu
+        self.sTypes  = ('bool'                     # Typ stavu je boolovska hodnota, False/True
+                       ,'int'                      # Typ stavu je cele cislo, hodnoty su spocitatelne
+                       ,'complex'                  # Typ stavu je komplexne cislo, hodnoty su spocitatelne, posun na osi Lambda meni fazu
+                       )                           # Podoporovane typy stavov
+
+        self.sAgg    = 'max'                       # Spôsob agregácie stavov do jednej hodnoty
+        self.sAggs   = ('nearest'                  # Prva nenulova/notFalse hodnota v zozname
+                       ,'min'                      # Minimalna hodnota v zozname, pre bool funguje ako AND
+                       ,'max'                      # Maximalna hodnota v zozname, pre bool funguje ako OR
+                       ,'sum'                      # Sucet hodnot v zozname     , pre bool funguje ako OR
+                       ,'cnt'                      # Najcastejsia hodnota v zozname
+                       )                           # Podoporovane sposoby agregacie stavov
+
+        self.rule    = 'and'                       # Pravidlo agregacie stavov susednych bodov
+        self.rules   = ('and'                      # Ak su stavy oboch susedov rovnake, nastavi sa tato hodnota
+                       ,'xand'                     # Ak su stavy oboch susedov rovnake, nastavi sa opacna hodnota
+                       )                           # Podoporovane pravidla agregacie stavov susednych bodov
 
         #----------------------------------------------------------------------
         # Inicializacia

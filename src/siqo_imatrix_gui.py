@@ -124,7 +124,7 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         self.frmDispBar = ttk.Frame(self)
         self.frmDispBar.pack(fill=tk.X, expand=True, side=tk.TOP, anchor=tk.N)
-        self.showDisplayBar()
+        self.showDisplayBar(container=self.frmDispBar)
         self.updateDisplayBar()
 
         #----------------------------------------------------------------------
@@ -134,7 +134,7 @@ class InfoMatrixGui(ttk.Frame):
         self.frmChild.configure(borderwidth=2, relief="solid")
         self.frmChild.pack(fill=tk.Y, expand=False, side=tk.RIGHT, anchor=tk.N)
 
-        self.showChildFrame()
+        self.showChildFrame(container=self.frmChild)
         self.updateChildFrame()
 
         #----------------------------------------------------------------------
@@ -179,35 +179,35 @@ class InfoMatrixGui(ttk.Frame):
         self.logger.info(f'{self.name}.resetDisplay: Display options reset to {self.display}')
 
     #--------------------------------------------------------------------------
-    def showDisplayBar(self):
+    def showDisplayBar(self, container):
         "Show diplay options bar with axis selectors and method selectors"
 
-        self.frmDispBar.columnconfigure(0, weight=1)
-        self.frmDispBar.columnconfigure(1, weight=1)
-        self.frmDispBar.columnconfigure(2, weight=1)
-        self.frmDispBar.columnconfigure(3, weight=1)
+        container.columnconfigure(0, weight=1)
+        container.columnconfigure(1, weight=1)
+        container.columnconfigure(2, weight=1)
+        container.columnconfigure(3, weight=1)
 
-        self.frmDispBar.rowconfigure(0, weight=1)
-        self.frmDispBar.rowconfigure(1, weight=1)
+        container.rowconfigure(0, weight=1)
+        container.rowconfigure(1, weight=1)
 
         #----------------------------------------------------------------------
         # X axis dimension
         #----------------------------------------------------------------------
         self.varLogX = tk.BooleanVar(value=False)
-        cbLog = ttk.Checkbutton(self.frmDispBar, text='Log    X:', variable=self.varLogX, command=self.showChart)
+        cbLog = ttk.Checkbutton(container, text='Log    X:', variable=self.varLogX, command=self.showChart)
         cbLog.grid(column=0, row=0, sticky=tk.E, pady=_PADY)
 
-        self.lblX = ttk.Label(self.frmDispBar, text="None")
+        self.lblX = ttk.Label(container, text="None")
         self.lblX.grid(column=1, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
         # Y axis dimension
         #----------------------------------------------------------------------
         self.varLogY = tk.BooleanVar(value=False)
-        cbLog = ttk.Checkbutton(self.frmDispBar, text='Log    Y:', variable=self.varLogY, command=self.showChart)
+        cbLog = ttk.Checkbutton(container, text='Log    Y:', variable=self.varLogY, command=self.showChart)
         cbLog.grid(column=0, row=1, sticky=tk.E, pady=_PADY)
 
-        self.lblY = ttk.Label(self.frmDispBar, text="None")
+        self.lblY = ttk.Label(container, text="None")
         self.lblY.grid(column=1, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
@@ -216,19 +216,19 @@ class InfoMatrixGui(ttk.Frame):
         self.varValMet  = tk.StringVar(value='Float value') # Name of the method for value to show in the chart
         self.varValName = tk.StringVar()                    # Name of the value to show in the chart
 
-        lblVal = ttk.Label(self.frmDispBar, text="Value to show:")
+        lblVal = ttk.Label(container, text="Value to show:")
         lblVal.grid(column=2, row=0, sticky=tk.E, padx=_PADX, pady=_PADY)
 
-        self.cbValMet = ttk.Combobox(self.frmDispBar, textvariable=self.varValMet, width=int(_COMBO_WIDTH))
+        self.cbValMet = ttk.Combobox(container, textvariable=self.varValMet, width=int(_COMBO_WIDTH))
         self.cbValMet['values'] = list(self.dat.mapShowMethods().keys())
         self.cbValMet['state' ] = 'readonly'
         self.cbValMet.bind('<<ComboboxSelected>>', self.viewChanged)
         self.cbValMet.grid(column=3, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        lblVal = ttk.Label(self.frmDispBar, text="of")
+        lblVal = ttk.Label(container, text="of")
         lblVal.grid(column=4, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        self.cbValName = ttk.Combobox(self.frmDispBar, textvariable=self.varValName, width=_COMBO_WIDTH)
+        self.cbValName = ttk.Combobox(container, textvariable=self.varValName, width=_COMBO_WIDTH)
         self.cbValName['values'] = list(self.dat.getSchemaVals().values())
         self.cbValName['state' ] = 'readonly'
         self.cbValName.bind('<<ComboboxSelected>>', self.viewChanged)
@@ -239,10 +239,10 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         self.varSetMet = tk.StringVar() # Name of the method to apply to the data
 
-        lblMet = ttk.Label(self.frmDispBar, text="Apply method:")
+        lblMet = ttk.Label(container, text="Apply method:")
         lblMet.grid(column=2, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
 
-        self.cbSetMet = ttk.Combobox(self.frmDispBar, textvariable=self.varSetMet, width=int(_COMBO_WIDTH))
+        self.cbSetMet = ttk.Combobox(container, textvariable=self.varSetMet, width=int(_COMBO_WIDTH))
         self.cbSetMet['values'] = list(self.dat.mapMethods().keys())
         self.cbSetMet['state' ] = 'readonly'
         self.cbSetMet.bind('<<ComboboxSelected>>', self.onMethodPick)
@@ -252,14 +252,14 @@ class InfoMatrixGui(ttk.Frame):
         # Method play/stop buttons
         #----------------------------------------------------------------------
         self.varCounter = tk.IntVar(value=0)
-        spinBox = ttk.Spinbox(self.frmDispBar, from_=0, to=1000, textvariable=self.varCounter, width=10)
+        spinBox = ttk.Spinbox(container, from_=0, to=1000, textvariable=self.varCounter, width=10)
         spinBox.grid(column=4, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
         spinBox['state'] = 'normal'
 
-        self.btnPlay = ttk.Button(self.frmDispBar, text="▶ Play", command=self.onMethodPlay)
+        self.btnPlay = ttk.Button(container, text="▶ Play", command=self.onMethodPlay)
         self.btnPlay.grid(column=5, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        self.btnStop = ttk.Button(self.frmDispBar, text="■ Stop", command=self.onMethodStop)
+        self.btnStop = ttk.Button(container, text="■ Stop", command=self.onMethodStop)
         self.btnStop.grid(column=5, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
@@ -273,12 +273,11 @@ class InfoMatrixGui(ttk.Frame):
 
 
     #--------------------------------------------------------------------------
-    def showChildFrame(self):
+    def showChildFrame(self, container):
         "Show frame dedicated to child classes"
 
-        lbl = ttk.Label(self.frmChild, text="Child frame not implemented", foreground="red")
-        lbl.pack(fill=tk.X, expand=True, side=tk.TOP, anchor=tk.N)
-
+        pass
+    
     #--------------------------------------------------------------------------
     def updateChildFrame(self):
         "Update frame dedicated to child classes. This method is called in self.viewChanged()"
