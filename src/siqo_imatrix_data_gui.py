@@ -44,6 +44,10 @@ class InfoMatrixDataGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
+        self._cnts  = self.matrix._cnts.copy()      # _cnts  pre prikaz Apply
+        self._rects = self.matrix._rects.copy()     # _rects pre prikaz Apply
+        self._origs = self.matrix._origs.copy()     # _origs pre prikaz Apply
+
         self.origCnts  = self.matrix._cnts.copy()   # Original _cnts  pre prikaz Cancel
         self.origRects = self.matrix._rects.copy()  # Original _rects pre prikaz Cancel
         self.origOrigs = self.matrix._origs.copy()  # Original _origs pre prikaz Cancel
@@ -64,17 +68,17 @@ class InfoMatrixDataGui(tk.Toplevel):
         # TabCnts
         self.tabCnts = ttk.Frame(notebook)
         notebook.add(self.tabCnts, text="Points counts")
-        self.showParams(self.tabCnts, 'cnts', matrix._cnts, lblParam='Axe', lblName='Points count')
+        self.showParams(self.tabCnts, 'cnts', self._cnts, lblParam='Axe', lblName='Points count')
 
         # TabRects
         self.tabRects = ttk.Frame(notebook)
         notebook.add(self.tabRects, text="Lengths of axes")
-        self.showParams(self.tabRects, 'rects', matrix._rects, lblParam='Axe', lblName='Axe length')
+        self.showParams(self.tabRects, 'rects', self._rects, lblParam='Axe', lblName='Axe length')
 
         # TabOrigs
         self.tabOrigs = ttk.Frame(notebook)
         notebook.add(self.tabOrigs, text="Origins of axes")
-        self.showParams(self.tabOrigs, 'origs', matrix._origs, lblParam='Axe', lblName='Axe origin')
+        self.showParams(self.tabOrigs, 'origs', self._origs, lblParam='Axe', lblName='Axe origin')
 
         #----------------------------------------------------------------------
         # Create bottom buttons bar
@@ -154,14 +158,14 @@ class InfoMatrixDataGui(tk.Toplevel):
 
             try:
                 val = int(val)
-                self.matrix._cnts[key] = val
+                self._cnts[key] = val
                 self.logger.info(f'{self.name}.setParam: {paramType}[{key}] = {val} was set')
 
             except ValueError:
                 self.logger.error(f"{self.name}.setParam: '{val}' is not an integer, can not change counts of points")
 
             finally:
-                self.showParams(self.tabCnts, 'cnts', self.matrix._cnts, lblParam='Axe', lblName='Points count')
+                self.showParams(self.tabCnts, 'cnts', self._cnts, lblParam='Axe', lblName='Points count')
 
         #----------------------------------------------------------------------
         # Set rects
@@ -170,14 +174,14 @@ class InfoMatrixDataGui(tk.Toplevel):
 
             try:
                 val = float(val)
-                self.matrix._rects[key] = val
+                self._rects[key] = val
                 self.logger.info(f'{self.name}.setParam: {paramType}[{key}] = {val} was set')
 
             except ValueError:
                 self.logger.error(f"{self.name}.setParam: '{val}' is not a real value, can not change length of the axe")
 
             finally:
-                self.showParams(self.tabRects, 'rects', self.matrix._rects, lblParam='Axe', lblName='Axe length')
+                self.showParams(self.tabRects, 'rects', self._rects, lblParam='Axe', lblName='Axe length')
 
         #----------------------------------------------------------------------
         # Set origs
@@ -186,14 +190,14 @@ class InfoMatrixDataGui(tk.Toplevel):
 
             try:
                 val = float(val)
-                self.matrix._origs[key] = val
+                self._origs[key] = val
                 self.logger.info(f'{self.name}.setParam: {paramType}[{key}] = {val} was set')
 
             except ValueError:
                 self.logger.error(f"{self.name}.setParam: '{val}' is not a real value, can not change origin of the axe")
 
             finally:
-                self.showParams(self.tabOrigs, 'origs', self.matrix._origs, lblParam='Axe', lblName='Axe origin')
+                self.showParams(self.tabOrigs, 'origs', self._origs, lblParam='Axe', lblName='Axe origin')
 
         #----------------------------------------------------------------------
         # Unknown parameter type
@@ -205,7 +209,7 @@ class InfoMatrixDataGui(tk.Toplevel):
     def apply(self):
         "Apply inputs and initialise the matrix"
 
-        self.matrix.init( cnts=self.matrix._cnts, rects=self.matrix._rects, origs=self.matrix._origs )
+        self.matrix.init( cnts=self._cnts, rects=self._rects, origs=self._origs )
 
         self.logger.warning(f'{self.name}.apply: Changes were applied, matrix initialised')
         self.destroy()

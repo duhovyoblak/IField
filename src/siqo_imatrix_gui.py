@@ -32,6 +32,15 @@ _COMBO_WIDTH    = 27
 _PADX           =  5
 _PADY           =  5
 
+_COLORMAPS = {
+    'Sequential' : ['viridis',  'plasma', 'cividis', 'magma',    'inferno '],
+    'Diverging'  : ['coolwarm', 'bwr',    'seismic', 'RdYlBu_r', 'Spectral'],
+    'Qualitative': ['Set1',     'Set2',   'Set3',    'Pastel1',  'Pastel2' ],
+    'Cyclic     ': ['twilight', 'twilight_shifted',  'hsv']
+}
+#_CMAP           = _COLORMAPS['Diverging'][1]       # Default colormap
+_CMAP           = _COLORMAPS['Qualitative'][2]       # Default colormap
+
 #==============================================================================
 # package's variables
 #------------------------------------------------------------------------------
@@ -384,7 +393,6 @@ class InfoMatrixGui(ttk.Frame):
         # Clear the chart
         #----------------------------------------------------------------------
         self.figure.clear()
-        #self.update()
         self.canvas.draw()
 
         #----------------------------------------------------------------------
@@ -423,15 +431,20 @@ class InfoMatrixGui(ttk.Frame):
         showFtion = self.dat.mapShowMethods()[self.display['showMethod']]
 
         self.logger.debug(f'{self.name}.showChart: Iterating {len(self.dat.actList)} iPoints for showFtion={self.display['showMethod']} with keyV={self.display['valKey']}')
+
+        pts = 0
         for i, point in enumerate(self.dat.actList):
 
             valueToShow = showFtion(point, self.display['valKey'])
 
             if valueToShow is not None:
 
-                listC.append(valueToShow)
-                if self.display['keyX']: listX.append(point.pos(self.display['keyX']))
-                if self.display['keyY']: listY.append(point.pos(self.display['keyY']))
+                listC.append(valueToShow)                                               # value into Color array
+                if self.display['keyX']: listX.append(point.pos(self.display['keyX']))  # if show axis X, add x-position into X array
+                if self.display['keyY']: listY.append(point.pos(self.display['keyY']))  # if show axis Y, add y-position into Y array
+                pts += 1
+
+        self.logger.debug(f'{self.name}.showChart: Iterating {len(self.dat.actList)} iPoints produced {pts} values to show')
 
         #----------------------------------------------------------------------
         # Skonvertujem do npArrays
@@ -495,7 +508,7 @@ class InfoMatrixGui(ttk.Frame):
             #------------------------------------------------------------------
             self.logger.debug(f'{self.name}.showChart: Chart 2D')
 
-            chrtObj = chart.scatter( x=npX, y=npY, c=npC, marker="s", cmap='RdYlBu_r') # , lw=0, s=(72./self.figure.dpi)**2
+            chrtObj = chart.scatter( x=npX, y=npY, c=npC, marker="s", cmap=_CMAP) # , lw=0, s=(72./self.figure.dpi)**2
             self.figure.colorbar(chrtObj, ax=chart)
 
         else:
@@ -638,7 +651,7 @@ class InfoMatrixGui(ttk.Frame):
         # Zobrazene zmien v matrixe
         #----------------------------------------------------------------------
         self.updateDisplayBar()
-        self.viewChanged()
+        self.viewChanged(force=True)
 
         #----------------------------------------------------------------------
         self.logger.debug(f'{self.name}.onDataMatrix: Matrix properties set')
