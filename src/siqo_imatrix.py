@@ -13,7 +13,7 @@ from   siqo_ipoint            import InfoPoint
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-_VER    = '3.2'
+_VER    = '3.4'
 _IND    = '|  '       # Info indentation
 _UPP    = 10          # distance units per period
 
@@ -73,8 +73,8 @@ class InfoMatrix:
     def __init__(self, name):
         "Calls constructor of InfoMatrix"
 
-        self.logger = SiqoLogger(name, level='DEBUG')
-        self.logger.info(f"InfoMatrix.constructor: {name}")
+        self.logger = SiqoLogger(name=name, level='DEBUG')
+        self.logger.debug(f"InfoMatrix.constructor: {name}")
 
         #----------------------------------------------------------------------
         # Public datove polozky triedy
@@ -134,7 +134,7 @@ class InfoMatrix:
     def setIpType(self, ipType:dict, force:bool=False):
         "Apply InfoPoint.schema to internal structures _cnts, _origs, _rects for respective ipType"
 
-        self.logger.warning(f"{self.name}.setIpType: ipType={ipType}")
+        self.logger.info(f"{self.name}.setIpType: ipType='{ipType}', force={force}")
 
         #----------------------------------------------------------------------
         # Kontrola zmeny ipType
@@ -166,7 +166,7 @@ class InfoMatrix:
         self.init()
 
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.setIpType: done")
+        self.logger.warning(f"{self.name}.setIpType: ipType was set to '{ipType}' and InfoMatrix was reinitialised")
 
    #--------------------------------------------------------------------------
     def info(self, indent=0, full=False):
@@ -240,7 +240,7 @@ class InfoMatrix:
             self.init()
 
         #----------------------------------------------------------------------
-        self.logger.debug(f"{self.name}.count: Count of points is {toRet}")
+        self.logger.debug(f"{self.name}.count: Count of points is {toRet} with check={check}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -723,7 +723,9 @@ class InfoMatrix:
     # Active subsmatrix retrieval
     #--------------------------------------------------------------------------
     def actSubmatrix(self, actSubIdxs=None, force=False) -> list:
-        """Returns active submatrix of InfoPoints as list of InfoPoints
+        """Returns active submatrix of InfoPoints as list of InfoPoints.
+           Submatrix is defined by dict of freezed axesKeys with values.
+           If actSubIdxs is NOT provided, whole matrix became active submatrix.
         """
 
         self.logger.debug(f"{self.name}.actSubmatrix: actSubIdxs={actSubIdxs}, force={force}")
@@ -731,7 +733,8 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Nastavenie aktivnej submatice ak bola dodana definicia
         #----------------------------------------------------------------------
-        if actSubIdxs is not None: self._actSubSet(actSubIdxs)
+        if actSubIdxs is not None: self._actSubSet(actSubIdxs   )
+        else                     : self._actSubSet(actSubIdxs={}) # Full matrix will be active submatrix
 
         #----------------------------------------------------------------------
         # Kontrola potreby obnovenia aktivnej submatice pri zmene definicie submatice
@@ -769,6 +772,7 @@ class InfoMatrix:
             # Vytvorim prienik poss s touto mnozinou pozicii = odstranim body, ktore nepatria do danej osi
             #------------------------------------------------------------------
             poss = poss.intersection(actPoss)
+            self.logger.debug(f"{self.name}.actSubmatrix: After axe '{axe}' with idx {axeIdx}, {len(poss)} positions remain in active submatrix")
 
         #----------------------------------------------------------------------
         # Create vector of InfoPoints for respective positions
@@ -789,18 +793,21 @@ class InfoMatrix:
 
         self.logger.info(f"{self.name}.clear: defs={defs}")
 
-        for point in self.points: point.clear(dat=defs)
+        for point in self.points: point.clear(vals=defs)
 
     #--------------------------------------------------------------------------
-    def init(self, *, cnts:dict=None, origs:dict=None, rects:dict=None ):
+    def init(self, *, cnts:dict={}, origs:dict={}, rects:dict={} ):
         """Initialise InfoMatrix structure with already set parameters
            or You can provide new matrix structure parameters"""
 
+        #----------------------------------------------------------------------
+        # Kontrola definicie ipType
+        #----------------------------------------------------------------------
         if self.ipType is None:
             self.logger.error(f"{self.name}.init: InfoPoint type is not defined, cannot initialise InfoMatrix")
             return
 
-        self.logger.debug(f"{self.name}.init: ")
+        self.logger.info(f"{self.name}.init: {cnts}, {origs}, {rects}")
 
         #----------------------------------------------------------------------
         # Destroy old data
@@ -810,7 +817,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Matrix structure parameters
         #----------------------------------------------------------------------
-        if cnts : self._cnts = cnts
+        if cnts : self._cnts  = cnts
         if origs: self._origs = origs
         if rects: self._rects = rects
 
@@ -819,7 +826,7 @@ class InfoMatrix:
             if key not in self._origs.keys(): self._origs[key] = 0
             if key not in self._rects.keys(): self._rects[key] = cnt-1
 
-        self.logger.info(f"{self.name}.init: {self._cnts} points of type {self.ipType} on rect {self._rects} from origins {self._origs}")
+        self.logger.debug(f"{self.name}.init: {self._cnts} points of type '{self.ipType}' on rect {self._rects} from origins {self._origs}")
 
         #----------------------------------------------------------------------
         # Vypocet diffs
@@ -856,7 +863,7 @@ class InfoMatrix:
         self.actSubmatrix(actSubIdxs={}, force=True)
 
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.init: Created {len(self.points)} InfoPoints")
+        self.logger.warning(f"{self.name}.init: Created {len(self.points)} InfoPoints")
 
     #--------------------------------------------------------------------------
 
@@ -866,7 +873,8 @@ class InfoMatrix:
     def copyFrom(self, src, *, key=None, tgtSlice=(0,0,0,0), srcFrom=(0,0)) -> 'InfoMatrix':
         "Copy point's values from srcs 2D matrix into tgts 2D matrix"
 
-        self.logger.info(f"{self.name}.copyFrom: From {src.name} starting at {srcFrom} to nodes {tgtSlice} for key={key}")
+        self.logger.debug(f"{self.name}.copyFrom: From {src.name} starting at {srcFrom} to nodes {tgtSlice} for key={key}")
+        pts = 0
 
         #----------------------------------------------------------------------
         # Slice settings
@@ -878,8 +886,6 @@ class InfoMatrix:
 
         srcRowFrom = srcFrom[0]
         srcColFrom = srcFrom[1]
-
-        i = 0
 
         #----------------------------------------------------------------------
         # Target rows from tgtRowFrom to tgtRowTo
@@ -913,10 +919,10 @@ class InfoMatrix:
                 #--------------------------------------------------------------
                 srcDat = srcPoint.get(key=key)
                 tgtPoint.set(dat=srcDat)
-                i += 1
+                pts += 1
 
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.copyFrom: Copied {i} points")
+        self.logger.info(f"{self.name}.copyFrom: Copied {pts} points")
         return self
 
     #--------------------------------------------------------------------------
@@ -926,13 +932,14 @@ class InfoMatrix:
            Data moved out of matrix bounds are lost, new data positions are cleared to default values.
         """
         self.logger.debug(f"{self.name}.moveByAxe: From {startIdx} by {deltaIdx} for axe key={axeKey}")
+        pts = 0
 
         #----------------------------------------------------------------------
         # Kontrola existencie osi
         #----------------------------------------------------------------------
         if axeKey not in self._cnts.keys():
             self.logger.error(f"{self.name}.moveByAxe: Axe '{axeKey}' is not in InfoMatrix axes {list(self._cnts.keys())}, change denied")
-            return False
+            return pts
 
         #----------------------------------------------------------------------
         # Ziskam poziciu axeKey v liste indexov osi
@@ -993,23 +1000,25 @@ class InfoMatrix:
                     point.set(vals=srcPoint.val())
 
             #------------------------------------------------------------------
+            pts += len(poss)
             self.logger.debug(f"{self.name}.moveByAxe: {len(poss)}:{axeIdx}<-{srcIdx}")
 
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.moveByAxe: From {startIdx} by {deltaIdx} for axe key={axeKey}")
-        return True
+        self.logger.info(f"{self.name}.moveByAxe: From {startIdx} by {deltaIdx} for axe key={axeKey} moved {pts} InfoPoints")
+        return pts
 
     #==========================================================================
     # Dynamic Methods application
     #--------------------------------------------------------------------------
     def applyMatrixMethod(self, methodKey:str, valueKey:str, params:dict=None) -> bool:
         """Special matrix method for applying dynamic matrix methods.
-           pointMethod : Name of the Point method to apply
-           valueKey    : Key of the value to be set by the method
-           params      : Parameters for the method as dict
+           methodKey : Name of the method to apply
+           valueKey  : Key of the value to be set by the method
+           params    : Parameters for the method as dict
         """
 
-        self.logger.debug(f"{self.name}.applyMatrixMethod: '{valueKey}' = {methodKey}(params={params})")
+        self.logger.debug(f"{self.name}.applyMatrixMethod: methodKey='{methodKey}', valueKey='{valueKey}', params={params}")
+        pts = 0
 
         #----------------------------------------------------------------------
         # Ziskanie vykonavanej funkcie a parametrov
@@ -1017,8 +1026,8 @@ class InfoMatrix:
         methods = self.mapMethods()
 
         if methodKey not in methods.keys():
-            self.logger.error(f"{self.name}.applyMatrixMethod: '{methodKey}' is not in defined functions")
-            return False
+            self.logger.error(f"{self.name}.applyMatrixMethod: '{methodKey}' is not in defined functions, command denied")
+            return pts
 
         else:
             method = methods[methodKey]
@@ -1031,28 +1040,28 @@ class InfoMatrix:
             pointMethod = method['pointMethod']
             self.logger.info(f"{self.name}.applyMatrixMethod: Applying pointMethod '{pointMethod.__name__}'")
 
-            self._applyPointMethod(pointMethod=pointMethod, valueKey=valueKey, params=params)
+            pts = self._applyPointMethod(pointMethod=pointMethod, valueKey=valueKey, params=params)
 
         #----------------------------------------------------------------------
         # Ak je definovana matrixMethod, aplikujem ju priamo
         #----------------------------------------------------------------------
-        elif 'matrixMethod' in method.keys() and method['matrixMethod'] is not None:
+        elif methodKey in method.keys() and method['matrixMethod'] is not None:
 
             matrixMethod = method['matrixMethod']
             self.logger.debug(f"{self.name}.applyMatrixMethod: {matrixMethod.__name__}({params}) for value key='{valueKey}'")
 
-            matrixMethod(valueKey=valueKey, params=params)   # self uz bolo predane pri priradeni do premennej matrixMethod
+            pts = matrixMethod(valueKey=valueKey, params=params)   # self uz bolo predane pri priradeni do premennej matrixMethod
 
         #----------------------------------------------------------------------
         # Nie je definovana ziadna metoda
         #----------------------------------------------------------------------
         else:
             self.logger.error(f"{self.name}.applyMatrixMethod: '{methodKey}' has neither pointMethod nor matrixMethod defined")
-            return False
+            return pts
 
         #----------------------------------------------------------------------
-        self.logger.warning(f"{self.name}.applyMatrixMethod: '{valueKey}'<-{methodKey}({params}) applied")
-        return True
+        self.logger.info(f"{self.name}.applyMatrixMethod: {pts} InfoPoints was updated for '{valueKey}'<-{methodKey}({params})")
+        return pts
 
     #--------------------------------------------------------------------------
     def _applyPointMethod(self, pointMethod, valueKey:str, params:dict=None) -> bool:
@@ -1062,18 +1071,14 @@ class InfoMatrix:
            params      : Parameters for the method as dict
         """
 
-        self.logger.info(f"{self.name}._applyPointMethod: {pointMethod.__name__}({params}) for value key='{valueKey}'")
+        self.logger.debug(f"{self.name}._applyPointMethod: {pointMethod.__name__}({params}) for value key='{valueKey}'")
+        pts = 0
 
         #----------------------------------------------------------------------
         # Ziskanie listu bodov na aplikovanie funkcie
         #----------------------------------------------------------------------
-        if 'all' in params.keys() and params['all'] == True:
-            tgtStr = 'all'
-            tgtList = self.points
-
-        else:
-            tgtStr = 'active subset'
-            tgtList = self.actList
+        if 'all' in params.keys() and params['all'] == True: tgtList = self.points
+        else                                               : tgtList = self.actList
 
         #----------------------------------------------------------------------
         # Vykonanie funkcie
@@ -1085,8 +1090,8 @@ class InfoMatrix:
             pts += 1
 
         #----------------------------------------------------------------------
-        self.logger.warning(f"{self.name}._applyPointMethod: {pointMethod.__name__} was applied to {tgtStr} {pts} InfoPoints")
-        return True
+        self.logger.info(f"{self.name}._applyPointMethod: {pts} InfoPoints was updated for '{valueKey}'<-{pointMethod.__name__}({params})")
+        return pts
 
     #==========================================================================
     # Matrix methods to apply in Dynamics methods
@@ -1095,13 +1100,14 @@ class InfoMatrix:
         "Default null method for InfoPoint for keyed value (do nothing)"
 
         self.logger.debug(f"{self.name}.nullMethod: do nothing for key '{valueKey}' with params {params}")
+        return 0
 
     #--------------------------------------------------------------------------
     def moveData(self, valueKey:str, params:dict):
         "Move data in matrix by deltaIdx from startIdx in axeKey"
 
         self.logger.debug(f"{self.name}.moveData: for key '{valueKey}' with params {params}")
-        self.moveByAxe(axeKey=params['axeKey'], startIdx=params['startIdx'], deltaIdx=params['deltaIdx'])
+        return self.moveByAxe(axeKey=params['axeKey'], startIdx=params['startIdx'], deltaIdx=params['deltaIdx'])
 
     #--------------------------------------------------------------------------
     def normAbs(self, nods, norm=None):
@@ -1160,14 +1166,21 @@ if __name__ == '__main__':
     # Vytvorenie, generovanie osi
     #--------------------------------------------------------------------------
     im = InfoMatrix('Test matrix')
+    im.logger.setLevel('DEBUG')
     print(im)
+    print(80*'-')
     input('Press Enter to continue...')
 
+
     im.init()
+    print(im)
+    print(80*'-')
     input('Press Enter to continue...')
 
     im.setIpType('ipTest')
-    im.init()
+    im.init(cnts={'a':5, 'b':4, 'm':1})
+    print(im)
+    print(80*'-')
     input('Press Enter to continue...')
 
 
@@ -1187,8 +1200,9 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # generovanie hodnot
     #--------------------------------------------------------------------------
-    im.applyPointMethod('BRandom fuuniform', 'm', params={'all':True, 'min':0, 'max':5})
-    im.applyPointMethod('Random uniform', 'm', params={'all':True, 'min':0, 'max':5})
+    im.logger.setLevel('DEBUG')
+    im.applyMatrixMethod(methodKey='Bandom Bniform', valueKey='m', params={'min':0, 'max':5})
+    im.applyMatrixMethod(methodKey='Random uniform', valueKey='m', params={'min':0, 'max':5})
     print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 

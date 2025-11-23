@@ -38,8 +38,8 @@ class InfoPoint:
     #==========================================================================
     # Static variables & methods
     #--------------------------------------------------------------------------
-    _schema = copy.deepcopy(_SCHEMA)                               # Schema for InfoPoint
-    logger  = SiqoLogger('InfoPoint test', level='INFO')   # Logger for InfoPoint
+    _schema = copy.deepcopy(_SCHEMA)           # Schema for InfoPoint
+    logger  = SiqoLogger('InfoPoint')          # Logger for InfoPoint
 
     #--------------------------------------------------------------------------
     # Schema methods
@@ -638,7 +638,7 @@ class InfoPoint:
     #==========================================================================
     # Dat Value modification
     #--------------------------------------------------------------------------
-    def clear(self, *, vals:dict=None):
+    def clear(self, *, vals:dict={}):
         "Sets all values to default values"
 
         for keyVal in InfoPoint._schema[self._ipType]['vals'].keys():

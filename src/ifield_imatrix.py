@@ -35,7 +35,7 @@ class InfoFieldMatrix(InfoMatrix):
         "Calls constructor of InfoFieldMatrix"
 
         self.logger = SiqoLogger(name, level='DEBUG')
-        self.logger.info(f"InfoFieldMatrix.constructor: {name}")
+        self.logger.debug(f"InfoFieldMatrix.constructor: {name}")
 
         #----------------------------------------------------------------------
         # Super constructor
@@ -87,18 +87,49 @@ class InfoFieldMatrix(InfoMatrix):
 
         methods = super().mapMethods()
 
-        methods['IField epoch step'] = {'matrixMethod': self.epochStep, 'pointMethod':None, 'params':{}}
+        methods['IField random Bool'] = {'matrixMethod': self.rndBool,   'pointMethod':None, 'params':{'prob True':0.5}}
+        methods['IField epoch step' ] = {'matrixMethod': self.epochStep, 'pointMethod':None, 'params':{}}
 
         return methods
 
     #==========================================================================
     # Matrix methods to apply in Dynamics methods
     #--------------------------------------------------------------------------
+    def rndBool(self, valueKey:str, params:dict):
+        """Clear all model and set state as random Boolean values.
+        """
+
+        self.logger.debug(f"{self.name}.rndBool: for key '{valueKey}' with params {params}")
+        pts = 0
+
+        #----------------------------------------------------------------------
+        # Clear all model
+        #----------------------------------------------------------------------
+        self.clear(defs={valueKey: False})
+
+        #----------------------------------------------------------------------
+        # Set Active matrix to e = 0 and generate random Boolean values
+        #----------------------------------------------------------------------
+        self.actSubmatrix( {'e': 0} )
+
+        pointParams = {'prob1':params.get('prob True', 0.5)}
+        pts = self.applyMatrixMethod(methodKey='Random bit', valueKey=valueKey, params=pointParams)
+
+        #----------------------------------------------------------------------
+        # Reset Active matrix whole matrix
+        #----------------------------------------------------------------------
+        self.actSubmatrix()
+
+        #----------------------------------------------------------------------
+        self.logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
+
+    #--------------------------------------------------------------------------
     def epochStep(self, valueKey:str, params:dict):
         """Compute next epoch state.
         """
 
         self.logger.debug(f"{self.name}.epochStep: for key '{valueKey}' with params {params}")
+        pts = 0
 
         #----------------------------------------------------------------------
         # Kontrola parametrov
@@ -137,10 +168,13 @@ class InfoFieldMatrix(InfoMatrix):
             # Nastavim novu hodnotu stavu spracovavaneho bodu
             #--------------------------------------------------------------
             actPoint.set(vals={valueKey: newState})
+            pts += 1
 
         #----------------------------------------------------------------------
-        self.logger.debug(f"{self.name}.epochStep: done")
+        self.logger.info(f"{self.name}.epochStep: {pts} InfoPoints was updated for key '{valueKey}' in epoch step")
 
+    #==========================================================================
+    # Internal tools
     #--------------------------------------------------------------------------
     def getNeighStates(self, valueKey:str, l:int, e:int=0):
         "Returns list of states of neighbor points along given axis at given position"
@@ -260,32 +294,25 @@ if __name__ == '__main__':
     im.init()
     input('Press Enter to continue...')
 
-    im.setIpType('ipTest')
-    im.init()
+    print('Methods map:')
+    for methodKey, rec in im.mapMethods().items():
+        print(f"  {methodKey:<25s}: {rec['params']}")
+
     input('Press Enter to continue...')
-
-
-    im.setSchemaAxe('a', 'Os A')
-    im.setSchemaAxe('a', 'Os A')
-    print(im.info(full=True)['msg'])
-    input('Press Enter to continue...')
-
-    im.init()
-    print(im.info(full=True)['msg'])
-    input('Press Enter to continue...')
-
-    im.setSchemaVal('m', 'Hodnota M')
-    print(im.info(full=True)['msg'])
-
 
     #--------------------------------------------------------------------------
     # generovanie hodnot
     #--------------------------------------------------------------------------
-    im.applyPointMethod('BRandom fuuniform', 'm', params={'all':True, 'min':0, 'max':5})
-    im.applyPointMethod('Random uniform', 'm', params={'all':True, 'min':0, 'max':5})
+    #im.applyMatrixMethod(methodKey='BRandom fuuniform',   valueKey='s', params={'min':0, 'max':5})
+    #im.applyMatrixMethod(methodKey='Random uniform',      valueKey='s', params={'min':0, 'max':5})
+    #print(im.info(full=True)['msg'])
+    #input('Press Enter to continue...')
+
+
+
+    im.applyMatrixMethod(methodKey='IField random Bool',  valueKey='s', params={'min':0, 'max':5})
     print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
-
     #--------------------------------------------------------------------------
     # Submatrix
     #--------------------------------------------------------------------------
