@@ -39,7 +39,7 @@ class InfoPoint:
     # Static variables & methods
     #--------------------------------------------------------------------------
     _schema = copy.deepcopy(_SCHEMA)           # Schema for InfoPoint
-    logger  = SiqoLogger('InfoPoint')          # Logger for InfoPoint
+    logger  = SiqoLogger(name='InfoPoint')     # Logger for InfoPoint
 
     #--------------------------------------------------------------------------
     # Schema methods

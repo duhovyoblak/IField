@@ -73,7 +73,7 @@ class InfoMatrix:
     def __init__(self, name):
         "Calls constructor of InfoMatrix"
 
-        self.logger = SiqoLogger(name=name, level='DEBUG')
+        self.logger = SiqoLogger(name=name)
         self.logger.debug(f"InfoMatrix.constructor: {name}")
 
         #----------------------------------------------------------------------
@@ -132,7 +132,7 @@ class InfoMatrix:
         return np.array(mtrx)
 
      #--------------------------------------------------------------------------
-    def setIpType(self, ipType:dict, force:bool=False):
+    def setIpType(self, ipType:str, force:bool=False):
         "Apply InfoPoint.schema to internal structures _cnts, _origs, _rects for respective ipType"
 
         self.logger.info(f"{self.name}.setIpType: ipType='{ipType}', force={force}")
@@ -147,8 +147,8 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Reset all InfoMatrix's data
         #----------------------------------------------------------------------
+        self.points.clear()        # List of rows of lists of InfoPoints
         self.ipType     = ipType
-        self.points     = []       # List of rows of lists of InfoPoints
         self.staticEdge = False    # Static edge means value of the edge nodes is fixed
 
         self.actVal     = None     # Key of the InfoPoint's current dat value
@@ -162,12 +162,7 @@ class InfoMatrix:
         self._diffs     = {}       # Distance between two points in respective axes in lambda units
 
         #----------------------------------------------------------------------
-        # Default nastavenie axes a inicializacia
-        #----------------------------------------------------------------------
-        self.init()
-
-        #----------------------------------------------------------------------
-        self.logger.warning(f"{self.name}.setIpType: ipType was set to '{ipType}' and InfoMatrix was reinitialised")
+        self.logger.warning(f"{self.name}.setIpType: ipType was set to '{ipType}' and InfoMatrix was reset")
 
    #--------------------------------------------------------------------------
     def info(self, indent=0, full=False):
@@ -308,6 +303,7 @@ class InfoMatrix:
     def setSchema(self, schema:dict):
         "Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
 
+        self.logger.warning(f"{self.name}.setSchema: schema={schema}")
         return InfoPoint.setSchema(self.ipType, schema)
 
     #--------------------------------------------------------------------------
@@ -774,9 +770,14 @@ class InfoMatrix:
     def clear(self, *, defs:dict={}):
         "Set all InfoPoint's values to default values. No change of structure."
 
-        self.logger.info(f"{self.name}.clear: defs={defs}")
+        self.logger.debug(f"{self.name}.clear: defs={defs}")
+        pts = 0
 
-        for point in self.points: point.clear(vals=defs)
+        for point in self.points:
+            point.clear(vals=defs)
+            pts += 1
+
+        self.logger.warning(f"{self.name}.clear: {pts} InfoPoints was set to defs={defs}")
 
     #--------------------------------------------------------------------------
     def init(self, *, cnts:dict={}, origs:dict={}, rects:dict={} ):
@@ -803,7 +804,7 @@ class InfoMatrix:
         # Priprava na init()
         #----------------------------------------------------------------------
         self.logger.info(f"{self.name}.init: {cnts}, {origs}, {rects}")
-        self.points.clear()                     # Clear all points in the InfoMatrix
+        self.points.clear()    # Clear all points in the InfoMatrix
 
         #----------------------------------------------------------------------
         # Set new Matrix structure parameters
@@ -1022,7 +1023,7 @@ class InfoMatrix:
         pts = 0
 
         #----------------------------------------------------------------------
-        # Ziskanie vykonavanej funkcie a parametrov
+        # Ziskanie vykonavanej funkcie a jej parametrov
         #----------------------------------------------------------------------
         methods = self.mapMethods()
 
@@ -1039,14 +1040,14 @@ class InfoMatrix:
         if 'pointMethod' in method.keys() and method['pointMethod'] is not None:
 
             pointMethod = method['pointMethod']
-            self.logger.info(f"{self.name}.applyMatrixMethod: Applying pointMethod '{pointMethod.__name__}'")
+            self.logger.debug(f"{self.name}.applyMatrixMethod: {pointMethod.__name__}({params}) for value key='{valueKey}'")
 
             pts = self._applyPointMethod(pointMethod=pointMethod, valueKey=valueKey, params=params)
 
         #----------------------------------------------------------------------
         # Ak je definovana matrixMethod, aplikujem ju priamo
         #----------------------------------------------------------------------
-        elif methodKey in method.keys() and method['matrixMethod'] is not None:
+        elif 'matrixMethod' in method.keys() and method['matrixMethod'] is not None:
 
             matrixMethod = method['matrixMethod']
             self.logger.debug(f"{self.name}.applyMatrixMethod: {matrixMethod.__name__}({params}) for value key='{valueKey}'")
@@ -1168,7 +1169,7 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     im = InfoMatrix('Test matrix')
     im.logger.setLevel('DEBUG')
-    
+
     print(im)
     print(80*'-')
     input('Press Enter to continue...')

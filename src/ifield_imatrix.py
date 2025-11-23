@@ -34,7 +34,7 @@ class InfoFieldMatrix(InfoMatrix):
     def __init__(self, name):
         "Calls constructor of InfoFieldMatrix"
 
-        self.logger = SiqoLogger(name, level='DEBUG')
+        self.logger = SiqoLogger(name=name)
         self.logger.debug(f"InfoFieldMatrix.constructor: {name}")
 
         #----------------------------------------------------------------------
@@ -283,6 +283,8 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Test of the InfoFieldMatrix class
     #--------------------------------------------------------------------------
+    logger = SiqoLogger(name='InfoFieldMatrix test')
+    logger.setLevel('DEBUG')
 
     #--------------------------------------------------------------------------
     # Vytvorenie, generovanie osi
@@ -291,13 +293,9 @@ if __name__ == '__main__':
     print(im)
     input('Press Enter to continue...')
 
-    im.init()
-    input('Press Enter to continue...')
-
     print('Methods map:')
     for methodKey, rec in im.mapMethods().items():
         print(f"  {methodKey:<25s}: {rec['params']}")
-
     input('Press Enter to continue...')
 
     #--------------------------------------------------------------------------
