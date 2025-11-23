@@ -79,25 +79,26 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
-        self.name       = name     # Name of the InfoMatrix
-        self.ipType     = None     # Type of the InfoPoint in this InfoMatrix
-        self.staticEdge = False    # Static edge means value of the edge points is fixed in some methods
-        self.points     = []       # List of InfoPoints
+        self.name         = name     # Name of the InfoMatrix
+        self.ipType       = None     # Type of the InfoPoint in this InfoMatrix
+        self.staticEdge   = False    # Static edge means value of the edge points is fixed in some methods
+        self.points       = []       # List of InfoPoints
 
-        self.actVal     = None     # Key of the current InfoPoint's dat value
-        self.actSubIdxs = {}       # Current active submatrix definition as dict of freezed axesKeys with values
-        self.actList    = []       # Current active list of points in submatrix
-        self.actChanged = True     # Current sub settings was changed and actSubMatrix needs refresh
+        self.actVal       = None     # Key of the current InfoPoint's dat value
+        self.actSubIdxs   = {}       # Current active submatrix definition as dict of freezed axesKeys with values
+        self.actList      = []       # Current active list of points in submatrix
+        self.actChanged   = True     # Current sub settings was changed and actSubMatrix needs refresh
 
         #----------------------------------------------------------------------
-        # Private datove polozky triedy
+        # Private datove polozky triedy, menia sa v metode init()
         #----------------------------------------------------------------------
-        self._cnts      = {}       # Number of InfoPoints in respective axes
-        self._origs     = {}       # Origin's coordinates of the InfoMatrix for respective axes in lambda units
-        self._rects     = {}       # Lenghts of the InfoMatrix for respective axes in lambda units
-        self._diffs     = {}       # Distance between two points in respective axes in lambda units
+        self._cnts        = {}       # Number of InfoPoints in respective axes
+        self._origs       = {}       # Origin's coordinates of the InfoMatrix for respective axes in lambda units
+        self._rects       = {}       # Lenghts of the InfoMatrix for respective axes in lambda units
+        self._diffs       = {}       # Distance between two points in respective axes in lambda units
 
-        self._lastPos   = None     # Last position used in pointByPos for faster access
+        self._subProducts = []       # List of subproducts of _cnts [1, A, AB, ABC, ...]
+        self._lastPos     = None     # Last position used in pointByPos for faster access
 
         #----------------------------------------------------------------------
         # Inicializacia
@@ -195,7 +196,7 @@ class InfoMatrix:
         dat['origs'         ] = self._origs
         dat['rects'         ] = self._rects
         dat['diffs'         ] = self._diffs
-        dat['subProducts'   ] = self._subProducts()
+        dat['subProducts'   ] = self._subProducts
 
         if indent == 0: msg = f"{indent*_IND}{60*'='}\n"
 
@@ -414,30 +415,12 @@ class InfoMatrix:
     #==========================================================================
     # Position and indices tools
     #--------------------------------------------------------------------------
-    def _subProducts(self) -> list:
-        "Returns list of subproducts of _cnts [1, A, AB, ABC, ...]"
-
-        toRet = [1]
-
-        for cnt in self._cnts.values():
-            toRet.append( cnt * toRet[-1] )
-
-        #----------------------------------------------------------------------
-        # Remove last element which is the product of all dimensions
-        #----------------------------------------------------------------------
-        toRet.pop()
-
-        #----------------------------------------------------------------------
-        self.logger.debug(f"{self.name}._subProducts: {toRet}")
-        return toRet
-
-    #--------------------------------------------------------------------------
     def _subPeriods(self, axeKey:str) -> tuple:
         "Returns period,serie & groups for respective axe"
 
         self.logger.debug(f"{self.name}._subPeriods: axeKey={axeKey}")
 
-        subs   = self._subProducts()
+        subs   = self._subProducts
         axePos = self.axeIdxByKey(axeKey)
         count  = self.count()
 
@@ -549,7 +532,7 @@ class InfoMatrix:
     def _posByIdxs(self, idxs:list) -> int:
         "Returns position of the InfoPoint in the list for respective indices"
 
-        subProd = self._subProducts()
+        subProd = self._subProducts
 
         pos = 0
         for i, idx in enumerate(idxs):
@@ -566,7 +549,7 @@ class InfoMatrix:
         # Inicializacia
         #----------------------------------------------------------------------
         toRet = []
-        subs  = self._subProducts()
+        subs  = self._subProducts
 
         #----------------------------------------------------------------------
         # Prechadzam reverzne vsetky dimenzie
@@ -739,7 +722,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Kontrola potreby obnovenia aktivnej submatice pri zmene definicie submatice
         #----------------------------------------------------------------------
-        if not self.actChanged and not force:
+        if (not self.actChanged) and (not force):
             self.logger.debug(f"{self.name}.actSubmatrix: subMatrix definition was not changed, no need to refresh")
             return self.actList
 
@@ -807,15 +790,23 @@ class InfoMatrix:
             self.logger.error(f"{self.name}.init: InfoPoint type is not defined, cannot initialise InfoMatrix")
             return
 
-        self.logger.info(f"{self.name}.init: {cnts}, {origs}, {rects}")
+        #----------------------------------------------------------------------
+        # Kontrola kompatibility definicie ipType a cnts
+        #----------------------------------------------------------------------
+        schAxes = InfoPoint.getSchemaAxes(self.ipType)
+
+        if cnts.keys() != schAxes.keys():
+            self.logger.error(f"{self.name}.init: InfoPoint type '{self.ipType}' axes {list(schAxes.keys())} are not compatible with cnts axes {list(cnts.keys())}, cannot initialise InfoMatrix")
+            return
 
         #----------------------------------------------------------------------
-        # Destroy old data
+        # Priprava na init()
         #----------------------------------------------------------------------
+        self.logger.info(f"{self.name}.init: {cnts}, {origs}, {rects}")
         self.points.clear()                     # Clear all points in the InfoMatrix
 
         #----------------------------------------------------------------------
-        # Matrix structure parameters
+        # Set new Matrix structure parameters
         #----------------------------------------------------------------------
         if cnts : self._cnts  = cnts
         if origs: self._origs = origs
@@ -827,6 +818,16 @@ class InfoMatrix:
             if key not in self._rects.keys(): self._rects[key] = cnt-1
 
         self.logger.debug(f"{self.name}.init: {self._cnts} points of type '{self.ipType}' on rect {self._rects} from origins {self._origs}")
+
+        #----------------------------------------------------------------------
+        # Vypocet subProducts
+        #----------------------------------------------------------------------
+        self._subProducts = [1]
+
+        for cnt in self._cnts.values():
+            self._subProducts.append( cnt * self._subProducts[-1] )
+
+        self._subProducts.pop()  # Remove last element which is the product of all dimensions
 
         #----------------------------------------------------------------------
         # Vypocet diffs
@@ -1167,6 +1168,7 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     im = InfoMatrix('Test matrix')
     im.logger.setLevel('DEBUG')
+    
     print(im)
     print(80*'-')
     input('Press Enter to continue...')
@@ -1178,7 +1180,7 @@ if __name__ == '__main__':
     input('Press Enter to continue...')
 
     im.setIpType('ipTest')
-    im.init(cnts={'a':5, 'b':4, 'm':1})
+    im.init(cnts={'a':5, 'b':4})
     print(im)
     print(80*'-')
     input('Press Enter to continue...')
@@ -1186,10 +1188,11 @@ if __name__ == '__main__':
 
     im.setSchemaAxe('a', 'Os A')
     im.setSchemaAxe('a', 'Os A')
+    im.setSchemaAxe('b', 'Os B')
     print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 
-    im.init()
+    im.init(cnts={'a':5, 'b':4})
     print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 
