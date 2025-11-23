@@ -1,13 +1,6 @@
 #==============================================================================
 # Siqo class InfoFieldMatrix
 #------------------------------------------------------------------------------
-import functools
-import math
-import cmath
-import numpy                  as np
-import random                 as rnd
-
-from   siqolib.logger         import SiqoLogger
 from   siqo_imatrix           import InfoMatrix
 
 #==============================================================================
@@ -36,9 +29,6 @@ class InfoFieldMatrix(InfoMatrix):
     #--------------------------------------------------------------------------
     def __init__(self, name):
         "Calls constructor of InfoFieldMatrix"
-
-        self.logger = SiqoLogger(name=name)
-        self.logger.debug(f"InfoFieldMatrix.constructor: {name}")
 
         #----------------------------------------------------------------------
         # Super constructor
@@ -282,6 +272,8 @@ print(f"InfoFieldMatrix ver {_VER}")
 # Unit testy
 #------------------------------------------------------------------------------
 if __name__ == '__main__':
+
+    from   siqolib.logger         import SiqoLogger
 
     #--------------------------------------------------------------------------
     # Test of the InfoFieldMatrix class

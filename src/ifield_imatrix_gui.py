@@ -1,12 +1,10 @@
 #==============================================================================
 # Info tkChart library
 #------------------------------------------------------------------------------
-import tkinter                as tk
-from   tkinter                import (ttk, font, PanedWindow)
-from   tkinter.messagebox     import showinfo, askokcancel, askyesno
+import tkinter                  as tk
+from   tkinter                  import ttk
 
-from   siqolib.logger           import SiqoLogger
-from   siqolib.message          import SiqoMessage, askInt, askReal, askStr
+from   siqolib.message          import SiqoMessage
 from   siqo_imatrix_gui         import InfoMatrixGui
 from   ifield_imatrix           import InfoFieldMatrix
 
@@ -53,7 +51,6 @@ class IFieldMatrixGui(InfoMatrixGui):
         #----------------------------------------------------------------------
         self.cbValName.set('State')
         self.viewChanged()
-
 
         #----------------------------------------------------------------------
         self.logger.audit(f'{self.name}.init: Done')
@@ -186,7 +183,11 @@ print(f'SIQO IFieldMatrixGui library ver {_VER}')
 
 if __name__ == '__main__':
 
+    from   siqolib.logger           import SiqoLogger
     from   ifield_imatrix           import InfoFieldMatrix
+
+    logger = SiqoLogger(name='InfoFieldMatrix test')
+    logger.setLevel('DEBUG')
 
     #--------------------------------------------------------------------------
     # Test of the IFieldMatrixGui class

@@ -4,12 +4,11 @@
 import numpy                             as np
 
 import tkinter                           as tk
-from   tkinter                           import (ttk, font, PanedWindow)
-from   tkinter.messagebox                import showinfo, askokcancel, askyesno
+from   tkinter                           import ttk
+from   tkinter.messagebox                import showinfo
 
 import matplotlib.pyplot                 as plt
 from   matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-from   matplotlib.colorbar               import make_axes, Colorbar
 
 
 from   siqolib.logger           import SiqoLogger
