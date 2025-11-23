@@ -145,7 +145,7 @@ class InfoMatrixDataGui(tk.Toplevel):
     def setParam(self, paramType:str, key:str, val:str):
         "Update or Add new parameter to the matrix setting"
 
-        self.logger.debug(f'{self.name}.setParam: {paramType} : {key} : {val}')
+        self.logger.debug(f'{self.name}.setParam: {paramType}[{key}] = {val}')
 
         #----------------------------------------------------------------------
         # Set cnts
@@ -154,8 +154,8 @@ class InfoMatrixDataGui(tk.Toplevel):
 
             try:
                 val = int(val)
-                val = self.matrix.axeCntByKey(key)
-                self.logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
+                self.matrix._cnts[key] = val
+                self.logger.info(f'{self.name}.setParam: {paramType}[{key}] = {val} was set')
 
             except ValueError:
                 self.logger.error(f"{self.name}.setParam: '{val}' is not an integer, can not change counts of points")
@@ -171,7 +171,7 @@ class InfoMatrixDataGui(tk.Toplevel):
             try:
                 val = float(val)
                 self.matrix._rects[key] = val
-                self.logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
+                self.logger.info(f'{self.name}.setParam: {paramType}[{key}] = {val} was set')
 
             except ValueError:
                 self.logger.error(f"{self.name}.setParam: '{val}' is not a real value, can not change length of the axe")
@@ -187,7 +187,7 @@ class InfoMatrixDataGui(tk.Toplevel):
             try:
                 val = float(val)
                 self.matrix._origs[key] = val
-                self.logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
+                self.logger.info(f'{self.name}.setParam: {paramType}[{key}] = {val} was set')
 
             except ValueError:
                 self.logger.error(f"{self.name}.setParam: '{val}' is not a real value, can not change origin of the axe")
@@ -205,7 +205,7 @@ class InfoMatrixDataGui(tk.Toplevel):
     def apply(self):
         "Apply inputs and initialise the matrix"
 
-        self.matrix.init()
+        self.matrix.init( cnts=self.matrix._cnts, rects=self.matrix._rects, origs=self.matrix._origs )
 
         self.logger.warning(f'{self.name}.apply: Changes were applied, matrix initialised')
         self.destroy()
@@ -243,17 +243,16 @@ if __name__ == '__main__':
     win.minsize(width=400, height=300)
     win.config(highlightbackground = "green", highlightcolor= "green")
 
-    #tk.Grid.columnconfigure(win, 1, weight=1)
-    #tk.Grid.rowconfigure   (win, 2, weight=1)
-
-
     #--------------------------------------------------------------------------
     # Zaciatok testu
     #--------------------------------------------------------------------------
     im = InfoMatrix('Test matrix')
-    im.setIpType('ipTest')
     im.logger.setLevel('DEBUG')
     im.logger.frameDepth = 2
+
+    im.setIpType('ipTest')
+    im.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
+    im.init(cnts={'l':30, 'e':10})
 
     matGui = InfoMatrixDataGui(name='Schema test', container=win, matrix=im)
 
