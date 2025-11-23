@@ -1,15 +1,16 @@
 #==============================================================================
 # Info tkChart library
 #------------------------------------------------------------------------------
-import tkinter                as tk
-from   tkinter                import (ttk, font, PanedWindow)
-from   tkinter.messagebox     import showinfo, askokcancel, askyesno
+import numpy                             as np
 
+import tkinter                           as tk
+from   tkinter                           import (ttk, font, PanedWindow)
+from   tkinter.messagebox                import showinfo, askokcancel, askyesno
+
+import matplotlib.pyplot                 as plt
 from   matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-#from   mpl_toolkits                      import mplot3d
+from   matplotlib.colorbar               import make_axes, Colorbar
 
-import numpy                    as np
-import matplotlib.pyplot        as plt
 
 from   siqolib.logger           import SiqoLogger
 from   siqolib.message          import SiqoMessage, askInt, askReal, askStr
@@ -80,12 +81,6 @@ class InfoMatrixGui(ttk.Frame):
         self.style.configure("Default.TButton", foreground="black")
         self.style.configure("Red.TButton"    , foreground="red"  )
 
-
-        #if 'keyV' in kwargs.keys(): self.display['valName'] = kwargs['keyV']
-        #if 'keyX' in kwargs.keys(): self.display['keyX'] = kwargs['keyX']
-        #if 'keyY' in kwargs.keys(): self.display['keyY'] = kwargs['keyY']
-
-
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
         #----------------------------------------------------------------------
@@ -131,8 +126,8 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Create and show display bar
         #----------------------------------------------------------------------
-        self.frmDispBar = ttk.Frame(self)
-        self.frmDispBar.pack(fill=tk.X, expand=True, side=tk.TOP, anchor=tk.N)
+        self.frmDispBar = ttk.Frame(self, height=50)
+        self.frmDispBar.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N)
         self.showDisplayBar(container=self.frmDispBar)
         self.updateDisplayBar()
 
@@ -509,7 +504,7 @@ class InfoMatrixGui(ttk.Frame):
             self.logger.debug(f'{self.name}.showChart: Chart 2D')
 
             chrtObj = chart.scatter( x=npX, y=npY, c=npC, marker="s", cmap=_CMAP) # , lw=0, s=(72./self.figure.dpi)**2
-            self.figure.colorbar(chrtObj, ax=chart)
+            self.figure.colorbar(chrtObj, ax=chart, fraction=0.03, pad=0.01)
 
         else:
             self.logger.error(f'{self.name}.showChart: Chart with {self.dims()} dimensions is not supported')
@@ -517,7 +512,7 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Vykreslenie noveho grafu
         #----------------------------------------------------------------------
-        self.figure.tight_layout()
+        self.figure.tight_layout(pad=0.1)
         self.update()
         self.canvas.draw()
 
@@ -746,7 +741,8 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Kontrola poctu cyklov
         #----------------------------------------------------------------------
-        cycles = self.varCounter.get()
+        cycles = max(self.varCounter.get(), 1)
+
         if cycles <= 0:
             self.logger.warning(f'{self.name}.onMethodPlay: Number of cycles is {cycles}, nothing to do')
             showinfo(title="Warning", message="Number of cycles must be greater than 0")

@@ -15,6 +15,9 @@ from   siqo_imatrix           import InfoMatrix
 #------------------------------------------------------------------------------
 _VER    = '1.0'
 
+_LAMBDA = 120       # Default points for Lambda axis
+_EPOCH  =  60       # Default points for Epoch axis
+
 #==============================================================================
 # package's variables
 #------------------------------------------------------------------------------
@@ -72,7 +75,7 @@ class InfoFieldMatrix(InfoMatrix):
         #----------------------------------------------------------------------
         self.setIpType('ipTest')
         self.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
-        self.init(cnts={'l':30, 'e':10})
+        self.init(cnts={'l':_LAMBDA, 'e':_EPOCH})
 
         self.applyMatrixMethod(methodKey='Real constant', valueKey='s', params={'const': 0.0})
 
@@ -143,7 +146,7 @@ class InfoFieldMatrix(InfoMatrix):
         #----------------------------------------------------------------------
         # Prejdem body l in <1, cnt-2> v epoch=0 a nastavim im hodnoty podla pravidla a susednych bodov
         #----------------------------------------------------------------------
-        for l in range( 1, self.axeCntByKey('l')-1 ):
+        for l in range( 0, self.axeCntByKey('l') ):
 
             actPoint = self.pointByIdxs([l, 0])
             actState = actPoint.val(valueKey)
