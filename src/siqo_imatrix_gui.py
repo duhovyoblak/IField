@@ -66,6 +66,7 @@ class InfoMatrixGui(ttk.Frame):
         self.dat       = dat                # InfoMatrix base data
         self.sub2D     = {}                 # Subset of InfoMatrix data defined as frozen axes with desired values e.g. {'x':4, 't':17}
         self.display   = {}                 # Display options
+        self.chartType = 'scatter'          # Type of the chart: 'scatter', 'line', 'bar'
 
         self.resetDisplay()                 # Display options
 
@@ -178,12 +179,19 @@ class InfoMatrixGui(ttk.Frame):
         mainMenu.add_cascade(label="Data", menu=dataMenu)
         dataMenu.add_command(label="Data Point Schema",     command=self.onDataSchema   )
         dataMenu.add_command(label="Matrix properties",     command=self.onDataMatrix   )
-        dataMenu.add_command(label="Display properties",    command=self.onDataDisplay  )
 
         # Pridanie Method menu
         dataMeth = tk.Menu(mainMenu, tearoff=0)
         mainMenu.add_cascade(label="Method", menu=dataMeth)
-        dataMeth.add_command(label="Parameters",            command=self.onMethParams)
+        dataMeth.add_command(label="Parameters",            command=self.onMethParams   )
+
+        # Pridanie Display menu
+        dispMenu = tk.Menu(mainMenu, tearoff=0)
+        mainMenu.add_cascade(label="Display", menu=dispMenu)
+        dispMenu.add_command(label="Display properties",    command=self.onDisplayProp  )
+        dispMenu.add_command(label="Line Chart",            command=lambda: self.setDisplayChart('LINE'   ))
+        dispMenu.add_command(label="Scatter Chart",         command=lambda: self.setDisplayChart('SCATTER'))
+        dispMenu.add_command(label="Quiver Chart",          command=lambda: self.setDisplayChart('QUIVER' ))
 
         # Pridanie Info menu
         helpMenu = tk.Menu(mainMenu, tearoff=0)
@@ -667,9 +675,9 @@ class InfoMatrixGui(ttk.Frame):
         self.logger.debug(f'{self.name}.onDataMatrix: Matrix properties set')
 
     #--------------------------------------------------------------------------
-    def onDataDisplay(self, event=None):
+    def onDisplayProp(self, event=None):
 
-        self.logger.info(f'{self.name}.onDataDisplay: Orig display = {self.display}')
+        self.logger.info(f'{self.name}.onDisplayProp: Orig display = {self.display}')
 
         gui = InfoMatrixDisplayGui(name=f'Display options', container=self, display=self.display)
         gui.grab_set()
@@ -689,9 +697,17 @@ class InfoMatrixGui(ttk.Frame):
                 self.viewChanged()
 
         else:
-            self.logger.info(f"{self.name}.onDataDisplay: No change")
+            self.logger.info(f"{self.name}.onDisplayProp: No change")
 
-        #----------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+    def setDisplayChart(self, chartType: str):
+        "Set type of the chart to display"
+
+        self.logger.info(f'{self.name}.setDisplayChart: Chart type set to {chartType}')
+
+        self.chartType = chartType
+
+        return
 
     #==========================================================================
     # Method menu
@@ -969,3 +985,68 @@ if __name__ == '__main__':
 #==============================================================================
 #                              END OF FILE
 #------------------------------------------------------------------------------
+"""
+
+if self.actAxe == 1:    # Scatter plot
+
+            self.ax = self.fig.add_subplot(1,1,1)
+            self.ax.set_title("{}: {}".format(self.axes[self.actAxe], self.title), fontsize=14)
+            self.ax.grid(True)
+            self.ax.set_xlabel( self.getDataLabel(valX) )
+            self.ax.set_ylabel( self.getDataLabel(valY) )
+
+            sctr = self.ax.scatter( x=X, y=Y, c=U, cmap='RdYlBu_r')
+            self.fig.colorbar(sctr, ax=self.ax)
+
+        elif self.actAxe == 2:  # Quiver plot
+
+            self.ax = self.fig.add_subplot(1,1,1)
+            self.ax.set_title("{}: {}".format(self.axes[self.actAxe], self.title), fontsize=14)
+            self.ax.grid(True)
+            self.ax.set_xlabel( self.getDataLabel(valX) )
+            self.ax.set_ylabel( self.getDataLabel(valY) )
+
+            # Farebna skala podla fazy
+            arr = np.c_[U,V]
+            f   = []
+            for c in arr: f.append(cm.phase(complex(c[0], c[1])) )
+            C = np.array(f)
+
+            # Vykreslenie axes
+            quiv = self.ax.quiver( X, Y, U, V, C, cmap='RdYlBu_r' )
+            self.fig.colorbar(quiv, ax=self.ax)
+
+        elif self.actAxe == 3:  # 3D projection
+
+            self.ax = self.fig.add_subplot(1,1,1, projection='3d')
+            self.ax.set_title("{}: {}".format(self.axes[self.actAxe], self.title), fontsize=14)
+            self.ax.grid(True)
+            self.ax.set_xlabel( self.getDataLabel(valX) )
+            self.ax.set_ylabel( self.getDataLabel(valY) )
+
+            # Reduction z-axis
+            a = U.min()
+            b = U.max()
+            dr = _SC_RED * (b-a)
+            self.ax.set_zlim(a-dr, b+dr)
+
+            # Vykreslenie axes
+            surf = self.ax.plot_trisurf( X, Y, U, linewidth=0.2, cmap='RdYlBu_r', antialiased=False)
+            self.fig.colorbar(surf, ax=self.ax)
+
+        elif self.actAxe == 4:  # Line plot
+
+            self.ax = self.fig.add_subplot(1,1,1)
+            self.ax.set_title("{}: {}".format(self.axes[self.actAxe], self.title), fontsize=14)
+            self.ax.grid(True)
+            self.ax.set_xlabel( self.getDataLabel(valX) )
+            self.ax.set_ylabel( self.getDataLabel(valY) )
+
+            self.ax.plot( X, Y)
+
+        else: journal.M( 'Space3Mgui {} show error: Unknown axe {}'.format(self.title, self.actAxe), 10 )
+
+        # Vykreslenie noveho grafu
+        self.fig.tight_layout()
+        self.canvas.draw()
+    """
