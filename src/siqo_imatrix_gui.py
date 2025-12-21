@@ -61,10 +61,11 @@ class InfoMatrixGui(ttk.Frame):
         self.logger = SiqoLogger(name, level='DEBUG')
         self.logger.audit(f'{name}.init:')
 
-        self.name     = name                # Name of this GUI
-        self.dat      = dat                 # InfoMatrix base data
-        self.sub2D    = {}                  # Subset of InfoMatrix data defined as frozen axes with desired values e.g. {'x':4, 't':17}
-        self.display  = {}                  # Display options
+        self.name      = name               # Name of this GUI
+        self.container = container          # Parent container (tk.Tk or tk.Frame)
+        self.dat       = dat                # InfoMatrix base data
+        self.sub2D     = {}                 # Subset of InfoMatrix data defined as frozen axes with desired values e.g. {'x':4, 't':17}
+        self.display   = {}                 # Display options
 
         self.resetDisplay()                 # Display options
 
@@ -86,10 +87,84 @@ class InfoMatrixGui(ttk.Frame):
         super().__init__(container)
 
         #----------------------------------------------------------------------
+        # Show the InfoMatrixGui
+        #----------------------------------------------------------------------
+        self.show()
+
+    #--------------------------------------------------------------------------
+    def resetDisplay(self):
+        "Reset display options to default values based on matrix data"
+
+        axeKeys  = list(self.dat.getSchemaAxes().keys())
+        axeNames = list(self.dat.getSchemaAxes().values())
+
+        self.display  = {'type'       : '2D'                                 # Actual type of the chart
+                        ,'needShow'   : False                                # Flag to show the chart, True means data changed and need to be shown
+                        ,'axeKeys'    : axeKeys                              # List of axes keys
+                        ,'axeNames'   : axeNames                             # List of axes names
+                        ,'sub2D'      : self.sub2D.copy()                    # Subset of frozen axes with desired values e.g. {'x':4, 't':17}
+                        ,'keyX'       : axeKeys[0] if len(axeKeys)>0 else '' # key for Axis X to show
+                        ,'keyY'       : axeKeys[1] if len(axeKeys)>1 else '' # key for Axis Y to show
+                        ,'keyZ'       : axeKeys[2] if len(axeKeys)>2 else '' # key for Axis Z to show
+                        ,'showMethod' : ''                                   # key for methods for value to show
+                        ,'valName'    : ''                                   # Value name to show
+                        ,'valKey'     : ''                                   # Value key to show
+                        }
+
+        self.display['axeKeys' ].append('None')
+        self.display['axeNames'].append('None')
+
+        self.logger.info(f'{self.name}.resetDisplay: Display options reset to {self.display}')
+
+    #--------------------------------------------------------------------------
+    def dims(self):
+        "Returns number of not-None dimensions in the chart"
+
+        toRet = 0
+
+        if self.display['keyX']: toRet += 1
+        if self.display['keyY']: toRet += 1
+
+        self.logger.debug(f'{self.name}.dims: Chart has {toRet} dimensions')
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def setSub2D(self, axeFreezeIdxs: dict):
+        "Add frozen axes for the chart, e.g. {'x':4, 't':17}"
+
+        self.logger.info(f'{self.name}.setSub2D: Set sub2D = {axeFreezeIdxs}')
+
+        #----------------------------------------------------------------------
+        # Prejdem vsetky zmrazene osi
+        #----------------------------------------------------------------------
+        for axe, idx in axeFreezeIdxs.items():
+
+            if axe not in self.dat.getSchemaAxes():
+                self.logger.warning(f'{self.name}.setSub2D: Axis {axe} not in axes {self.dat.getSchemaAxes()}, skipping')
+
+            else:
+                self.sub2D[axe] = idx
+                self.logger.audit(f'{self.name}.setSub2D: Axe {axe} was frozen to index {idx}')
+
+        #----------------------------------------------------------------------
+        # Update the string variable for frozen axes
+        #----------------------------------------------------------------------
+        if len(self.sub2D) > 0: self.strFA.set(', '.join([f'{axe}:{idx}' for axe, idx in self.sub2D.items()]))
+        else                  : self.strFA.set('None')
+
+    #==========================================================================
+    # Show the InfoMatrixGui
+    #--------------------------------------------------------------------------
+    def show(self):
+        "Show InfoMatrixGui in the given parent container (tk.Tk or tk.Frame)"
+
+        self.logger.audit(f'{self.name}.show:')
+
+        #----------------------------------------------------------------------
         # Vytvorenie hlavného menu a priradenie do container (okno)
         #----------------------------------------------------------------------
-        mainMenu = tk.Menu(container)
-        container.config(menu=mainMenu)
+        mainMenu = tk.Menu(self.container)
+        self.container.config(menu=mainMenu)
 
         # Pridanie File menu
         fileMenu = tk.Menu(mainMenu, tearoff=0)
@@ -154,36 +229,12 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Initialisation
         #----------------------------------------------------------------------
-        self.logger.audit(f'{name}.init: Done')
-
-    #--------------------------------------------------------------------------
-    def resetDisplay(self):
-        "Reset display options to default values based on matrix data"
-
-        axeKeys  = list(self.dat.getSchemaAxes().keys())
-        axeNames = list(self.dat.getSchemaAxes().values())
-
-        self.display  = {'type'       : '2D'                                 # Actual type of the chart
-                        ,'needShow'   : False                                # Flag to show the chart, True means data changed and need to be shown
-                        ,'axeKeys'    : axeKeys                              # List of axes keys
-                        ,'axeNames'   : axeNames                             # List of axes names
-                        ,'sub2D'      : self.sub2D.copy()                    # Subset of frozen axes with desired values e.g. {'x':4, 't':17}
-                        ,'keyX'       : axeKeys[0] if len(axeKeys)>0 else '' # key for Axis X to show
-                        ,'keyY'       : axeKeys[1] if len(axeKeys)>1 else '' # key for Axis Y to show
-                        ,'keyZ'       : axeKeys[2] if len(axeKeys)>2 else '' # key for Axis Z to show
-                        ,'showMethod' : ''                                   # key for methods for value to show
-                        ,'valName'    : ''                                   # Value name to show
-                        ,'valKey'     : ''                                   # Value key to show
-                        }
-
-        self.display['axeKeys' ].append('None')
-        self.display['axeNames'].append('None')
-
-        self.logger.info(f'{self.name}.resetDisplay: Display options reset to {self.display}')
+        self.logger.audit(f'{self.name}.show: Done')
 
     #--------------------------------------------------------------------------
     def showDisplayBar(self, container):
-        "Show diplay options bar with axis selectors and method selectors"
+        """Show diplay options bar with axis selectors and method selectors.
+           Calls updateChart() on cahnges affecting the chart display."""
 
         container.columnconfigure(0, weight=1)
         container.columnconfigure(1, weight=1)
@@ -197,7 +248,7 @@ class InfoMatrixGui(ttk.Frame):
         # X axis dimension
         #----------------------------------------------------------------------
         self.varLogX = tk.BooleanVar(value=False)
-        cbLog = ttk.Checkbutton(container, text='Log    X:', variable=self.varLogX, command=self.showChart)
+        cbLog = ttk.Checkbutton(container, text='Log    X:', variable=self.varLogX, command=self.updateChart)
         cbLog.grid(column=0, row=0, sticky=tk.E, pady=_PADY)
 
         self.lblX = ttk.Label(container, text="None")
@@ -207,7 +258,7 @@ class InfoMatrixGui(ttk.Frame):
         # Y axis dimension
         #----------------------------------------------------------------------
         self.varLogY = tk.BooleanVar(value=False)
-        cbLog = ttk.Checkbutton(container, text='Log    Y:', variable=self.varLogY, command=self.showChart)
+        cbLog = ttk.Checkbutton(container, text='Log    Y:', variable=self.varLogY, command=self.updateChart)
         cbLog.grid(column=0, row=1, sticky=tk.E, pady=_PADY)
 
         self.lblY = ttk.Label(container, text="None")
@@ -268,40 +319,16 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
 
     #--------------------------------------------------------------------------
-    def updateDisplayBar(self):
-        "Update display bar according to current display options"
-
-        self.lblX['text'] = self.dat.axeNameByKey(self.display['keyX']) if self.display['keyX'] != 'None' else 'None'
-        self.lblY['text'] = self.dat.axeNameByKey(self.display['keyY']) if self.display['keyY'] != 'None' else 'None'
-
-
-    #--------------------------------------------------------------------------
     def showChildFrame(self, container):
         "Show frame dedicated to child classes"
 
         pass
 
-    #--------------------------------------------------------------------------
-    def updateChildFrame(self):
-        "Update frame dedicated to child classes. This method is called in self.viewChanged()"
-
-        pass
-
-    #--------------------------------------------------------------------------
-    def dims(self):
-        "Returns number of not-None dimensions in the chart"
-
-        toRet = 0
-
-        if self.display['keyX']: toRet += 1
-        if self.display['keyY']: toRet += 1
-
-        self.logger.debug(f'{self.name}.dims: Chart has {toRet} dimensions')
-        return toRet
-
+    #==========================================================================
+    # Update display options
     #--------------------------------------------------------------------------
     def viewChanged(self, event=None, force=False):
-        "Prepares npData to show according to axes and value to show"
+        "Resolve changes in display options and update the chart accordingly if needed"
 
         #----------------------------------------------------------------------
         # Check for Changes in show options
@@ -342,45 +369,34 @@ class InfoMatrixGui(ttk.Frame):
         # Vykreslim chart podla aktualnych nastaveni
         #----------------------------------------------------------------------
         self.logger.info(f'{self.name}.viewChanged: needShow = {self.display['needShow']}')
-        self.showChart()
+        self.updateChart()
 
     #--------------------------------------------------------------------------
-    def setSub2D(self, axeFreezeIdxs: dict):
-        "Add frozen axes for the chart, e.g. {'x':4, 't':17}"
+    def updateDisplayBar(self):
+        "Update display bar according to current display options"
 
-        self.logger.info(f'{self.name}.setSub2D: Set sub2D = {axeFreezeIdxs}')
+        self.lblX['text'] = self.dat.axeNameByKey(self.display['keyX']) if self.display['keyX'] != 'None' else 'None'
+        self.lblY['text'] = self.dat.axeNameByKey(self.display['keyY']) if self.display['keyY'] != 'None' else 'None'
 
-        #----------------------------------------------------------------------
-        # Prejdem vsetky zmrazene osi
-        #----------------------------------------------------------------------
-        for axe, idx in axeFreezeIdxs.items():
+    #--------------------------------------------------------------------------
+    def updateChildFrame(self):
+        "Update frame dedicated to child classes. This method is called in self.viewChanged()"
 
-            if axe not in self.dat.getSchemaAxes():
-                self.logger.warning(f'{self.name}.setSub2D: Axis {axe} not in axes {self.dat.getSchemaAxes()}, skipping')
-
-            else:
-                self.sub2D[axe] = idx
-                self.logger.audit(f'{self.name}.setSub2D: Axe {axe} was frozen to index {idx}')
-
-        #----------------------------------------------------------------------
-        # Update the string variable for frozen axes
-        #----------------------------------------------------------------------
-        if len(self.sub2D) > 0: self.strFA.set(', '.join([f'{axe}:{idx}' for axe, idx in self.sub2D.items()]))
-        else                  : self.strFA.set('None')
+        pass
 
     #==========================================================================
-    # Show the chart
+    # Update the chart
     #--------------------------------------------------------------------------
-    def showChart(self, event=None):
-        """Vykresli chart na zaklade aktualneho listu actList
+    def updateChart(self, event=None):
+        """Update the chart based on the current actList
         """
-        self.logger.debug(f"{self.name}.showChart: axisX='{self.display['keyX']}', axisY='{self.display['keyY']}', value='{self.display['valKey']}', method='{self.display['showMethod']}'")
+        self.logger.debug(f"{self.name}.updateChart: axisX='{self.display['keyX']}', axisY='{self.display['keyY']}', value='{self.display['valKey']}', method='{self.display['showMethod']}'")
 
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
         #----------------------------------------------------------------------
         if not self.display['needShow']:
-            self.logger.info(f'{self.name}.showChart: Data have not changed, no need for show')
+            self.logger.info(f'{self.name}.updateChart: Data have not changed, no need for show')
             return
 
         #----------------------------------------------------------------------
@@ -393,21 +409,21 @@ class InfoMatrixGui(ttk.Frame):
         # Check list of InfoPoints to show
         #----------------------------------------------------------------------
         if len(self.dat.actList) == 0:
-            self.logger.warning(f'{self.name}.showChart: No InfoPoints, nothig to show')
+            self.logger.warning(f'{self.name}.updateChart: No InfoPoints, nothig to show')
             return
 
         #----------------------------------------------------------------------
         # Check value to show
         #----------------------------------------------------------------------
         if not self.display['valKey']:
-            self.logger.warning(f'{self.name}.showChart: No value selected, nothig to show')
+            self.logger.warning(f'{self.name}.updateChart: No value selected, nothig to show')
             return
 
         #----------------------------------------------------------------------
         # Check axis to show
         #----------------------------------------------------------------------
         if not self.display['keyX'] and not self.display['keyY']:
-            self.logger.warning(f'{self.name}.showChart: No axis selected, nothig to show')
+            self.logger.warning(f'{self.name}.updateChart: No axis selected, nothig to show')
             return
 
         #----------------------------------------------------------------------
@@ -424,7 +440,7 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         showFtion = self.dat.mapShowMethods()[self.display['showMethod']]
 
-        self.logger.debug(f'{self.name}.showChart: Iterating {len(self.dat.actList)} iPoints for showFtion={self.display['showMethod']} with keyV={self.display['valKey']}')
+        self.logger.debug(f'{self.name}.updateChart: Iterating {len(self.dat.actList)} iPoints for showFtion={self.display['showMethod']} with keyV={self.display['valKey']}')
 
         pts = 0
         for i, point in enumerate(self.dat.actList):
@@ -438,7 +454,7 @@ class InfoMatrixGui(ttk.Frame):
                 if self.display['keyY']: listY.append(point.pos(self.display['keyY']))  # if show axis Y, add y-position into Y array
                 pts += 1
 
-        self.logger.debug(f'{self.name}.showChart: Iterating {len(self.dat.actList)} iPoints produced {pts} values to show')
+        self.logger.debug(f'{self.name}.updateChart: Iterating {len(self.dat.actList)} iPoints produced {pts} values to show')
 
         #----------------------------------------------------------------------
         # Skonvertujem do npArrays
@@ -451,15 +467,15 @@ class InfoMatrixGui(ttk.Frame):
         # Kontrola npArrays
         #----------------------------------------------------------------------
         if npC.size==0:
-            self.logger.info(f'{self.name}.showChart: No values to show')
+            self.logger.info(f'{self.name}.updateChart: No values to show')
             return
 
         if self.display['keyX'] and npX.size==0:
-            self.logger.info(f'{self.name}.showChart: Axe X is selected but has no data to show')
+            self.logger.info(f'{self.name}.updateChart: Axe X is selected but has no data to show')
             return
 
         if self.display['keyY'] and npY.size==0:
-            self.logger.info(f'{self.name}.showChart: Axe Y is selected but has no data to show')
+            self.logger.info(f'{self.name}.updateChart: Axe Y is selected but has no data to show')
             return
 
         #----------------------------------------------------------------------
@@ -493,20 +509,20 @@ class InfoMatrixGui(ttk.Frame):
             if self.display['keyX']: axis = npX
             else        : axis = npY
 
-            self.logger.debug(f'{self.name}.showChart: Chart 1D')
+            self.logger.debug(f'{self.name}.updateChart: Chart 1D')
             chrtObj = chart.plot( npC, axis ) #, linewidths=1, edgecolors='gray')
 
         elif self.dims() == 2:
             #------------------------------------------------------------------
             # Chart 2D
             #------------------------------------------------------------------
-            self.logger.debug(f'{self.name}.showChart: Chart 2D')
+            self.logger.debug(f'{self.name}.updateChart: Chart 2D')
 
             chrtObj = chart.scatter( x=npX, y=npY, c=npC, marker="s", cmap=_CMAP) # , lw=0, s=(72./self.figure.dpi)**2
             self.figure.colorbar(chrtObj, ax=chart, fraction=0.03, pad=0.01)
 
         else:
-            self.logger.error(f'{self.name}.showChart: Chart with {self.dims()} dimensions is not supported')
+            self.logger.error(f'{self.name}.updateChart: Chart with {self.dims()} dimensions is not supported')
 
         #----------------------------------------------------------------------
         # Vykreslenie noveho grafu
@@ -516,7 +532,7 @@ class InfoMatrixGui(ttk.Frame):
         self.canvas.draw()
 
         #----------------------------------------------------------------------
-        self.logger.info(f'{self.name}.showChart: Shown')
+        self.logger.info(f'{self.name}.updateChart: Shown')
 
     #--------------------------------------------------------------------------
     def onClick(self, event):
@@ -584,7 +600,7 @@ class InfoMatrixGui(ttk.Frame):
 
             self.logger.warning(f'{self.name}.onClick: Data changed, need to show the chart')
             self.display['needShow'] = True
-            self.showChart()
+            self.updateChart()
 
     #==========================================================================
     # File menu

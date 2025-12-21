@@ -57,7 +57,8 @@ class IFieldMatrixGui(InfoMatrixGui):
 
     #--------------------------------------------------------------------------
     def showChildFrame(self, container):
-        "Show frame dedicated to child classes"
+        """Show frame in parent container InfoMatrixGui dedicated to child classes.
+           This method is called in InfoMatrixGui.show()"""
 
         #----------------------------------------------------------------------
         # Pocet posunu epochy pre jeden krok na osi Lambda = 1 / rychlost informacie
@@ -115,7 +116,8 @@ class IFieldMatrixGui(InfoMatrixGui):
 
     #--------------------------------------------------------------------------
     def updateChildFrame(self):
-        "Update frame dedicated to child classes. This method is called in self.viewChanged()"
+        """Update frame in parent container InfoMatrixGui dedicated to child classes.
+           This method is called in InfoMatrixGui.viewChanged()"""
 
         pass
 
