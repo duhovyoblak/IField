@@ -66,7 +66,6 @@ class InfoMatrixGui(ttk.Frame):
         self.dat       = dat                # InfoMatrix base data
         self.sub2D     = {}                 # Subset of InfoMatrix data defined as frozen axes with desired values e.g. {'x':4, 't':17}
         self.display   = {}                 # Display options
-        self.chartType = 'scatter'          # Type of the chart: 'scatter', 'line', 'bar'
 
         self.resetDisplay()                 # Display options
 
@@ -99,7 +98,7 @@ class InfoMatrixGui(ttk.Frame):
         axeKeys  = list(self.dat.getSchemaAxes().keys())
         axeNames = list(self.dat.getSchemaAxes().values())
 
-        self.display  = {'type'       : '2D'                                 # Actual type of the chart
+        self.display  = {'type'       : 'SCATTER'                            # Actual type of the chart
                         ,'needShow'   : False                                # Flag to show the chart, True means data changed and need to be shown
                         ,'axeKeys'    : axeKeys                              # List of axes keys
                         ,'axeNames'   : axeNames                             # List of axes names
@@ -183,7 +182,6 @@ class InfoMatrixGui(ttk.Frame):
         # Pridanie Method menu
         dataMeth = tk.Menu(mainMenu, tearoff=0)
         mainMenu.add_cascade(label="Method", menu=dataMeth)
-        dataMeth.add_command(label="Parameters",            command=self.onMethParams   )
 
         # Pridanie Display menu
         dispMenu = tk.Menu(mainMenu, tearoff=0)
@@ -333,7 +331,7 @@ class InfoMatrixGui(ttk.Frame):
         pass
 
     #==========================================================================
-    # Update display options
+    # Update display
     #--------------------------------------------------------------------------
     def viewChanged(self, event=None, force=False):
         "Resolve changes in display options and update the chart accordingly if needed"
@@ -381,7 +379,7 @@ class InfoMatrixGui(ttk.Frame):
 
     #--------------------------------------------------------------------------
     def updateDisplayBar(self):
-        "Update display bar according to current display options"
+        "Update display bar according to current display options. This method is called in self.viewChanged()"
 
         self.lblX['text'] = self.dat.axeNameByKey(self.display['keyX']) if self.display['keyX'] != 'None' else 'None'
         self.lblY['text'] = self.dat.axeNameByKey(self.display['keyY']) if self.display['keyY'] != 'None' else 'None'
@@ -435,41 +433,9 @@ class InfoMatrixGui(ttk.Frame):
             return
 
         #----------------------------------------------------------------------
-        # Prepare the data for the chart
+        # Prepare data for the chart
         #----------------------------------------------------------------------
-        listC = []
-        listX = []
-        listY = []
-        listU = []
-        listV = []
-
-        #----------------------------------------------------------------------
-        # Prejdem vsetky vybrane body na zobrazenie
-        #----------------------------------------------------------------------
-        showFtion = self.dat.mapShowMethods()[self.display['showMethod']]
-
-        self.logger.debug(f'{self.name}.updateChart: Iterating {len(self.dat.actList)} iPoints for showFtion={self.display['showMethod']} with keyV={self.display['valKey']}')
-
-        pts = 0
-        for i, point in enumerate(self.dat.actList):
-
-            valueToShow = showFtion(point, self.display['valKey'])
-
-            if valueToShow is not None:
-
-                listC.append(valueToShow)                                               # value into Color array
-                if self.display['keyX']: listX.append(point.pos(self.display['keyX']))  # if show axis X, add x-position into X array
-                if self.display['keyY']: listY.append(point.pos(self.display['keyY']))  # if show axis Y, add y-position into Y array
-                pts += 1
-
-        self.logger.debug(f'{self.name}.updateChart: Iterating {len(self.dat.actList)} iPoints produced {pts} values to show')
-
-        #----------------------------------------------------------------------
-        # Skonvertujem do npArrays
-        #----------------------------------------------------------------------
-        npC = np.array(listC)
-        npX = np.array(listX)
-        npY = np.array(listY)
+        npX, npY, npC, npU, npV = self.prepareChartData()
 
         #----------------------------------------------------------------------
         # Kontrola npArrays
@@ -501,36 +467,64 @@ class InfoMatrixGui(ttk.Frame):
         if self.display['keyX']: chart.set_xlabel(self.dat.axeNameByKey(self.display['keyX']))
         if self.display['keyY']: chart.set_ylabel(self.dat.axeNameByKey(self.display['keyY']))
 
+        #self.ax.set_title("{}: {}".format(self.axes[self.actAxe], self.title), fontsize=14)
+
         #----------------------------------------------------------------------
         # Log axis X, Y
         #----------------------------------------------------------------------
         if self.varLogX.get(): chart.set_xscale('log')
-        if self.varLogX.get(): chart.set_yscale('log')
+        if self.varLogY.get(): chart.set_yscale('log')
 
         #----------------------------------------------------------------------
-        # Show the chart
+        # Show LINE chart
         #----------------------------------------------------------------------
-        if self.dims() == 1:
+        if self.display['type'] == 'LINE':
+            self.logger.debug(f'{self.name}.updateChart: Chart type LINE selected')
+
             #------------------------------------------------------------------
-            # Chart 1D
+            # Vyber zobrazenej osi
             #------------------------------------------------------------------
             if self.display['keyX']: axis = npX
-            else        : axis = npY
+            else                   : axis = npY
 
-            self.logger.debug(f'{self.name}.updateChart: Chart 1D')
-            chrtObj = chart.plot( npC, axis ) #, linewidths=1, edgecolors='gray')
+            chrtObj = chart.plot(axis, npU) #, linewidths=1, edgecolors='gray')
 
-        elif self.dims() == 2:
-            #------------------------------------------------------------------
-            # Chart 2D
-            #------------------------------------------------------------------
-            self.logger.debug(f'{self.name}.updateChart: Chart 2D')
+        #----------------------------------------------------------------------
+        # Show SCATTER chart
+        #----------------------------------------------------------------------
+        elif self.display['type'] == 'SCATTER':
+            self.logger.debug(f'{self.name}.updateChart: Chart type SCATTER selected')
 
             chrtObj = chart.scatter( x=npX, y=npY, c=npC, marker="s", cmap=_CMAP) # , lw=0, s=(72./self.figure.dpi)**2
-            self.figure.colorbar(chrtObj, ax=chart, fraction=0.03, pad=0.01)
 
+        #----------------------------------------------------------------------
+        # Show QUIVER chart
+        #----------------------------------------------------------------------
+        elif self.display['type'] == 'QUIVER':
+            self.logger.debug(f'{self.name}.updateChart: Chart type QUIVER selected')
+
+            #------------------------------------------------------------------
+            # Kontrola npU a npV
+            #------------------------------------------------------------------
+            if npU.size!=npC.size or npV.size!=npC.size:
+
+                showinfo(title="Warning", message="No vector values to show in QUIVER chart. Please select complex value to show.")
+                self.logger.warning(f'{self.name}.updateChart: No vector values to show in QUIVER chart. Please select complex value to show.')
+                return
+
+            chrtObj = chart.quiver(x=npX, y=npY, u=npU, v=npV, c=npC, cmap='RdYlBu_r')
+
+        #----------------------------------------------------------------------
+        # Neznamy typ chartu
+        #----------------------------------------------------------------------
         else:
-            self.logger.error(f'{self.name}.updateChart: Chart with {self.dims()} dimensions is not supported')
+            self.logger.error(f"{self.name}.updateChart: Unknown chart type {self.display['type']} is not supported")
+            return
+
+        #----------------------------------------------------------------------
+        # Colorbar
+        #----------------------------------------------------------------------
+        self.figure.colorbar(chrtObj, ax=chart, fraction=0.03, pad=0.01)
 
         #----------------------------------------------------------------------
         # Vykreslenie noveho grafu
@@ -540,8 +534,70 @@ class InfoMatrixGui(ttk.Frame):
         self.canvas.draw()
 
         #----------------------------------------------------------------------
-        self.logger.info(f'{self.name}.updateChart: Shown')
+        self.logger.info(f'{self.name}.updateChart: Done')
 
+    #--------------------------------------------------------------------------
+    def prepareChartData(self):
+        """Prepare data for the chart based on current actList and display options.
+           Returns npArrays: npX (x-axis), npY (y-axis)
+                             npC (color by valueToShow)
+                             npU (re-axis for quiver), npV (im-axis for quiver)
+        """
+        #----------------------------------------------------------------------
+        # Prepare the data for the chart
+        #----------------------------------------------------------------------
+        listX = []
+        listY = []
+        listC = []
+        listU = []
+        listV = []
+
+        #----------------------------------------------------------------------
+        # Prejdem vsetky vybrane body na zobrazenie
+        #----------------------------------------------------------------------
+        showFtion = self.dat.mapShowMethods()[self.display['showMethod']]
+
+        self.logger.debug(f'{self.name}.prepareChartData: Iterating {len(self.dat.actList)} iPoints for showFtion={self.display['showMethod']} with keyV={self.display['valKey']}')
+
+        pts = 0
+        for i, point in enumerate(self.dat.actList):
+
+            valueToShow = showFtion(point, self.display['valKey'])
+
+            #------------------------------------------------------------------
+            # Ak existuje valueToShow, pridam ju do zoznamu aj s koordinatmi
+            #------------------------------------------------------------------
+            if valueToShow is not None:
+
+                if self.display['keyX']: listX.append(point.pos(self.display['keyX']))  # if show axis X, add x-position into X array
+                if self.display['keyY']: listY.append(point.pos(self.display['keyY']))  # if show axis Y, add y-position into Y array
+
+                if type(valueToShow) == complex:
+
+                    listC.append(point.phase(self.display['valKey']))
+                    listU.append(valueToShow.real)
+                    listV.append(valueToShow.imag)
+
+                else:
+                    listC.append(valueToShow)
+
+                pts += 1
+
+        #----------------------------------------------------------------------
+        # Skonvertujem do npArrays
+        #----------------------------------------------------------------------
+        npX = np.array(listX)
+        npY = np.array(listY)
+        npC = np.array(listC)
+        npU = np.array(listU)
+        npV = np.array(listV)
+
+        #----------------------------------------------------------------------
+        self.logger.info(f'{self.name}.prepareChartData: Iterating {len(self.dat.actList)} iPoints produced {pts} values to show')
+        return npX, npY, npC, npU, npV
+
+    #==========================================================================
+    # Menus events
     #--------------------------------------------------------------------------
     def onClick(self, event):
         "Print information about mouse-given position"
@@ -703,27 +759,11 @@ class InfoMatrixGui(ttk.Frame):
     def setDisplayChart(self, chartType: str):
         "Set type of the chart to display"
 
-        self.logger.info(f'{self.name}.setDisplayChart: Chart type set to {chartType}')
+        if self.display['type'] != chartType:
 
-        self.chartType = chartType
-
-        return
-
-    #==========================================================================
-    # Method menu
-    #--------------------------------------------------------------------------
-    def onMethParams(self, event=None):
-        "Set parameters for methods to apply"
-
-        self.logger.info(f'{self.name}.onMethParams:')
-
-        gui = InfoMatrixMethodsGui(name=f'Methods for {self.dat.name}', container=self, matrix=self.dat)
-        gui.grab_set()
-        self.wait_window(gui)
-
-        #----------------------------------------------------------------------
-        self.logger.debug(f'{self.name}.onMethParams: Methods parameters window closed')
-
+            self.display['type'] = chartType
+            self.logger.info(f'{self.name}.setDisplayChart: Chart type was set to {chartType}')
+            self.viewChanged(force=True)
 
     #==========================================================================
     # Info menu

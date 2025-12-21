@@ -11,7 +11,7 @@ from   siqolib.logger         import SiqoLogger
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-_VER      = '3.2.1'
+_VER      = '3.2.2'
 
 _IND      = '|  '                      # Info indentation
 _F_SCHEMA = 1                          # Format for ipType
@@ -433,6 +433,8 @@ class InfoPoint:
                ,'Real value'    : InfoPoint.real
                ,'Imag value'    : InfoPoint.imag
                ,'Phase'         : InfoPoint.phase
+
+               ,'Complex value' : InfoPoint.complex
                }
 
     #--------------------------------------------------------------------------
@@ -720,7 +722,7 @@ class InfoPoint:
 
             if   type(x) in (int, float): return x
             elif type(x) == complex     : return cmath.polar(x)[0]
-            else                        : return x
+            else                        : return None
 
         return x
 
@@ -733,7 +735,7 @@ class InfoPoint:
 
             if   type(x) in (int, float): return math.fabs(x)
             elif type(x) == complex     : return cmath.polar(x)[0]
-            else                        : return x
+            else                        : return None
 
         return x
 
@@ -746,7 +748,7 @@ class InfoPoint:
 
             if   type(x) in (int, float): return x
             elif type(x) == complex     : return x.real
-            else                        : return x
+            else                        : return None
 
         return x
 
@@ -759,20 +761,33 @@ class InfoPoint:
 
             if   type(x) in (int, float): return 0
             elif type(x) == complex     : return x.imag
-            else                        : return x
+            else                        : return None
 
         return x
 
     #--------------------------------------------------------------------------
     def phase(self, key:str):
-        "Return phase in <-pi, pi> from +x axis for respective key"
+        "Return phase in <-pi, pi> from +x axis from complex value for respective key"
 
         x = self.val(key)
         if x is not None:
 
             if   type(x) in (int, float): return 0
             elif type(x) == complex     : return cmath.phase(x)
-            else                        : return x
+            else                        : return None
+
+        return x
+
+    #--------------------------------------------------------------------------
+    def complex(self, key:str):
+        "Return complex value for respective key"
+
+        x = self.val(key)
+        if x is not None:
+
+            if   type(x) in (int, float): return complex(x, 0)
+            elif type(x) == complex     : return x
+            else                        : return None
 
         return x
 
