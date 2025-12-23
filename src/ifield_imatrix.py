@@ -38,27 +38,27 @@ class InfoFieldMatrix(InfoMatrix):
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
-        self.l2e     = 1                           # Pocet posunu epochy pre jeden krok na osi Lambda = 1 / rychlost informacie
-        self.maxL    = 10                          # Maximalny pocet krokov na osi Lambda pri ziskani zoznamu stavov susednych bodov
+        self.l2e     = 1            # Pocet posunu epochy pre jeden krok na osi Lambda = 1 / rychlost informacie
+        self.maxL    = 10           # Maximalny pocet krokov na osi Lambda pri ziskani zoznamu stavov susednych bodov
 
-        self.sType   = 'bool'                      # Typ stavu
-        self.sTypes  = ('bool'                     # Typ stavu je boolovska hodnota, False/True
-                       ,'int'                      # Typ stavu je cele cislo, hodnoty su spocitatelne
-                       ,'complex'                  # Typ stavu je komplexne cislo, hodnoty su spocitatelne, posun na osi Lambda meni fazu
-                       )                           # Podoporovane typy stavov
+        self.sType   = 'bool'       # Typ stavu
+        self.sTypes  = ('bool'      # Typ stavu je boolovska hodnota, False/True
+                       ,'int'       # Typ stavu je cele cislo, hodnoty su spocitatelne
+                       ,'complex'   # Typ stavu je komplexne cislo, hodnoty su spocitatelne, posun na osi Lambda meni fazu
+                       )            # Podoporovane typy stavov
 
-        self.sAgg    = 'nearest'                   # Spôsob agregácie stavov do jednej hodnoty
-        self.sAggs   = ('nearest'                  # Prva nenulova/notFalse hodnota v zozname
-                       ,'min'                      # Minimalna hodnota v zozname, pre bool funguje ako AND
-                       ,'max'                      # Maximalna hodnota v zozname, pre bool funguje ako OR
-                       ,'sum'                      # Sucet hodnot v zozname     , pre bool funguje ako OR
-                       ,'cnt'                      # Najcastejsia hodnota v zozname
-                       )                           # Podoporovane sposoby agregacie stavov
+        self.sAgg    = 'nearest'    # Spôsob agregácie stavov do jednej hodnoty
+        self.sAggs   = ('nearest'   # Prva nenulova/notFalse hodnota v zozname
+                       ,'min'       # Minimalna hodnota v zozname, pre bool funguje ako AND
+                       ,'max'       # Maximalna hodnota v zozname, pre bool funguje ako OR
+                       ,'sum'       # Sucet hodnot v zozname     , pre bool funguje ako OR
+                       ,'cnt'       # Najcastejsia hodnota v zozname
+                       )            # Podoporovane sposoby agregacie stavov
 
-        self.rule    = 'and'                       # Pravidlo agregacie stavov susednych bodov
-        self.rules   = ('and'                      # Ak su stavy oboch susedov rovnake, nastavi sa tato hodnota
-                       ,'xand'                     # Ak su stavy oboch susedov rovnake, nastavi sa opacna hodnota
-                       )                           # Podoporovane pravidla agregacie stavov susednych bodov
+        self.rule    = 'and'        # Pravidlo agregacie stavov susednych bodov
+        self.rules   = ('and'       # Ak su stavy oboch susedov rovnake, nastavi sa tato hodnota
+                       ,'xand'      # Ak su stavy oboch susedov rovnake, nastavi sa opacna hodnota
+                       )            # Podoporovane pravidla agregacie stavov susednych bodov
 
         #----------------------------------------------------------------------
         # Inicializacia
@@ -80,8 +80,9 @@ class InfoFieldMatrix(InfoMatrix):
 
         methods = super().mapMethods()
 
-        methods['IField random Bool'] = {'matrixMethod': self.rndBool,   'pointMethod':None, 'params':{'prob True':0.5}}
-        methods['IField epoch step' ] = {'matrixMethod': self.epochStep, 'pointMethod':None, 'params':{}}
+        methods['IField init Bool'   ] = {'matrixMethod': self.rndBool,   'pointMethod':None, 'params':{'prob1'  :0.5             }}
+        methods['IField init Complex'] = {'matrixMethod': self.rndComplex,'pointMethod':None, 'params':{'probAbs':0.5, 'phases':2 }}
+        methods['IField epoch step'  ] = {'matrixMethod': self.epochStep, 'pointMethod':None, 'params':{}}
 
         return methods
 
@@ -104,9 +105,34 @@ class InfoFieldMatrix(InfoMatrix):
         # Set Active matrix to e = 0 and generate random Boolean values
         #----------------------------------------------------------------------
         self.actSubmatrix( {'e': 0} )
+        pts = self.applyMatrixMethod(methodKey='Random bit', valueKey=valueKey, params=params)
 
-        pointParams = {'prob1':params.get('prob True', 0.5)}
-        pts = self.applyMatrixMethod(methodKey='Random bit', valueKey=valueKey, params=pointParams)
+        #----------------------------------------------------------------------
+        # Reset Active matrix whole matrix
+        #----------------------------------------------------------------------
+        self.actSubmatrix()
+
+        #----------------------------------------------------------------------
+        self.logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
+
+    #--------------------------------------------------------------------------
+    def rndComplex(self, valueKey:str, params:dict):
+        """Clear all model and set state as random complex values with respective number of discrete phases.
+        """
+
+        self.logger.debug(f"{self.name}.rndComplex: for key '{valueKey}' with params {params}")
+        pts = 0
+
+        #----------------------------------------------------------------------
+        # Clear all model
+        #----------------------------------------------------------------------
+        self.clear(defs={valueKey: False})
+
+        #----------------------------------------------------------------------
+        # Set Active matrix to e = 0 and generate random Boolean values
+        #----------------------------------------------------------------------
+        self.actSubmatrix( {'e': 0} )
+        pts = self.applyMatrixMethod(methodKey='Comp discrete phase', valueKey=valueKey, params=params)
 
         #----------------------------------------------------------------------
         # Reset Active matrix whole matrix

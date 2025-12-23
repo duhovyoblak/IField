@@ -26,6 +26,8 @@ _SCHEMA   = {'ipReal'   :{'axes':_SCH_AXES.copy()
                          }
             }                          # Default built-in Schema for InfoPoint
 
+_CIRCLE   = 2*cmath.pi                 # Full circle in radians
+
 #==============================================================================
 # package's variables
 #------------------------------------------------------------------------------
@@ -442,14 +444,15 @@ class InfoPoint:
     def mapMethods() -> dict:
         "Returns map of methods for one InfoPoint setting keyed value to function value for respective parameters"
 
-        return {'<Point Methods>'        : {'pointMethod':InfoPoint.nullMethod,  'params':{}}
-               ,'Real constant'          : {'pointMethod':InfoPoint.fltConst,    'params':{'const' :0                                                 }}
-               ,'Random uniform'         : {'pointMethod':InfoPoint.fltRandUni,  'params':{'min'   :0, 'max'   :1                                     }}
-               ,'Random bit'             : {'pointMethod':InfoPoint.fltRandBit,  'params':{'prob1' :0.1                                               }}
-               ,'Comp constant (re/im)'  : {'pointMethod':InfoPoint.cmpConstR,   'params':{'real'  :0, 'imag'  :0                                     }}
-               ,'Comp constant (abs/phs)': {'pointMethod':InfoPoint.cmpConstP,   'params':{'abs'   :0, 'phase' :0                                     }}
-               ,'Comp random   (re/im)'  : {'pointMethod':InfoPoint.cmpRandUniR, 'params':{'reMin' :0, 'reMax' :1, 'imMin'   :0, 'imMax'   :1         }}
-               ,'Comp random   (abs/phs)': {'pointMethod':InfoPoint.cmpRandUniP, 'params':{'absMin':0, 'absMax':1, 'phaseMin':0, 'phaseMax':2*cmath.pi}}
+        return {'<Point Methods>'        : {'pointMethod':InfoPoint.nullMethod,    'params':{}}
+               ,'Real constant'          : {'pointMethod':InfoPoint.fltConst,      'params':{'const'  :0                                                }}
+               ,'Random uniform'         : {'pointMethod':InfoPoint.fltRandUni,    'params':{'min'    :0,   'max'   :1                                  }}
+               ,'Random bit'             : {'pointMethod':InfoPoint.fltRandBit,    'params':{'prob1'  :0.1                                              }}
+               ,'Comp constant (re/im)'  : {'pointMethod':InfoPoint.cmpConstR,     'params':{'real'   :0,   'imag'  :0                                  }}
+               ,'Comp constant (abs/phs)': {'pointMethod':InfoPoint.cmpConstP,     'params':{'abs'    :0,   'phase' :0                                  }}
+               ,'Comp random   (re/im)'  : {'pointMethod':InfoPoint.cmpRandUniR,   'params':{'reMin'  :0,   'reMax' :1, 'imMin'   :0, 'imMax'   :1      }}
+               ,'Comp random   (abs/phs)': {'pointMethod':InfoPoint.cmpRandUniP,   'params':{'absMin' :0,   'absMax':1, 'phaseMin':0, 'phaseMax':_CIRCLE}}
+               ,'Comp discrete phase'    : {'pointMethod':InfoPoint.cmpDiscPhases, 'params':{'probAbs':0.5, 'phases':2                                  }}
                }
 
     #==========================================================================
@@ -848,10 +851,26 @@ class InfoPoint:
     def cmpRandUniR(self, valueKey:str, params:dict):
         "Generates random uniform real and imaginary values from respective intervals for keyed value"
 
-        real = rnd.random()
-        imag = rnd.random()
-        c = complex(real, imag)
+        #----------------------------------------------------------------------
+        if 'reMin' in params.keys(): reMin = params['reMin']
+        else                       : reMin = 0
 
+        if 'reMax' in params.keys(): reMax = params['reMax']
+        else                       : reMax = 1
+
+        real = rnd.uniform(reMin, reMax)
+
+        #----------------------------------------------------------------------
+        if 'imMin' in params.keys(): imMin = params['imMin']
+        else                       : imMin = 0
+
+        if 'imMax' in params.keys(): imMax = params['imMax']
+        else                       : imMax = 1
+
+        imag = rnd.uniform(imMin, imMax)
+
+        #----------------------------------------------------------------------
+        c = complex(real, imag)
         self.set(vals={valueKey:c})
 
     #--------------------------------------------------------------------------
@@ -872,9 +891,33 @@ class InfoPoint:
         else                          : phaseMin = 0
 
         if 'phaseMax' in params.keys(): phaseMax = params['phaseMax']
-        else                          : phaseMax = 2*cmath.pi
+        else                          : phaseMax = _CIRCLE
 
         phase = rnd.uniform(phaseMin, phaseMax)
+
+        #----------------------------------------------------------------------
+        c = cmath.rect(abs, phase)
+        self.set(vals={valueKey:c})
+
+    #--------------------------------------------------------------------------
+    def cmpDiscPhases(self, valueKey:str, params:dict):
+        "Generates absolute value = 1 with respective number of discrete phases for keyed value"
+
+        #----------------------------------------------------------------------
+        if 'probAbs' in params.keys(): probAbs = params['probAbs']
+        else                         : probAbs = 0.5
+
+        if rnd.randint(0, 9999) <= probAbs*10000: abs = 1
+        else                                    : abs = 0
+
+        #----------------------------------------------------------------------
+        if 'phases' in params.keys(): phases = params['phases']
+        else                        : phases = 2
+
+        deltaPhase = _CIRCLE / phases          # angle step for N discrete phases
+        phaseIdx   = rnd.randint(0, phases-1)  # random index of the generated phase
+
+        phase = deltaPhase * phaseIdx
 
         #----------------------------------------------------------------------
         c = cmath.rect(abs, phase)
