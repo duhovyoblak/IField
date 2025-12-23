@@ -448,8 +448,8 @@ class InfoPoint:
                ,'Random bit'             : {'pointMethod':InfoPoint.fltRandBit,  'params':{'prob1' :0.1                                               }}
                ,'Comp constant (re/im)'  : {'pointMethod':InfoPoint.cmpConstR,   'params':{'real'  :0, 'imag'  :0                                     }}
                ,'Comp constant (abs/phs)': {'pointMethod':InfoPoint.cmpConstP,   'params':{'abs'   :0, 'phase' :0                                     }}
-               ,'Comp random (re/im)'    : {'pointMethod':InfoPoint.cmpRandUniR, 'params':{'reMin' :0, 'reMax' :1, 'imMin'   :0, 'imMax'   :1         }}
-               ,'Comp random (abs/phs)'  : {'pointMethod':InfoPoint.cmpRandUniP, 'params':{'absMin':0, 'absMax':1, 'phaseMin':0, 'phaseMax':2*cmath.pi}}
+               ,'Comp random   (re/im)'  : {'pointMethod':InfoPoint.cmpRandUniR, 'params':{'reMin' :0, 'reMax' :1, 'imMin'   :0, 'imMax'   :1         }}
+               ,'Comp random   (abs/phs)': {'pointMethod':InfoPoint.cmpRandUniP, 'params':{'absMin':0, 'absMax':1, 'phaseMin':0, 'phaseMax':2*cmath.pi}}
                }
 
     #==========================================================================
@@ -858,10 +858,26 @@ class InfoPoint:
     def cmpRandUniP(self, valueKey:str, params:dict):
         "Generates random uniform absolute value and phase from respective intervals for keyed value"
 
-        abs   = rnd.random()
-        phase = rnd.random()
-        c = cmath.rect(abs, phase)
+        #----------------------------------------------------------------------
+        if 'absMin' in params.keys(): absMin = params['absMin']
+        else                        : absMin = 0
 
+        if 'absMax' in params.keys(): absMax = params['absMax']
+        else                        : absMax = 1
+
+        abs = rnd.uniform(absMin, absMax)
+
+        #----------------------------------------------------------------------
+        if 'phaseMin' in params.keys(): phaseMin = params['phaseMin']
+        else                          : phaseMin = 0
+
+        if 'phaseMax' in params.keys(): phaseMax = params['phaseMax']
+        else                          : phaseMax = 2*cmath.pi
+
+        phase = rnd.uniform(phaseMin, phaseMax)
+
+        #----------------------------------------------------------------------
+        c = cmath.rect(abs, phase)
         self.set(vals={valueKey:c})
 
     #==========================================================================

@@ -10,13 +10,12 @@ from   tkinter.messagebox                import showinfo
 import matplotlib.pyplot                 as plt
 from   matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
-
-from   siqolib.logger           import SiqoLogger
-from   siqolib.message          import SiqoMessage, askInt, askReal, askStr
-from   siqo_imatrix             import InfoMatrix
-from   siqo_ipoint_gui          import InfoPointGui, InfoPointValsGui
-from   siqo_imatrix_data_gui    import InfoMatrixDataGui
-from   siqo_imatrix_display_gui import InfoMatrixDisplayGui
+from   siqolib.logger                    import SiqoLogger
+from   siqolib.message                   import SiqoMessage, askInt, askReal, askStr
+from   siqo_imatrix                      import InfoMatrix
+from   siqo_ipoint_gui                   import InfoPointGui, InfoPointValsGui
+from   siqo_imatrix_data_gui             import InfoMatrixDataGui
+from   siqo_imatrix_display_gui          import InfoMatrixDisplayGui
 
 #==============================================================================
 # package's constants
@@ -512,7 +511,7 @@ class InfoMatrixGui(ttk.Frame):
                 self.logger.warning(f'{self.name}.updateChart: No vector values to show in QUIVER chart. Please select complex value to show.')
                 return
 
-            chrtObj = chart.quiver(x=npX, y=npY, u=npU, v=npV, c=npC, cmap='RdYlBu_r')
+            chrtObj = chart.quiver(npX, npY, npU, npV, npC, cmap='RdYlBu_r')
 
         #----------------------------------------------------------------------
         # Neznamy typ chartu
@@ -593,7 +592,7 @@ class InfoMatrixGui(ttk.Frame):
         npV = np.array(listV)
 
         #----------------------------------------------------------------------
-        self.logger.info(f'{self.name}.prepareChartData: Iterating {len(self.dat.actList)} iPoints produced {pts} values to show')
+        self.logger.info(f'{self.name}.prepareChartData: {len(self.dat.actList)} iPoints produced [{npX.size}, {npY.size}] {npC.size}, ({npU.size}, {npV.size}) values for chart')
         return npX, npY, npC, npU, npV
 
     #==========================================================================
