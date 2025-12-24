@@ -403,8 +403,8 @@ class InfoMatrix:
 
         methods = InfoPoint.mapMethods()
 
-        methods['<Matrix Methods>'] = {'matrixMethod': self.nullMethod, 'pointMethod':None,  'params':{}}
-        methods['Move data'       ] = {'matrixMethod': self.moveData,   'pointMethod':None,  'params':{'axeKey':'x', 'startIdx':0, 'deltaIdx':1}}
+        methods['<Matrix Methods>'] = {'matrixMethod': self.nullMethod, 'pointMethod':None,  'params':{}                                        , 'type':'ask'}
+        methods['Move data'       ] = {'matrixMethod': self.moveData,   'pointMethod':None,  'params':{'axeKey':'x', 'startIdx':0, 'deltaIdx':1}, 'type':'ask'}
 
         return methods
 
@@ -1019,7 +1019,7 @@ class InfoMatrix:
            params    : Parameters for the method as dict
         """
 
-        self.logger.debug(f"{self.name}.applyMatrixMethod: methodKey='{methodKey}', valueKey='{valueKey}', params={params}")
+        self.logger.warning(f"{self.name}.applyMatrixMethod: methodKey='{methodKey}', valueKey='{valueKey}', params={params}")
         pts = 0
 
         #----------------------------------------------------------------------

@@ -335,6 +335,8 @@ class InfoMatrixGui(ttk.Frame):
     def viewChanged(self, event=None, force=False):
         "Resolve changes in display options and update the chart accordingly if needed"
 
+        self.logger.audit(f"{self.name}.viewChanged: force={force}")
+
         #----------------------------------------------------------------------
         # Check for Changes in show options
         #----------------------------------------------------------------------
@@ -387,7 +389,7 @@ class InfoMatrixGui(ttk.Frame):
     def updateChildFrame(self):
         "Update frame dedicated to child classes. This method is called in self.viewChanged()"
 
-        pass
+        self.logger.warning(f'{self.name}.updateChildFrame: No child frame to update')
 
     #==========================================================================
     # Update the chart
@@ -819,26 +821,37 @@ class InfoMatrixGui(ttk.Frame):
             return
 
         #----------------------------------------------------------------------
-        self.logger.info(f'{self.name}.onMethodPlay: Value {self.display['valName']}({self.display['valKey']}) will be set by {metKey} with subset = {self.sub2D}')
-
-        #----------------------------------------------------------------------
-        # Ziskanie hodnot parametrov metody od usera
+        # Ziskanie definicie metody
         #----------------------------------------------------------------------
         metDef = self.dat.mapMethods()[metKey]
         params = metDef['params']
-        usrPar = {}
 
-        for param, entry in params.items():
+        #----------------------------------------------------------------------
+        # Ak je typ parametrov 'ask', ziskaj hodnoty parametrov od usera
+        #----------------------------------------------------------------------
+        if metDef['type'] == 'ask':
 
-            if   isinstance(entry, int  ): newEntry = askInt (container=self, title=f"Parameter of {metKey}", prompt=param, initialvalue=entry)
-            elif isinstance(entry, float): newEntry = askReal(container=self, title=f"Parameter of {metKey}", prompt=param, initialvalue=entry)
-            else                         : newEntry = askStr (container=self, title=f"Parameter of {metKey}", prompt=param, initialvalue=entry)
+            usrPar = {}
 
-            if newEntry is None:
-                self.logger.info(f"{self.name}.onMethodPlay: {metKey} cancelled by user")
-                return
+            for param, entry in params.items():
 
-            usrPar[param] = newEntry
+                if   isinstance(entry, int  ): newEntry = askInt (container=self, title=f"Parameter of {metKey}", prompt=param, initialvalue=entry)
+                elif isinstance(entry, float): newEntry = askReal(container=self, title=f"Parameter of {metKey}", prompt=param, initialvalue=entry)
+                else                         : newEntry = askStr (container=self, title=f"Parameter of {metKey}", prompt=param, initialvalue=entry)
+
+                if newEntry is None:
+                    self.logger.info(f"{self.name}.onMethodPlay: {metKey} cancelled by user")
+                    return
+
+                usrPar[param] = newEntry
+
+        #----------------------------------------------------------------------
+        # Inak pouzi hodnoty parametrov v argumente
+        #----------------------------------------------------------------------
+        else:
+            usrPar = params
+
+        self.logger.audit(f'{self.name}.onMethodPlay: {self.display['valName']}[{self.display['valKey']}] will be set by {metKey} on subset={self.sub2D} with params={usrPar}')
 
         #----------------------------------------------------------------------
         # Vsetko je pripravene: Press button PLAY

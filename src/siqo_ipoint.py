@@ -26,7 +26,9 @@ _SCHEMA   = {'ipReal'   :{'axes':_SCH_AXES.copy()
                          }
             }                          # Default built-in Schema for InfoPoint
 
-_CIRCLE   = 2*cmath.pi                 # Full circle in radians
+_CIRCLE      = 2*cmath.pi              # Full circle in radians
+_PHASE_START = cmath.pi/2              # Start phase in radians
+_CLOSE_ZERO  = 1e-12                   # Close to zero threshold
 
 #==============================================================================
 # package's variables
@@ -445,14 +447,14 @@ class InfoPoint:
         "Returns map of methods for one InfoPoint setting keyed value to function value for respective parameters"
 
         return {'<Point Methods>'        : {'pointMethod':InfoPoint.nullMethod,    'params':{}}
-               ,'Real constant'          : {'pointMethod':InfoPoint.fltConst,      'params':{'const'  :0                                                }}
-               ,'Random uniform'         : {'pointMethod':InfoPoint.fltRandUni,    'params':{'min'    :0,   'max'   :1                                  }}
-               ,'Random bit'             : {'pointMethod':InfoPoint.fltRandBit,    'params':{'prob1'  :0.1                                              }}
-               ,'Comp constant (re/im)'  : {'pointMethod':InfoPoint.cmpConstR,     'params':{'real'   :0,   'imag'  :0                                  }}
-               ,'Comp constant (abs/phs)': {'pointMethod':InfoPoint.cmpConstP,     'params':{'abs'    :0,   'phase' :0                                  }}
-               ,'Comp random   (re/im)'  : {'pointMethod':InfoPoint.cmpRandUniR,   'params':{'reMin'  :0,   'reMax' :1, 'imMin'   :0, 'imMax'   :1      }}
-               ,'Comp random   (abs/phs)': {'pointMethod':InfoPoint.cmpRandUniP,   'params':{'absMin' :0,   'absMax':1, 'phaseMin':0, 'phaseMax':_CIRCLE}}
-               ,'Comp discrete phase'    : {'pointMethod':InfoPoint.cmpDiscPhases, 'params':{'probAbs':0.5, 'phases':2                                  }}
+               ,'Real constant'          : {'pointMethod':InfoPoint.fltConst,      'params':{'const'  :0                                                }, 'type':'ask'}
+               ,'Random uniform'         : {'pointMethod':InfoPoint.fltRandUni,    'params':{'min'    :0,   'max'   :1                                  }, 'type':'ask'}
+               ,'Random bit'             : {'pointMethod':InfoPoint.fltRandBit,    'params':{'prob1'  :0.1                                              }, 'type':'ask'}
+               ,'Comp constant (re/im)'  : {'pointMethod':InfoPoint.cmpConstR,     'params':{'real'   :0,   'imag'  :0                                  }, 'type':'ask'}
+               ,'Comp constant (abs/phs)': {'pointMethod':InfoPoint.cmpConstP,     'params':{'abs'    :0,   'phase' :0                                  }, 'type':'ask'}
+               ,'Comp random   (re/im)'  : {'pointMethod':InfoPoint.cmpRandUniR,   'params':{'reMin'  :0,   'reMax' :1, 'imMin'   :0, 'imMax'   :1      }, 'type':'ask'}
+               ,'Comp random   (abs/phs)': {'pointMethod':InfoPoint.cmpRandUniP,   'params':{'absMin' :0,   'absMax':1, 'phaseMin':0, 'phaseMax':_CIRCLE}, 'type':'ask'}
+               ,'Comp discrete phase'    : {'pointMethod':InfoPoint.cmpDiscPhases, 'params':{'probAbs':0.5, 'phases':2                                  }, 'type':'ask'}
                }
 
     #==========================================================================
@@ -917,10 +919,14 @@ class InfoPoint:
         deltaPhase = _CIRCLE / phases          # angle step for N discrete phases
         phaseIdx   = rnd.randint(0, phases-1)  # random index of the generated phase
 
-        phase = deltaPhase * phaseIdx
+        phase = _PHASE_START + (deltaPhase * phaseIdx)
 
         #----------------------------------------------------------------------
         c = cmath.rect(abs, phase)
+        real = 0.0 if math.fabs(c.real) < _CLOSE_ZERO else c.real
+        imag = 0.0 if math.fabs(c.imag) < _CLOSE_ZERO else c.imag
+
+        c = complex(real, imag)
         self.set(vals={valueKey:c})
 
     #==========================================================================

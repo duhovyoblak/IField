@@ -11,7 +11,7 @@ from   ifield_imatrix           import InfoFieldMatrix
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-_VER            = '1.0'
+_VER            = '1.1'
 
 _PADX           =  5
 _PADY           =  5
@@ -34,12 +34,14 @@ class IFieldMatrixGui(InfoMatrixGui):
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self.varL2E   = tk.IntVar   (value=dat.l2e  ) # Pocet posunu epochy pre jeden krok na osi Lambda = 1 / rychlost informacie
-        self.varMaxL  = tk.IntVar   (value=dat.maxL ) # Maximalny pocet krokov na osi Lambda pri ziskani zoznamu stavov susednych bodov
+        self.varL2E   = tk.IntVar   (value=dat.l2e  ) # Pocet posunu epochy na jeden krok na osi Lambda = 1 / rychlost informacie
+        self.varPhs   = tk.IntVar   (value=dat.phs  ) # Pocet fazovych stavov pre komplexne hodnoty
+        self.varL2P   = tk.IntVar   (value=dat.l2p  ) # Pocet pootoceni fazy na jeden krok na osi Lambda =
 
         self.varSType = tk.StringVar(value=dat.sType) # Typ stavu
         self.varSAgg  = tk.StringVar(value=dat.sAgg ) # Spôsob agregácie stavov do jednej hodnoty
         self.varRule  = tk.StringVar(value=dat.rule ) # Pravidlo agregacie stavov susednych bodov
+        self.varMaxL  = tk.IntVar   (value=dat.maxL ) # Maximalny pocet krokov na osi Lambda pri ziskani zoznamu stavov susednych bodov
 
         #----------------------------------------------------------------------
         # Initialise InfoMatrixGui
@@ -61,22 +63,32 @@ class IFieldMatrixGui(InfoMatrixGui):
            This method is called in InfoMatrixGui.show()"""
 
         #----------------------------------------------------------------------
-        # Pocet posunu epochy pre jeden krok na osi Lambda = 1 / rychlost informacie
+        # Pocet posunu epochy na jeden krok na osi Lambda = 1 / rychlost informacie
         #----------------------------------------------------------------------
         lbl = ttk.Label(container, text="L2E (epoch per lambda):")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
-        spinBox = ttk.Spinbox(container, from_=0, to=1000, textvariable=self.varL2E, width=10)
+        spinBox = ttk.Spinbox(container, from_=0, to=100, textvariable=self.varL2E, width=10, command=self.updateChildFrame)
         spinBox['state'] = 'normal'
         spinBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
-        # Maximalny pocet krokov na osi Lambda pri ziskani zoznamu stavov susednych bodov
+        # Pocet fazovych stavov pre komplexne hodnoty
         #----------------------------------------------------------------------
-        lbl = ttk.Label(container, text="Neighbors' to consider")
+        lbl = ttk.Label(container, text="Number of phases:")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
-        spinBox = ttk.Spinbox(container, from_=0, to=1000, textvariable=self.varMaxL, width=10)
+        spinBox = ttk.Spinbox(container, from_=1, to=360, textvariable=self.varPhs, width=10, command=self.updateChildFrame)
+        spinBox['state'] = 'normal'
+        spinBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
+
+        #----------------------------------------------------------------------
+        # Pocet pootoceni fazy na jeden krok na osi Lambda =
+        #----------------------------------------------------------------------
+        lbl = ttk.Label(container, text="L2P (delta phase per lambda):")
+        lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
+
+        spinBox = ttk.Spinbox(container, from_=0, to=100, textvariable=self.varL2P, width=10, command=self.updateChildFrame)
         spinBox['state'] = 'normal'
         spinBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
@@ -92,7 +104,7 @@ class IFieldMatrixGui(InfoMatrixGui):
         comboBox = ttk.Combobox(container, textvariable=self.varSType, state='readonly')
         comboBox['values'] = self.dat.sTypes
         comboBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
-        comboBox.bind('<<ComboboxSelected>>', lambda e: self.onSType())
+        comboBox.bind('<<ComboboxSelected>>', lambda event: self.updateChildFrame())
 
         #----------------------------------------------------------------------
         # Spôsob agregácie stavov do jednej hodnoty
@@ -102,7 +114,7 @@ class IFieldMatrixGui(InfoMatrixGui):
         comboBox = ttk.Combobox(container, textvariable=self.varSAgg, state='readonly')
         comboBox['values'] = self.dat.sAggs
         comboBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
-        comboBox.bind('<<ComboboxSelected>>', lambda e: self.onSAgg())
+        comboBox.bind('<<ComboboxSelected>>', lambda event: self.updateChildFrame())
 
         #----------------------------------------------------------------------
         # Pravidlo agregacie stavov susednych bodov
@@ -112,35 +124,52 @@ class IFieldMatrixGui(InfoMatrixGui):
         comboBox = ttk.Combobox(container, textvariable=self.varRule, state='readonly')
         comboBox['values'] = self.dat.rules
         comboBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
-        comboBox.bind('<<ComboboxSelected>>', lambda e: self.onRule())
+        comboBox.bind('<<ComboboxSelected>>', lambda event: self.updateChildFrame())
+
+        #----------------------------------------------------------------------
+        # Maximalny pocet krokov na osi Lambda pri ziskani zoznamu stavov susednych bodov
+        #----------------------------------------------------------------------
+        lbl = ttk.Label(container, text="Neighbors' to consider")
+        lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
+
+        spinBox = ttk.Spinbox(container, from_=0, to=1000, textvariable=self.varMaxL, width=10, command=self.updateChildFrame)
+        spinBox['state'] = 'normal'
+        spinBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
     #--------------------------------------------------------------------------
     def updateChildFrame(self):
         """Update frame in parent container InfoMatrixGui dedicated to child classes.
            This method is called in InfoMatrixGui.viewChanged()"""
 
-        pass
+        if self.dat.l2e != self.varL2E.get():
+            self.logger.warning(f'{self.name}.updateChildFrame: L2E changed {self.dat.l2e} -> {self.varL2E.get()}')
+            self.dat.l2e = self.varL2E.get()
 
-    #--------------------------------------------------------------------------
-    def onSType(self):
-        "Reaction to change of state type"
+        if self.dat.phs != self.varPhs.get():
+            self.logger.warning(f'{self.name}.updateChildFrame: Number of phases changed {self.dat.phs} -> {self.varPhs.get()}')
+            self.dat.phs = self.varPhs.get()
 
-        self.dat.sType = self.varSType.get()
-        self.logger.info(f'{self.name}.onSType: State type changed to {self.dat.sType}')
+        if self.dat.l2p != self.varL2P.get():
+            self.logger.warning(f'{self.name}.updateChildFrame: L2P changed {self.dat.l2p} -> {self.varL2P.get()}')
+            self.dat.l2p = self.varL2P.get()
 
-    #--------------------------------------------------------------------------
-    def onSAgg(self):
-        "Reaction to change of aggregation method"
+        if self.dat.sType != self.varSType.get():
+            self.logger.warning(f'{self.name}.updateChildFrame: State type changed {self.dat.sType} -> {self.varSType.get()}')
+            self.dat.sType = self.varSType.get()
 
-        self.dat.sAgg = self.varSAgg.get()
-        self.logger.info(f'{self.name}.onSAgg: Aggregation method changed to {self.dat.sAgg}')
+        if self.dat.sAgg != self.varSAgg.get():
+            self.logger.warning(f'{self.name}.updateChildFrame: Aggregation method changed {self.dat.sAgg} -> {self.varSAgg.get()}')
+            self.dat.sAgg = self.varSAgg.get()
 
-    #--------------------------------------------------------------------------
-    def onRule(self):
-        "Reaction to change of neighbors' rule"
+        if self.dat.rule != self.varRule.get():
+            self.logger.warning(f'{self.name}.updateChildFrame: Neighbors\' rule changed {self.dat.rule} -> {self.varRule.get()}')
+            self.dat.rule = self.varRule.get()
 
-        self.dat.rule = self.varRule.get()
-        self.logger.info(f'{self.name}.onRule: Neighbors\' rule changed to {self.dat.rule}')
+        if self.dat.maxL != self.varMaxL.get():
+            self.logger.warning(f'{self.name}.updateChildFrame: Maximal number of neighbors changed {self.dat.maxL} -> {self.varMaxL.get()}')
+            self.dat.maxL = self.varMaxL.get()
+
+        self.logger.debug(f'{self.name}.updateChildFrame: Done')
 
     #--------------------------------------------------------------------------
     def onClickLeft(self, x, y):

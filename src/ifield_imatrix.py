@@ -10,6 +10,7 @@ _VER    = '1.0'
 
 _LAMBDA = 120       # Default points for Lambda axis
 _EPOCH  =  60       # Default points for Epoch axis
+_PHASES =   2       # Default number of the discrete phases for complex values
 
 #==============================================================================
 # package's variables
@@ -38,16 +39,18 @@ class InfoFieldMatrix(InfoMatrix):
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
-        self.l2e     = 1            # Pocet posunu epochy pre jeden krok na osi Lambda = 1 / rychlost informacie
+        self.l2e     =  1           # Pocet posunu epochy pre jeden krok na osi Lambda = 1 / rychlost informacie
+        self.phs     =  _PHASES     # Pocet fazovych stavov pre komplexne hodnoty
+        self.l2p     =  0           # Pocet pootoceni fazy na jeden krok na osi Lambda =
         self.maxL    = 10           # Maximalny pocet krokov na osi Lambda pri ziskani zoznamu stavov susednych bodov
 
-        self.sType   = 'bool'       # Typ stavu
+        self.sType   = 'complex'    # Typ stavu
         self.sTypes  = ('bool'      # Typ stavu je boolovska hodnota, False/True
                        ,'int'       # Typ stavu je cele cislo, hodnoty su spocitatelne
                        ,'complex'   # Typ stavu je komplexne cislo, hodnoty su spocitatelne, posun na osi Lambda meni fazu
                        )            # Podoporovane typy stavov
 
-        self.sAgg    = 'nearest'    # Spôsob agregácie stavov do jednej hodnoty
+        self.sAgg    = 'sum'        # Spôsob agregácie stavov do jednej hodnoty
         self.sAggs   = ('nearest'   # Prva nenulova/notFalse hodnota v zozname
                        ,'min'       # Minimalna hodnota v zozname, pre bool funguje ako AND
                        ,'max'       # Maximalna hodnota v zozname, pre bool funguje ako OR
@@ -55,9 +58,10 @@ class InfoFieldMatrix(InfoMatrix):
                        ,'cnt'       # Najcastejsia hodnota v zozname
                        )            # Podoporovane sposoby agregacie stavov
 
-        self.rule    = 'and'        # Pravidlo agregacie stavov susednych bodov
+        self.rule    = 'sum'        # Pravidlo agregacie stavov susednych bodov
         self.rules   = ('and'       # Ak su stavy oboch susedov rovnake, nastavi sa tato hodnota
                        ,'xand'      # Ak su stavy oboch susedov rovnake, nastavi sa opacna hodnota
+                       ,'sum'       # Sucet stavov oboch susedov
                        )            # Podoporovane pravidla agregacie stavov susednych bodov
 
         #----------------------------------------------------------------------
@@ -67,7 +71,7 @@ class InfoFieldMatrix(InfoMatrix):
         self.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
         self.init(cnts={'l':_LAMBDA, 'e':_EPOCH})
 
-        self.applyMatrixMethod(methodKey='Real constant', valueKey='s', params={'const': 0.0})
+        self.applyMatrixMethod(methodKey='Comp constant (re/im)', valueKey='s', params={'real':0, 'imag':0})
 
         #----------------------------------------------------------------------
         self.logger.info(f"{self.name}.constructor: done")
@@ -80,9 +84,9 @@ class InfoFieldMatrix(InfoMatrix):
 
         methods = super().mapMethods()
 
-        methods['IField init Bool'   ] = {'matrixMethod': self.rndBool,   'pointMethod':None, 'params':{'prob1'  :0.5             }}
-        methods['IField init Complex'] = {'matrixMethod': self.rndComplex,'pointMethod':None, 'params':{'probAbs':0.5, 'phases':2 }}
-        methods['IField epoch step'  ] = {'matrixMethod': self.epochStep, 'pointMethod':None, 'params':{}}
+        methods['IField init Bool'   ] = {'matrixMethod': self.rndBool,   'pointMethod':None, 'params':{'prob1'  :0.5                  }, 'type':'ask'  }
+        methods['IField init Complex'] = {'matrixMethod': self.rndComplex,'pointMethod':None, 'params':{'probAbs':0.5, 'phases':_PHASES}, 'type':'quiet'}
+        methods['IField epoch step'  ] = {'matrixMethod': self.epochStep, 'pointMethod':None, 'params':{}                               , 'type':'ask'  }
 
         return methods
 
@@ -132,6 +136,8 @@ class InfoFieldMatrix(InfoMatrix):
         # Set Active matrix to e = 0 and generate random Boolean values
         #----------------------------------------------------------------------
         self.actSubmatrix( {'e': 0} )
+        params['phases'] = self.phs
+
         pts = self.applyMatrixMethod(methodKey='Comp discrete phase', valueKey=valueKey, params=params)
 
         #----------------------------------------------------------------------
