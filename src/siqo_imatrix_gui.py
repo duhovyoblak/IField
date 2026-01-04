@@ -300,9 +300,8 @@ class InfoMatrixGui(ttk.Frame):
 
         lblMet = ttk.Label(container, text="Apply method:")
         lblMet.grid(column=2, row=1, sticky=tk.E, padx=_PADX, pady=_PADY)
-
         self.cbSetMet = ttk.Combobox(container, textvariable=self.varSetMet, width=int(_COMBO_WIDTH))
-        self.cbSetMet['values'] = list(self.dat.mapMethods().keys())
+        self.cbSetMet['values'] = self.dat.visibleMethodKeys()
         self.cbSetMet['state' ] = 'readonly'
         self.cbSetMet.bind('<<ComboboxSelected>>', self.onMethodPick)
         self.cbSetMet.grid(column=3, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)

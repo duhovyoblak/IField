@@ -446,15 +446,15 @@ class InfoPoint:
     def mapMethods() -> dict:
         "Returns map of methods for one InfoPoint setting keyed value to function value for respective parameters"
 
-        return {'<Point Methods>'        : {'pointMethod':InfoPoint.nullMethod,    'params':{}}
-               ,'Real constant'          : {'pointMethod':InfoPoint.fltConst,      'params':{'const'  :0                                                }, 'type':'ask'}
-               ,'Random uniform'         : {'pointMethod':InfoPoint.fltRandUni,    'params':{'min'    :0,   'max'   :1                                  }, 'type':'ask'}
-               ,'Random bit'             : {'pointMethod':InfoPoint.fltRandBit,    'params':{'prob1'  :0.1                                              }, 'type':'ask'}
-               ,'Comp constant (re/im)'  : {'pointMethod':InfoPoint.cmpConstR,     'params':{'real'   :0,   'imag'  :0                                  }, 'type':'ask'}
-               ,'Comp constant (abs/phs)': {'pointMethod':InfoPoint.cmpConstP,     'params':{'abs'    :0,   'phase' :0                                  }, 'type':'ask'}
-               ,'Comp random   (re/im)'  : {'pointMethod':InfoPoint.cmpRandUniR,   'params':{'reMin'  :0,   'reMax' :1, 'imMin'   :0, 'imMax'   :1      }, 'type':'ask'}
-               ,'Comp random   (abs/phs)': {'pointMethod':InfoPoint.cmpRandUniP,   'params':{'absMin' :0,   'absMax':1, 'phaseMin':0, 'phaseMax':_CIRCLE}, 'type':'ask'}
-               ,'Comp discrete phase'    : {'pointMethod':InfoPoint.cmpDiscPhases, 'params':{'probAbs':0.5, 'phases':2                                  }, 'type':'ask'}
+        return {'<Point Methods>'        : {'pointMethod':InfoPoint.nullMethod,    'params':{                                                           }, 'visible':True}
+               ,'Real constant'          : {'pointMethod':InfoPoint.fltConst,      'params':{'const'  :0                                                }, 'visible':True, 'type':'ask'}
+               ,'Random uniform'         : {'pointMethod':InfoPoint.fltRandUni,    'params':{'min'    :0,   'max'   :1                                  }, 'visible':True, 'type':'ask'}
+               ,'Random bit'             : {'pointMethod':InfoPoint.fltRandBit,    'params':{'prob1'  :0.1                                              }, 'visible':True, 'type':'ask'}
+               ,'Comp constant (re/im)'  : {'pointMethod':InfoPoint.cmpConstR,     'params':{'real'   :0,   'imag'  :0                                  }, 'visible':True, 'type':'ask'}
+               ,'Comp constant (abs/phs)': {'pointMethod':InfoPoint.cmpConstP,     'params':{'abs'    :0,   'phase' :0                                  }, 'visible':True, 'type':'ask'}
+               ,'Comp random   (re/im)'  : {'pointMethod':InfoPoint.cmpRandUniR,   'params':{'reMin'  :0,   'reMax' :1, 'imMin'   :0, 'imMax'   :1      }, 'visible':True, 'type':'ask'}
+               ,'Comp random   (abs/phs)': {'pointMethod':InfoPoint.cmpRandUniP,   'params':{'absMin' :0,   'absMax':1, 'phaseMin':0, 'phaseMax':_CIRCLE}, 'visible':True, 'type':'ask'}
+               ,'Comp discrete phase'    : {'pointMethod':InfoPoint.cmpDiscPhases, 'params':{'probAbs':0.5, 'phases':2                                  }, 'visible':True, 'type':'ask'}
                }
 
     #==========================================================================

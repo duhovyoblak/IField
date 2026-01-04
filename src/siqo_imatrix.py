@@ -403,10 +403,18 @@ class InfoMatrix:
 
         methods = InfoPoint.mapMethods()
 
-        methods['<Matrix Methods>'] = {'matrixMethod': self.nullMethod, 'pointMethod':None,  'params':{}                                        , 'type':'ask'}
-        methods['Move data'       ] = {'matrixMethod': self.moveData,   'pointMethod':None,  'params':{'axeKey':'x', 'startIdx':0, 'deltaIdx':1}, 'type':'ask'}
+        methods['<Matrix Methods>'] = {'matrixMethod': self.nullMethod, 'pointMethod':None,  'params':{}                                        , 'visible':True, 'type':'ask'}
+        methods['Move data'       ] = {'matrixMethod': self.moveData,   'pointMethod':None,  'params':{'axeKey':'x', 'startIdx':0, 'deltaIdx':1}, 'visible':True, 'type':'ask'}
 
         return methods
+
+    #--------------------------------------------------------------------------
+    def visibleMethodKeys(self) -> list:
+        "Returns list of keys of mapped methods with 'visible'==True"
+
+        methods = self.mapMethods()
+
+        return [key for key, val in methods.items() if val.get('visible', True)]
 
     #==========================================================================
     # Position and indices tools

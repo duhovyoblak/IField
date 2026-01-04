@@ -1,6 +1,7 @@
 #==============================================================================
 # Siqo class InfoFieldMatrix
 #------------------------------------------------------------------------------
+import cmath
 from   siqo_imatrix           import InfoMatrix
 
 #==============================================================================
@@ -39,10 +40,10 @@ class InfoFieldMatrix(InfoMatrix):
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
-        self.l2e     =  1           # Pocet posunu epochy pre jeden krok na osi Lambda = 1 / rychlost informacie
-        self.phs     =  _PHASES     # Pocet fazovych stavov pre komplexne hodnoty
-        self.l2p     =  0           # Pocet pootoceni fazy na jeden krok na osi Lambda =
-        self.maxL    = 10           # Maximalny pocet krokov na osi Lambda pri ziskani zoznamu stavov susednych bodov
+        self.l2e     =   1          # Pocet posunu epochy pre jeden krok na osi Lambda = 1 / rychlost informacie
+        self.phs     = _PHASES      # Pocet fazovych stavov pre komplexne hodnoty
+        self.l2p     =   0          # Pocet pootoceni fazy na jeden krok na osi Lambda =
+        self.maxL    = 999          # Maximalny pocet krokov na osi Lambda pri ziskani zoznamu stavov susednych bodov
 
         self.sType   = 'complex'    # Typ stavu
         self.sTypes  = ('bool'      # Typ stavu je boolovska hodnota, False/True
@@ -84,10 +85,18 @@ class InfoFieldMatrix(InfoMatrix):
 
         methods = super().mapMethods()
 
-        methods['IField init Bool'   ] = {'matrixMethod': self.rndBool,   'pointMethod':None, 'params':{'prob1'  :0.5                  }, 'type':'ask'  }
+        #methods['IField init Bool'   ] = {'matrixMethod': self.rndBool,   'pointMethod':None, 'params':{'prob1'  :0.5                  }, 'type':'ask'  }
         methods['IField init Complex'] = {'matrixMethod': self.rndComplex,'pointMethod':None, 'params':{'probAbs':0.5, 'phases':_PHASES}, 'type':'quiet'}
         methods['IField epoch step'  ] = {'matrixMethod': self.epochStep, 'pointMethod':None, 'params':{}                               , 'type':'ask'  }
 
+        #----------------------------------------------------------------------
+        # Zobrazim iba metody zacinajuce 'IField ', ostatnym nastavim 'visible':False
+        #----------------------------------------------------------------------
+        for methodKey in methods.keys():
+
+            if not methodKey.startswith('IField '): methods[methodKey]['visible'] = False
+
+        #----------------------------------------------------------------------
         return methods
 
     #==========================================================================
@@ -157,10 +166,6 @@ class InfoFieldMatrix(InfoMatrix):
         pts = 0
 
         #----------------------------------------------------------------------
-        # Kontrola parametrov
-        #----------------------------------------------------------------------
-
-        #----------------------------------------------------------------------
         # Posuniem celu maticu o jeden epoch krok
         #----------------------------------------------------------------------
         self.moveByAxe(axeKey='e', deltaIdx=1, startIdx=0)
@@ -206,8 +211,8 @@ class InfoFieldMatrix(InfoMatrix):
 
         self.logger.debug(f"{self.name}.getNeighStates: For {valueKey} at [{l}, {e}]")
 
-        cntLambda = self.axeCntByKey('l')
-        cntEpoch  = self.axeCntByKey('e')
+        cntLambda = self.axeCntByKey('l')  # Count of points on Lambda axis
+        cntEpoch  = self.axeCntByKey('e')  # Count of Epoch
 
         leftStates  = []
         rightStates = []
@@ -224,35 +229,28 @@ class InfoFieldMatrix(InfoMatrix):
             if eH >= cntEpoch: break
 
             #------------------------------------------------------------------
+            # Urcim velkost rotacie fazy podla dl a l2p
+            #------------------------------------------------------------------
+            deltaPhase = (2*cmath.pi) / self.phs              # angle step for N discrete phases
+            deltaPhase = deltaPhase * (dL * self.l2p)         # total phase shift for dL steps
+            rot        = cmath.exp( complex(0, deltaPhase) )  # e **(j*deltaPhase)
+
+            #------------------------------------------------------------------
+            # Ziskam stavy lavych a pravych susedov a rotujem ich fazu podla dl a l2p
+            #------------------------------------------------------------------
             if (l-dL) > 0:
-                leftPoint  = self.pointByIdxs( [l-dL, eH] )
-                leftStates.append( leftPoint .val(valueKey) )
+                leftPoint = self.pointByIdxs( [l-dL, eH] )
+                leftValue = leftPoint.val(valueKey) * rot
+                leftStates.append( leftValue )
 
             if (l+dL) < cntLambda:
                 rightPoint = self.pointByIdxs( [l+dL, eH] )
-                rightStates.append( rightPoint.val(valueKey) )
+                rightValue = rightPoint.val(valueKey) * rot
+                rightStates.append( rightValue )
 
         #----------------------------------------------------------------------
         self.logger.debug(f"{self.name}.getNeighStates: leftStates={leftStates}, rightStates={rightStates}")
         return leftStates, rightStates
-
-    #--------------------------------------------------------------------------
-    def aggNeighbors(self, leftState, actState, rightState):
-        "Aggregates states of neighors into single state according to given rule"
-
-        self.logger.debug(f"{self.name}.aggNeighbors: leftState={leftState}, actState={actState}, rightState={rightState}, rule={self.rule}")
-        aggState = actState
-
-        if self.rule == 'and':
-
-            if (leftState == rightState): aggState = leftState
-
-
-        else: self.logger.warning(f"{self.name}.aggNeighbors: Unknown rule '{self.rule}', returning actState")
-
-        #----------------------------------------------------------------------
-        self.logger.debug(f"{self.name}.aggNeighbors: {aggState}<-({leftState},{actState},{rightState})")
-        return aggState
 
     #--------------------------------------------------------------------------
     def aggStates(self, states:list):
@@ -291,6 +289,29 @@ class InfoFieldMatrix(InfoMatrix):
 
         #----------------------------------------------------------------------
         self.logger.debug(f"{self.name}.aggStates: {aggState}<-{states}")
+        return aggState
+
+    #--------------------------------------------------------------------------
+    def aggNeighbors(self, leftState, actState, rightState):
+        "Aggregates states of neighors into single state according to given rule"
+
+        self.logger.debug(f"{self.name}.aggNeighbors: leftState={leftState}, actState={actState}, rightState={rightState}, rule={self.rule}")
+        aggState = actState
+
+        if self.rule == 'and':
+
+            if (leftState == rightState): aggState = leftState
+
+        elif self.rule == 'sum':
+
+            if   self.sType == 'bool'            : aggState = bool(leftState or rightState)
+            elif self.sType in ('int', 'complex'): aggState = leftState + rightState
+
+
+        else: self.logger.warning(f"{self.name}.aggNeighbors: Unknown rule '{self.rule}', returning actState")
+
+        #----------------------------------------------------------------------
+        self.logger.debug(f"{self.name}.aggNeighbors: {aggState}<-({leftState},{actState},{rightState})")
         return aggState
 
     #==========================================================================
