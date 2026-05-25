@@ -7,7 +7,7 @@ from   siqo_imatrix           import InfoMatrix
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
-_VER    = '1.0'
+_VER    = '1.1'
 
 _LAMBDA = 120       # Default points for Lambda axis
 _EPOCH  =  60       # Default points for Epoch axis
@@ -69,7 +69,7 @@ class InfoFieldMatrix(InfoMatrix):
         # Inicializacia
         #----------------------------------------------------------------------
         self.setIpType('ipTest')
-        self.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
+        self.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State', 'omg': 'Omega'}})
         self.init(cnts={'l':_LAMBDA, 'e':_EPOCH})
 
         self.applyMatrixMethod(methodKey='Comp constant (re/im)', valueKey='s', params={'real':0, 'imag':0})
@@ -162,7 +162,7 @@ class InfoFieldMatrix(InfoMatrix):
         """Compute next epoch state.
         """
 
-        self.logger.debug(f"{self.name}.epochStep: for key '{valueKey}' with params {params}")
+        self.logger.info(f"{self.name}.epochStep: for key '{valueKey}' with params {params}")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -267,25 +267,16 @@ class InfoFieldMatrix(InfoMatrix):
             return aggState
 
         #----------------------------------------------------------------------
-        # Agregujem podla zadaneho pravidla
+        # Agregujem stavy v zozname
         #----------------------------------------------------------------------
-        if   self.sAgg == 'nearest':
-
-            for state in states:
-
-                if state:
-                    aggState = state
-                    break
-
-        elif self.sAgg == 'min'    : aggState = min(states)
-        elif self.sAgg == 'max'    : aggState = max(states)
-        elif self.sAgg == 'sum'    : aggState = sum(states)
+        aggState = sum(states)
 
         #----------------------------------------------------------------------
         # Korekcia podla typu stavu
         #----------------------------------------------------------------------
-        if   self.sType == 'bool'  : aggState = bool(aggState)
-        elif self.sType == 'int'   : aggState = int (aggState)
+        if   self.sType == 'bool'   : aggState = bool   (aggState) if aggState else False
+        elif self.sType == 'int'    : aggState = int    (aggState) if aggState else 0
+        elif self.sType == 'complex': aggState = complex(aggState) if aggState else complex(0,0)
 
         #----------------------------------------------------------------------
         self.logger.debug(f"{self.name}.aggStates: {aggState}<-{states}")
