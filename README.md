@@ -14,24 +14,26 @@ IField poskytuje nástroje na:
 
 ```
 IField/
-├── src/                              # Hlavný zdrojový kód
-│   ├── main.py                       # Hlavný vstupný bod aplikácie
-│   ├── imodel.py                     # Model informačných polí
-│   ├── imodel_gui.py                 # GUI pre model
-│   ├── ifield_imatrix.py             # Implementácia matíc IField
-│   ├── ifield_imatrix_gui.py         # GUI pre IField matice
-│   ├── siqo_imatrix.py               # SIQO maticové operácie
-│   ├── siqo_imatrix_gui.py           # GUI pre SIQO matice
-│   ├── siqo_imatrix_data_gui.py      # GUI pre dáta SIQO matíc
-│   ├── siqo_imatrix_display_gui.py   # GUI pre zobrazenie SIQO matíc
-│   ├── siqo_imatrix_method_gui.py    # GUI pre metódy SIQO matíc
-│   ├── siqo_ipoint.py                # SIQO body v poli
-│   ├── siqo_ipoint_gui.py            # GUI pre SIQO body
-│   ├── idata/                        # Dáta a datové štruktúry
-│   └── ifield/                       # Modul IField
-├── test/                             # Testovací kód
-├── Old/                              # Staré verzie a deprecated kód
-└── README.md                         # Tento súbor
+├── src/                                      # Zdrojový kód
+│   ├── main.py                               # Hlavný vstupný bod aplikácie
+│   ├── idata/                                # Dátový balíček (Info bázové triedy)
+│   │   ├── __init__.py
+│   │   ├── ipoint.py                         # InfoPoint - základný bod v poli
+│   │   ├── imatrix.py                        # InfoMatrix - matica bodov
+│   │   ├── ipoint_gui.py                     # GUI pre body
+│   │   ├── imatrix_gui.py                    # GUI pre matice
+│   │   ├── imatrix_data_gui.py               # GUI pre dáta matíc
+│   │   ├── imatrix_display_gui.py            # GUI pre zobrazenie matíc
+│   │   └── imatrix_method_gui.py             # GUI pre metódy matíc
+│   ├── ifield/                               # IField balíček (aplikačná logika)
+│   │   ├── __init__.py
+│   │   ├── imatrix.py                        # InfoFieldMatrix - IField-špecifická matica
+│   │   ├── imatrix_gui.py                    # GUI pre IField matice
+│   │   ├── imodel.py                         # Informačný model
+│   │   └── imodel_gui.py                     # GUI pre model
+├── test/                                     # Testovací kód
+├── Old/                                      # Staré verzie a deprecated kód
+└── README.md                                 # Tento súbor
 ```
 
 ## 🚀 Spustenie
@@ -52,29 +54,43 @@ Aplikácia spustí GUI okno s testom triedy `IFieldMatrixGui`.
 
 ## 🔧 Kľúčové komponenty
 
+### Architektúra
+
+Projekt je organizovaný do dvoch Python balíčkov:
+
+#### `idata` balíček - Dátové štruktúry
+Základné triedy bez špecifickej aplikačnej logiky:
+- **InfoPoint** (`ipoint.py`) - Jednotlivý bod v informačnom poli s hodnotami a polohou
+- **InfoMatrix** (`imatrix.py`) - Matica InfoPoint objektov s osami a podmaticami
+- **GUI komponenty** - Grafické rozhrania pre zobrazenie a editáciu dát
+
+#### `ifield` balíček - Aplikačná logika
+IField-špecifické implementácie:
+- **InfoFieldMatrix** (`imatrix.py`) - Rozšírenie InfoMatrix s komplexnými hodnotami a dynamikou polí
+- **IFieldMatrixGui** (`imatrix_gui.py`) - Špecializované GUI pre IField matice
+- **InfoModel** (`imodel.py`) - Informačný model pre úlohy
+- **InfoModelGui** (`imodel_gui.py`) - GUI pre prácu s modelom
+
 ### main.py
 Hlavný vstupný bod aplikácie. Inicializuje:
 - Tkinter okno
-- SiqoLogger pre loggovanie
+- SiqoLogger pre loggovanie (úroveň: INFO)
 - InfoFieldMatrix dátovú štruktúru
 - IFieldMatrixGui grafické rozhranie
 
-### IFieldMatrix
-Trieda reprezentujúca maticu informačných polí.
-
-### IFieldMatrixGui
-GUI komponenta pre interakciu s InfoFieldMatrix v Tkinter aplikácii.
-
-### SIQO komponenty
-Sada SIQO-špecifických tried pre:
-- Prácu s maticami (`siqo_imatrix*.py`)
-- Prácu s bodmi (`siqo_ipoint*.py`)
+### Importy
+- Z balíčka `idata`: `from idata.imatrix import InfoMatrix`
+- Z balíčka `ifield`: `from ifield.imatrix import InfoFieldMatrix`
+- Relatívne importy v balíčkoch: `from .imatrix import InfoFieldMatrix`
 
 ## 📝 Vývojové poznámky
 
-- Logger je nastavený na úroveň `INFO`
-- Aplikácia má minimálnu veľkosť okna: 600x300 pixelov
-- Projekt používa siqolib knižnicu - pozri `d:\GitHub\siqolib`
+- **Architektúra**: 2-balíčková štruktúra (`idata` + `ifield`) s entry pointom `main.py`
+- **Logger**: Nastavený na úroveň `INFO`, frameDepth = 2
+- **Minimálna veľkosť okna**: 600x300 pixelov
+- **Balkóny**: Projekt používa `siqolib` knižnicu - pozri `d:\GitHub\siqolib`
+- **Importy**: Všetky importy sú typu `from idata.xxx import YYY` alebo `from .imatrix import InfoFieldMatrix` (relatívne v balíčkoch)
+- **Staré súbory**: Pôvodné súbory `siqo_*.py` a `ifield_*.py` boli migrované do balíčkov. Staré verzie sú v adresári `Old/`
 
 ## 👤 Vlastník
 

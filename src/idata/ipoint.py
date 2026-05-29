@@ -497,585 +497,306 @@ class InfoPoint:
 
         i = 0
         for axe, axeName in InfoPoint._schema[self._ipType]['axes'].items():
-
-            # Axe 'None' preskocim
-            if axe == 'None': continue
-
-            #----------------------------------------------------------------------
-            # Retrieve position of this InfoPoint for axe with key 'axe'
-            #----------------------------------------------------------------------
-            if axe in self._pos.keys(): val = self._pos[axe]
-            else                      : val = None
-
-            #----------------------------------------------------------------------
-            # Create string representation of the position of this InfoPoint
-            #----------------------------------------------------------------------
-            if i == 0: toRet +=  f"{axe}={self._format(val)}"
-            else     : toRet += f"|{axe}={self._format(val)}"
+            if i>0: toRet += ', '
+            toRet += f"{axeName}={self._pos.get(axe, 0):{_F_POS}.1f}"
             i += 1
 
         toRet += ']'
         return toRet
 
     #--------------------------------------------------------------------------
-    def _valStr(self):
+    def _valsStr(self):
         "Creates string representation of the values of this InfoPoint"
 
-        toRet = '{'
+        toRet = '['
 
         i = 0
-        for valKey in InfoPoint._schema[self._ipType]['vals'].keys():
-
-            if valKey in self._vals.keys(): val = self._vals[valKey]
-            else                          : val = None
-
-            #----------------------------------------------------------------------
-            # Create string representation of the data of this InfoPoint
-            #----------------------------------------------------------------------
-            if i == 0: toRet +=  f"{valKey}={self._format(val)}"
-            else     : toRet += f"|{valKey}={self._format(val)}"
+        for val, valName in InfoPoint._schema[self._ipType]['vals'].items():
+            if i>0: toRet += ', '
+            toRet += f"{valName}={self._format(self._vals.get(val, None))}"
             i += 1
 
-        toRet += '}'
-
+        toRet += ']'
         return toRet
 
     #--------------------------------------------------------------------------
-    def info(self, indent=0):
-        "Creates info about this InfoPoint"
+    def get(self, *, pos:bool=True, vals:bool=True):
+        "Get position and values of this InfoPoint"
 
-        posStr = self._posStr()
-        valStr = self._valStr()
-
-        msg = f"{indent*_IND}{self._ipType:{_F_SCHEMA}}{posStr}: {valStr}"
-
-        return {'res':'OK', 'msg':msg, 'vals':self._vals.copy(), 'posStr':posStr, 'valStr':valStr}
-
-    #--------------------------------------------------------------------------
-    def copy(self):
-        "Creates copy of this InfoPoint"
-
-        toRet = InfoPoint(self._ipType)
-
-        toRet._pos  = copy.deepcopy(self._pos)
-        toRet._vals = copy.deepcopy(self._vals)
+        toRet = {}
+        if pos : toRet['pos' ] = self._pos.copy()
+        if vals: toRet['vals'] = self._vals.copy()
 
         return toRet
-
-    #--------------------------------------------------------------------------
-    def ipType(self):
-        "Returns type of this InfoPoint"
-
-        return self._ipType
-
-    #==========================================================================
-    # Value retrieval
-    #--------------------------------------------------------------------------
-    def pos(self, key:str) -> float:
-        "Returns position for respective axis key"
-
-        #----------------------------------------------------------------------
-        # Key check
-        #----------------------------------------------------------------------
-        if key not in InfoPoint._schema[self._ipType]['axes'].keys():
-            self.logger.warning(f"InfoPoint.get: Key '{key}' not found in axes {InfoPoint._schema[self._ipType]['axes']}")
-            return None
-
-        #----------------------------------------------------------------------
-        # Return axe's value of this InfoPoint for respective key
-        #----------------------------------------------------------------------
-        return self._pos[key]
-
-    #--------------------------------------------------------------------------
-    def posName(self, key:str) -> str:
-        "Returns name for respective axis key"
-
-        #----------------------------------------------------------------------
-        # Key check
-        #----------------------------------------------------------------------
-        if key not in InfoPoint._schema[self._ipType]['axes'].keys():
-            self.logger.warning(f"InfoPoint.get: Key '{key}' not found in axes {InfoPoint._schema[self._ipType]['axes']}")
-            return None
-
-        #----------------------------------------------------------------------
-        # Return axe's name of this InfoPoint for respective key
-        #----------------------------------------------------------------------
-        return InfoPoint._schema[self._ipType]['axes'][key]
-
-    #--------------------------------------------------------------------------
-    def val(self, key:str=None):
-        "Returns value of this InfoPoint for respective key. If key is None, returns all values as dict. If key not found, returns None"
-
-        #----------------------------------------------------------------------
-        # Return this InfoPoint._vals for key is None
-        #----------------------------------------------------------------------
-        if key is None: return self._vals
-
-        #----------------------------------------------------------------------
-        # Key check
-        #----------------------------------------------------------------------
-        if key not in InfoPoint._schema[self._ipType]['vals'].keys():
-            self.logger.warning(f"InfoPoint.get: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
-            return None
-
-        #----------------------------------------------------------------------
-        # Return value of this InfoPoint for respective key
-        #----------------------------------------------------------------------
-        try: return self._vals.get(key, None)
-        except KeyError as err:
-            self.logger.error(f"InfoPoint.get: Key='{key}' for {self.info()['msg']} caused {str(err)}")
-            return None
-
-    #--------------------------------------------------------------------------
-    def valName(self, key:str) -> str:
-        "Returns value's name of this InfoPoint for respective key"
-
-        #----------------------------------------------------------------------
-        # Key check
-        #----------------------------------------------------------------------
-        if key not in InfoPoint._schema[self._ipType]['vals'].keys():
-            self.logger.warning(f"InfoPoint.get: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
-            return None
-
-        #----------------------------------------------------------------------
-        # Return value's name of this InfoPoint for respective key
-        #----------------------------------------------------------------------
-        return InfoPoint._schema[self._ipType]['vals'][key]
-
-    #==========================================================================
-    # Dat Value modification
-    #--------------------------------------------------------------------------
-    def clear(self, *, vals:dict={}):
-        "Sets all values to default values"
-
-        for keyVal in InfoPoint._schema[self._ipType]['vals'].keys():
-            self._vals[keyVal] = vals.get(keyVal, 0)
-
-        self.logger.debug(f"InfoPoint.clear: {self._vals}")
-        return self
 
     #--------------------------------------------------------------------------
     def set(self, *, pos=None, vals=None):
-        "Sets position and data of this InfoPoint"
+        "Set position and values of this InfoPoint"
 
         #----------------------------------------------------------------------
-        # Set position of this InfoPoint
+        # Set position
         #----------------------------------------------------------------------
         if pos is not None:
 
-            try:
-                # Zapisem poziciu vo vsetkych osiach schemy okrem NONE
-                for key in InfoPoint._schema[self._ipType]['axes'].keys():
-                    if key != 'None': self._pos[key] = pos[key]
+            if type(pos) in (dict, tuple, list):
 
-            except KeyError:
-                self.logger.error(f"InfoPoint.set: Position '{self._posStr()}' is not compatible with schema axes {InfoPoint._schema[self._ipType]['axes']}")
-                return False
+                #--------------------------------------------------------------
+                # Ak pos je dict
+                #--------------------------------------------------------------
+                if type(pos) == dict:
+                    self._pos.update(pos)
+
+                #--------------------------------------------------------------
+                # Ak pos je list alebo tuple, zmapujem osami
+                #--------------------------------------------------------------
+                else:
+                    axeKeys = list(InfoPoint._schema[self._ipType]['axes'].keys())
+                    for i, p in enumerate(pos):
+                        if i < len(axeKeys):
+                            self._pos[axeKeys[i]] = p
 
         #----------------------------------------------------------------------
-        # Set values of this InfoPoint
+        # Set values
         #----------------------------------------------------------------------
         if vals is not None:
 
-            for key, val in vals.items():
+            if type(vals) in (dict, tuple, list):
 
-                if key in InfoPoint._schema[self._ipType]['vals'].keys():
-                    self._vals[key] = val
+                #--------------------------------------------------------------
+                # Ak vals je dict
+                #--------------------------------------------------------------
+                if type(vals) == dict:
+                    self._vals.update(vals)
 
+                #--------------------------------------------------------------
+                # Ak vals je list alebo tuple, zmapujem s hodnotami
+                #--------------------------------------------------------------
                 else:
-                    self.logger.warning(f"InfoPoint.set: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
-                    return False
-
-        #----------------------------------------------------------------------
-        #self.logger.debug(f"InfoPoint.set: @{id(self)} pos: {pos}->{self._posStr()}, vals: {vals}->{self._valStr()}")
-        return True
+                    valKeys = list(InfoPoint._schema[self._ipType]['vals'].keys())
+                    for i, v in enumerate(vals):
+                        if i < len(valKeys):
+                            self._vals[valKeys[i]] = v
 
     #--------------------------------------------------------------------------
-    def setVal(self, key, valStr) -> bool:
-        "Sets value of this InfoPoint for respective key"
+    def pos(self, axeKey=None):
+        "Get position value on respective axe or whole position"
 
-        if key in InfoPoint._schema[self._ipType]['vals'].keys():
-
-            try:
-
-                if   isinstance(self._vals[key], int    ): self._vals[key] = int(valStr)
-                elif isinstance(self._vals[key], float  ): self._vals[key] = float(valStr)
-                elif isinstance(self._vals[key], complex): self._vals[key] = complex(valStr)
-                else:
-                    self.logger.info(f"InfoPoint.setVal: Unknown type of value for key '{key}'")
-                    return False
-
-            except ValueError as err:
-                self.logger.error(f"InfoPoint.setVal: Setting value '{valStr}' for key '{key}' caused {str(err)}")
-                return False
-
-            self.logger.info(f"InfoPoint.setVal: '{key}'->'{valStr}'")
-            return True
+        if axeKey is None:
+            return self._pos.copy()
 
         else:
-            self.logger.warning(f"InfoPoint.setVal: Key '{key}' not found in values {InfoPoint._schema[self._ipType]['vals']}")
-            return False
+            return self._pos.get(axeKey, None)
+
+    #--------------------------------------------------------------------------
+    def val(self, valKey=None):
+        "Get value for respective key or whole values"
+
+        if valKey is None:
+            return self._vals.copy()
+
+        else:
+            return self._vals.get(valKey, None)
+
+    #--------------------------------------------------------------------------
+    def info(self, indent=0, full=False):
+        "Creates info about this InfoPoint"
+
+        dat = {}
+        msg = ''
+
+        #----------------------------------------------------------------------
+        # info o cele strukture
+        #----------------------------------------------------------------------
+        dat['type'  ] = self._ipType
+        dat['pos'   ] = self._posStr()
+        dat['vals'  ] = self._valsStr()
+
+        if indent == 0: msg = f"{indent*_IND}{60*'='}\n"
+
+        for key, val in dat.items():
+            msg += f"{indent*_IND}{key:<15}: {val}\n"
+
+        return {'res':'OK', 'dat':dat, 'msg':msg}
 
     #==========================================================================
-    # Methods returning float for keyed value
+    # Methods for manipulation
     #--------------------------------------------------------------------------
-    def fValue(self, key:str):
-        "Return float value or modul for respective key value"
-
-        x = self.val(key)
-        if x is not None:
-
-            if   type(x) in (int, float): return x
-            elif type(x) == complex     : return cmath.polar(x)[0]
-            else                        : return None
-
-        return x
-
-    #--------------------------------------------------------------------------
-    def abs(self, key:str):
-        "Return absolute value or modul for respective key"
-
-        x = self.val(key)
-        if x is not None:
-
-            if   type(x) in (int, float): return math.fabs(x)
-            elif type(x) == complex     : return cmath.polar(x)[0]
-            else                        : return None
-
-        return x
-
-    #--------------------------------------------------------------------------
-    def real(self, key:str):
-        "Return real part of value for respective key"
-
-        x = self.val(key)
-        if x is not None:
-
-            if   type(x) in (int, float): return x
-            elif type(x) == complex     : return x.real
-            else                        : return None
-
-        return x
-
-    #--------------------------------------------------------------------------
-    def imag(self, key:str):
-        "Return imaginary part of value for respective key"
-
-        x = self.val(key)
-        if x is not None:
-
-            if   type(x) in (int, float): return 0
-            elif type(x) == complex     : return x.imag
-            else                        : return None
-
-        return x
-
-    #--------------------------------------------------------------------------
-    def phase(self, key:str):
-        "Return phase in <-pi, pi> from +x axis from complex value for respective key"
-
-        x = self.val(key)
-        if x is not None:
-
-            if   type(x) in (int, float): return 0
-            elif type(x) == complex     : return cmath.phase(x)
-            else                        : return None
-
-        return x
-
-    #--------------------------------------------------------------------------
-    def complex(self, key:str):
-        "Return complex value for respective key"
-
-        x = self.val(key)
-        if x is not None:
-
-            if   type(x) in (int, float): return complex(x, 0)
-            elif type(x) == complex     : return x
-            else                        : return None
-
-        return x
 
     #==========================================================================
-    # Points methods to apply in Dynamics methods
+    # Show methods - Returns float value (or representation as float) from InfoPoint values
     #--------------------------------------------------------------------------
-    def nullMethod(self, valueKey:str, params:dict):
-        "Default null method for InfoPoint for keyed value (do nothing)"
-
-        self.logger.debug(f"InfoPoint.nullMethod: do nothing for key '{valueKey}' with params {params}")
 
     #--------------------------------------------------------------------------
-    def fltConst(self, valueKey:str, params:dict):
-        "Sets constant value for keyed value"
+    @staticmethod
+    def fValue(val):
+        "Returns value as float"
 
-        self.set(vals={valueKey:params['const']})
-
-    #--------------------------------------------------------------------------
-    def fltRandUni(self, valueKey:str, params:dict):
-        "Generates uniform random float value from interval for keyed value"
-
-        if 'min' in params.keys(): min_val = params['min']
-        else                     : min_val = 0
-
-        if 'max' in params.keys(): max_val = params['max']
-        else                     : max_val = 1
-
-        val = rnd.uniform(min_val, max_val)
-
-        self.set(vals={valueKey:val})
+        if val is None: return 0.0
+        return float(val) if val else 0.0
 
     #--------------------------------------------------------------------------
-    def fltRandBit(self, valueKey:str, params:dict):
-        "Sets value 0/1 with respective probability for keyed value"
+    @staticmethod
+    def abs(val):
+        "Returns absolute value"
 
-        x = rnd.randint(0, 9999)
-
-        if x <= params['prob1']*10000: val = 1
-        else                         : val = 0
-
-        self.set(vals={valueKey:val})
+        if val is None: return 0.0
+        return float(abs(val)) if val else 0.0
 
     #--------------------------------------------------------------------------
-    def cmpConstR(self, valueKey:str, params:dict):
-        "Sets constant real and imaginary value for keyed value"
+    @staticmethod
+    def real(val):
+        "Returns real part of complex value or value as float"
 
-        c = complex(params['real'], params['imag'])
-        self.set(vals={valueKey:c})
-
-    #--------------------------------------------------------------------------
-    def cmpConstP(self, valueKey:str, params:dict):
-        "Sets constant absolute value and phase value for keyed value"
-
-        c = cmath.rect(params['abs'], params['phase'])
-        self.set(vals={valueKey:c})
+        if val is None: return 0.0
+        if type(val) == complex: return float(val.real)
+        return float(val) if val else 0.0
 
     #--------------------------------------------------------------------------
-    def cmpRandUniR(self, valueKey:str, params:dict):
-        "Generates random uniform real and imaginary values from respective intervals for keyed value"
+    @staticmethod
+    def imag(val):
+        "Returns imaginary part of complex value"
 
-        #----------------------------------------------------------------------
-        if 'reMin' in params.keys(): reMin = params['reMin']
-        else                       : reMin = 0
-
-        if 'reMax' in params.keys(): reMax = params['reMax']
-        else                       : reMax = 1
-
-        real = rnd.uniform(reMin, reMax)
-
-        #----------------------------------------------------------------------
-        if 'imMin' in params.keys(): imMin = params['imMin']
-        else                       : imMin = 0
-
-        if 'imMax' in params.keys(): imMax = params['imMax']
-        else                       : imMax = 1
-
-        imag = rnd.uniform(imMin, imMax)
-
-        #----------------------------------------------------------------------
-        c = complex(real, imag)
-        self.set(vals={valueKey:c})
+        if val is None: return 0.0
+        if type(val) == complex: return float(val.imag)
+        return 0.0
 
     #--------------------------------------------------------------------------
-    def cmpRandUniP(self, valueKey:str, params:dict):
-        "Generates random uniform absolute value and phase from respective intervals for keyed value"
+    @staticmethod
+    def phase(val):
+        "Returns phase of complex value"
 
-        #----------------------------------------------------------------------
-        if 'absMin' in params.keys(): absMin = params['absMin']
-        else                        : absMin = 0
-
-        if 'absMax' in params.keys(): absMax = params['absMax']
-        else                        : absMax = 1
-
-        abs = rnd.uniform(absMin, absMax)
-
-        #----------------------------------------------------------------------
-        if 'phaseMin' in params.keys(): phaseMin = params['phaseMin']
-        else                          : phaseMin = 0
-
-        if 'phaseMax' in params.keys(): phaseMax = params['phaseMax']
-        else                          : phaseMax = _CIRCLE
-
-        phase = rnd.uniform(phaseMin, phaseMax)
-
-        #----------------------------------------------------------------------
-        c = cmath.rect(abs, phase)
-        self.set(vals={valueKey:c})
+        if val is None: return 0.0
+        if type(val) == complex: return cmath.phase(val)
+        return 0.0
 
     #--------------------------------------------------------------------------
-    def cmpDiscPhases(self, valueKey:str, params:dict):
-        "Generates absolute value = 1 with respective number of discrete phases for keyed value"
+    @staticmethod
+    def complex(val):
+        "Returns value as complex"
 
-        #----------------------------------------------------------------------
-        if 'probAbs' in params.keys(): probAbs = params['probAbs']
-        else                         : probAbs = 0.5
-
-        if rnd.randint(0, 9999) <= probAbs*10000: abs = 1
-        else                                    : abs = 0
-
-        #----------------------------------------------------------------------
-        if 'phases' in params.keys(): phases = params['phases']
-        else                        : phases = 2
-
-        deltaPhase = _CIRCLE / phases          # angle step for N discrete phases
-        phaseIdx   = rnd.randint(0, phases-1)  # random index of the generated phase
-
-        phase = _PHASE_START + (deltaPhase * phaseIdx)
-
-        #----------------------------------------------------------------------
-        c = cmath.rect(abs, phase)
-        real = 0.0 if math.fabs(c.real) < _CLOSE_ZERO else c.real
-        imag = 0.0 if math.fabs(c.imag) < _CLOSE_ZERO else c.imag
-
-        c = complex(real, imag)
-        self.set(vals={valueKey:c})
+        if val is None: return complex(0, 0)
+        return complex(val) if val else complex(0, 0)
 
     #==========================================================================
-    # Two-points methods
+    # Point methods - apply to one point
     #--------------------------------------------------------------------------
-    def deltasTo(self, toP):
-        "Returns list of differences between coordinates to other InfoPoint"
-
-        #----------------------------------------------------------------------
-        # Check if both InfoPoints have the same number of coordinates and create pairs of them
-        #----------------------------------------------------------------------
-        pairs = []
-
-        try:
-            for key, val in self._pos.items():
-                pairs.append( (val, toP._pos[key]) )
-
-        except KeyError:
-            self.logger.error(f"InfoPoints have different number of coordinates!")
-            return None
-
-        #----------------------------------------------------------------------
-        # Creates list of differences between coordinates for respective InfoPoint
-        #----------------------------------------------------------------------
-        toRet = [pair[1] - pair[0] for pair in pairs]
-        return toRet
 
     #--------------------------------------------------------------------------
-    def distSqrTo(self, toP):
-        "Returns square of the distance to other InfoPoint"
+    @staticmethod
+    def nullMethod(infoPoint, valueKey:str, params:dict):
+        "Null method for testing"
 
-        dlts  = self.deltasTo(toP)
-        toRet = 0
-
-        for dlt in dlts: toRet += dlt*dlt
-
-        return toRet
+        return 0
 
     #--------------------------------------------------------------------------
-    def distTo(self, toP):
-        "Returns the distance to other InfoPoint"
+    @staticmethod
+    def fltConst(infoPoint, valueKey:str, params:dict):
+        "Set constant float value"
 
-        sqrDist = self.distSqrTo(toP)
-        return math.sqrt(sqrDist)
+        const = params.get('const', 0)
+        infoPoint.set(vals={valueKey: const})
+        return 1
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def fltRandUni(infoPoint, valueKey:str, params:dict):
+        "Set random uniform float value in range <min, max>"
+
+        minVal = params.get('min', 0)
+        maxVal = params.get('max', 1)
+
+        val = minVal + (maxVal - minVal) * rnd.random()
+
+        infoPoint.set(vals={valueKey: val})
+        return 1
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def fltRandBit(infoPoint, valueKey:str, params:dict):
+        "Set random bit value (1 or 0) with probability prob1 for 1"
+
+        prob1 = params.get('prob1', 0.5)
+        val = 1 if rnd.random() < prob1 else 0
+
+        infoPoint.set(vals={valueKey: val})
+        return 1
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def cmpConstR(infoPoint, valueKey:str, params:dict):
+        "Set constant complex value given by real and imaginary parts"
+
+        real = params.get('real', 0)
+        imag = params.get('imag', 0)
+        val  = complex(real, imag)
+
+        infoPoint.set(vals={valueKey: val})
+        return 1
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def cmpConstP(infoPoint, valueKey:str, params:dict):
+        "Set constant complex value given by absolute value and phase"
+
+        abs_val = params.get('abs' , 0)
+        phase   = params.get('phase', 0)
+        val     = abs_val * cmath.exp(complex(0, phase))
+
+        infoPoint.set(vals={valueKey: val})
+        return 1
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def cmpRandUniR(infoPoint, valueKey:str, params:dict):
+        "Set random complex value with uniform real and imaginary parts in given ranges"
+
+        reMin  = params.get('reMin' , 0)
+        reMax  = params.get('reMax' , 1)
+        imMin  = params.get('imMin' , 0)
+        imMax  = params.get('imMax' , 1)
+
+        real = reMin + (reMax - reMin) * rnd.random()
+        imag = imMin + (imMax - imMin) * rnd.random()
+        val  = complex(real, imag)
+
+        infoPoint.set(vals={valueKey: val})
+        return 1
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def cmpRandUniP(infoPoint, valueKey:str, params:dict):
+        "Set random complex value with uniform absolute value and phase in given ranges"
+
+        absMin   = params.get('absMin'  , 0)
+        absMax   = params.get('absMax'  , 1)
+        phaseMin = params.get('phaseMin', 0)
+        phaseMax = params.get('phaseMax', _CIRCLE)
+
+        abs_val = absMin + (absMax - absMin) * rnd.random()
+        phase   = phaseMin + (phaseMax - phaseMin) * rnd.random()
+        val     = abs_val * cmath.exp(complex(0, phase))
+
+        infoPoint.set(vals={valueKey: val})
+        return 1
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def cmpDiscPhases(infoPoint, valueKey:str, params:dict):
+        "Set random complex value with discrete uniform phases"
+
+        probAbs = params.get('probAbs', 0.5)
+        phases  = params.get('phases', 2)
+
+        abs_val = 1 if rnd.random() < probAbs else 0
+        phase_idx = rnd.randint(0, phases - 1)
+        phase = phase_idx * _CIRCLE / phases
+        val = abs_val * cmath.exp(complex(0, phase))
+
+        infoPoint.set(vals={valueKey: val})
+        return 1
 
 #------------------------------------------------------------------------------
-print(f'InfoPoint ver {_VER}')
-
-#==============================================================================
-# Unit tests
-#------------------------------------------------------------------------------
-if __name__ == '__main__':
-
-    from   siqolib.logger          import SiqoLogger
-    logger = SiqoLogger('InfoPoint test', level='INFO')
-
-
-    if True:
-
-        print(40*'=')
-        print('Schema creating')
-        print(40*'-')
-
-        InfoPoint.setSchemaAxe('ipTest', 'x', 'os X')
-        InfoPoint.setSchemaAxe('ipTest', 'y', 'os Y')
-        InfoPoint.setSchemaVal('ipTest', 'm', 'hmotnost')
-        InfoPoint.setSchemaVal('ipTest', 'v', 'rychlost')
-
-        print('Test of InfoPoint class')
-        print('_IND      =', _IND)
-        print('schema    =', InfoPoint._schema)
-
-        print()
-        print('Schema for ipTest')
-        print('axes      =', InfoPoint.getSchemaAxes('ipTest'))
-        print('vals      =', InfoPoint.getSchemaVals('ipTest'))
-
-    if True:
-
-        print(40*'=')
-        print('Schema tools')
-        print(40*'-')
-
-        print('idx for keyAxe x =', InfoPoint.axeIdxByKey('ipTest', 'x'))
-        print('key for keyAxe 0 =', InfoPoint.axeKeyByIdx('ipTest', 0 ))
-        print('idx for keyAxe y =', InfoPoint.axeIdxByKey('ipTest', 'y'))
-        print('key for keyAxe 1 =', InfoPoint.axeKeyByIdx('ipTest', 1 ))
-        print('idx for keyAxe z =', InfoPoint.axeIdxByKey('ipTest', 'z'))
-        print('key for keyAxe 2 =', InfoPoint.axeKeyByIdx('ipTest', 2 ))
-
-        print('idx for keyVal x =', InfoPoint.valIdxByKey('ipTest', 'x'))
-        print('key for keyVal 0 =', InfoPoint.valKeyByIdx('ipTest', 0))
-        print('idx for keyVal v =', InfoPoint.valIdxByKey('ipTest', 'v'))
-        print('key for keyVal 1 =', InfoPoint.valKeyByIdx('ipTest', 1))
-        print('key for keyVal 2 =', InfoPoint.valKeyByIdx('ipTest', 2))
-
-        print('name for keyAxe x =', InfoPoint.axeNameByKey('ipTest', 'x'))
-        print('name for keyAxe y =', InfoPoint.axeNameByKey('ipTest', 'y'))
-        print('name for keyAxe z =', InfoPoint.axeNameByKey('ipTest', 'z'))
-        print('name for keyVal x =', InfoPoint.valNameByKey('ipTest', 'x'))
-        print('name for keyVal v =', InfoPoint.valNameByKey('ipTest', 'v'))
-
-    if True:
-
-        print(40*'=')
-        print('Creating, copying InfoPoint')
-        print(40*'-')
-
-        p1 = InfoPoint('ipTest')
-        print(p1)
-
-        p2 = InfoPoint('ipTest', pos={'x':1, 'y':1.2}, vals={'m':3, 'v':-4.567891234})
-        print(p2)
-
-        print('m =', p2.val('m'))
-        print('v2 =', p2.val('v2'))
-        print('no key', p2.val())
-        print('axe(x) ', p2.pos('x'))
-        print('axe(y) ', p2.pos('y'))
-        print('axe(r) ', p2.pos('r'))
-        print()
-
-        pc = copy.deepcopy(p2)
-        print('Copied ', pc)
-
-        pc = pc.clear()
-        print('Cleared ', pc)
-
-        pc = pc.clear(vals={'m':3})
-        print('Cleared ', pc)
-
-        pc = pc.clear(vals={})
-        print('Cleared ', pc)
-
-        pc = pc.clear(vals={'r':4})
-        print('Cleared ', pc)
-
-    if False:
-
-        print('Methods returning float')
-        print(InfoPoint.floatMethodx())
-        print('v.get', p2.get('v'))
-        print('v.abs', p2.abs('v'))
-
-        ab = InfoPoint.abs
-
-        print('??? ', ab(p2, 'v'))
-
-
+print(f"InfoPoint ver {_VER}")
 
 #==============================================================================
 #                              END OF FILE

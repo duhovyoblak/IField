@@ -7,7 +7,7 @@ from   tkinter.messagebox     import showinfo
 
 from   siqolib.logger         import SiqoLogger
 from   siqolib.message        import SiqoMessage, askInt, askReal
-from   siqo_ipoint            import InfoPoint
+from   idata.ipoint           import InfoPoint
 
 #==============================================================================
 # package's constants
@@ -234,8 +234,8 @@ print(f'SIQO InfoMatrixDataGui library ver {_VER}')
 
 if __name__ == '__main__':
 
-    from   siqo_ipoint            import InfoPoint
-    from   siqo_imatrix           import InfoMatrix
+    from   idata.ipoint           import InfoPoint
+    from   idata.imatrix          import InfoMatrix
 
     #--------------------------------------------------------------------------
     # Test of the InfoMatrixDataGui class

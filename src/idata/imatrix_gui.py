@@ -12,10 +12,10 @@ from   matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToo
 
 from   siqolib.logger                    import SiqoLogger
 from   siqolib.message                   import SiqoMessage, askInt, askReal, askStr
-from   siqo_imatrix                      import InfoMatrix
-from   siqo_ipoint_gui                   import InfoPointGui, InfoPointValsGui
-from   siqo_imatrix_data_gui             import InfoMatrixDataGui
-from   siqo_imatrix_display_gui          import InfoMatrixDisplayGui
+from   idata.imatrix                     import InfoMatrix
+from   idata.ipoint_gui                  import InfoPointGui, InfoPointValsGui
+from   idata.imatrix_data_gui            import InfoMatrixDataGui
+from   idata.imatrix_display_gui         import InfoMatrixDisplayGui
 
 #==============================================================================
 # package's constants
@@ -990,7 +990,7 @@ print(f'SIQO InfoMatrixGui library ver {_VER}')
 
 if __name__ == '__main__':
 
-    from   siqo_imatrix           import InfoMatrix
+    from   idata.imatrix          import InfoMatrix
 
     #--------------------------------------------------------------------------
     # Test of the InfoMatrixGui class

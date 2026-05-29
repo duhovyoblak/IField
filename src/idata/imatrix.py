@@ -8,7 +8,7 @@ import numpy                  as np
 import random                 as rnd
 
 from   siqolib.logger         import SiqoLogger
-from   siqo_ipoint            import InfoPoint
+from   .ipoint                import InfoPoint
 
 #==============================================================================
 # package's constants

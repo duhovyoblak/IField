@@ -5,8 +5,8 @@ import tkinter                  as tk
 from   tkinter                  import ttk
 
 from   siqolib.message          import SiqoMessage
-from   siqo_imatrix_gui         import InfoMatrixGui
-from   ifield_imatrix           import InfoFieldMatrix
+from   idata.imatrix_gui        import InfoMatrixGui
+from   .imatrix                 import InfoFieldMatrix
 
 #==============================================================================
 # package's constants
@@ -34,14 +34,14 @@ class IFieldMatrixGui(InfoMatrixGui):
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self.varL2E   = tk.IntVar   (value=dat.l2e  ) # Pocet posunu epochy na jeden krok na osi Lambda = 1 / rychlost informacie
-        self.varPhs   = tk.IntVar   (value=dat.phs  ) # Pocet fazovych stavov pre komplexne hodnoty
-        self.varL2P   = tk.IntVar   (value=dat.l2p  ) # Pocet pootoceni fazy na jeden krok na osi Lambda =
+        self.varL2E   = tk.IntVar   (value=dat.l2e  )
+        self.varPhs   = tk.IntVar   (value=dat.phs  )
+        self.varL2P   = tk.IntVar   (value=dat.l2p  )
 
-        self.varSType = tk.StringVar(value=dat.sType) # Typ stavu
-        self.varSAgg  = tk.StringVar(value=dat.sAgg ) # Spôsob agregácie stavov do jednej hodnoty
-        self.varRule  = tk.StringVar(value=dat.rule ) # Pravidlo agregacie stavov susednych bodov
-        self.varMaxL  = tk.IntVar   (value=dat.maxL ) # Maximalny pocet krokov na osi Lambda pri ziskani zoznamu stavov susednych bodov
+        self.varSType = tk.StringVar(value=dat.sType)
+        self.varSAgg  = tk.StringVar(value=dat.sAgg )
+        self.varRule  = tk.StringVar(value=dat.rule )
+        self.varMaxL  = tk.IntVar   (value=dat.maxL )
 
         #----------------------------------------------------------------------
         # Initialise InfoMatrixGui
@@ -59,12 +59,8 @@ class IFieldMatrixGui(InfoMatrixGui):
 
     #--------------------------------------------------------------------------
     def showChildFrame(self, container):
-        """Show frame in parent container InfoMatrixGui dedicated to child classes.
-           This method is called in InfoMatrixGui.show()"""
+        """Show frame in parent container InfoMatrixGui dedicated to child classes."""
 
-        #----------------------------------------------------------------------
-        # Pocet posunu epochy na jeden krok na osi Lambda = 1 / rychlost informacie
-        #----------------------------------------------------------------------
         lbl = ttk.Label(container, text="L2E (epoch per lambda):")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
@@ -72,9 +68,6 @@ class IFieldMatrixGui(InfoMatrixGui):
         spinBox['state'] = 'normal'
         spinBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
-        #----------------------------------------------------------------------
-        # Pocet fazovych stavov pre komplexne hodnoty
-        #----------------------------------------------------------------------
         lbl = ttk.Label(container, text="Number of phases:")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
@@ -82,9 +75,6 @@ class IFieldMatrixGui(InfoMatrixGui):
         spinBox['state'] = 'normal'
         spinBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
-        #----------------------------------------------------------------------
-        # Pocet pootoceni fazy na jeden krok na osi Lambda =
-        #----------------------------------------------------------------------
         lbl = ttk.Label(container, text="L2P (delta phase per lambda):")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
@@ -92,12 +82,8 @@ class IFieldMatrixGui(InfoMatrixGui):
         spinBox['state'] = 'normal'
         spinBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
-        # Add space between spinBox and the next label
         ttk.Label(container, text="").pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, pady=_PADY)
 
-        #----------------------------------------------------------------------
-        # Vyber typu stavu
-        #----------------------------------------------------------------------
         lbl = ttk.Label(container, text="State type:")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
@@ -106,9 +92,6 @@ class IFieldMatrixGui(InfoMatrixGui):
         comboBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
         comboBox.bind('<<ComboboxSelected>>', lambda event: self.updateChildFrame())
 
-        #----------------------------------------------------------------------
-        # Spôsob agregácie stavov do jednej hodnoty
-        #----------------------------------------------------------------------
         lbl = ttk.Label(container, text="Aggregation method:")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
         comboBox = ttk.Combobox(container, textvariable=self.varSAgg, state='readonly')
@@ -116,9 +99,6 @@ class IFieldMatrixGui(InfoMatrixGui):
         comboBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
         comboBox.bind('<<ComboboxSelected>>', lambda event: self.updateChildFrame())
 
-        #----------------------------------------------------------------------
-        # Pravidlo agregacie stavov susednych bodov
-        #----------------------------------------------------------------------
         lbl = ttk.Label(container, text="Neighbors' rule:")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
         comboBox = ttk.Combobox(container, textvariable=self.varRule, state='readonly')
@@ -126,9 +106,6 @@ class IFieldMatrixGui(InfoMatrixGui):
         comboBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
         comboBox.bind('<<ComboboxSelected>>', lambda event: self.updateChildFrame())
 
-        #----------------------------------------------------------------------
-        # Maximalny pocet krokov na osi Lambda pri ziskani zoznamu stavov susednych bodov
-        #----------------------------------------------------------------------
         lbl = ttk.Label(container, text="Neighbors' to consider")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
@@ -138,8 +115,7 @@ class IFieldMatrixGui(InfoMatrixGui):
 
     #--------------------------------------------------------------------------
     def updateChildFrame(self):
-        """Update frame in parent container InfoMatrixGui dedicated to child classes.
-           This method is called in InfoMatrixGui.viewChanged()"""
+        """Update frame in parent container InfoMatrixGui dedicated to child classes."""
 
         if self.dat.l2e != self.varL2E.get():
             self.logger.warning(f'{self.name}.updateChildFrame: L2E changed {self.dat.l2e} -> {self.varL2E.get()}')
@@ -201,48 +177,12 @@ class IFieldMatrixGui(InfoMatrixGui):
         newState = self.dat.aggNeighbors(leftState, actState, rightState)
         text.append(f'New state after applying neighbors\' rule : {newState}')
 
-
         msgWin = SiqoMessage(name=self.dat.name, text=text, wpix=800)
-
-    #--------------------------------------------------------------------------
-
 
 #==============================================================================
 #   Inicializacia kniznice
 #------------------------------------------------------------------------------
 print(f'SIQO IFieldMatrixGui library ver {_VER}')
-
-if __name__ == '__main__':
-
-    from   siqolib.logger           import SiqoLogger
-    from   ifield_imatrix           import InfoFieldMatrix
-
-    logger = SiqoLogger(name='InfoFieldMatrix test')
-    logger.setLevel('DEBUG')
-
-    #--------------------------------------------------------------------------
-    # Test of the IFieldMatrixGui class
-    #--------------------------------------------------------------------------
-    win = tk.Tk()
-    win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
-    win.title('Test of InfoModelGui class')
-    #win.maxsize(width=1200, height=800)
-    win.minsize(width=600, height=300)
-    win.config(highlightbackground = "green", highlightcolor= "green")
-
-    #--------------------------------------------------------------------------
-    # Zaciatok testu
-    #--------------------------------------------------------------------------
-    matrix = InfoFieldMatrix('IFieldMatrix test')
-    matrix.logger.frameDepth = 2
-
-    matrixGui = IFieldMatrixGui(container=win, dat=matrix)
-    matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
-
-    matrixGui.logger.setLevel('INFO')
-    win.mainloop()
-
-    matrixGui.logger.info('Stop of IFieldMatrixGui test')
 
 #==============================================================================
 #                              END OF FILE

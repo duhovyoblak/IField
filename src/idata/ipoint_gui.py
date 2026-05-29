@@ -7,7 +7,7 @@ from   tkinter.messagebox     import showinfo, askokcancel, askyesno
 
 from   siqolib.logger         import SiqoLogger
 from   siqolib.message        import SiqoMessage, askInt, askReal
-from   siqo_ipoint            import InfoPoint
+from   idata.ipoint           import InfoPoint
 
 #==============================================================================
 # package's constants
@@ -403,7 +403,7 @@ print(f'SIQO InfoPointGui library ver {_VER}')
 
 if __name__ == '__main__':
 
-    from   siqo_ipoint           import InfoPoint
+    from   idata.ipoint          import InfoPoint
 
     #--------------------------------------------------------------------------
     # Test of the InfoPointGui class

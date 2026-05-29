@@ -4,8 +4,8 @@
 import tkinter                  as tk
 
 from   siqolib.logger           import SiqoLogger
-from   ifield_imatrix           import InfoFieldMatrix
-from   ifield_imatrix_gui       import IFieldMatrixGui
+from   ifield.imatrix           import InfoFieldMatrix
+from   ifield.imatrix_gui       import IFieldMatrixGui
 
 #==============================================================================
 # package's constants

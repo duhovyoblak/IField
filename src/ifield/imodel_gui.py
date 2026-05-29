@@ -8,8 +8,8 @@ import tkinter                as tk
 from   tkinter                import (ttk, font, PanedWindow)
 from   tkinter                import (messagebox, filedialog, scrolledtext)
 
-
-from   imodel    import InfoModel
+from   siqolib.logger           import SiqoLogger
+from   .imodel                  import InfoModel
 
 #==============================================================================
 # package's constants

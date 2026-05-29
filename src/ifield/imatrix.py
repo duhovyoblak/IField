@@ -2,7 +2,7 @@
 # Siqo class InfoFieldMatrix
 #------------------------------------------------------------------------------
 import cmath
-from   siqo_imatrix           import InfoMatrix
+from   idata.imatrix          import InfoMatrix
 
 #==============================================================================
 # package's constants
@@ -85,122 +85,63 @@ class InfoFieldMatrix(InfoMatrix):
 
         methods = super().mapMethods()
 
-        #methods['IField init Bool'   ] = {'matrixMethod': self.rndBool,   'pointMethod':None, 'params':{'prob1'  :0.5                  }, 'type':'ask'  }
         methods['IField init Complex'] = {'matrixMethod': self.rndComplex,'pointMethod':None, 'params':{'probAbs':0.5, 'phases':_PHASES}, 'type':'quiet'}
         methods['IField epoch step'  ] = {'matrixMethod': self.epochStep, 'pointMethod':None, 'params':{}                               , 'type':'ask'  }
 
-        #----------------------------------------------------------------------
-        # Zobrazim iba metody zacinajuce 'IField ', ostatnym nastavim 'visible':False
-        #----------------------------------------------------------------------
         for methodKey in methods.keys():
-
             if not methodKey.startswith('IField '): methods[methodKey]['visible'] = False
 
-        #----------------------------------------------------------------------
         return methods
 
     #==========================================================================
     # Matrix methods to apply in Dynamics methods
     #--------------------------------------------------------------------------
     def rndBool(self, valueKey:str, params:dict):
-        """Clear all model and set state as random Boolean values.
-        """
-
+        """Clear all model and set state as random Boolean values."""
         self.logger.debug(f"{self.name}.rndBool: for key '{valueKey}' with params {params}")
         pts = 0
 
-        #----------------------------------------------------------------------
-        # Clear all model
-        #----------------------------------------------------------------------
         self.clear(defs={valueKey: False})
-
-        #----------------------------------------------------------------------
-        # Set Active matrix to e = 0 and generate random Boolean values
-        #----------------------------------------------------------------------
         self.actSubmatrix( {'e': 0} )
         pts = self.applyMatrixMethod(methodKey='Random bit', valueKey=valueKey, params=params)
-
-        #----------------------------------------------------------------------
-        # Reset Active matrix whole matrix
-        #----------------------------------------------------------------------
         self.actSubmatrix()
 
-        #----------------------------------------------------------------------
         self.logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
 
     #--------------------------------------------------------------------------
     def rndComplex(self, valueKey:str, params:dict):
-        """Clear all model and set state as random complex values with respective number of discrete phases.
-        """
-
+        """Clear all model and set state as random complex values with respective number of discrete phases."""
         self.logger.debug(f"{self.name}.rndComplex: for key '{valueKey}' with params {params}")
         pts = 0
 
-        #----------------------------------------------------------------------
-        # Clear all model
-        #----------------------------------------------------------------------
         self.clear(defs={valueKey: False})
-
-        #----------------------------------------------------------------------
-        # Set Active matrix to e = 0 and generate random Boolean values
-        #----------------------------------------------------------------------
         self.actSubmatrix( {'e': 0} )
         params['phases'] = self.phs
-
         pts = self.applyMatrixMethod(methodKey='Comp discrete phase', valueKey=valueKey, params=params)
-
-        #----------------------------------------------------------------------
-        # Reset Active matrix whole matrix
-        #----------------------------------------------------------------------
         self.actSubmatrix()
 
-        #----------------------------------------------------------------------
         self.logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
 
     #--------------------------------------------------------------------------
     def epochStep(self, valueKey:str, params:dict):
-        """Compute next epoch state.
-        """
-
+        """Compute next epoch state."""
         self.logger.info(f"{self.name}.epochStep: for key '{valueKey}' with params {params}")
         pts = 0
 
-        #----------------------------------------------------------------------
-        # Posuniem celu maticu o jeden epoch krok
-        #----------------------------------------------------------------------
         self.moveByAxe(axeKey='e', deltaIdx=1, startIdx=0)
 
-        #----------------------------------------------------------------------
-        # Prejdem body l in <1, cnt-2> v epoch=0 a nastavim im hodnoty podla pravidla a susednych bodov
-        #----------------------------------------------------------------------
         for l in range( 0, self.axeCntByKey('l') ):
-
             actPoint = self.pointByIdxs([l, 0])
             actState = actPoint.val(valueKey)
 
-            #--------------------------------------------------------------
-            # Ziskam zoznamy stavov susednych bodov zlava a sprava +- lMax
-            #--------------------------------------------------------------
             leftStates, rightStates = self.getNeighStates(valueKey, l)
-
-            #--------------------------------------------------------------
-            # Agregujem zoznamy stavov do jednej hodnoty stavu
-            #--------------------------------------------------------------
             leftState = self.aggStates(leftStates )
             rightState= self.aggStates(rightStates)
 
-            #--------------------------------------------------------------
-            # Agregujem stavy susednych bodov podla pravidla
-            #--------------------------------------------------------------
             newState = self.aggNeighbors(leftState, actState, rightState)
-
-            #--------------------------------------------------------------
-            # Nastavim novu hodnotu stavu spracovavaneho bodu
-            #--------------------------------------------------------------
             actPoint.set(vals={valueKey: newState})
             pts += 1
 
-        #----------------------------------------------------------------------
         self.logger.info(f"{self.name}.epochStep: {pts} InfoPoints was updated for key '{valueKey}' in epoch step")
 
     #==========================================================================
@@ -211,33 +152,21 @@ class InfoFieldMatrix(InfoMatrix):
 
         self.logger.debug(f"{self.name}.getNeighStates: For {valueKey} at [{l}, {e}]")
 
-        cntLambda = self.axeCntByKey('l')  # Count of points on Lambda axis
-        cntEpoch  = self.axeCntByKey('e')  # Count of Epoch
+        cntLambda = self.axeCntByKey('l')
+        cntEpoch  = self.axeCntByKey('e')
 
         leftStates  = []
         rightStates = []
 
-        #----------------------------------------------------------------------
-        # Ziskam zoznamy stavov susednych bodov zlava a sprava +- lMax
-        #----------------------------------------------------------------------
         for dL in range(1, self.maxL+1):
 
-            #------------------------------------------------------------------
-            # Ziskam hodnotu Epoch podla dL a l2e
-            #------------------------------------------------------------------
             eH = e + (dL * self.l2e)
             if eH >= cntEpoch: break
 
-            #------------------------------------------------------------------
-            # Urcim velkost rotacie fazy podla dl a l2p
-            #------------------------------------------------------------------
-            deltaPhase = (2*cmath.pi) / self.phs              # angle step for N discrete phases
-            deltaPhase = deltaPhase * (dL * self.l2p)         # total phase shift for dL steps
-            rot        = cmath.exp( complex(0, deltaPhase) )  # e **(j*deltaPhase)
+            deltaPhase = (2*cmath.pi) / self.phs
+            deltaPhase = deltaPhase * (dL * self.l2p)
+            rot        = cmath.exp( complex(0, deltaPhase) )
 
-            #------------------------------------------------------------------
-            # Ziskam stavy lavych a pravych susedov a rotujem ich fazu podla dl a l2p
-            #------------------------------------------------------------------
             if (l-dL) > 0:
                 leftPoint = self.pointByIdxs( [l-dL, eH] )
                 leftValue = leftPoint.val(valueKey) * rot
@@ -248,7 +177,6 @@ class InfoFieldMatrix(InfoMatrix):
                 rightValue = rightPoint.val(valueKey) * rot
                 rightStates.append( rightValue )
 
-        #----------------------------------------------------------------------
         self.logger.debug(f"{self.name}.getNeighStates: leftStates={leftStates}, rightStates={rightStates}")
         return leftStates, rightStates
 
@@ -259,26 +187,16 @@ class InfoFieldMatrix(InfoMatrix):
         self.logger.debug(f"{self.name}.aggStates: states={states}, sType={self.sType}, sAgg={self.sAgg}")
         aggState = None
 
-        #----------------------------------------------------------------------
-        # Ak je zoznam stavov prazdny, vratim None
-        #----------------------------------------------------------------------
         if len(states) == 0:
             self.logger.warning(f"{self.name}.aggStates: empty states list, returning None")
             return aggState
 
-        #----------------------------------------------------------------------
-        # Agregujem stavy v zozname
-        #----------------------------------------------------------------------
         aggState = sum(states)
 
-        #----------------------------------------------------------------------
-        # Korekcia podla typu stavu
-        #----------------------------------------------------------------------
         if   self.sType == 'bool'   : aggState = bool   (aggState) if aggState else False
         elif self.sType == 'int'    : aggState = int    (aggState) if aggState else 0
         elif self.sType == 'complex': aggState = complex(aggState) if aggState else complex(0,0)
 
-        #----------------------------------------------------------------------
         self.logger.debug(f"{self.name}.aggStates: {aggState}<-{states}")
         return aggState
 
@@ -290,18 +208,14 @@ class InfoFieldMatrix(InfoMatrix):
         aggState = actState
 
         if self.rule == 'and':
-
             if (leftState == rightState): aggState = leftState
 
         elif self.rule == 'sum':
-
             if   self.sType == 'bool'            : aggState = bool(leftState or rightState)
             elif self.sType in ('int', 'complex'): aggState = leftState + rightState
 
-
         else: self.logger.warning(f"{self.name}.aggNeighbors: Unknown rule '{self.rule}', returning actState")
 
-        #----------------------------------------------------------------------
         self.logger.debug(f"{self.name}.aggNeighbors: {aggState}<-({leftState},{actState},{rightState})")
         return aggState
 
@@ -311,50 +225,6 @@ class InfoFieldMatrix(InfoMatrix):
 
 #------------------------------------------------------------------------------
 print(f"InfoFieldMatrix ver {_VER}")
-
-#==============================================================================
-# Unit testy
-#------------------------------------------------------------------------------
-if __name__ == '__main__':
-
-    from   siqolib.logger         import SiqoLogger
-
-    #--------------------------------------------------------------------------
-    # Test of the InfoFieldMatrix class
-    #--------------------------------------------------------------------------
-    logger = SiqoLogger(name='InfoFieldMatrix test')
-    logger.setLevel('DEBUG')
-
-    #--------------------------------------------------------------------------
-    # Vytvorenie, generovanie osi
-    #--------------------------------------------------------------------------
-    im = InfoFieldMatrix('Test matrix')
-    print(im)
-    input('Press Enter to continue...')
-
-    print('Methods map:')
-    for methodKey, rec in im.mapMethods().items():
-        print(f"  {methodKey:<25s}: {rec['params']}")
-    input('Press Enter to continue...')
-
-    #--------------------------------------------------------------------------
-    # generovanie hodnot
-    #--------------------------------------------------------------------------
-    #im.applyMatrixMethod(methodKey='BRandom fuuniform',   valueKey='s', params={'min':0, 'max':5})
-    #im.applyMatrixMethod(methodKey='Random uniform',      valueKey='s', params={'min':0, 'max':5})
-    #print(im.info(full=True)['msg'])
-    #input('Press Enter to continue...')
-
-
-
-    im.applyMatrixMethod(methodKey='IField random Bool',  valueKey='s', params={'min':0, 'max':5})
-    print(im.info(full=True)['msg'])
-    input('Press Enter to continue...')
-    #--------------------------------------------------------------------------
-    # Submatrix
-    #--------------------------------------------------------------------------
-
-
 
 #==============================================================================
 #                              END OF FILE
