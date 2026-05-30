@@ -822,7 +822,7 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Ziskanie definicie metody
         #----------------------------------------------------------------------
-        metDef = self.dat.mapMethods()[metKey]
+        metDef = self.dat.mapSetMethods()[metKey]
         params = metDef['params']
 
         #----------------------------------------------------------------------

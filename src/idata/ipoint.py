@@ -9,7 +9,7 @@ import random                 as rnd
 from   siqolib.logger         import SiqoLogger
 
 #==============================================================================
-# package's constants
+# Module's constants
 #------------------------------------------------------------------------------
 _VER      = '3.2.2'
 
@@ -34,33 +34,41 @@ _CLOSE_ZERO  = 1e-12                   # Close to zero threshold
 #==============================================================================
 # package's variables
 #------------------------------------------------------------------------------
+logger = SiqoLogger(name='InfoPoint')   # Logger for InfoPoint
 
 #==============================================================================
 # InfoPoint
 #------------------------------------------------------------------------------
 class InfoPoint:
+    """Define InfoPoint as a dynamic data structure in the space defined by schema.
+      Schema defines which axes and vals are defined for respective InfoPoint type <ipType>.
+      Schema is one static structure for all type of InfoPoints and is defined as dict {ipType: {'axes':{key:name}, 'vals':{key:name}}}.
+      Methods for manipulation of InfoPoint values are defined as static methods and can be mapped to method names in mapSetMethods() static method.
+    """
 
     #==========================================================================
     # Static variables & methods
     #--------------------------------------------------------------------------
     _schema = copy.deepcopy(_SCHEMA)           # Schema for InfoPoint
-    logger  = SiqoLogger(name='InfoPoint')     # Logger for InfoPoint
 
     #--------------------------------------------------------------------------
     # Schema methods
     #--------------------------------------------------------------------------
     @staticmethod
     def resetSchema():
-        "Resets schema of InfoPoint to default values"
+        """Resets schema to default values.
+           Default schema is defined as dict {ipType: {'axes':{}, 'vals':{}}} where ipType is defined in _SCHEMA constant.
+           This method has impact on all InfoPoints because schema is static variable for all type of InfoPoints.
+        """
 
         InfoPoint._schema = copy.deepcopy(_SCHEMA)
-        InfoPoint.logger.info("InfoPoint.resetSchema:")
+        logger.info("InfoPoint.resetSchema:")
 
     #--------------------------------------------------------------------------
     @staticmethod
     def checkSchema(ipType):
-        """Checks if schema does exist for respective ipType. If schema for ipType
-           does not exist, create empty as {'axes':{}, 'vals':{}}
+        """Checks if schema is defined for respective ipType.
+           If schema for ipType does not exist, create empty one as ipType:{'axes':{}, 'vals':{}}
         """
 
         if ipType not in InfoPoint._schema.keys():
@@ -69,16 +77,20 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def clearSchema(ipType):
-        "Clears schema of InfoPoint for respective ipType to {'axes':{}, 'vals':{}}"
+        """Clears schema of InfoPoint for respective ipType to empty one as ipType:{'axes':{}, 'vals':{}}
+           This method has no impact on other InfoPoint types.
+        """
 
         InfoPoint.checkSchema(ipType)
         InfoPoint._schema[ipType] = {'axes':copy.deepcopy(_SCH_AXES), 'vals':copy.deepcopy(_SCH_VALS)}
-        InfoPoint.logger.info(f"InfoPoint.clearSchema: clearSchema ipType '{ipType}'")
+        logger.info(f"InfoPoint.clearSchema: clearSchema ipType '{ipType}'")
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def equalSchema(ipType, schema) -> bool:
-        "Check if schema is equal to the schema of respective InfoPoint type"
+    def equalSchema(ipType, testSchema) -> dict:
+        """Check if schema definition for ipType is equal to the testSchema as dict {ipType: {'axes':{}, 'vals':{}}}.
+           Returns dict with keys 'exists', 'equalAxes', 'equalVals' and boolean values for respective checks.
+        """
 
         toRet = {'exists':False, 'equalAxes':False, 'equalVals':False}
 
@@ -86,7 +98,7 @@ class InfoPoint:
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            InfoPoint.logger.warning(f"InfoPoint.equalSchema: ipType '{ipType}' is not defined InfoPoint type")
+            logger.warning(f"InfoPoint.equalSchema: ipType '{ipType}' is not defined InfoPoint type")
             return toRet
 
         else: toRet['exists'] = True
@@ -94,47 +106,48 @@ class InfoPoint:
         #----------------------------------------------------------------------
         # Check axes
         #----------------------------------------------------------------------
-        if 'axes' in schema.keys():
-            if InfoPoint._schema[ipType]['axes'].keys() == schema['axes'].keys(): toRet['equalAxes'] = True
+        if 'axes' in testSchema.keys():
+            if InfoPoint._schema[ipType]['axes'].keys() == testSchema['axes'].keys(): toRet['equalAxes'] = True
 
         #----------------------------------------------------------------------
         # Check vals
         #----------------------------------------------------------------------
-        if 'vals' in schema.keys():
-            if InfoPoint._schema[ipType]['vals'].keys() == schema['vals'].keys(): toRet['equalVals'] = True
+        if 'vals' in testSchema.keys():
+            if InfoPoint._schema[ipType]['vals'].keys() == testSchema['vals'].keys(): toRet['equalVals'] = True
 
         #----------------------------------------------------------------------
         return toRet
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def isInSchema(ipType, *, axes:list=None, vals:list=None):
-        "Returns True if schema has defined all axes and vals otherwise returns False"
+    def isInSchema(ipType, *, axeKeys:list=None, valKeys:list=None) -> bool:
+        """Returns True if schema has defined all provided axe keys and val keys in respective lists otherwise returns False
+        """
 
         if ipType not in InfoPoint._schema.keys():
-            InfoPoint.logger.warning(f"InfoPoint.isInSchema: ipType '{ipType}' is not defined InfoPoint type")
+            logger.warning(f"InfoPoint.isInSchema: ipType '{ipType}' is not defined InfoPoint type")
             return False
 
         #----------------------------------------------------------------------
         # Check axes
         #----------------------------------------------------------------------
-        if axes is not None:
+        if axeKeys is not None:
 
-            for axe in axes:
+            for axe in axeKeys:
 
                 if axe not in InfoPoint._schema[ipType]['axes'].keys():
-                    InfoPoint.logger.warning(f"InfoPoint.isInSchema: Axe '{axe}' is not defined in schema axes {InfoPoint._schema[ipType]['axes']}")
+                    logger.warning(f"InfoPoint.isInSchema: Axe '{axe}' is not defined in schema axes {InfoPoint._schema[ipType]['axes']}")
                     return False
 
         #----------------------------------------------------------------------
         # Check values
         #----------------------------------------------------------------------
-        if vals is not None:
+        if valKeys is not None:
 
-            for val in vals:
+            for val in valKeys:
 
                 if val not in InfoPoint._schema[ipType]['vals'].keys():
-                    InfoPoint.logger.warning(f"InfoPoint.isInSchema: Value '{val}' is not defined in schema values {InfoPoint._schema[ipType]['vals']}")
+                    logger.warning(f"InfoPoint.isInSchema: Value '{val}' is not defined in schema values {InfoPoint._schema[ipType]['vals']}")
                     return False
 
         #----------------------------------------------------------------------
@@ -143,7 +156,8 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getSchema(ipType) -> dict:
-        "Returns schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
+        """Returns copy of schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}
+        """
 
         InfoPoint.checkSchema(ipType)
         return copy.deepcopy(InfoPoint._schema[ipType])
@@ -151,7 +165,9 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def setSchema(ipType, schema):
-        "Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
+        """Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}
+           This method has no impact on InfoPoints of other ipTypes.
+        """
 
         InfoPoint.checkSchema(ipType)
         InfoPoint._schema[ipType] = copy.deepcopy(schema)
@@ -161,7 +177,9 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getSchemaAxes(ipType) -> dict:
-        "Returns axes keys and names as dict {key: name} for respective ipType"
+        """Returns axes keys and theirnames as dict {key: name} for respective ipType.
+           If ipType is not defined in the schema yet, first create empty schema for this ipType.
+        """
 
         InfoPoint.checkSchema(ipType)
         return copy.deepcopy(InfoPoint._schema[ipType]['axes'])
@@ -169,41 +187,52 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def delSchemaAxe(ipType, key):
-        "Delete axe for respective key in the dict of axes for respective ipType"
+        """Delete an axe for respective key from the schema for respective ipType.
+           If ipType is not defined in the schema yet, first create empty schema for this ipType.
+           If key is not defined in the schema for this ipType, do nothing.
+           This method has no impact on InfoPoints of other ipTypes.
+        """
 
         InfoPoint.checkSchema(ipType)
         if key in InfoPoint._schema[ipType]['axes'].keys():
             InfoPoint._schema[ipType]['axes'].pop(key)
 
-        InfoPoint.logger.debug(f"InfoPoint.delSchemaAxe: key '{key}' was deleted from axes")
+        logger.debug(f"InfoPoint.delSchemaAxe: key '{key}' was deleted from axes")
 
     #--------------------------------------------------------------------------
     @staticmethod
     def setSchemaAxe(ipType, key, name):
-        "Sets axe's key and name for respective ipType. If axe exists already, redefine name."
+        """Sets axe's key and name for respective ipType.
+           If ipType is not defined in the schema yet, first create empty schema for this ipType.
+           If axe exists in the schema already, redefine name.
+           This method has no impact on InfoPoints of other ipTypes.
+        """
 
         InfoPoint.checkSchema(ipType)
 
         if (key not in InfoPoint._schema[ipType]['axes'].keys()) or (InfoPoint._schema[ipType]['axes'][key] != name):
 
             InfoPoint._schema[ipType]['axes'][key] = name
-            InfoPoint.logger.debug(f"InfoPoint.setSchemaAxe: set key '{key}' for axe '{name}'")
+            logger.debug(f"InfoPoint.setSchemaAxe: set key '{key}' for axe '{name}'")
             return True
 
         else:
-            InfoPoint.logger.debug(f"InfoPoint.setSchemaAxe: axe '{name}' for key '{key}' is already defined, no change")
+            logger.debug(f"InfoPoint.setSchemaAxe: axe '{name}' for key '{key}' is already defined, no change")
             return False
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def axeIdxByKey(ipType, key) -> int:
-        "Returns axe's idx position in the dict of axes for respective key, othewise None"
+    def axeIdxByKey(ipType, key) -> int|None:
+        """Returns axe's idx position in the dict of axes for respective key for respective ipType.
+           If ipType is not defined in the schema, return None.
+           If key is not defined in the schema for this ipType, return None.
+        """
 
         #----------------------------------------------------------------------
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            InfoPoint.logger.warning(f"InfoPoint.axeIdxByKey: ipType '{ipType}' is not defined InfoPoint type")
+            logger.warning(f"InfoPoint.axeIdxByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
@@ -211,32 +240,35 @@ class InfoPoint:
         #----------------------------------------------------------------------
         for i, keyAxe in enumerate(InfoPoint._schema[ipType]['axes'].keys()):
             if key==keyAxe:
-                InfoPoint.logger.debug(f"InfoPoint.axeIdxByKey: Key '{key}' found in axes {InfoPoint._schema[ipType]['axes']} at index {i}")
+                logger.debug(f"InfoPoint.axeIdxByKey: Key '{key}' found in axes {InfoPoint._schema[ipType]['axes']} at index {i}")
                 return i
 
         #----------------------------------------------------------------------
         # Key not found
         #----------------------------------------------------------------------
-        InfoPoint.logger.warning(f"InfoPoint.axeIdxByKey: Key '{key}' not found in axes {InfoPoint._schema[ipType]['axes']}")
+        logger.warning(f"InfoPoint.axeIdxByKey: Key '{key}' not found in axes {InfoPoint._schema[ipType]['axes']}")
         return None
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def axeKeyByIdx(ipType, idx) -> str:
-        "Returns axe's key for respective idx position in the dict of axes, othewise None"
+    def axeKeyByIdx(ipType, idx) -> str|None:
+        """Returns axe's key for respective idx position in the dict of axes for respective ipType.
+           If ipType is not defined in the schema, return None.
+           If idx is out of the range of axes for this ipType, return None.
+        """
 
         #----------------------------------------------------------------------
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            InfoPoint.logger.warning(f"InfoPoint.axeKeyByIdx: ipType '{ipType}' is not defined InfoPoint type")
+            logger.warning(f"InfoPoint.axeKeyByIdx: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
         # Check if idx is not out of the range
         #----------------------------------------------------------------------
         if idx >= len(InfoPoint._schema[ipType]['axes'].keys()):
-            InfoPoint.logger.warning(f"InfoPoint.axeKeyByIdx: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['axes']}")
+            logger.warning(f"InfoPoint.axeKeyByIdx: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['axes']}")
             return None
 
         #----------------------------------------------------------------------
@@ -247,21 +279,24 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def axeNameByKey(ipType, key) -> str:
-        "Returns axe's Name for respective key, othewise None"
+    def axeNameByKey(ipType, key) -> str|None:
+        """Returns axe's Name for respective key for respective ipType
+           If ipType is not defined in the schema, return None.
+           If key is not defined in the schema for this ipType, return None.
+        """
 
         #----------------------------------------------------------------------
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            InfoPoint.logger.warning(f"InfoPoint.axeNameByKey: ipType '{ipType}' is not defined InfoPoint type")
+            logger.warning(f"InfoPoint.axeNameByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
         # Find name of the axe's key
         #----------------------------------------------------------------------
         if key not in InfoPoint._schema[ipType]['axes'].keys():
-            InfoPoint.logger.warning(f"InfoPoint.axeNameByKey: Key '{key}' not found in axes {InfoPoint._schema[ipType]['axes']}")
+            logger.warning(f"InfoPoint.axeNameByKey: Key '{key}' not found in axes {InfoPoint._schema[ipType]['axes']}")
             return None
 
         else:
@@ -269,14 +304,17 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def axeKeyByName(ipType, name) -> str:
-        "Returns axe's key for respective Name, othewise None"
+    def axeKeyByName(ipType, name) -> str|None:
+        """Returns axe's key for respective Name for respective ipType
+           If ipType is not defined in the schema, return None.
+           If name is not defined in the schema for this ipType, return None.
+        """
 
         #----------------------------------------------------------------------
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            InfoPoint.logger.warning(f"InfoPoint.axeNameByKey: ipType '{ipType}' is not defined InfoPoint type")
+            logger.warning(f"InfoPoint.axeNameByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
@@ -285,11 +323,11 @@ class InfoPoint:
         for key, axeName in InfoPoint._schema[ipType]['axes'].items():
 
             if axeName == name:
-                InfoPoint.logger.debug(f"InfoPoint.axeKeyByName: Name '{name}' found in axes {InfoPoint._schema[ipType]['axes']} for key '{key}'")
+                logger.debug(f"InfoPoint.axeKeyByName: Name '{name}' found in axes {InfoPoint._schema[ipType]['axes']} for key '{key}'")
                 return key
 
         #----------------------------------------------------------------------
-        InfoPoint.logger.warning(f"InfoPoint.axeKeyByName: Name '{name}' not found in axes {InfoPoint._schema[ipType]['axes']}")
+        logger.warning(f"InfoPoint.axeKeyByName: Name '{name}' not found in axes {InfoPoint._schema[ipType]['axes']}")
         return None
 
     #--------------------------------------------------------------------------
@@ -297,7 +335,9 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getSchemaVals(ipType) -> dict:
-        "Returns values keys and names as dict {key: name} for respective ipType"
+        """Returns values keys and names as dict {key: name} for respective ipType.
+           If ipType is not defined in the schema yet, first create empty schema for this ipType.
+        """
 
         InfoPoint.checkSchema(ipType)
         return copy.deepcopy(InfoPoint._schema[ipType]['vals'])
@@ -305,41 +345,52 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def delSchemaVal(ipType, key):
-        "Delete value for respective key in the dict of values for respective ipType"
+        """Delete value for respective key from the schema for respective ipType.
+           If ipType is not defined in the schema, first create empty schema for this ipType.
+           If key is not defined in the schema for this ipType, do nothing.
+           This method has no impact on InfoPoints of other ipTypes.
+        """
 
         InfoPoint.checkSchema(ipType)
         if key in InfoPoint._schema[ipType]['vals'].keys():
             InfoPoint._schema[ipType]['vals'].pop(key)
 
-        InfoPoint.logger.debug(f"InfoPoint.delSchemaVal: key '{key}' was deleted from values")
+        logger.debug(f"InfoPoint.delSchemaVal: key '{key}' was deleted from values")
 
     #--------------------------------------------------------------------------
     @staticmethod
     def setSchemaVal(ipType, key, name):
-        "Sets value key and name for respective ipType. If value exists already, redefine name."
+        """Sets value key and name for respective ipType.
+           If ipType is not defined in the schema, first create empty schema for this ipType.
+           If value exists already, redefine name.
+           This method has no impact on InfoPoints of other ipTypes.
+        """
 
         InfoPoint.checkSchema(ipType)
 
         if (key not in InfoPoint._schema[ipType]['vals'].keys()) or (InfoPoint._schema[ipType]['vals'][key] != name):
 
             InfoPoint._schema[ipType]['vals'][key] = name
-            InfoPoint.logger.debug(f"InfoPoint.setSchemaVal: set key '{key}' for value '{name}'")
+            logger.debug(f"InfoPoint.setSchemaVal: set key '{key}' for value '{name}'")
             return True
 
         else:
-            InfoPoint.logger.debug(f"InfoPoint.setSchemaVal: value '{name}' for key '{key}' is already defined, no change")
+            logger.debug(f"InfoPoint.setSchemaVal: value '{name}' for key '{key}' is already defined, no change")
             return False
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def valIdxByKey(ipType, key) -> int:
-        "Returns value's idx position in the dict of values for respective key, othewise None"
+    def valIdxByKey(ipType, key) -> int|None:
+        """Returns value's idx position in the dict of values for respective key for respective ipType.
+           If ipType is not defined in the schema, return None.
+           If key is not defined in the schema for this ipType, return None.
+        """
 
         #----------------------------------------------------------------------
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            InfoPoint.logger.warning(f"InfoPoint.valIdxByKey: ipType '{ipType}' is not defined InfoPoint type")
+            logger.warning(f"InfoPoint.valIdxByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
@@ -351,26 +402,29 @@ class InfoPoint:
         #----------------------------------------------------------------------
         # Key not found
         #----------------------------------------------------------------------
-        InfoPoint.logger.warning(f"InfoPoint.valIdxByKey: Key '{key}' not found in valus {InfoPoint._schema[ipType]['vals']}")
+        logger.warning(f"InfoPoint.valIdxByKey: Key '{key}' not found in valus {InfoPoint._schema[ipType]['vals']}")
         return None
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def valKeyByIdx(ipType, idx) -> str:
-        "Returns value's key in the dict of values for respective idx position, othewise None"
+    def valKeyByIdx(ipType, idx) -> str|None:
+        """Returns value's key in the dict of values for respective idx position for respective ipType.
+           If ipType is not defined in the schema, return None.
+           If idx is not in the range, return None.
+        """
 
         #----------------------------------------------------------------------
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            InfoPoint.logger.warning(f"InfoPoint.valKeyByIdx: ipType '{ipType}' is not defined InfoPoint type")
+            logger.warning(f"InfoPoint.valKeyByIdx: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
         # Check if idx is not out of the range
         #----------------------------------------------------------------------
         if idx >= len(InfoPoint._schema[ipType]['vals'].keys()):
-            InfoPoint.logger.warning(f"InfoPoint.valKeyByIdx: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['vals']}")
+            logger.warning(f"InfoPoint.valKeyByIdx: Idx '{idx}' is out of the range in {InfoPoint._schema[ipType]['vals']}")
             return None
 
         #----------------------------------------------------------------------
@@ -381,21 +435,24 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def valNameByKey(ipType, key) -> str:
-        "Returns value's Name for respective key, othewise None"
+    def valNameByKey(ipType, key) -> str|None:
+        """Returns value's Name for respective key for respective ipType.
+           If ipType is not defined in the schema, return None.
+           If key is not defined in the schema for this ipType, return None.
+        """
 
         #----------------------------------------------------------------------
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            InfoPoint.logger.warning(f"InfoPoint.valNameByKey: ipType '{ipType}' is not defined InfoPoint type")
+            logger.warning(f"InfoPoint.valNameByKey: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
         # Find name of the value's key
         #----------------------------------------------------------------------
         if key not in InfoPoint._schema[ipType]['vals'].keys():
-            InfoPoint.logger.warning(f"InfoPoint.valNameByKey: Key '{key}' not found in valus {InfoPoint._schema[ipType]['vals']}")
+            logger.warning(f"InfoPoint.valNameByKey: Key '{key}' not found in valus {InfoPoint._schema[ipType]['vals']}")
             return None
 
         else:
@@ -403,14 +460,17 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def valKeyByName(ipType, name) -> str:
-        "Returns val's key for respective Name, othewise None"
+    def valKeyByName(ipType, name) -> str|None:
+        """Returns val's key for respective Name for respective ipType.
+           If ipType is not defined in the schema, return None.
+           If name is not defined in the schema for this ipType, return None.
+        """
 
         #----------------------------------------------------------------------
         # Check if ipType is defined
         #----------------------------------------------------------------------
         if ipType not in InfoPoint._schema.keys():
-            InfoPoint.logger.warning(f"InfoPoint.valKeyByName: ipType '{ipType}' is not defined InfoPoint type")
+            logger.warning(f"InfoPoint.valKeyByName: ipType '{ipType}' is not defined InfoPoint type")
             return None
 
         #----------------------------------------------------------------------
@@ -419,19 +479,21 @@ class InfoPoint:
         for key, valName in InfoPoint._schema[ipType]['vals'].items():
 
             if valName == name:
-                InfoPoint.logger.debug(f"InfoPoint.valKeyByName: Name '{name}' found in values {InfoPoint._schema[ipType]['vals']} for key '{key}'")
+                logger.debug(f"InfoPoint.valKeyByName: Name '{name}' found in values {InfoPoint._schema[ipType]['vals']} for key '{key}'")
                 return key
 
         #----------------------------------------------------------------------
-        InfoPoint.logger.warning(f"InfoPoint.valKeyByName: Name '{name}' not found in values {InfoPoint._schema[ipType]['vals']}")
+        logger.warning(f"InfoPoint.valKeyByName: Name '{name}' not found in values {InfoPoint._schema[ipType]['vals']}")
         return None
 
     #--------------------------------------------------------------------------
-    # Method's methods
+    # InfoPoint's methods
     #--------------------------------------------------------------------------
     @staticmethod
     def mapShowMethods() -> dict:
-        "Returns map of methods returning float number from keyed value"
+        """Returns map of methods returning float number from keyed value mainly used to show the value of the point.
+           Returns dict of {showMethodName: callable_function}.
+        """
 
         return {'Float value'   : InfoPoint.fValue
                ,'Absolute value': InfoPoint.abs
@@ -444,8 +506,13 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def mapMethods() -> dict:
-        "Returns map of methods for one InfoPoint setting keyed value to function value for respective parameters"
+    def mapSetMethods() -> dict:
+        """Returns map of methods for one InfoPoint setting keyed value to function value for respective parameters.
+           Returns dict of {pointMethodName: {'pointMethod': callable_function, 'params':{paramName: defaultValue}, 'visible':True/False, 'type':'ask'/'noAsk'}}.
+           params is dict of parameters for the method with default values.
+           If type is 'ask', these parameters should be asked to user in GUI, if type is 'noAsk', these parameters are not asked to user and default values are used.
+           If visible is False, this method should not be shown to user in GUI, if visible is True, this method should be shown to user in GUI.
+           """
 
         return {'<Point Methods>'        : {'pointMethod':InfoPoint.nullMethod,    'params':{                                                           }, 'visible':True}
                ,'Real constant'          : {'pointMethod':InfoPoint.fltConst,      'params':{'const'  :0                                                }, 'visible':True, 'type':'ask'}
@@ -462,7 +529,13 @@ class InfoPoint:
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, ipType:str, *, pos=None, vals=None):
-        "Calls constructor of InfoPoint on respective position"
+        """Calls constructor of InfoPoint on respective position
+           ipType : is type of this InfoPoint defined in the schema, e.g. 'ipReal', 'ipComplex', ...
+                    If ipType is not defined in the schema yet, first create empty schema for this ipType.
+           pos    : is position of this InfoPoint defined as dict {axeKey: axeValue_float} or list/tuple of values mapped to axes in the order defined in the schema for this ipType.
+           vals   : is values of this InfoPoint defined as dict {valKey: valValue} or list/tuple of values mapped to value keys in the order defined in the schema for this ipType.
+           This method can modify schema for this ipType if ipType is not defined in the schema yet.
+        """
 
         InfoPoint.checkSchema(ipType)
 
@@ -473,14 +546,16 @@ class InfoPoint:
         self.set(pos=pos, vals=vals)
 
     #--------------------------------------------------------------------------
-    def __str__(self):
-        "Prints info about this InfoPoint"
+    def __str__(self) -> str:
+        """Returns string representation of this InfoPoint object instance.
+        """
 
         return self.info()['msg']
 
     #--------------------------------------------------------------------------
-    def _format(self, val):
-        "Creates string representation of the value for respective format settings"
+    def _format(self, val) -> str:
+        """Creates string representation of the value for respective format settings
+        """
 
         if   val is None         : toRet = 'None'.ljust(_F_TOTAL)
         elif type(val) == int    : toRet = f"{val:#{_F_TOTAL}}"
@@ -491,8 +566,9 @@ class InfoPoint:
         return toRet
 
     #--------------------------------------------------------------------------
-    def _posStr(self):
-        "Creates string representation of the position of this InfoPoint"
+    def _posStr(self) -> str:
+        """Creates string representation of the position of this InfoPoint.
+        """
 
         toRet = '['
 
@@ -506,8 +582,9 @@ class InfoPoint:
         return toRet
 
     #--------------------------------------------------------------------------
-    def _valsStr(self):
-        "Creates string representation of the values of this InfoPoint"
+    def _valsStr(self) -> str:
+        """Creates string representation of the values of this InfoPoint.
+        """
 
         toRet = '['
 
@@ -520,19 +597,33 @@ class InfoPoint:
         toRet += ']'
         return toRet
 
+    #==========================================================================
+    # InfoPoint Value's modification
     #--------------------------------------------------------------------------
-    def get(self, *, pos:bool=True, vals:bool=True):
-        "Get position and values of this InfoPoint"
+    def clear(self, *, vals:dict={}) -> 'InfoPoint':
+        """Iterates through all value keys and sets their values to values privided or to default values.
+           vals : is dict of values for respective value keys as {valKey: valValue} to set for this InfoPoint.
 
-        toRet = {}
-        if pos : toRet['pos' ] = self._pos.copy()
-        if vals: toRet['vals'] = self._vals.copy()
+           This method is vulnerable to wrong input data, e.g. if vals is dict but has keys which are not defined in the schema for this ipType,
+           these keys are ignored without warning. FIX IN THE FUTURE
+        """
 
-        return toRet
+        for keyVal in InfoPoint._schema[self._ipType]['vals'].keys():
+            self._vals[keyVal] = vals.get(keyVal, 0)
+
+        logger.debug(f"InfoPoint.clear: {self._vals}")
+        return self
 
     #--------------------------------------------------------------------------
     def set(self, *, pos=None, vals=None):
-        "Set position and values of this InfoPoint"
+        """Set position and values of this InfoPoint.
+
+           pos    : is position of this InfoPoint defined as dict {axeKey: axeValue_float} or list/tuple of values mapped to axes in the order defined in the schema for this ipType.
+           vals   : is values of this InfoPoint defined as dict {valKey: valValue} or list/tuple of values mapped to value keys in the order defined in the schema for this ipType.
+
+           This method is vulnerable to wrong input data, e.g. if pos is list of values but number of values is higher than number of axes defined in the schema for this ipType,
+           only first values are mapped to axes and rest of values are ignored without warning. FIX IN THE FUTURE
+          """
 
         #----------------------------------------------------------------------
         # Set position
@@ -578,9 +669,27 @@ class InfoPoint:
                         if i < len(valKeys):
                             self._vals[valKeys[i]] = v
 
+    #==========================================================================
+    # InfoPoint Value's retrieval
     #--------------------------------------------------------------------------
-    def pos(self, axeKey=None):
-        "Get position value on respective axe or whole position"
+    def get(self, *, pos:bool=True, vals:bool=True):
+        """Returns position and values of this InfoPoint as dict {'pos':_pos, 'vals':_vals}.
+           pos  : if True, include position in the returned dict, if False, do not include position in the returned dict.
+           vals : if True, include values in the returned dict, if False, do not include values in the returned dict.
+        """
+
+        toRet = {}
+        if pos : toRet['pos' ] = self._pos.copy()
+        if vals: toRet['vals'] = self._vals.copy()
+
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def pos(self, axeKey=None)->float|dict|None:
+        """Returns position float value on respective axe or whole position dict for this InfoPoint.
+           If axeKey is None, returns whole position dict {axeKey: axeValue_float}.
+           If axeKey is not None, returns position float value for respective axeKey or None if axeKey is not defined in the schema for this ipType.
+        """
 
         if axeKey is None:
             return self._pos.copy()
@@ -590,7 +699,10 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     def val(self, valKey=None):
-        "Get value for respective key or whole values"
+        """Returns value for respective key or whole values dict for this InfoPoint.
+           If valKey is None, returns whole values dict {valKey: valValue}.
+           If valKey is not None, returns value for respective valKey or None if valKey is not defined in the schema for this ipType.
+        """
 
         if valKey is None:
             return self._vals.copy()
@@ -599,8 +711,19 @@ class InfoPoint:
             return self._vals.get(valKey, None)
 
     #--------------------------------------------------------------------------
-    def info(self, indent=0, full=False):
-        "Creates info about this InfoPoint"
+    def info(self, indent=0, full=False) -> dict:
+        """Creates info about this InfoPoint.
+           indent : is number of indents for the info message, each indent is defined as 4 spaces.
+           full   : if True, creates full info message with all details, if False, creates short info message.
+           Returns dict with keys 'res', 'dat' and 'msg' where
+             'res' is 'OK' if info was created successfully, otherwise 'ERROR',
+             'dat' is dict with info data and
+             'msg' is string with info message.
+
+             This method is vulnerable to wrong input data, e.g. if indent is negative,
+             it will create info message with negative number of indents without warning.
+             'dat' is in wrong structure FIX IN THE FUTURE
+        """
 
         dat = {}
         msg = ''
@@ -620,33 +743,27 @@ class InfoPoint:
         return {'res':'OK', 'dat':dat, 'msg':msg}
 
     #==========================================================================
-    # Methods for manipulation
-    #--------------------------------------------------------------------------
-
-    #==========================================================================
     # Show methods - Returns float value (or representation as float) from InfoPoint values
     #--------------------------------------------------------------------------
-
-    #--------------------------------------------------------------------------
     @staticmethod
-    def fValue(val):
-        "Returns value as float"
+    def fValue(val) -> float:
+        """Returns value as float"""
 
         if val is None: return 0.0
         return float(val) if val else 0.0
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def abs(val):
-        "Returns absolute value"
+    def abs(val) -> float:
+        """Returns absolute of respective value"""
 
         if val is None: return 0.0
         return float(abs(val)) if val else 0.0
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def real(val):
-        "Returns real part of complex value or value as float"
+    def real(val) -> float:
+        """Returns real part of complex value or value as float"""
 
         if val is None: return 0.0
         if type(val) == complex: return float(val.real)
@@ -654,8 +771,8 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def imag(val):
-        "Returns imaginary part of complex value"
+    def imag(val) -> float:
+        """Returns imaginary part of complex value"""
 
         if val is None: return 0.0
         if type(val) == complex: return float(val.imag)
@@ -663,8 +780,8 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def phase(val):
-        "Returns phase of complex value"
+    def phase(val) -> float:
+        """Returns phase of complex value"""
 
         if val is None: return 0.0
         if type(val) == complex: return cmath.phase(val)
@@ -672,27 +789,30 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def complex(val):
-        "Returns value as complex"
+    def complex(val) -> complex:
+        """Returns value as complex value"""
 
         if val is None: return complex(0, 0)
         return complex(val) if val else complex(0, 0)
 
     #==========================================================================
-    # Point methods - apply to one point
-    #--------------------------------------------------------------------------
-
+    # Set Methods to set keyed value of this InfoPoint for respective parameters.
     #--------------------------------------------------------------------------
     @staticmethod
-    def nullMethod(infoPoint, valueKey:str, params:dict):
-        "Null method for testing"
+    def nullMethod(infoPoint, valueKey:str, params:dict) -> int:
+        """Null method for testing.
+           Retuns 1 if value was set, otherwise 0.
+        """
 
         return 0
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def fltConst(infoPoint, valueKey:str, params:dict):
-        "Set constant float value"
+    def fltConst(infoPoint, valueKey:str, params:dict) -> int:
+        """Set keyed value to constant float value.
+           params should have key 'const' with constant value to set.
+           Retuns 1 if value was set, otherwise 0.
+        """
 
         const = params.get('const', 0)
         infoPoint.set(vals={valueKey: const})
@@ -700,8 +820,11 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def fltRandUni(infoPoint, valueKey:str, params:dict):
-        "Set random uniform float value in range <min, max>"
+    def fltRandUni(infoPoint, valueKey:str, params:dict) -> int:
+        """Set keyed value to random uniform float value in range <min, max>.
+           params should have keys 'min' and 'max' with range limits.
+           Retuns 1 if value was set, otherwise 0.
+        """
 
         minVal = params.get('min', 0)
         maxVal = params.get('max', 1)
@@ -713,8 +836,11 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def fltRandBit(infoPoint, valueKey:str, params:dict):
-        "Set random bit value (1 or 0) with probability prob1 for 1"
+    def fltRandBit(infoPoint, valueKey:str, params:dict) -> int:
+        """Set keyed value to random bit value (1 or 0) with probability prob1.
+           params should have key 'prob1' with probability of setting value to 1.
+           If params does not have key 'prob1', default probability is 0.5.
+           Retuns 1 if value was set, otherwise 0."""
 
         prob1 = params.get('prob1', 0.5)
         val = 1 if rnd.random() < prob1 else 0
@@ -724,8 +850,12 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpConstR(infoPoint, valueKey:str, params:dict):
-        "Set constant complex value given by real and imaginary parts"
+    def cmpConstR(infoPoint, valueKey:str, params:dict) -> int:
+        """Set keyed value to constant complex value given by real and imaginary parts.
+           params should have keys 'real' and 'imag' with real and imaginary parts of the complex value to set.
+           If params does not have key 'real' or 'imag', default value for respective part is 0.
+           Retuns 1 if value was set, otherwise 0.
+        """
 
         real = params.get('real', 0)
         imag = params.get('imag', 0)
@@ -736,8 +866,12 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpConstP(infoPoint, valueKey:str, params:dict):
-        "Set constant complex value given by absolute value and phase"
+    def cmpConstP(infoPoint, valueKey:str, params:dict) -> int:
+        """Set keyed value to constant complex value given by absolute value and phase.
+           params should have keys 'abs' and 'phase' with absolute value and phase of the complex value to set.
+           If params does not have key 'abs' or 'phase', default value for respective part is 0.
+           Retuns 1 if value was set, otherwise 0.
+        """
 
         abs_val = params.get('abs' , 0)
         phase   = params.get('phase', 0)
@@ -748,8 +882,12 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpRandUniR(infoPoint, valueKey:str, params:dict):
-        "Set random complex value with uniform real and imaginary parts in given ranges"
+    def cmpRandUniR(infoPoint, valueKey:str, params:dict) -> int:
+        """Set keyed value to random complex value with uniform real and imaginary parts in given ranges.
+           params should have keys 'reMin', 'reMax', 'imMin' and 'imMax' with ranges for real and imaginary parts of the complex value to set.
+           If params does not have key 'reMin', 'reMax', 'imMin' or 'imMax', default value for respective part is 0 for minimum and 1 for maximum.
+           Retuns 1 if value was set, otherwise 0.
+        """
 
         reMin  = params.get('reMin' , 0)
         reMax  = params.get('reMax' , 1)
@@ -765,8 +903,12 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpRandUniP(infoPoint, valueKey:str, params:dict):
-        "Set random complex value with uniform absolute value and phase in given ranges"
+    def cmpRandUniP(infoPoint, valueKey:str, params:dict) -> int:
+        """Set keyed value to random complex value with uniform absolute value and phase in given ranges.
+           params should have keys 'absMin', 'absMax', 'phaseMin' and 'phaseMax' with ranges for absolute value and phase of the complex value to set.
+           If params does not have key 'absMin', 'absMax', 'phaseMin' or 'phaseMax', default value for respective part is 0 for minimum and 1 for maximum.
+           Retuns 1 if value was set, otherwise 0.
+        """
 
         absMin   = params.get('absMin'  , 0)
         absMax   = params.get('absMax'  , 1)
@@ -782,8 +924,12 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpDiscPhases(infoPoint, valueKey:str, params:dict):
-        "Set random complex value with discrete uniform phases"
+    def cmpDiscPhases(infoPoint, valueKey:str, params:dict) -> int:
+        """Set keyed value to random complex value with discrete uniform phases.
+           params should have keys 'probAbs' and 'phases' with probability of selecting non-zero absolute value and number of discrete phases.
+           If params does not have key 'probAbs' or 'phases', default values are 0.5 and 2 respectively.
+           Retuns 1 if value was set, otherwise 0.
+        """
 
         probAbs = params.get('probAbs', 0.5)
         phases  = params.get('phases', 2)

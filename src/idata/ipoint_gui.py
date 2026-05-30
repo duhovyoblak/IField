@@ -286,7 +286,7 @@ class InfoPointValsGui(tk.Toplevel):
         # Internal objects
         #----------------------------------------------------------------------
         info = point.info()
-        self.origVals = info['vals']  # Original values pre prikaz Cancel
+        self.origVals = info['dat']['vals']  # Original values pre prikaz Cancel
 
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk

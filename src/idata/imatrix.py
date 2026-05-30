@@ -289,9 +289,9 @@ class InfoMatrix:
         return InfoPoint.equalSchema(self.ipType, schema)
 
     #--------------------------------------------------------------------------
-    def isInSchema(self, *, axes:list=None, vals:list=None) -> bool:
+    def isInSchema(self, *, axeKeys:list=None, valKeys:list=None) -> bool:
 
-        return InfoPoint.isInSchema(self.ipType, axes=axes, vals=vals)
+        return InfoPoint.isInSchema(self.ipType, axeKeys=axeKeys, valKeys=valKeys)
 
     #--------------------------------------------------------------------------
     def getSchema(self) -> dict:
@@ -398,10 +398,10 @@ class InfoMatrix:
         return InfoPoint.mapShowMethods()
 
     #--------------------------------------------------------------------------
-    def mapMethods(self) -> dict:
+    def mapSetMethods(self) -> dict:
         "Returns map of methods setting keyed value to function value for respective parameters"
 
-        methods = InfoPoint.mapMethods()
+        methods = InfoPoint.mapSetMethods()
 
         methods['<Matrix Methods>'] = {'matrixMethod': self.nullMethod, 'pointMethod':None,  'params':{}                                        , 'visible':True, 'type':'ask'}
         methods['Move data'       ] = {'matrixMethod': self.moveData,   'pointMethod':None,  'params':{'axeKey':'x', 'startIdx':0, 'deltaIdx':1}, 'visible':True, 'type':'ask'}
@@ -412,7 +412,7 @@ class InfoMatrix:
     def visibleMethodKeys(self) -> list:
         "Returns list of keys of mapped methods with 'visible'==True"
 
-        methods = self.mapMethods()
+        methods = self.mapSetMethods()
 
         return [key for key, val in methods.items() if val.get('visible', True)]
 
@@ -1033,7 +1033,7 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         # Ziskanie vykonavanej funkcie a jej parametrov
         #----------------------------------------------------------------------
-        methods = self.mapMethods()
+        methods = self.mapSetMethods()
 
         if methodKey not in methods.keys():
             self.logger.error(f"{self.name}.applyMatrixMethod: '{methodKey}' is not in defined functions, command denied")

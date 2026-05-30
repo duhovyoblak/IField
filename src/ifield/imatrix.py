@@ -80,10 +80,10 @@ class InfoFieldMatrix(InfoMatrix):
     #--------------------------------------------------------------------------
     # Method's methods
     #--------------------------------------------------------------------------
-    def mapMethods(self) -> dict:
+    def mapSetMethods(self) -> dict:
         "Returns map of methods setting keyed value to function value for respective parameters"
 
-        methods = super().mapMethods()
+        methods = super().mapSetMethods()
 
         methods['IField init Complex'] = {'matrixMethod': self.rndComplex,'pointMethod':None, 'params':{'probAbs':0.5, 'phases':_PHASES}, 'type':'quiet'}
         methods['IField epoch step'  ] = {'matrixMethod': self.epochStep, 'pointMethod':None, 'params':{}                               , 'type':'ask'  }
