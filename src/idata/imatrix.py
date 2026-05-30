@@ -1096,7 +1096,7 @@ class InfoMatrix:
         pts = 0  # Counter of points
 
         for point in tgtList:
-            pointMethod(self=point, valueKey=valueKey, params=params)
+            pointMethod(point, valueKey=valueKey, params=params)
             pts += 1
 
         #----------------------------------------------------------------------

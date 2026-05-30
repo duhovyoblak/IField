@@ -17,6 +17,7 @@ _IND      = '|  '                      # Info indentation
 _F_SCHEMA = 1                          # Format for ipType
 _F_TOTAL  = 6                          # Total number of digits in float number
 _F_DECIM  = 3                          # Number of digits after decimal point in float number
+_F_POS    = 4                          # Number of digits for position coordinates
 
 _SCH_AXES = {}                         # Default axes for InfoPoint schema
 _SCH_VALS = {}                         # Default values for InfoPoint schema

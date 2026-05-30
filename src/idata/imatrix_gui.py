@@ -562,7 +562,7 @@ class InfoMatrixGui(ttk.Frame):
         pts = 0
         for i, point in enumerate(self.dat.actList):
 
-            valueToShow = showFtion(point, self.display['valKey'])
+            valueToShow = showFtion(point.val(self.display['valKey']))
 
             #------------------------------------------------------------------
             # Ak existuje valueToShow, pridam ju do zoznamu aj s koordinatmi
