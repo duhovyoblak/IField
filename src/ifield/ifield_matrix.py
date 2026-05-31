@@ -104,7 +104,7 @@ class InfoFieldMatrix(InfoMatrix):
         logger.debug(f"{self.name}.rndBool: for key '{valueKey}' with params {params}")
         pts = 0
 
-        self.clear(defs={valueKey: False})
+        self.clearPoints(defs={valueKey: False})
         self.actSubmatrix( {'e': 0} )
         pts = self.applyMatrixMethod(methodKey='Random bit', valueKey=valueKey, params=params)
         self.actSubmatrix()
@@ -117,7 +117,7 @@ class InfoFieldMatrix(InfoMatrix):
         logger.debug(f"{self.name}.rndComplex: for key '{valueKey}' with params {params}")
         pts = 0
 
-        self.clear(defs={valueKey: False})
+        self.clearPoints(defs={valueKey: False})
         self.actSubmatrix( {'e': 0} )
         params['phases'] = self.phs
         pts = self.applyMatrixMethod(methodKey='Comp discrete phase', valueKey=valueKey, params=params)

@@ -49,7 +49,7 @@ class InfoPoint:
     #==========================================================================
     # Static variables & methods
     #--------------------------------------------------------------------------
-    _schema = copy.deepcopy(_SCHEMA)           # Schema for InfoPoint
+    _schema = copy.deepcopy(_SCHEMA)  # Static schema for all InfoPoint types
 
     #--------------------------------------------------------------------------
     # Schema methods
@@ -157,6 +157,7 @@ class InfoPoint:
     @staticmethod
     def getSchema(ipType) -> dict:
         """Returns copy of schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}
+           If ipType is not defined in the schema yet, first create empty schema for this ipType.
         """
 
         InfoPoint.checkSchema(ipType)
@@ -166,6 +167,7 @@ class InfoPoint:
     @staticmethod
     def setSchema(ipType, schema):
         """Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}
+           If ipType is not defined in the schema yet, first create empty schema for this ipType.
            This method has no impact on InfoPoints of other ipTypes.
         """
 
@@ -512,7 +514,7 @@ class InfoPoint:
            params is dict of parameters for the method with default values.
            If type is 'ask', these parameters should be asked to user in GUI, if type is 'noAsk', these parameters are not asked to user and default values are used.
            If visible is False, this method should not be shown to user in GUI, if visible is True, this method should be shown to user in GUI.
-           """
+        """
 
         return {'<Point Methods>'        : {'pointMethod':InfoPoint.nullMethod,    'params':{                                                           }, 'visible':True}
                ,'Real constant'          : {'pointMethod':InfoPoint.fltConst,      'params':{'const'  :0                                                }, 'visible':True, 'type':'ask'}

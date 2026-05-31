@@ -28,7 +28,9 @@ logger = SiqoLogger(name='InfoMatrix')   # Logger for InfoMatrix
 # Only when matrix is not empty
 #------------------------------------------------------------------------------
 def noEmptyMatrix(function):
-    "Assures matrix is not empty before calling decorated function"
+    """This decorator assures that matrix is not empty before calling decorated function.
+       If matrix is empty, decorated function is not called and warning is logged.
+    """
 
     #--------------------------------------------------------------------------
     # Interna wrapper funkcia
@@ -63,6 +65,14 @@ def noEmptyMatrix(function):
 # InfoMatrix
 #------------------------------------------------------------------------------
 class InfoMatrix:
+    """Define InfoMatrix as a dynamic data structure of InfoPoints in the space
+       defined by schema of respective InfoPoint type <ipType>.
+       InfoMatrix is defined by its name and ipType.
+       InfoMatrix contains list of InfoPoints and internal structures for fast
+       retrieval of points by coordinates and definition of active submatrix.
+       InfoMatrix can be copied and its ipType can be changed with reset of all data.
+       InfoMatrix can be converted to 2D numpy array for visualization in IFieldMatrixGui.
+    """
 
     #==========================================================================
     # Static variables & methods
@@ -72,7 +82,11 @@ class InfoMatrix:
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, name):
-        "Calls constructor of InfoMatrix"
+        """Calls constructor of InfoMatrix of respective name.
+           Constructor initializes all public and private data structures of InfoMatrix.
+           Constructor does not initialize points in InfoMatrix nor set ipType,
+           it is expected that they will be added later.
+        """
 
         logger.debug(f"InfoMatrix.constructor: {name}")
 
@@ -109,13 +123,19 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def __str__(self):
-        "Prints info about this InfoMatrix"
+        """Returns string representation of this InfoMatrix.
+        """
 
         return self.info()['msg']
 
     #--------------------------------------------------------------------------
-    def __array__(self):
-        "Returns InfoMatrix as 2D numpy array"
+    def __array__(self) -> np.array:
+        """Returns active submatrix of the InfoMatrix as 2D numpy array.
+           Value of the array is defined by self.actVal as key of the InfoPoint's dat value.
+           This method is used for visualization of InfoMatrix in IFieldMatrixGui.
+
+           This method is not good defined, FIX IN THE FUTURE
+        """
 
         mtrx = self.actSubmatrix(keyVal=self.actVal)
 
@@ -133,7 +153,13 @@ class InfoMatrix:
 
      #--------------------------------------------------------------------------
     def setIpType(self, ipType:str, force:bool=False):
-        "Apply InfoPoint.schema to internal structures _cnts, _origs, _rects for respective ipType"
+        """Set ipType of this InfoMatrix and reset all data.
+           If not force, ipType is set only if it is different from the current one,
+           otherwise warning is logged and ipType is not changed nor points are destroyed.
+           If force or ipType is different than actual self.ipType, set self.ipType to ipType
+           and set structures _cnts, _origs, _rects and _diffs to empty dict {}.
+           Destroy all points in this InfoMatrix.
+        """
 
         logger.info(f"{self.name}.setIpType: ipType='{ipType}', force={force}")
 
@@ -165,8 +191,16 @@ class InfoMatrix:
         logger.warning(f"{self.name}.setIpType: ipType was set to '{ipType}' and InfoMatrix was reset")
 
    #--------------------------------------------------------------------------
-    def info(self, indent=0, full=False):
-        "Creates info about this InfoMatrix"
+    def info(self, indent=0, full=False) -> dict:
+        """Creates info about this InfoMatrix.
+           Identation is defined by indent as number of _IND for each line.
+           If full is False, info contains only general info about this InfoMatrix.
+           If full is True, info contains also info about all points in this InfoMatrix.
+           Returns dict with keys 'res', 'dat' and 'msg' where
+           'res' is 'OK' if info was created successfully,
+           'dat' is dict of info data
+           'msg' is string representation of info for printing.
+        """
 
         dat = {}
         msg = ''
@@ -215,8 +249,12 @@ class InfoMatrix:
         return {'res':'OK', 'dat':dat, 'msg':msg}
 
     #--------------------------------------------------------------------------
-    def count(self, check=True):
-        "Returns Count of points in this InfoMatrix"
+    def count(self, check=True) -> int:
+        """Returns Count of points in this InfoMatrix as sum of counts in respective
+           axes as defined in _cnts.
+           If check is True, checks if count of points is equal to len(points)
+           and if not, logs warning and calls init() to recalculate count.
+        """
 
         #----------------------------------------------------------------------
         # Pocet bodov podla _cnts
@@ -240,8 +278,9 @@ class InfoMatrix:
         return toRet
 
     #--------------------------------------------------------------------------
-    def copy(self, name):
-        "Creates copy of this InfoMatrix"
+    def copy(self, name) -> 'InfoMatrix':
+        """Creates full copy of this InfoMatrix with new name.
+        """
 
         logger.debug(f"{self.name}.copy: to {name}")
 
@@ -277,31 +316,41 @@ class InfoMatrix:
     # Proxy tools for InfoPoint schema
     #--------------------------------------------------------------------------
     def clearSchema(self):
-        "Clears schema of InfoPoint for respective ipType to {'axes':{'None':'None'}, 'vals':{}}"
+        """Clears schema of InfoPoint for respective ipType to {'axes':{}, 'vals':{}}.
+           Destroys all points in this InfoMatrix.
+        """
 
         InfoPoint.clearSchema(self.ipType)
         self.setIpType(self.ipType, force=True)
 
     #--------------------------------------------------------------------------
-    def equalSchema(self, schema) -> bool:
-        "Check if schema is equal to the schema of respective InfoPoint type"
+    def equalSchema(self, schema) -> dict:
+        """Check if schema definition for ipType is equal to the testSchema as dict {ipType: {'axes':{}, 'vals':{}}}.
+           Returns dict with keys 'exists', 'equalAxes', 'equalVals' and boolean values for respective checks.
+        """
 
         return InfoPoint.equalSchema(self.ipType, schema)
 
     #--------------------------------------------------------------------------
     def isInSchema(self, *, axeKeys:list=None, valKeys:list=None) -> bool:
+        """Returns True if schema has defined all provided axe keys and val keys in respective lists otherwise returns False
+        """
 
         return InfoPoint.isInSchema(self.ipType, axeKeys=axeKeys, valKeys=valKeys)
 
     #--------------------------------------------------------------------------
     def getSchema(self) -> dict:
-        "Returns schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
+        """Returns copy of schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}
+           If ipType is not defined in the schema yet, first create empty schema for this ipType.
+        """
 
         return InfoPoint.getSchema(self.ipType)
 
     #--------------------------------------------------------------------------
     def setSchema(self, schema:dict):
-        "Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}"
+        """Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}
+           This method has no impact on InfoPoints of other ipTypes.
+        """
 
         logger.warning(f"{self.name}.setSchema: schema={schema}")
         return InfoPoint.setSchema(self.ipType, schema)
@@ -310,44 +359,64 @@ class InfoMatrix:
     # Schema axes methods
     #--------------------------------------------------------------------------
     def getSchemaAxes(self) -> dict:
-        "Returns axes keys and names as dict {key: name}"
+        """Returns axes keys and theirnames as dict {key: name} for respective ipType.
+           If ipType is not defined in the schema yet, first create empty schema for this ipType.
+        """
 
         return InfoPoint.getSchemaAxes(self.ipType)
 
     #--------------------------------------------------------------------------
     def setSchemaAxe(self, key, name):
-        "Add axe key and name"
+        """Sets axe's key and name for respective ipType.
+           If ipType is not defined in the schema yet, first create empty schema for this ipType.
+           If axe exists in the schema already, redefine name.
+           This method has no impact on InfoPoints of other ipTypes.
+        """
 
         InfoPoint.setSchemaAxe(self.ipType, key, name)
         self.setIpType(self.ipType, force=True)
 
     #--------------------------------------------------------------------------
-    def axeIdxByKey(self, key) -> int:
-        "Returns axe's idx for respective key as position in the list of axes othewise None"
+    def axeIdxByKey(self, key) -> int|None:
+        """Returns axe's idx position in the dict of axes for respective key for respective ipType.
+           If ipType is not defined in the schema, return None.
+           If key is not defined in the schema for this ipType, return None.
+        """
 
         return InfoPoint.axeIdxByKey(self.ipType, key)
 
     #--------------------------------------------------------------------------
-    def axeKeyByIdx(self, idx) -> str:
-        "Returns axe's key for respective position in the list of axes othewise None"
+    def axeKeyByIdx(self, idx) -> str|None:
+        """Returns axe's key for respective idx position in the dict of axes for respective ipType.
+           If ipType is not defined in the schema, return None.
+           If idx is out of the range of axes for this ipType, return None.
+        """
 
         return InfoPoint.axeKeyByIdx(self.ipType, idx)
 
     #--------------------------------------------------------------------------
-    def axeNameByKey(self, key) -> str:
-        "Returns axe's Name for respective key as string othewise None"
+    def axeNameByKey(self, key) -> str|None:
+        """Returns axe's Name for respective key for respective ipType
+           If ipType is not defined in the schema, return None.
+           If key is not defined in the schema for this ipType, return None.
+        """
 
         return InfoPoint.axeNameByKey(self.ipType, key)
 
      #--------------------------------------------------------------------------
-    def axeKeyByName(self, name) -> str:
-        "Returns axe's key for respective Name, othewise None"
+    def axeKeyByName(self, name) -> str|None:
+        """Returns axe's key for respective Name for respective ipType
+           If ipType is not defined in the schema, return None.
+           If name is not defined in the schema for this ipType, return None.
+        """
 
         return InfoPoint.axeKeyByName(self.ipType, name)
 
     #--------------------------------------------------------------------------
-    def axeCntByKey(self, key) -> int:
-        "Returns axe's count of points for respective key, othewise None"
+    def axeCntByKey(self, key) -> int|None:
+        """Returns axe's count of points for respective key.
+           If key is not defined in the schema for this ipType, return None.
+        """
 
         return self._cnts.get(key, None)
 
@@ -355,37 +424,55 @@ class InfoMatrix:
     # Schema vals methods
     #--------------------------------------------------------------------------
     def getSchemaVals(self) -> dict:
-        "Returns values keys and names as dict {key: name}"
+        """Returns values keys and names as dict {key: name} for respective ipType.
+           If ipType is not defined in the schema yet, first create empty schema for this ipType.
+        """
 
         return InfoPoint.getSchemaVals(self.ipType)
 
     #--------------------------------------------------------------------------
     def setSchemaVal(self, key, name):
-        "Sets value key and name"
+        """Sets value key and name for respective ipType.
+           If ipType is not defined in the schema, first create empty schema for this ipType.
+           If value exists already, redefine name.
+           This method has no impact on InfoPoints of other ipTypes.
+        """
 
         return InfoPoint.setSchemaVal(self.ipType, key, name)
 
     #--------------------------------------------------------------------------
-    def valIdxByKey(self, key) -> int:
-        "Returns value's idx for respective key as position in the list of axes othewise None"
+    def valIdxByKey(self, key) -> int|None:
+        """Returns value's idx position in the dict of values for respective key for respective ipType.
+           If ipType is not defined in the schema, return None.
+           If key is not defined in the schema for this ipType, return None.
+        """
 
         return InfoPoint.valIdxByKey(self.ipType, key)
 
     #--------------------------------------------------------------------------
-    def valKeyByIdx(self, idx) -> str:
-        "Returns value's key for respective position in the list of valus othewise None"
+    def valKeyByIdx(self, idx) -> str|None:
+        """Returns value's key in the dict of values for respective idx position for respective ipType.
+           If ipType is not defined in the schema, return None.
+           If idx is not in the range, return None.
+        """
 
         return InfoPoint.valKeyByIdx(self.ipType, idx)
 
     #--------------------------------------------------------------------------
-    def valNameByKey(self, key) -> str:
-        "Returns value's Name for respective key as string othewise None"
+    def valNameByKey(self, key) -> str|None:
+        """Returns value's Name for respective key for respective ipType.
+           If ipType is not defined in the schema, return None.
+           If key is not defined in the schema for this ipType, return None.
+        """
 
         return InfoPoint.valNameByKey(self.ipType, key)
 
     #--------------------------------------------------------------------------
-    def valKeyByName(self, name) -> str:
-        "Returns val's key for respective Name, othewise None"
+    def valKeyByName(self, name) -> str|None:
+        """Returns val's key for respective Name for respective ipType.
+           If ipType is not defined in the schema, return None.
+           If name is not defined in the schema for this ipType, return None.
+        """
 
         return InfoPoint.valKeyByName(self.ipType, name)
 
@@ -393,13 +480,20 @@ class InfoMatrix:
     # Method's methods
     #--------------------------------------------------------------------------
     def mapShowMethods(self) -> dict:
-        "Returns map of methods returning float number from keyed value"
+        """Returns map of methods returning float number from keyed value mainly used to show the value of the point.
+           Returns dict of {showMethodName: callable_function}.
+        """
 
         return InfoPoint.mapShowMethods()
 
     #--------------------------------------------------------------------------
     def mapSetMethods(self) -> dict:
-        "Returns map of methods setting keyed value to function value for respective parameters"
+        """Returns map of methods for one InfoPoint setting keyed value to function value for respective parameters.
+           Returns dict of {pointMethodName: {'pointMethod': callable_function, 'params':{paramName: defaultValue}, 'visible':True/False, 'type':'ask'/'noAsk'}}.
+           params is dict of parameters for the method with default values.
+           If type is 'ask', these parameters should be asked to user in GUI, if type is 'noAsk', these parameters are not asked to user and default values are used.
+           If visible is False, this method should not be shown to user in GUI, if visible is True, this method should be shown to user in GUI.
+        """
 
         methods = InfoPoint.mapSetMethods()
 
@@ -410,17 +504,18 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def visibleMethodKeys(self) -> list:
-        "Returns list of keys of mapped methods with 'visible'==True"
+        """Returns list of keys of mapped methods with 'visible'==True
+        """
 
         methods = self.mapSetMethods()
 
         return [key for key, val in methods.items() if val.get('visible', True)]
 
     #==========================================================================
-    # Position and indices tools
+    # Internal tools for position and indices
     #--------------------------------------------------------------------------
     def _subPeriods(self, axeKey:str) -> tuple:
-        "Returns period,serie & groups for respective axe"
+        """Returns period,serie & groups for respective axe"""
 
         logger.debug(f"{self.name}._subPeriods: axeKey={axeKey}")
 
@@ -451,7 +546,9 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def _possByAxeIdx(self, axeKey:str, axeIdx:int) -> set:
-        "Returns set of positions of Points belonging to the axe with respective index axeIdx"
+        """Returns set of positions of Points belonging to the axe with respective index axeIdx
+           in the axe with respective key axeKey.
+        """
 
         logger.debug(f"{self.name}._possByAxeIdx: axeKey={axeKey}, axeIdx={axeIdx}")
 
@@ -484,7 +581,8 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def _axeValByIdx(self, axeKey:str, axeIdx:int) -> float:
-        "Returns value of the axe with respective index axeIdx in lambda units"
+        """Returns value of the axe with respective index axeIdx in lambda units
+        """
 
         logger.debug(f"{self.name}._axeValByIdx: axeKey={axeKey}, axeIdx={axeIdx}")
 
@@ -504,8 +602,11 @@ class InfoMatrix:
         return toRet
 
     #--------------------------------------------------------------------------
-    def _idxByAxeVal(self, axeKey:str, axeVal:float) -> int:
-        "Returns index in axe for respective coordinate"
+    def _idxByAxeVal(self, axeKey:str, axeVal:float) -> int|None:
+        """Returns index in axe for respective coordinate.
+           If axeKey is not in the schema, returns None.
+           If coordinate is out of boundaries, return respective first or last axe value
+        """
 
         #----------------------------------------------------------------------
         # Kontrola existencie osi
@@ -533,8 +634,10 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     # One Point position tools
     #--------------------------------------------------------------------------
-    def _posByIdxs(self, idxs:list) -> int:
-        "Returns position of the InfoPoint in the list for respective indices"
+    def _posByIdxs(self, idxs:list) -> int|None:
+        """Returns position of the InfoPoint in the list of points for respective indices.
+           If idxs has more or less indices than number of axes, logs error and returns None. FIX IN THE FUTURE
+        """
 
         subProd = self._subProducts
 
@@ -546,8 +649,10 @@ class InfoMatrix:
         return pos
 
     #--------------------------------------------------------------------------
-    def _idxsByPos(self, pos:int) -> list:
-        "Returns indices of the InfoPoint for respective position in the list"
+    def _idxsByPos(self, pos:int) -> list|None:
+        """Returns indices of the InfoPoint for respective position in the list of points.
+           If pos is out of range, logs error and returns None. FIX IN THE FUTURE
+        """
 
         #----------------------------------------------------------------------
         # Inicializacia
@@ -577,8 +682,10 @@ class InfoMatrix:
     #==========================================================================
     # InfoPoint retrieval
     #--------------------------------------------------------------------------
-    def lastPosIdxs(self) -> list:
-        "Returns indices of the InfoPoint for last position used in pointByPos"
+    def lastPosIdxs(self) -> list|None:
+        """Returns indices of the InfoPoint for last position used in pointByPos.
+           If last position is not defined, logs error and returns None.
+        """
 
         if self._lastPos is None:
             logger.error(f"{self.name}.lastPosIdxs: No lastPos stored")
@@ -587,10 +694,17 @@ class InfoMatrix:
         return self._idxsByPos(self._lastPos)
 
     #--------------------------------------------------------------------------
-    def pointByPos(self, pos:int) -> InfoPoint:
-        "Returns InfoPoint in field for respective position. If such point does not exist, returns None"
+    def pointByPos(self, pos:int=None) -> InfoPoint|None:
+        """Returns InfoPoint in list of points for respective position.
+           Stores given pos into self._lastPos for faster access in future calls of lastPosIdxs.
+           If pos is out of range or does not exist, logs error and returns None.
+        """
 
         self._lastPos = pos
+
+        if pos is None:
+            logger.error(f"{self.name}.pointByPos: pos is None")
+            return None
 
         if (pos<0) or (pos>=len(self.points)):
             logger.error(f"{self.name}.pointByPos: pos={pos} is out of range <0,{len(self.points)-1}>")
@@ -600,17 +714,21 @@ class InfoMatrix:
         return toRet
 
     #--------------------------------------------------------------------------
-    def pointByIdxs(self, idxs:list) -> InfoPoint:
-        "Returns InfoPoint in field at respective indexes. If such points do not exist, returns None"
+    def pointByIdxs(self, idxs:list) -> InfoPoint|None:
+        """Returns InfoPoint at respective indexes.
+           If such points do not exist, logs error and returns None.
+        """
 
         pos = self._posByIdxs(idxs)
         return self.pointByPos(pos)
 
     #--------------------------------------------------------------------------
-    def pointByCoord(self, coord:dict) -> InfoPoint:
-        "Returns nearest InfoPoint in field to respective coordinates"
+    def pointByCoord(self, coord:dict) -> InfoPoint|None:
+        """Returns nearest InfoPoint in field to respective coordinates.
+           If coord is not compatible with the schema of this InfoMatrix, logs error and returns None. FIX IN THE FUTURE
+        """
 
-        logger.debug(f"{self.name}.pointByCoord: coord sent={coord} and actSubIdxs={self.actSubIdxs}")
+        logger.debug(f"{self.name}.pointByCoord: coord={coord} and actSubIdxs={self.actSubIdxs}")
 
         vals = []  # List of axe values for debugging
         idxs = []  # List of indices for respective axes
@@ -669,7 +787,7 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def _actSubSet(self, actSubIdxs:dict):
         """Sets active submatrix definition as dict of freezed axesKeys with values.
-           If actSubIdxs definition changed from current definition, sets actChanged to True.
+           If actSubIdxs definition is different from current definition, sets actChanged to True.
         """
 
         oldActSubIdxs = self.actSubIdxs.copy()
@@ -710,7 +828,7 @@ class InfoMatrix:
     # Active subsmatrix retrieval
     #--------------------------------------------------------------------------
     def actSubmatrix(self, actSubIdxs=None, force=False) -> list:
-        """Returns active submatrix of InfoPoints as list of InfoPoints.
+        """Returns active submatrix of InfoPoints as list of InfoPoints also stored in self.actList.
            Submatrix is defined by dict of freezed axesKeys with values.
            If actSubIdxs is NOT provided, whole matrix became active submatrix.
         """
@@ -775,29 +893,42 @@ class InfoMatrix:
     #==========================================================================
     # Structure/Value modification
     #--------------------------------------------------------------------------
-    def clear(self, *, defs:dict={}):
-        "Set all InfoPoint's values to default values. No change of structure."
+    def clearPoints(self, *, defs:dict={}):
+        """Set all InfoPoint's values to 0. No change of structure.
+           If defs is provided, set values to these provided in defs dict {valKey: valDef}.
+        """
 
-        logger.debug(f"{self.name}.clear: defs={defs}")
+        logger.debug(f"{self.name}.clearPoints: defs={defs}")
         pts = 0
 
         for point in self.points:
             point.clear(vals=defs)
             pts += 1
 
-        logger.warning(f"{self.name}.clear: {pts} InfoPoints was set to defs={defs}")
+        logger.warning(f"{self.name}.clearPoints: {pts} InfoPoints was set to defs={defs}")
 
     #--------------------------------------------------------------------------
-    def init(self, *, cnts:dict={}, origs:dict={}, rects:dict={} ):
+    def init(self, *, cnts:dict={}, origs:dict={}, rects:dict={} ) -> int|None:
         """Initialise InfoMatrix structure with already set parameters
-           or You can provide new matrix structure parameters"""
+           or You can provide new matrix structure parameters.
+
+           cnts  is dict of {axeKey: cnt} where cnt is count of points in respective axe.
+           origs is dict of {axeKey: orig} where orig is origin coordinate in lambda units for respective axe.
+           rects is dict of {axeKey: rect} where rect is rectangle in lambda units for respective axe.
+
+           If origs is not provided, origin for respective axe will be set to 0.
+           If rects is not provided, rectangle for respective axe will be set to (cnt-1)*diff where diff
+              is distance between two points in respective axe.
+
+           Returns count of created InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
+        """
 
         #----------------------------------------------------------------------
         # Kontrola definicie ipType
         #----------------------------------------------------------------------
         if self.ipType is None:
             logger.error(f"{self.name}.init: InfoPoint type is not defined, cannot initialise InfoMatrix")
-            return
+            return None
 
         #----------------------------------------------------------------------
         # Kontrola kompatibility definicie ipType a cnts
@@ -806,7 +937,7 @@ class InfoMatrix:
 
         if cnts.keys() != schAxes.keys():
             logger.error(f"{self.name}.init: InfoPoint type '{self.ipType}' axes {list(schAxes.keys())} are not compatible with cnts axes {list(cnts.keys())}, cannot initialise InfoMatrix")
-            return
+            return None
 
         #----------------------------------------------------------------------
         # Priprava na init()
@@ -873,7 +1004,9 @@ class InfoMatrix:
         self.actSubmatrix(actSubIdxs={}, force=True)
 
         #----------------------------------------------------------------------
-        logger.warning(f"{self.name}.init: Created {len(self.points)} InfoPoints")
+        pts = len(self.points)
+        logger.warning(f"{self.name}.init: Created {pts} InfoPoints")
+        return pts
 
     #--------------------------------------------------------------------------
 
@@ -936,10 +1069,11 @@ class InfoMatrix:
         return self
 
     #--------------------------------------------------------------------------
-    def moveByAxe(self, axeKey, startIdx, deltaIdx, defVals={}) -> bool:
+    def moveByAxe(self, axeKey, startIdx, deltaIdx, defVals={}) -> int:
         """Move whole matrix data by deltaIdx from start index in respective axe.
            Positive deltaIdx moves data to higher indices, negative to lower indices.
            Data moved out of matrix bounds are lost, new data positions are cleared to default values.
+           Returns count of moved points.
         """
         logger.debug(f"{self.name}.moveByAxe: From {startIdx} by {deltaIdx} for axe key={axeKey}")
         pts = 0
@@ -1020,11 +1154,12 @@ class InfoMatrix:
     #==========================================================================
     # Dynamic Methods application
     #--------------------------------------------------------------------------
-    def applyMatrixMethod(self, methodKey:str, valueKey:str, params:dict=None) -> bool:
+    def applyMatrixMethod(self, methodKey:str, valueKey:str, params:dict=None) -> int|None:
         """Special matrix method for applying dynamic matrix methods.
-           methodKey : Name of the method to apply
-           valueKey  : Key of the value to be set by the method
-           params    : Parameters for the method as dict
+               methodKey : Name of the method to apply
+               valueKey  : Key of the value to be set by the method
+               params    : Parameters for the method as dict
+           Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
         logger.warning(f"{self.name}.applyMatrixMethod: methodKey='{methodKey}', valueKey='{valueKey}', params={params}")
@@ -1037,7 +1172,7 @@ class InfoMatrix:
 
         if methodKey not in methods.keys():
             logger.error(f"{self.name}.applyMatrixMethod: '{methodKey}' is not in defined functions, command denied")
-            return pts
+            return None
 
         else:
             method = methods[methodKey]
@@ -1067,18 +1202,19 @@ class InfoMatrix:
         #----------------------------------------------------------------------
         else:
             logger.error(f"{self.name}.applyMatrixMethod: '{methodKey}' has neither pointMethod nor matrixMethod defined")
-            return pts
+            return None
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.applyMatrixMethod: {pts} InfoPoints was updated for '{valueKey}'<-{methodKey}({params})")
         return pts
 
     #--------------------------------------------------------------------------
-    def _applyPointMethod(self, pointMethod, valueKey:str, params:dict=None) -> bool:
+    def _applyPointMethod(self, pointMethod, valueKey:str, params:dict=None) -> int|None:
         """Special matrix method for applying Point methods to all or active subset of InfoPoints.
-           pointMethod : Name of the Point method to apply
-           valueKey    : Key of the value to be set by the method
-           params      : Parameters for the method as dict
+               pointMethod : Name of the Point method to apply
+               valueKey    : Key of the value to be set by the method
+               params      : Parameters for the method as dict
+            Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
         logger.debug(f"{self.name}._applyPointMethod: {pointMethod.__name__}({params}) for value key='{valueKey}'")
@@ -1106,22 +1242,34 @@ class InfoMatrix:
     #==========================================================================
     # Matrix methods to apply in Dynamics methods
     #--------------------------------------------------------------------------
-    def nullMethod(self, valueKey:str, params:dict):
-        "Default null method for InfoPoint for keyed value (do nothing)"
+    def nullMethod(self, valueKey:str, params:dict) -> int|None:
+        """Default null method for InfoPoint for keyed value (do nothing)
+               valueKey : Key of the value to be set by the method
+               params   : Parameters for the method as dict
+           Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
+        """
 
         logger.debug(f"{self.name}.nullMethod: do nothing for key '{valueKey}' with params {params}")
-        return 0
+        return 1
 
     #--------------------------------------------------------------------------
-    def moveData(self, valueKey:str, params:dict):
-        "Move data in matrix by deltaIdx from startIdx in axeKey"
+    def moveData(self, valueKey:str, params:dict) -> int|None:
+        """Move data in matrix by deltaIdx from startIdx in axeKey
+               valueKey : Key of the value to be set by the method
+               params   : Parameters for the method as dict
+           Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
+        """
 
         logger.debug(f"{self.name}.moveData: for key '{valueKey}' with params {params}")
         return self.moveByAxe(axeKey=params['axeKey'], startIdx=params['startIdx'], deltaIdx=params['deltaIdx'])
 
     #--------------------------------------------------------------------------
-    def normAbs(self, nods, norm=None):
-        "Normalise set of the nodes by sum of absolute values"
+    def normAbs(self, nods, norm=None) -> int|None:
+        """Normalise set of the nodes by sum of absolute values.
+               valueKey : Key of the value to be set by the method
+               params   : Parameters for the method as dict
+           Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
+        """
 
         logger.info(f"{self.name}.normAbs: ")
 
