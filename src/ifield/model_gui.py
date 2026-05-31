@@ -9,7 +9,7 @@ from   tkinter                  import (ttk, font, PanedWindow)
 from   tkinter                  import (messagebox, filedialog, scrolledtext)
 
 from   siqolib.logger           import SiqoLogger
-from   .ifield_model            import InfoModel
+from   .model                   import InfoModel
 
 #==============================================================================
 # Module's constants
