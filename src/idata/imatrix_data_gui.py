@@ -10,9 +10,9 @@ from   siqolib.message        import SiqoMessage, askInt, askReal
 from   idata.ipoint           import InfoPoint
 
 #==============================================================================
-# package's constants
+# Module's constants
 #------------------------------------------------------------------------------
-_VER            = '1.1'
+_VER            = '1.1.0'
 _WIN            = '800x540'
 _DPI            = 100
 
@@ -21,8 +21,9 @@ _PADX           =  5
 _PADY           =  5
 
 #==============================================================================
-# package's variables
+# Module's variables
 #------------------------------------------------------------------------------
+logger = SiqoLogger(name='InfoMatrixDataGui')   # Logger for InfoMatrixDataGui
 
 #==============================================================================
 # Class InfoMatrixDataGui
@@ -35,8 +36,7 @@ class InfoMatrixDataGui(tk.Toplevel):
     def __init__(self, name, container, matrix, **kwargs):
         "Call constructor of InfoMatrixDataGui and initialise it for respective data"
 
-        self.logger = SiqoLogger(name)
-        self.logger.audit(f'{name}.init:')
+        logger.audit(f'{name}.init:')
 
         self.name     = name               # Name of this chart
         self.matrix   = matrix             # Matrix type to work with
@@ -100,7 +100,7 @@ class InfoMatrixDataGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Initialisation
         #----------------------------------------------------------------------
-        self.logger.audit(f'{name}.init: Done')
+        logger.audit(f'{name}.init: Done')
 
     #--------------------------------------------------------------------------
 
@@ -110,7 +110,7 @@ class InfoMatrixDataGui(tk.Toplevel):
     def showParams(self, tab, paramType:str, params:dict, lblParam='Parameter', lblName='Name'):
         "Show parameters in the respective tab"
 
-        self.logger.debug(f'{self.name}.showParams:')
+        logger.debug(f'{self.name}.showParams:')
 
         #----------------------------------------------------------------------
         # Clear the tab
@@ -133,7 +133,7 @@ class InfoMatrixDataGui(tk.Toplevel):
         row = 1
         for key, val in params.items():
 
-            self.logger.debug(f'{self.name}.showParams: {paramType}: {key} = {val}')
+            logger.debug(f'{self.name}.showParams: {paramType}: {key} = {val}')
 
             lbl = ttk.Label(tab, text=str(key))
             lbl.grid(column=0, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -149,7 +149,7 @@ class InfoMatrixDataGui(tk.Toplevel):
     def setParam(self, paramType:str, key:str, val:str):
         "Update or Add new parameter to the matrix setting"
 
-        self.logger.debug(f'{self.name}.setParam: {paramType}[{key}] = {val}')
+        logger.debug(f'{self.name}.setParam: {paramType}[{key}] = {val}')
 
         #----------------------------------------------------------------------
         # Set cnts
@@ -159,10 +159,10 @@ class InfoMatrixDataGui(tk.Toplevel):
             try:
                 val = int(val)
                 self._cnts[key] = val
-                self.logger.info(f'{self.name}.setParam: {paramType}[{key}] = {val} was set')
+                logger.info(f'{self.name}.setParam: {paramType}[{key}] = {val} was set')
 
             except ValueError:
-                self.logger.error(f"{self.name}.setParam: '{val}' is not an integer, can not change counts of points")
+                logger.error(f"{self.name}.setParam: '{val}' is not an integer, can not change counts of points")
 
             finally:
                 self.showParams(self.tabCnts, 'cnts', self._cnts, lblParam='Axe', lblName='Points count')
@@ -175,10 +175,10 @@ class InfoMatrixDataGui(tk.Toplevel):
             try:
                 val = float(val)
                 self._rects[key] = val
-                self.logger.info(f'{self.name}.setParam: {paramType}[{key}] = {val} was set')
+                logger.info(f'{self.name}.setParam: {paramType}[{key}] = {val} was set')
 
             except ValueError:
-                self.logger.error(f"{self.name}.setParam: '{val}' is not a real value, can not change length of the axe")
+                logger.error(f"{self.name}.setParam: '{val}' is not a real value, can not change length of the axe")
 
             finally:
                 self.showParams(self.tabRects, 'rects', self._rects, lblParam='Axe', lblName='Axe length')
@@ -191,10 +191,10 @@ class InfoMatrixDataGui(tk.Toplevel):
             try:
                 val = float(val)
                 self._origs[key] = val
-                self.logger.info(f'{self.name}.setParam: {paramType}[{key}] = {val} was set')
+                logger.info(f'{self.name}.setParam: {paramType}[{key}] = {val} was set')
 
             except ValueError:
-                self.logger.error(f"{self.name}.setParam: '{val}' is not a real value, can not change origin of the axe")
+                logger.error(f"{self.name}.setParam: '{val}' is not a real value, can not change origin of the axe")
 
             finally:
                 self.showParams(self.tabOrigs, 'origs', self._origs, lblParam='Axe', lblName='Axe origin')
@@ -203,7 +203,7 @@ class InfoMatrixDataGui(tk.Toplevel):
         # Unknown parameter type
         #----------------------------------------------------------------------
         else:
-            self.logger.error(f'{self.name}.setParam: Unknown paramType {paramType}')
+            logger.error(f'{self.name}.setParam: Unknown paramType {paramType}')
 
     #--------------------------------------------------------------------------
     def apply(self):
@@ -211,7 +211,7 @@ class InfoMatrixDataGui(tk.Toplevel):
 
         self.matrix.init( cnts=self._cnts, rects=self._rects, origs=self._origs )
 
-        self.logger.warning(f'{self.name}.apply: Changes were applied, matrix initialised')
+        logger.warning(f'{self.name}.apply: Changes were applied, matrix initialised')
         self.destroy()
 
     #--------------------------------------------------------------------------
@@ -222,17 +222,20 @@ class InfoMatrixDataGui(tk.Toplevel):
         self.matrix._rects = self.origRects     # Original _rects
         self.matrix._origs = self.origOrigs     # Original _origs
 
-        self.logger.info(f'{self.name}.cancel: Changes were cancelled, settings restored')
+        logger.info(f'{self.name}.cancel: Changes were cancelled, settings restored')
         self.destroy()
 
     #--------------------------------------------------------------------------
 
 #==============================================================================
-#   Inicializacia kniznice
+# Inicializacia modulu
 #------------------------------------------------------------------------------
-print(f'SIQO InfoMatrixDataGui library ver {_VER}')
+print(f'InfoMatrixDataGui ver {_VER}')
 
 if __name__ == '__main__':
+
+
+    logger.info("Testing InfoMatrixDataGui class")
 
     from   idata.ipoint           import InfoPoint
     from   idata.imatrix          import InfoMatrix
@@ -251,8 +254,8 @@ if __name__ == '__main__':
     # Zaciatok testu
     #--------------------------------------------------------------------------
     im = InfoMatrix('Test matrix')
-    im.logger.setLevel('DEBUG')
-    im.logger.frameDepth = 2
+    logger.setLevel('DEBUG')
+    logger.frameDepth = 2
 
     im.setIpType('ipTest')
     im.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
@@ -261,7 +264,7 @@ if __name__ == '__main__':
     matGui = InfoMatrixDataGui(name='Schema test', container=win, matrix=im)
 
     win.mainloop()
-    matGui.logger.info('Stop of InfoMatrixDataGui test')
+    logger.info('Stop of InfoMatrixDataGui test')
 
 #==============================================================================
 #                              END OF FILE

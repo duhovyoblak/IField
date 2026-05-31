@@ -32,7 +32,7 @@ _PHASE_START = cmath.pi/2              # Start phase in radians
 _CLOSE_ZERO  = 1e-12                   # Close to zero threshold
 
 #==============================================================================
-# package's variables
+# Module's variables
 #------------------------------------------------------------------------------
 logger = SiqoLogger(name='InfoPoint')   # Logger for InfoPoint
 
@@ -41,9 +41,9 @@ logger = SiqoLogger(name='InfoPoint')   # Logger for InfoPoint
 #------------------------------------------------------------------------------
 class InfoPoint:
     """Define InfoPoint as a dynamic data structure in the space defined by schema.
-      Schema defines which axes and vals are defined for respective InfoPoint type <ipType>.
-      Schema is one static structure for all type of InfoPoints and is defined as dict {ipType: {'axes':{key:name}, 'vals':{key:name}}}.
-      Methods for manipulation of InfoPoint values are defined as static methods and can be mapped to method names in mapSetMethods() static method.
+       Schema defines which axes and vals are defined for respective InfoPoint type <ipType>.
+       Schema is one static structure for all type of InfoPoints and is defined as dict {ipType: {'axes':{key:name}, 'vals':{key:name}}}.
+       Methods for manipulation of InfoPoint values are defined as static methods and can be mapped to method names in mapSetMethods() static method.
     """
 
     #==========================================================================
@@ -942,8 +942,14 @@ class InfoPoint:
         infoPoint.set(vals={valueKey: val})
         return 1
 
+#==============================================================================
+# Inicializacia modulu
 #------------------------------------------------------------------------------
 print(f"InfoPoint ver {_VER}")
+
+if __name__ == '__main__':
+
+    logger.info("Testing InfoPoint class")
 
 #==============================================================================
 #                              END OF FILE

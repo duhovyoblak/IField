@@ -10,9 +10,9 @@ from   siqolib.message        import SiqoMessage, askInt, askReal
 from   idata.ipoint           import InfoPoint
 
 #==============================================================================
-# package's constants
+# Module's constants
 #------------------------------------------------------------------------------
-_VER            = '1.1'
+_VER            = '1.1.0'
 _WIN            = '800x540'
 _DPI            = 100
 
@@ -21,8 +21,9 @@ _PADX           =  5
 _PADY           =  5
 
 #==============================================================================
-# package's variables
+# Module's variables
 #------------------------------------------------------------------------------
+logger = SiqoLogger(name='InfoMatrixMethodGui')   # Logger for InfoMatrixMethodGui
 
 #==============================================================================
 # Class InfoMatrixMethodGui
@@ -35,8 +36,7 @@ class InfoMatrixMethodGui(tk.Toplevel):
     def __init__(self, name, container, params, **kwargs):
         "Call constructor of InfoMatrixMethodGui and initialise it for respective data"
 
-        self.logger = SiqoLogger(name)
-        self.logger.audit(f'{name}.init: {params}')
+        logger.audit(f'{name}.init: {params}')
 
         self.name     = name                    # Name of this chart
         self.params   = params                  # Display options to be edited
@@ -74,7 +74,7 @@ class InfoMatrixMethodGui(tk.Toplevel):
         row = 1
         for key, val in params.items():
 
-            self.logger.debug(f"{self.name}.showParams: '{key}' = '{val}'")
+            logger.debug(f"{self.name}.showParams: '{key}' = '{val}'")
 
             lbl = ttk.Label(frmParams, text=str(key))
             lbl.grid(column=0, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -103,7 +103,7 @@ class InfoMatrixMethodGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Initialisation
         #----------------------------------------------------------------------
-        self.logger.audit(f'{name}.init: Done')
+        logger.audit(f'{name}.init: Done')
 
     #==========================================================================
     # Show the chart
@@ -112,31 +112,33 @@ class InfoMatrixMethodGui(tk.Toplevel):
         "Update parameter with user iput value"
 
         self.params[key] = val
-        self.logger.info(f"{self.name}.setParam: '{key}' : '{val}' updated")
+        logger.info(f"{self.name}.setParam: '{key}' : '{val}' updated")
 
     #--------------------------------------------------------------------------
     def cancel(self):
         "Cancel changes and restore original settings"
 
         self.params = self.origParams.copy()
-        self.logger.info(f'{self.name}.cancel: Parameters restored to {self.params}')
+        logger.info(f'{self.name}.cancel: Parameters restored to {self.params}')
         self.destroy()
 
     #--------------------------------------------------------------------------
     def ok(self):
         "Apply changes and close the dialog"
 
-        self.logger.info(f'{self.name}.ok: Parameters are set to {self.params}')
+        logger.info(f'{self.name}.ok: Parameters are set to {self.params}')
         self.destroy()
 
     #--------------------------------------------------------------------------
 
 #==============================================================================
-#   Inicializacia kniznice
+# Inicializacia modulu
 #------------------------------------------------------------------------------
-print(f'SIQO InfoMatrixMethodGui library ver {_VER}')
+print(f'InfoMatrixMethodGui ver {_VER}')
 
 if __name__ == '__main__':
+
+    logger.info("Testing InfoMatrixMethodGui class")
 
     #--------------------------------------------------------------------------
     # Test of the InfoMatrixMethodGui class

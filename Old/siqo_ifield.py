@@ -67,7 +67,7 @@ class InfoField:
     def __init__(self, name):
         "Calls constructor of InfoField"
 
-        self.logger.debug(f"InfoField.constructor: {name}")
+        logger.debug(f"InfoField.constructor: {name}")
 
         #----------------------------------------------------------------------
         # Public datove polozky triedy
@@ -91,7 +91,7 @@ class InfoField:
                                  # as list <1..dimMax> of selected indices <0..count-1>
                                  # indice's value '*' means ALL nodes selected for respective dimension
 
-        self.logger.debug(f"{self.name}.constructor: done")
+        logger.debug(f"{self.name}.constructor: done")
 
     #--------------------------------------------------------------------------
     def dim(self):
@@ -117,7 +117,7 @@ class InfoField:
     def copy(self, name):
         "Creates copy of this InfoField"
 
-        self.logger.debug(f"{self.name}.copy: {name}")
+        logger.debug(f"{self.name}.copy: {name}")
 
 
 
@@ -183,7 +183,7 @@ class InfoField:
         # Inicializacia
         #----------------------------------------------------------------------
         if cut is None: cut = self.iterCut
-        if root       : self.logger.debug(f"{self.name}.cutToNodes: Cut is {cut}")
+        if root       : logger.debug(f"{self.name}.cutToNodes: Cut is {cut}")
 
         #----------------------------------------------------------------------
         # Vycistim zoznam iter Nodes a pripravim si cut left for next recursion
@@ -224,7 +224,7 @@ class InfoField:
         # Finalizacia
         #----------------------------------------------------------------------
         if root:
-            self.logger.debug(f"{self.name}.cutToNodes: Identified {len(self.iterNodes)} iterNodes")
+            logger.debug(f"{self.name}.cutToNodes: Identified {len(self.iterNodes)} iterNodes")
 
         #----------------------------------------------------------------------
         return self.iterNodes
@@ -235,7 +235,7 @@ class InfoField:
 
         self.iterCut  = cut
 
-        self.logger.info(f"{self.name}.cutSet: Cut is {self.iterCut}")
+        logger.info(f"{self.name}.cutSet: Cut is {self.iterCut}")
         return self.iterCut
 
     #--------------------------------------------------------------------------
@@ -244,7 +244,7 @@ class InfoField:
 
         self.iterCut  = ['*' for i in range(self.dimMax())]
 
-        self.logger.info(f"{self.name}.cutAll: Cut is {self.iterCut}")
+        logger.info(f"{self.name}.cutAll: Cut is {self.iterCut}")
         return self.iterCut
 
     #--------------------------------------------------------------------------
@@ -253,7 +253,7 @@ class InfoField:
 
         self.iterCut  = ['*' for i in range(dim)]
 
-        self.logger.info(f"{self.name}.cutDim: For dim={dim} is {self.iterCut}")
+        logger.info(f"{self.name}.cutDim: For dim={dim} is {self.iterCut}")
         return self.iterCut
 
     #==========================================================================
@@ -296,7 +296,7 @@ class InfoField:
     def reset(self):
         "Clears InfoField and reset it to dimension=1"
 
-        self.logger.debug(f"{self.name}.reset:")
+        logger.debug(f"{self.name}.reset:")
 
         self.nodes.clear()        # Odstranenie vsetkych poli
 
@@ -313,7 +313,7 @@ class InfoField:
     def gener(self, dimName, count, offMin, offMax, offType=_LIN, origPos=[]):
         "Creates 1D InfoField with respective settings"
 
-        self.logger.debug(f"{self.name}.gener: '{dimName}': {count} nodes between {offMin}...{offMax} from {origPos}")
+        logger.debug(f"{self.name}.gener: '{dimName}': {count} nodes between {offMin}...{offMax} from {origPos}")
 
         self.nodes.clear()
 
@@ -359,7 +359,7 @@ class InfoField:
     def extend(self, dimName, count, offMin=None, offMax=None, offType=_LIN):
         "Assigns to each node of this InfoField new InfoField subfield"
 
-        self.logger.debug(f"{self.name}.extend: {dimName}: {count} in offset <{offMin} - {offMax}> by {offType}")
+        logger.debug(f"{self.name}.extend: {dimName}: {count} in offset <{offMin} - {offMax}> by {offType}")
 
         #----------------------------------------------------------------------
         # Select all leaves nodes of the tree
@@ -400,7 +400,7 @@ class InfoField:
         idx  = -1            # Indices of the nearest point
         srch = coord[deep]   # Coordinate of the searched point in respective dimension
 
-        self.logger.debug(f"{self.name}.getPointByPos: coord={coord}, srch={srch}, deep={deep}")
+        logger.debug(f"{self.name}.getPointByPos: coord={coord}, srch={srch}, deep={deep}")
 
         #----------------------------------------------------------------------
         # Initialise distance to previous point (e.g., first)
@@ -493,13 +493,13 @@ class InfoField:
         self.cutAll()
         for node in self: node['cP'].clear()
 
-        self.logger.info(f"{self.name}.clear:")
+        logger.info(f"{self.name}.clear:")
 
     #--------------------------------------------------------------------------
     def copyValues(self, srcs, tgts):
         "Copy node's values from srcs to tgts nodes"
 
-        self.logger.debug(f"{self.name}.copyValues: from {len(srcs)} nodes to {len(tgts)} nodes")
+        logger.debug(f"{self.name}.copyValues: from {len(srcs)} nodes to {len(tgts)} nodes")
 
         #----------------------------------------------------------------------
         # Iterate over src nodes
@@ -517,24 +517,24 @@ class InfoField:
                 pos += 1
 
             else:
-                self.logger.info(f"{self.name}.copyValues: WARNING Not enough target nodes")
+                logger.info(f"{self.name}.copyValues: WARNING Not enough target nodes")
                 break
 
         #----------------------------------------------------------------------
         # Check if there are some tgtNodes left
         #----------------------------------------------------------------------
         if pos < tgtLen:
-            self.logger.info(f"{self.name}.copyValues: WARNING Not enough source nodes")
+            logger.info(f"{self.name}.copyValues: WARNING Not enough source nodes")
 
         #----------------------------------------------------------------------
-        self.logger.debug(f"{self.name}.copyValues: Copied {pos} nodes")
+        logger.debug(f"{self.name}.copyValues: Copied {pos} nodes")
         return pos
 
     #--------------------------------------------------------------------------
     def copySlice(self, dim, pos):
         "Copy values from higher dimension's slice to the lower dimension"
 
-        self.logger.debug(f"{self.name}.copySlice: from {dim} D[{pos}]")
+        logger.debug(f"{self.name}.copySlice: from {dim} D[{pos}]")
 
         #----------------------------------------------------------------------
         # Target set
@@ -555,7 +555,7 @@ class InfoField:
         copied = self.copyValues(srcs, tgts)
 
         #----------------------------------------------------------------------
-        self.logger.debug(f"{self.name}.copySlice: Copied {copied} nodes")
+        logger.debug(f"{self.name}.copySlice: Copied {copied} nodes")
 
     #--------------------------------------------------------------------------
     def rndBit(self, prob, srcCut=None):
@@ -566,7 +566,7 @@ class InfoField:
 
         for node in self: node['cP'].rndBit(prob)
 
-        self.logger.info(f"{self.name}.rndBit: Nodes in {self.iterCut} with prob={prob}")
+        logger.info(f"{self.name}.rndBit: Nodes in {self.iterCut} with prob={prob}")
 
     #--------------------------------------------------------------------------
     def rndPhase(self, r=1, srcCut=None):
@@ -577,13 +577,13 @@ class InfoField:
 
         for node in self: node['cP'].rndPhase(r)
 
-        self.logger.info(f"{self.name}.rndPhase: Nodes in {self.iterCut} with r={r}")
+        logger.info(f"{self.name}.rndPhase: Nodes in {self.iterCut} with r={r}")
 
     #--------------------------------------------------------------------------
     def applyRays(self, dimLower, start=0, stop=0, forward=True, torus=False):
         "Apply rays from <dimLower> to next higher dimension"
 
-        self.logger.debug(f"{self.name}.getRays: from dim {dimLower} with torus={torus}")
+        logger.debug(f"{self.name}.getRays: from dim {dimLower} with torus={torus}")
 
         if forward: rotDir = -1j
         else      : rotDir =  1j
@@ -677,14 +677,14 @@ class InfoField:
         else      : self.normAbs(nods=srcs)
 
         #----------------------------------------------------------------------
-        self.logger.debug(f"{self.name}.getRays: creates {len(toRet)} rays")
+        logger.debug(f"{self.name}.getRays: creates {len(toRet)} rays")
         return toRet
 
     #--------------------------------------------------------------------------
     def evolve(self, srcCut, inf=0, start=0, stop=0):
         "Evolve state in <srcCut> and historise it in nex dimension"
 
-        self.logger.debug(f"{self.name}.evolve: srcCut={srcCut} from {start} to {stop}")
+        logger.debug(f"{self.name}.evolve: srcCut={srcCut} from {start} to {stop}")
 
         #----------------------------------------------------------------------
         # Prepare list of nodes for evolution
@@ -728,20 +728,20 @@ class InfoField:
             i += 1
 
         #----------------------------------------------------------------------
-        self.logger.debug(f"{self.name}.evolve: evolved {i} states")
+        logger.debug(f"{self.name}.evolve: evolved {i} states")
 
     #--------------------------------------------------------------------------
     def evolveStateBase(self, srcs, tgts, a, b=None):
         "Evolve state of the srcs nodes into tgts nodes"
 
         if b is None: b = a
-        self.logger.debug(f"{self.name}.evolveStateBase: For Sources relative to the target {a}..{b}")
+        logger.debug(f"{self.name}.evolveStateBase: For Sources relative to the target {a}..{b}")
 
         #----------------------------------------------------------------------
         # Doability check
         #----------------------------------------------------------------------
         if a > b:
-            self.logger.info(f"{self.name}.evolveStateBase: Bounadries ERROR: {a} > {b}")
+            logger.info(f"{self.name}.evolveStateBase: Bounadries ERROR: {a} > {b}")
 
             return
 
@@ -750,14 +750,14 @@ class InfoField:
         #----------------------------------------------------------------------
         rotDist  = (self.offMax - self.offMin) / (self.count()-1)  # distance in units
         rotPhase = (rotDist/_UPP) * 2 * math.pi                    # distance in radians
-        self.logger.info(f"{self.name}.evolveStateBase: Phase between two points: {rotPhase:5.4} rad")
+        logger.info(f"{self.name}.evolveStateBase: Phase between two points: {rotPhase:5.4} rad")
 
         #----------------------------------------------------------------------
         # Iteration prep
         #----------------------------------------------------------------------
         rotDir   = -1j                              # Direction of amplitude's rotation
         rotCoeff = cmath.exp(rotDir * rotPhase)     # rotation coefficient
-        self.logger.info(f"{self.name}.evolveStateBase: Rot coeff: {rotCoeff:5.4}, abs = {abs(rotCoeff):5.4}")
+        logger.info(f"{self.name}.evolveStateBase: Rot coeff: {rotCoeff:5.4}, abs = {abs(rotCoeff):5.4}")
 
         #----------------------------------------------------------------------
         # Preprae global aggregates
@@ -796,7 +796,7 @@ class InfoField:
                 if True:          # Dvojite zapocitanie srcs[posT]
 
                     cumAmp += srcAmp
-                    self.logger.info(f"{self.name}.evolveStateBase: Accumulation LEFT: {posS} -> {posT}")
+                    logger.info(f"{self.name}.evolveStateBase: Accumulation LEFT: {posS} -> {posT}")
 
             #------------------------------------------------------------------
             # Accumulation over srcs RIGHT
@@ -821,7 +821,7 @@ class InfoField:
                 if posT != posS:          # Dvojite zapocitanie srcs[posT]
 
                     cumAmp += srcAmp
-                    self.logger.info(f"{self.name}.evolveStateBase: Accumulation RIGHT: {posT} <- {posS}")
+                    logger.info(f"{self.name}.evolveStateBase: Accumulation RIGHT: {posT} <- {posS}")
 
             #------------------------------------------------------------------
             # Set target node value
@@ -833,7 +833,7 @@ class InfoField:
             #------------------------------------------------------------------
             posT += 1
 
-        self.logger.info(f"{self.name}.evolveStateBase: srcsSumAbs: {srcsSumAbs:5.2}")
+        logger.info(f"{self.name}.evolveStateBase: srcsSumAbs: {srcsSumAbs:5.2}")
 
         #----------------------------------------------------------------------
         # Normalisation
@@ -847,21 +847,21 @@ class InfoField:
     def evolveState(self, srcs, tgts):
         "Evolve state of the srcs nodes into tgts nodes"
 
-        self.logger.debug(f"{self.name}.evolveState:")
+        logger.debug(f"{self.name}.evolveState:")
 
         #----------------------------------------------------------------------
         # Phase rotation between two points - static data
         #----------------------------------------------------------------------
         rotDist  = (self.offMax - self.offMin) / (self.count()-1)  # distance in units
         rotPhase = (rotDist/_UPP) * 2 * math.pi                    # distance in radians
-        self.logger.info(f"{self.name}.evolveState: Phase between two points: {rotPhase} rad")
+        logger.info(f"{self.name}.evolveState: Phase between two points: {rotPhase} rad")
 
         #----------------------------------------------------------------------
         # Iteration over tgts from left
         #----------------------------------------------------------------------
         rotDir   = -1j                              # Direction of amplitude's rotation
         rotCoeff = cmath.exp(rotDir * rotPhase)     # rotation coefficient
-        self.logger.info(f"{self.name}.evolveState: Rot coeff: {rotCoeff}, abs = {abs(rotCoeff)}")
+        logger.info(f"{self.name}.evolveState: Rot coeff: {rotCoeff}, abs = {abs(rotCoeff)}")
 
         cumAmp   = complex(0,0)                     # Cumulative amplitude
 
@@ -947,7 +947,7 @@ class InfoField:
     def normAbs(self, nods, norm=None):
         "Normalise set of the nodes by sum of absolute values"
 
-        self.logger.debug(f"{self.name}.normAbs: ")
+        logger.debug(f"{self.name}.normAbs: ")
 
         #----------------------------------------------------------------------
         # Initialisation
@@ -970,13 +970,13 @@ class InfoField:
         else: norm = 1
 
         #----------------------------------------------------------------------
-        self.logger.debug(f"{self.name}.normAbs: norm = {norm} for {len(nods)} points")
+        logger.debug(f"{self.name}.normAbs: norm = {norm} for {len(nods)} points")
 
     #--------------------------------------------------------------------------
     def getLstCF(self, deep=0):
         "Returns list of all InfoFields"
 
-        self.logger.debug(f"{self.name}.getLstCF: {deep}")
+        logger.debug(f"{self.name}.getLstCF: {deep}")
 
         toRet = []
         #----------------------------------------------------------------------
@@ -1004,7 +1004,7 @@ class InfoField:
     def getData(self, cut=None):
         "Returns dict of numpy arrays as a cut from InfoField"
 
-        self.logger.debug(f"{self.name}.getData: cut = {cut}")
+        logger.debug(f"{self.name}.getData: cut = {cut}")
 
         #----------------------------------------------------------------------
         # Applying cut
@@ -1059,11 +1059,11 @@ class InfoField:
     def toJson(self):
         "Converts node into json structure"
 
-        self.logger.debug(f'{self.name}.toJson:')
+        logger.debug(f'{self.name}.toJson:')
 
         toRet = {}
 
-        self.logger.debug(f'{self.name}.toJson: Converted')
+        logger.debug(f'{self.name}.toJson: Converted')
         return toRet
 
 #------------------------------------------------------------------------------

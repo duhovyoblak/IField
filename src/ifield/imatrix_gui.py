@@ -4,21 +4,23 @@
 import tkinter                  as tk
 from   tkinter                  import ttk
 
+from   siqolib.logger           import SiqoLogger
 from   siqolib.message          import SiqoMessage
 from   idata.imatrix_gui        import InfoMatrixGui
 from   .imatrix                 import InfoFieldMatrix
 
 #==============================================================================
-# package's constants
+# Module's constants
 #------------------------------------------------------------------------------
-_VER            = '1.1'
+_VER            = '1.1.0'
 
 _PADX           =  5
 _PADY           =  5
 
 #==============================================================================
-# package's variables
+# Module's variables
 #------------------------------------------------------------------------------
+logger = SiqoLogger(name='IFieldMatrixGui')   # Logger for IFieldMatrixGui
 
 #==============================================================================
 # Class IFieldMatrixGui
@@ -55,7 +57,7 @@ class IFieldMatrixGui(InfoMatrixGui):
         self.viewChanged()
 
         #----------------------------------------------------------------------
-        self.logger.audit(f'{self.name}.init: Done')
+        logger.audit(f'{self.name}.init: Done')
 
     #--------------------------------------------------------------------------
     def showChildFrame(self, container):
@@ -118,40 +120,40 @@ class IFieldMatrixGui(InfoMatrixGui):
         """Update frame in parent container InfoMatrixGui dedicated to child classes."""
 
         if self.dat.l2e != self.varL2E.get():
-            self.logger.warning(f'{self.name}.updateChildFrame: L2E changed {self.dat.l2e} -> {self.varL2E.get()}')
+            logger.warning(f'{self.name}.updateChildFrame: L2E changed {self.dat.l2e} -> {self.varL2E.get()}')
             self.dat.l2e = self.varL2E.get()
 
         if self.dat.phs != self.varPhs.get():
-            self.logger.warning(f'{self.name}.updateChildFrame: Number of phases changed {self.dat.phs} -> {self.varPhs.get()}')
+            logger.warning(f'{self.name}.updateChildFrame: Number of phases changed {self.dat.phs} -> {self.varPhs.get()}')
             self.dat.phs = self.varPhs.get()
 
         if self.dat.l2p != self.varL2P.get():
-            self.logger.warning(f'{self.name}.updateChildFrame: L2P changed {self.dat.l2p} -> {self.varL2P.get()}')
+            logger.warning(f'{self.name}.updateChildFrame: L2P changed {self.dat.l2p} -> {self.varL2P.get()}')
             self.dat.l2p = self.varL2P.get()
 
         if self.dat.sType != self.varSType.get():
-            self.logger.warning(f'{self.name}.updateChildFrame: State type changed {self.dat.sType} -> {self.varSType.get()}')
+            logger.warning(f'{self.name}.updateChildFrame: State type changed {self.dat.sType} -> {self.varSType.get()}')
             self.dat.sType = self.varSType.get()
 
         if self.dat.sAgg != self.varSAgg.get():
-            self.logger.warning(f'{self.name}.updateChildFrame: Aggregation method changed {self.dat.sAgg} -> {self.varSAgg.get()}')
+            logger.warning(f'{self.name}.updateChildFrame: Aggregation method changed {self.dat.sAgg} -> {self.varSAgg.get()}')
             self.dat.sAgg = self.varSAgg.get()
 
         if self.dat.rule != self.varRule.get():
-            self.logger.warning(f'{self.name}.updateChildFrame: Neighbors\' rule changed {self.dat.rule} -> {self.varRule.get()}')
+            logger.warning(f'{self.name}.updateChildFrame: Neighbors\' rule changed {self.dat.rule} -> {self.varRule.get()}')
             self.dat.rule = self.varRule.get()
 
         if self.dat.maxL != self.varMaxL.get():
-            self.logger.warning(f'{self.name}.updateChildFrame: Maximal number of neighbors changed {self.dat.maxL} -> {self.varMaxL.get()}')
+            logger.warning(f'{self.name}.updateChildFrame: Maximal number of neighbors changed {self.dat.maxL} -> {self.varMaxL.get()}')
             self.dat.maxL = self.varMaxL.get()
 
-        self.logger.debug(f'{self.name}.updateChildFrame: Done')
+        logger.debug(f'{self.name}.updateChildFrame: Done')
 
     #--------------------------------------------------------------------------
     def onClickLeft(self, x, y):
         "Print information about mouse-given position"
 
-        self.logger.info(f'{self.name}.onClick: left click for {self.actPoint}')
+        logger.info(f'{self.name}.onClick: left click for {self.actPoint}')
 
         valueKey=self.display['valKey']
         actState = self.actPoint.val(valueKey)
@@ -180,9 +182,13 @@ class IFieldMatrixGui(InfoMatrixGui):
         msgWin = SiqoMessage(name=self.dat.name, text=text, wpix=800)
 
 #==============================================================================
-#   Inicializacia kniznice
+# Inicializacia modulu
 #------------------------------------------------------------------------------
-print(f'SIQO IFieldMatrixGui library ver {_VER}')
+print(f'IFieldMatrixGui ver {_VER}')
+
+if __name__ == '__main__':
+
+    logger.info("Testing IFieldMatrixGui class")
 
 #==============================================================================
 #                              END OF FILE

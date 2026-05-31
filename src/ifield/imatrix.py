@@ -2,20 +2,23 @@
 # Siqo class InfoFieldMatrix
 #------------------------------------------------------------------------------
 import cmath
-from   idata.imatrix          import InfoMatrix
+
+from   siqolib.logger           import SiqoLogger
+from   idata.imatrix            import InfoMatrix
 
 #==============================================================================
-# package's constants
+# Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1'
+_VER    = '1.1.0'
 
 _LAMBDA = 120       # Default points for Lambda axis
 _EPOCH  =  60       # Default points for Epoch axis
 _PHASES =   2       # Default number of the discrete phases for complex values
 
 #==============================================================================
-# package's variables
+# Module's variables
 #------------------------------------------------------------------------------
+logger = SiqoLogger(name='InfoFieldMatrix')   # Logger for InfoFieldMatrix
 
 #==============================================================================
 # InfoFieldMatrix
@@ -75,7 +78,7 @@ class InfoFieldMatrix(InfoMatrix):
         self.applyMatrixMethod(methodKey='Comp constant (re/im)', valueKey='s', params={'real':0, 'imag':0})
 
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.constructor: done")
+        logger.info(f"{self.name}.constructor: done")
 
     #--------------------------------------------------------------------------
     # Method's methods
@@ -98,7 +101,7 @@ class InfoFieldMatrix(InfoMatrix):
     #--------------------------------------------------------------------------
     def rndBool(self, valueKey:str, params:dict):
         """Clear all model and set state as random Boolean values."""
-        self.logger.debug(f"{self.name}.rndBool: for key '{valueKey}' with params {params}")
+        logger.debug(f"{self.name}.rndBool: for key '{valueKey}' with params {params}")
         pts = 0
 
         self.clear(defs={valueKey: False})
@@ -106,12 +109,12 @@ class InfoFieldMatrix(InfoMatrix):
         pts = self.applyMatrixMethod(methodKey='Random bit', valueKey=valueKey, params=params)
         self.actSubmatrix()
 
-        self.logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
+        logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
 
     #--------------------------------------------------------------------------
     def rndComplex(self, valueKey:str, params:dict):
         """Clear all model and set state as random complex values with respective number of discrete phases."""
-        self.logger.debug(f"{self.name}.rndComplex: for key '{valueKey}' with params {params}")
+        logger.debug(f"{self.name}.rndComplex: for key '{valueKey}' with params {params}")
         pts = 0
 
         self.clear(defs={valueKey: False})
@@ -120,12 +123,12 @@ class InfoFieldMatrix(InfoMatrix):
         pts = self.applyMatrixMethod(methodKey='Comp discrete phase', valueKey=valueKey, params=params)
         self.actSubmatrix()
 
-        self.logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
+        logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
 
     #--------------------------------------------------------------------------
     def epochStep(self, valueKey:str, params:dict):
         """Compute next epoch state."""
-        self.logger.info(f"{self.name}.epochStep: for key '{valueKey}' with params {params}")
+        logger.info(f"{self.name}.epochStep: for key '{valueKey}' with params {params}")
         pts = 0
 
         self.moveByAxe(axeKey='e', deltaIdx=1, startIdx=0)
@@ -142,7 +145,7 @@ class InfoFieldMatrix(InfoMatrix):
             actPoint.set(vals={valueKey: newState})
             pts += 1
 
-        self.logger.info(f"{self.name}.epochStep: {pts} InfoPoints was updated for key '{valueKey}' in epoch step")
+        logger.info(f"{self.name}.epochStep: {pts} InfoPoints was updated for key '{valueKey}' in epoch step")
 
     #==========================================================================
     # Internal tools
@@ -150,7 +153,7 @@ class InfoFieldMatrix(InfoMatrix):
     def getNeighStates(self, valueKey:str, l:int, e:int=0):
         "Returns list of states of neighbor points along given axis at given position"
 
-        self.logger.debug(f"{self.name}.getNeighStates: For {valueKey} at [{l}, {e}]")
+        logger.debug(f"{self.name}.getNeighStates: For {valueKey} at [{l}, {e}]")
 
         cntLambda = self.axeCntByKey('l')
         cntEpoch  = self.axeCntByKey('e')
@@ -177,18 +180,18 @@ class InfoFieldMatrix(InfoMatrix):
                 rightValue = rightPoint.val(valueKey) * rot
                 rightStates.append( rightValue )
 
-        self.logger.debug(f"{self.name}.getNeighStates: leftStates={leftStates}, rightStates={rightStates}")
+        logger.debug(f"{self.name}.getNeighStates: leftStates={leftStates}, rightStates={rightStates}")
         return leftStates, rightStates
 
     #--------------------------------------------------------------------------
     def aggStates(self, states:list):
         "Aggregates list of states into single state according to given type and aggregation method"
 
-        self.logger.debug(f"{self.name}.aggStates: states={states}, sType={self.sType}, sAgg={self.sAgg}")
+        logger.debug(f"{self.name}.aggStates: states={states}, sType={self.sType}, sAgg={self.sAgg}")
         aggState = None
 
         if len(states) == 0:
-            self.logger.warning(f"{self.name}.aggStates: empty states list, returning None")
+            logger.warning(f"{self.name}.aggStates: empty states list, returning None")
             return aggState
 
         aggState = sum(states)
@@ -197,14 +200,14 @@ class InfoFieldMatrix(InfoMatrix):
         elif self.sType == 'int'    : aggState = int    (aggState) if aggState else 0
         elif self.sType == 'complex': aggState = complex(aggState) if aggState else complex(0,0)
 
-        self.logger.debug(f"{self.name}.aggStates: {aggState}<-{states}")
+        logger.debug(f"{self.name}.aggStates: {aggState}<-{states}")
         return aggState
 
     #--------------------------------------------------------------------------
     def aggNeighbors(self, leftState, actState, rightState):
         "Aggregates states of neighors into single state according to given rule"
 
-        self.logger.debug(f"{self.name}.aggNeighbors: leftState={leftState}, actState={actState}, rightState={rightState}, rule={self.rule}")
+        logger.debug(f"{self.name}.aggNeighbors: leftState={leftState}, actState={actState}, rightState={rightState}, rule={self.rule}")
         aggState = actState
 
         if self.rule == 'and':
@@ -214,17 +217,28 @@ class InfoFieldMatrix(InfoMatrix):
             if   self.sType == 'bool'            : aggState = bool(leftState or rightState)
             elif self.sType in ('int', 'complex'): aggState = leftState + rightState
 
-        else: self.logger.warning(f"{self.name}.aggNeighbors: Unknown rule '{self.rule}', returning actState")
+        else: logger.warning(f"{self.name}.aggNeighbors: Unknown rule '{self.rule}', returning actState")
 
-        self.logger.debug(f"{self.name}.aggNeighbors: {aggState}<-({leftState},{actState},{rightState})")
+        logger.debug(f"{self.name}.aggNeighbors: {aggState}<-({leftState},{actState},{rightState})")
         return aggState
 
     #==========================================================================
     # Persistency methods
     #--------------------------------------------------------------------------
 
+#==============================================================================
+# Inicializacia modulu
 #------------------------------------------------------------------------------
 print(f"InfoFieldMatrix ver {_VER}")
+
+if __name__ == '__main__':
+
+    logger.info("Testing InfoFieldMatrix class")
+
+    #--------------------------------------------------------------------------
+    # Test of the InfoFieldMatrix class
+    #--------------------------------------------------------------------------
+    imat = InfoFieldMatrix(name='imatTest')
 
 #==============================================================================
 #                              END OF FILE

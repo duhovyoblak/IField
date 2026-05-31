@@ -2,18 +2,20 @@
 # InfoModel GUI
 #------------------------------------------------------------------------------
 import os
-from   ast                    import literal_eval
+from   ast                      import literal_eval
 
-import tkinter                as tk
-from   tkinter                import (ttk, font, PanedWindow)
-from   tkinter                import (messagebox, filedialog, scrolledtext)
+import tkinter                  as tk
+from   tkinter                  import (ttk, font, PanedWindow)
+from   tkinter                  import (messagebox, filedialog, scrolledtext)
 
 from   siqolib.logger           import SiqoLogger
 from   .imodel                  import InfoModel
 
 #==============================================================================
-# package's constants
+# Module's constants
 #------------------------------------------------------------------------------
+_VER            = '1.1.0'
+
 _WIN            = '1300x740'
 _DPI            = 100
 
@@ -24,8 +26,9 @@ _PADX           = 5
 _PADY           = 5
 
 #==============================================================================
-# package's variables
+# Module's variables
 #------------------------------------------------------------------------------
+logger = SiqoLogger(name='InfoModelGui')   # Logger for InfoModelGui
 
 #==============================================================================
 # Class InfoModelGui
@@ -38,10 +41,10 @@ class InfoModelGui:
     def __init__(self, parent):
         "Call constructor of IFieldMatrixGui and initialise it for respective data"
 
-        journal.I('InfoModelGui.init:')
+        logger.info('InfoModelGui.init:')
 
         self.parent  = parent
-        self.model   = InfoModel(journal)
+        self.model   = InfoModel(logger)
 
         self.cwd     = os.getcwd()           # Lokalny folder pre pracu s datami
 
@@ -52,7 +55,7 @@ class InfoModelGui:
     #--------------------------------------------------------------------------
     def formatJson(self, txt):
 
-        self.logger.debug(f"{self.model.name}.formatJson:")
+        logger.debug(f"{self.model.name}.formatJson:")
 
         try:
             txt = literal_eval(txt)
@@ -60,10 +63,10 @@ class InfoModelGui:
         except Exception as e:
             # SyntaxError: invalid syntax
             messagebox.showerror('Invalid input', 'Not a valid JSON',parent=self.parent)
-            self.logger.info(f"{self.model.name}.formatJson: {e}")
+            logger.info(f"{self.model.name}.formatJson: {e}")
             return False
 
-        self.logger.debug(f"{self.model.name}.formatJson: done")
+        logger.debug(f"{self.model.name}.formatJson: done")
         return True
 
     #==========================================================================
@@ -71,13 +74,13 @@ class InfoModelGui:
     #--------------------------------------------------------------------------
     def load(self):
 
-        self.logger.debug(f"{self.model.name}.load:")
+        logger.debug(f"{self.model.name}.load:")
 
         fileName = filedialog.askopenfilename(parent=self.parent, title='Select IMF file', initialdir=self.cwd,
                                               filetypes=(('IModel files', '*.imf'), ('All files', '*.*')) )
 
         if not fileName:
-             self.logger.info('Load cancelled')
+             logger.info('Load cancelled')
 
         else:
             self.cwd = os.path.normpath(os.path.split(fileName)[0])
@@ -95,7 +98,7 @@ class InfoModelGui:
     #--------------------------------------------------------------------------
     def save(self):
 
-        self.logger.debug(f"{self.model.name}.save:")
+        logger.debug(f"{self.model.name}.save:")
 
         fileName =  filedialog.asksaveasfilename(parent=self.parent, initialfile = fileName,
                                                  title='Select IMF file', initialdir=self.cwd, defaultextension=".imf",
@@ -107,56 +110,19 @@ class InfoModelGui:
             with open(fileName,'w',encoding='utf8') as f:
                 f.write(self.model.toJson())
 
-            self.logger.info(f"{self.model.name}.save: Saved into {fileName}")
+            logger.info(f"{self.model.name}.save: Saved into {fileName}")
 
         else:
-            self.logger.info(f"{self.model.name}.save: Save cancelled")
-
-
+            logger.info(f"{self.model.name}.save: Save cancelled")
 
 #==============================================================================
-#   Inicializacia kniznice
+# Inicializacia modulu
 #------------------------------------------------------------------------------
-print('SIQO InfoModelGui library ver 1.00')
+print(f'InfoModelGui ver {_VER}')
 
 if __name__ == '__main__':
 
-    from   siqolib.journal          import SiqoJournal
-    journal = SiqoJournal('IModelGui component test', debug=4)
-
-    #--------------------------------------------------------------------------
-    # Test of the InfoModelGui class
-    #--------------------------------------------------------------------------
-    journal.I('Test of InfoModelGui class')
-
-    win = tk.Tk()
-    win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
-    win.title('Test of InfoModelGui class')
-    win.maxsize(width=1200, height=800)
-    win.minsize(width=600, height=300)
-    win.config(highlightbackground = "green", highlightcolor= "green")
-
-    tk.Grid.columnconfigure(win, 1, weight=1)
-    tk.Grid.rowconfigure   (win, 2, weight=1)
-
-    #--------------------------------------------------------------------------
-    # Zaciatok testu IModelGui
-    #--------------------------------------------------------------------------
-    modelGui = InfoModelGui(journal, parent=win)
-
-    btn_load = tk.Button(win, text = 'Load model', width=10, command = modelGui.load)
-
-    #--------------------------------------------------------------------------
-    #grid
-    #--------------------------------------------------------------------------
-
-    btn_load.grid(row=1, column=0, sticky='nw', padx=5, pady=5)
-
-    win.mainloop()
-
-    journal.O()
-
-
+    logger.info("Testing InfoModelGui class")
 
 #==============================================================================
 #                              END OF FILE

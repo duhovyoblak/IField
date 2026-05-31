@@ -3,21 +3,23 @@
 #------------------------------------------------------------------------------
 import math
 import cmath
-import numpy                 as np
-import random                as rnd
+import numpy                    as np
+import random                   as rnd
 
-#from siqo_cpoint import ComplexPoint
-
-#==============================================================================
-# package's constants
-#------------------------------------------------------------------------------
-_NAME     = 'No model defined'
-_FNAME    = 'InfoModel.ifm'
+from   siqolib.logger           import SiqoLogger
 
 #==============================================================================
-# package's variables
+# Module's constants
 #------------------------------------------------------------------------------
+_VER            = '1.0.0'
 
+_NAME           = 'No model defined'
+_FNAME          = 'InfoModel.ifm'
+
+#==============================================================================
+# Module's variables
+#------------------------------------------------------------------------------
+logger = SiqoLogger(name='InfoModel')   # Logger for InfoModel
 
 #==============================================================================
 # InfoModel
@@ -34,7 +36,7 @@ class InfoModel:
     def __init__(self):
         "Calls constructor of InfoModel"
 
-        self.logger.debug("InfoModel.constructor:")
+        logger.debug("InfoModel.constructor:")
 
         #----------------------------------------------------------------------
         # Public datove polozky triedy
@@ -42,13 +44,13 @@ class InfoModel:
         self.name      = _NAME            # Name of the model
         self.fName     = _FNAME           # FileName of the model
 
-        self.logger.debug(f"{self.name}.constructor: done")
+        logger.debug(f"{self.name}.constructor: done")
 
     #--------------------------------------------------------------------------
     def copy(self, name):
         "Creates copy of this InfoModel"
 
-        self.logger.debug(f"{self.name}.copy: To {name}")
+        logger.debug(f"{self.name}.copy: To {name}")
 
 
 
@@ -93,7 +95,7 @@ class InfoModel:
     def reset(self):
         "Clears InfoModel and reset it to dimension=1"
 
-        self.logger.debug(f"{self.name}.reset:")
+        logger.debug(f"{self.name}.reset:")
 
 
 
@@ -107,15 +109,21 @@ class InfoModel:
     def toJson(self):
         "Converts model into json structure"
 
-        self.logger.debug(f'{self.name}.toJson:')
+        logger.debug(f'{self.name}.toJson:')
 
         toRet = {}
 
-        self.logger.debug(f'{self.name}.toJson: Converted')
+        logger.debug(f'{self.name}.toJson: Converted')
         return toRet
 
+#==============================================================================
+# Inicializacia modulu
 #------------------------------------------------------------------------------
-print('InfoModel ver 1.00')
+print(f'InfoModel ver {_VER}')
+
+if __name__ == '__main__':
+
+    logger.info("Testing InfoModel class")
 
 #==============================================================================
 #                              END OF FILE

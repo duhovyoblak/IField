@@ -18,9 +18,9 @@ from   idata.imatrix_data_gui            import InfoMatrixDataGui
 from   idata.imatrix_display_gui         import InfoMatrixDisplayGui
 
 #==============================================================================
-# package's constants
+# Module's constants
 #------------------------------------------------------------------------------
-_VER            = '2.1'
+_VER            = '2.1.0'
 _WIN            = '1300x740'
 _DPI            = 100
 
@@ -41,8 +41,9 @@ _COLORMAPS = {
 _CMAP           = _COLORMAPS['Qualitative'][2]       # Default colormap
 
 #==============================================================================
-# package's variables
+# Module's variables
 #------------------------------------------------------------------------------
+logger = SiqoLogger(name='InfoMatrixGui')   # Logger for InfoMatrixGui
 
 #==============================================================================
 # Class InfoMatrixGui
@@ -57,8 +58,7 @@ class InfoMatrixGui(ttk.Frame):
 
         name = f'{dat.name} GUI'
 
-        self.logger = SiqoLogger(name, level='DEBUG')
-        self.logger.audit(f'{name}.init:')
+        logger.audit(f'{name}.init:')
 
         self.name      = name               # Name of this GUI
         self.container = container          # Parent container (tk.Tk or tk.Frame)
@@ -113,7 +113,7 @@ class InfoMatrixGui(ttk.Frame):
         self.display['axeKeys' ].append('None')
         self.display['axeNames'].append('None')
 
-        self.logger.info(f'{self.name}.resetDisplay: Display options reset to {self.display}')
+        logger.info(f'{self.name}.resetDisplay: Display options reset to {self.display}')
 
     #--------------------------------------------------------------------------
     def dims(self):
@@ -124,14 +124,14 @@ class InfoMatrixGui(ttk.Frame):
         if self.display['keyX']: toRet += 1
         if self.display['keyY']: toRet += 1
 
-        self.logger.debug(f'{self.name}.dims: Chart has {toRet} dimensions')
+        logger.debug(f'{self.name}.dims: Chart has {toRet} dimensions')
         return toRet
 
     #--------------------------------------------------------------------------
     def setSub2D(self, axeFreezeIdxs: dict):
         "Add frozen axes for the chart, e.g. {'x':4, 't':17}"
 
-        self.logger.info(f'{self.name}.setSub2D: Set sub2D = {axeFreezeIdxs}')
+        logger.info(f'{self.name}.setSub2D: Set sub2D = {axeFreezeIdxs}')
 
         #----------------------------------------------------------------------
         # Prejdem vsetky zmrazene osi
@@ -139,11 +139,11 @@ class InfoMatrixGui(ttk.Frame):
         for axe, idx in axeFreezeIdxs.items():
 
             if axe not in self.dat.getSchemaAxes():
-                self.logger.warning(f'{self.name}.setSub2D: Axis {axe} not in axes {self.dat.getSchemaAxes()}, skipping')
+                logger.warning(f'{self.name}.setSub2D: Axis {axe} not in axes {self.dat.getSchemaAxes()}, skipping')
 
             else:
                 self.sub2D[axe] = idx
-                self.logger.audit(f'{self.name}.setSub2D: Axe {axe} was frozen to index {idx}')
+                logger.audit(f'{self.name}.setSub2D: Axe {axe} was frozen to index {idx}')
 
         #----------------------------------------------------------------------
         # Update the string variable for frozen axes
@@ -157,7 +157,7 @@ class InfoMatrixGui(ttk.Frame):
     def show(self):
         "Show InfoMatrixGui in the given parent container (tk.Tk or tk.Frame)"
 
-        self.logger.audit(f'{self.name}.show:')
+        logger.audit(f'{self.name}.show:')
 
         #----------------------------------------------------------------------
         # Vytvorenie hlavného menu a priradenie do container (okno)
@@ -196,11 +196,11 @@ class InfoMatrixGui(ttk.Frame):
         helpMenu.add_command(label="Matrix info short",     command=lambda: self.onInfo(mode='short'))
         helpMenu.add_command(label="Matrix info full",      command=lambda: self.onInfo(mode='full' ))
         helpMenu.add_separator()
-        helpMenu.add_command(label="Set Logger to   AUDIT", command=lambda: self.logger.setLevel('AUDIT')  )
-        helpMenu.add_command(label="Set Logger to   ERROR", command=lambda: self.logger.setLevel('ERROR')  )
-        helpMenu.add_command(label="Set Logger to WARNING", command=lambda: self.logger.setLevel('WARNING'))
-        helpMenu.add_command(label="Set Logger to    INFO", command=lambda: self.logger.setLevel('INFO')   )
-        helpMenu.add_command(label="Set Logger to   DEBUG", command=lambda: self.logger.setLevel('DEBUG')  )
+        helpMenu.add_command(label="Set Logger to   AUDIT", command=lambda: logger.setLevel('AUDIT')  )
+        helpMenu.add_command(label="Set Logger to   ERROR", command=lambda: logger.setLevel('ERROR')  )
+        helpMenu.add_command(label="Set Logger to WARNING", command=lambda: logger.setLevel('WARNING'))
+        helpMenu.add_command(label="Set Logger to    INFO", command=lambda: logger.setLevel('INFO')   )
+        helpMenu.add_command(label="Set Logger to   DEBUG", command=lambda: logger.setLevel('DEBUG')  )
 
         #----------------------------------------------------------------------
         # Create and show display bar
@@ -234,7 +234,7 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Initialisation
         #----------------------------------------------------------------------
-        self.logger.audit(f'{self.name}.show: Done')
+        logger.audit(f'{self.name}.show: Done')
 
     #--------------------------------------------------------------------------
     def showDisplayBar(self, container):
@@ -334,7 +334,7 @@ class InfoMatrixGui(ttk.Frame):
     def viewChanged(self, event=None, force=False):
         "Resolve changes in display options and update the chart accordingly if needed"
 
-        self.logger.audit(f"{self.name}.viewChanged: force={force}")
+        logger.audit(f"{self.name}.viewChanged: force={force}")
 
         #----------------------------------------------------------------------
         # Check for Changes in show options
@@ -349,10 +349,10 @@ class InfoMatrixGui(ttk.Frame):
 
         self.display['valKey'] = self.dat.valKeyByName(self.display['valName'])
         if not self.display['valKey']:
-            self.logger.warning(f"{self.name}.viewChanged: Value '{self.display['valName']}' not in values {list(self.dat.getSchemaVals().values())}, setting to 'None'")
+            logger.warning(f"{self.name}.viewChanged: Value '{self.display['valName']}' not in values {list(self.dat.getSchemaVals().values())}, setting to 'None'")
             return
 
-        self.logger.debug(f"{self.name}.viewChanged: Show {self.display['showMethod']}({self.display['valName']}[{self.display['valKey']}]) in X:{self.display['keyX']}, Y:{self.display['keyY']}")
+        logger.debug(f"{self.name}.viewChanged: Show {self.display['showMethod']}({self.display['valName']}[{self.display['valKey']}]) in X:{self.display['keyX']}, Y:{self.display['keyY']}")
 
         #----------------------------------------------------------------------
         # Check for Changes in child frame
@@ -374,7 +374,7 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Vykreslim chart podla aktualnych nastaveni
         #----------------------------------------------------------------------
-        self.logger.info(f'{self.name}.viewChanged: needShow = {self.display['needShow']}')
+        logger.info(f'{self.name}.viewChanged: needShow = {self.display['needShow']}')
         self.updateChart()
 
     #--------------------------------------------------------------------------
@@ -388,7 +388,7 @@ class InfoMatrixGui(ttk.Frame):
     def updateChildFrame(self):
         "Update frame dedicated to child classes. This method is called in self.viewChanged()"
 
-        self.logger.warning(f'{self.name}.updateChildFrame: No child frame to update')
+        logger.warning(f'{self.name}.updateChildFrame: No child frame to update')
 
     #==========================================================================
     # Update the chart
@@ -396,13 +396,13 @@ class InfoMatrixGui(ttk.Frame):
     def updateChart(self, event=None):
         """Update the chart based on the current actList
         """
-        self.logger.debug(f"{self.name}.updateChart: axisX='{self.display['keyX']}', axisY='{self.display['keyY']}', value='{self.display['valKey']}', method='{self.display['showMethod']}'")
+        logger.debug(f"{self.name}.updateChart: axisX='{self.display['keyX']}', axisY='{self.display['keyY']}', value='{self.display['valKey']}', method='{self.display['showMethod']}'")
 
         #----------------------------------------------------------------------
         # Ak nenastala zmena, vyskocim
         #----------------------------------------------------------------------
         if not self.display['needShow']:
-            self.logger.info(f'{self.name}.updateChart: Data have not changed, no need for show')
+            logger.info(f'{self.name}.updateChart: Data have not changed, no need for show')
             return
 
         #----------------------------------------------------------------------
@@ -415,21 +415,21 @@ class InfoMatrixGui(ttk.Frame):
         # Check list of InfoPoints to show
         #----------------------------------------------------------------------
         if len(self.dat.actList) == 0:
-            self.logger.warning(f'{self.name}.updateChart: No InfoPoints, nothig to show')
+            logger.warning(f'{self.name}.updateChart: No InfoPoints, nothig to show')
             return
 
         #----------------------------------------------------------------------
         # Check value to show
         #----------------------------------------------------------------------
         if not self.display['valKey']:
-            self.logger.warning(f'{self.name}.updateChart: No value selected, nothig to show')
+            logger.warning(f'{self.name}.updateChart: No value selected, nothig to show')
             return
 
         #----------------------------------------------------------------------
         # Check axis to show
         #----------------------------------------------------------------------
         if not self.display['keyX'] and not self.display['keyY']:
-            self.logger.warning(f'{self.name}.updateChart: No axis selected, nothig to show')
+            logger.warning(f'{self.name}.updateChart: No axis selected, nothig to show')
             return
 
         #----------------------------------------------------------------------
@@ -441,15 +441,15 @@ class InfoMatrixGui(ttk.Frame):
         # Kontrola npArrays
         #----------------------------------------------------------------------
         if npC.size==0:
-            self.logger.info(f'{self.name}.updateChart: No values to show')
+            logger.info(f'{self.name}.updateChart: No values to show')
             return
 
         if self.display['keyX'] and npX.size==0:
-            self.logger.info(f'{self.name}.updateChart: Axe X is selected but has no data to show')
+            logger.info(f'{self.name}.updateChart: Axe X is selected but has no data to show')
             return
 
         if self.display['keyY'] and npY.size==0:
-            self.logger.info(f'{self.name}.updateChart: Axe Y is selected but has no data to show')
+            logger.info(f'{self.name}.updateChart: Axe Y is selected but has no data to show')
             return
 
         #----------------------------------------------------------------------
@@ -479,7 +479,7 @@ class InfoMatrixGui(ttk.Frame):
         # Show LINE chart
         #----------------------------------------------------------------------
         if self.display['type'] == 'LINE':
-            self.logger.debug(f'{self.name}.updateChart: Chart type LINE selected')
+            logger.debug(f'{self.name}.updateChart: Chart type LINE selected')
 
             #------------------------------------------------------------------
             # Vyber zobrazenej osi
@@ -493,7 +493,7 @@ class InfoMatrixGui(ttk.Frame):
         # Show SCATTER chart
         #----------------------------------------------------------------------
         elif self.display['type'] == 'SCATTER':
-            self.logger.debug(f'{self.name}.updateChart: Chart type SCATTER selected')
+            logger.debug(f'{self.name}.updateChart: Chart type SCATTER selected')
 
             chrtObj = chart.scatter( x=npX, y=npY, c=npC, marker="s", cmap=_CMAP) # , lw=0, s=(72./self.figure.dpi)**2
 
@@ -501,7 +501,7 @@ class InfoMatrixGui(ttk.Frame):
         # Show QUIVER chart
         #----------------------------------------------------------------------
         elif self.display['type'] == 'QUIVER':
-            self.logger.debug(f'{self.name}.updateChart: Chart type QUIVER selected')
+            logger.debug(f'{self.name}.updateChart: Chart type QUIVER selected')
 
             #------------------------------------------------------------------
             # Kontrola npU a npV
@@ -509,7 +509,7 @@ class InfoMatrixGui(ttk.Frame):
             if npU.size!=npC.size or npV.size!=npC.size:
 
                 showinfo(title="Warning", message="No vector values to show in QUIVER chart. Please select complex value to show.")
-                self.logger.warning(f'{self.name}.updateChart: No vector values to show in QUIVER chart. Please select complex value to show.')
+                logger.warning(f'{self.name}.updateChart: No vector values to show in QUIVER chart. Please select complex value to show.')
                 return
 
             chrtObj = chart.quiver(npX, npY, npU, npV, npC, cmap='RdYlBu_r')
@@ -518,7 +518,7 @@ class InfoMatrixGui(ttk.Frame):
         # Neznamy typ chartu
         #----------------------------------------------------------------------
         else:
-            self.logger.error(f"{self.name}.updateChart: Unknown chart type {self.display['type']} is not supported")
+            logger.error(f"{self.name}.updateChart: Unknown chart type {self.display['type']} is not supported")
             return
 
         #----------------------------------------------------------------------
@@ -534,7 +534,7 @@ class InfoMatrixGui(ttk.Frame):
         self.canvas.draw()
 
         #----------------------------------------------------------------------
-        self.logger.info(f'{self.name}.updateChart: Done')
+        logger.info(f'{self.name}.updateChart: Done')
 
     #--------------------------------------------------------------------------
     def prepareChartData(self):
@@ -557,7 +557,7 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         showFtion = self.dat.mapShowMethods()[self.display['showMethod']]
 
-        self.logger.debug(f'{self.name}.prepareChartData: Iterating {len(self.dat.actList)} iPoints for showFtion={self.display['showMethod']} with keyV={self.display['valKey']}')
+        logger.debug(f'{self.name}.prepareChartData: Iterating {len(self.dat.actList)} iPoints for showFtion={self.display['showMethod']} with keyV={self.display['valKey']}')
 
         pts = 0
         for i, point in enumerate(self.dat.actList):
@@ -593,7 +593,7 @@ class InfoMatrixGui(ttk.Frame):
         npV = np.array(listV)
 
         #----------------------------------------------------------------------
-        self.logger.info(f'{self.name}.prepareChartData: {len(self.dat.actList)} iPoints produced [{npX.size}, {npY.size}] {npC.size}, ({npU.size}, {npV.size}) values for chart')
+        logger.info(f'{self.name}.prepareChartData: {len(self.dat.actList)} iPoints produced [{npX.size}, {npY.size}] {npC.size}, ({npU.size}, {npV.size}) values for chart')
         return npX, npY, npC, npU, npV
 
     #==========================================================================
@@ -602,7 +602,7 @@ class InfoMatrixGui(ttk.Frame):
     def onClick(self, event):
         "Print information about mouse-given position"
 
-        self.logger.info(f'{self.name}.onClick:')
+        logger.info(f'{self.name}.onClick:')
 
         if event.inaxes is not None:
 
@@ -612,14 +612,14 @@ class InfoMatrixGui(ttk.Frame):
             btn = event.button
             x   = round(float(event.xdata), 3)
             y   = round(float(event.ydata), 3)
-            self.logger.info(f'{self.name}.onClick: {btn} button clicked at [{y}, {x}] in axes {event.inaxes.get_title()}')
+            logger.info(f'{self.name}.onClick: {btn} button clicked at [{y}, {x}] in axes {event.inaxes.get_title()}')
 
             #------------------------------------------------------------------
             # Get the actual point by coordinates
             #------------------------------------------------------------------
             coord = {self.display['keyX']: x, self.display['keyY']: y}
             self.actPoint = self.dat.pointByCoord(coord)
-            self.logger.debug(f'{self.name}.onClick: Actual point = {self.actPoint}@{id(self.actPoint)}')
+            logger.debug(f'{self.name}.onClick: Actual point = {self.actPoint}@{id(self.actPoint)}')
 
             #------------------------------------------------------------------
             # Mouse button action
@@ -630,16 +630,16 @@ class InfoMatrixGui(ttk.Frame):
             #------------------------------------------------------------------
         else:
             self.actPoint = None
-            self.logger.warning(f'{self.name}.onClick: Clicked ouside axes bounds but inside plot window')
+            logger.warning(f'{self.name}.onClick: Clicked ouside axes bounds but inside plot window')
 
         #----------------------------------------------------------------------
-        self.logger.debug(f'{self.name}.onClick: Done')
+        logger.debug(f'{self.name}.onClick: Done')
 
     #--------------------------------------------------------------------------
     def onClickLeft(self, x, y):
         "Print information about mouse-given position"
 
-        self.logger.info(f'{self.name}.onClick: left click for {self.actPoint}')
+        logger.info(f'{self.name}.onClick: left click for {self.actPoint}')
 
         tit = f'Nearest point to [{round(y,2)}, {round(x,2)}]'
         mes = str(self.actPoint)
@@ -649,7 +649,7 @@ class InfoMatrixGui(ttk.Frame):
     def onClickRight(self, x, y):
         "Set value of the point on mouse-given position"
 
-        self.logger.info(f'{self.name}.onClick: right click for {self.actPoint}')
+        logger.info(f'{self.name}.onClick: right click for {self.actPoint}')
 
         tit = f'Nearest point to [{round(y,2)}, {round(x,2)}]'
 
@@ -662,7 +662,7 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         if gui.changed:
 
-            self.logger.warning(f'{self.name}.onClick: Data changed, need to show the chart')
+            logger.warning(f'{self.name}.onClick: Data changed, need to show the chart')
             self.display['needShow'] = True
             self.updateChart()
 
@@ -684,7 +684,7 @@ class InfoMatrixGui(ttk.Frame):
     def onDataSchema(self, event=None):
         "Set schema for data points: axes {key:name}, values {key:name}"
 
-        self.logger.info(f'{self.name}.onDataSchema:')
+        logger.info(f'{self.name}.onDataSchema:')
 
         origSchema = self.dat.getSchema()
 
@@ -706,16 +706,16 @@ class InfoMatrixGui(ttk.Frame):
                 self.dat.init()
                 self.viewChanged()
 
-                self.logger.warning(f'{self.name}.onDataSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, reset data')
+                logger.warning(f'{self.name}.onDataSchema: Axes changed from {origSchema} to {self.dat.getSchema()}, reset data')
 
         #----------------------------------------------------------------------
-        self.logger.debug(f'{self.name}.onDataSchema: InfoPointGui window closed')
+        logger.debug(f'{self.name}.onDataSchema: InfoPointGui window closed')
 
     #--------------------------------------------------------------------------
     def onDataMatrix(self, event=None):
         "Set axes parameters: self._cnts, self._origs, self._rects"
 
-        self.logger.info(f'{self.name}.onDataMatrix:')
+        logger.info(f'{self.name}.onDataMatrix:')
 
         gui = InfoMatrixDataGui(name=f'Matrix {self.dat.name}', container=self, matrix=self.dat)
         gui.grab_set()
@@ -728,12 +728,12 @@ class InfoMatrixGui(ttk.Frame):
         self.viewChanged(force=True)
 
         #----------------------------------------------------------------------
-        self.logger.debug(f'{self.name}.onDataMatrix: Matrix properties set')
+        logger.debug(f'{self.name}.onDataMatrix: Matrix properties set')
 
     #--------------------------------------------------------------------------
     def onDisplayProp(self, event=None):
 
-        self.logger.info(f'{self.name}.onDisplayProp: Orig display = {self.display}')
+        logger.info(f'{self.name}.onDisplayProp: Orig display = {self.display}')
 
         gui = InfoMatrixDisplayGui(name=f'Display options', container=self, display=self.display)
         gui.grab_set()
@@ -744,7 +744,7 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         if (self.display['keyX'] != gui.display['keyX']) or (self.display['keyY'] != gui.display['keyY']) or (self.sub2D != gui.display['sub2D']):
 
-                self.logger.info(f"{self.name}.onDataDisplay: X:{self.display['keyX']}->{gui.display['keyX']} Y:{self.display['keyY']}->{gui.display['keyY']}, sub2D:{self.sub2D}->{gui.display['sub2D']}")
+                logger.info(f"{self.name}.onDataDisplay: X:{self.display['keyX']}->{gui.display['keyX']} Y:{self.display['keyY']}->{gui.display['keyY']}, sub2D:{self.sub2D}->{gui.display['sub2D']}")
 
                 self.display = gui.display.copy()
                 self.sub2D   = gui.display['sub2D'].copy()
@@ -753,7 +753,7 @@ class InfoMatrixGui(ttk.Frame):
                 self.viewChanged()
 
         else:
-            self.logger.info(f"{self.name}.onDisplayProp: No change")
+            logger.info(f"{self.name}.onDisplayProp: No change")
 
     #--------------------------------------------------------------------------
     def setDisplayChart(self, chartType: str):
@@ -762,7 +762,7 @@ class InfoMatrixGui(ttk.Frame):
         if self.display['type'] != chartType:
 
             self.display['type'] = chartType
-            self.logger.info(f'{self.name}.setDisplayChart: Chart type was set to {chartType}')
+            logger.info(f'{self.name}.setDisplayChart: Chart type was set to {chartType}')
             self.viewChanged(force=True)
 
     #==========================================================================
@@ -771,7 +771,7 @@ class InfoMatrixGui(ttk.Frame):
     def onInfo(self, event=None, mode='short'):
         "Show information about the InfoMatrix data"
 
-        self.logger.debug(f'{self.name}.onInfo:')
+        logger.debug(f'{self.name}.onInfo:')
 
         if   mode=='short': text = self.dat.info(full=False)['msg']
         elif mode=='full' : text = self.dat.info(full=True )['msg']
@@ -781,7 +781,7 @@ class InfoMatrixGui(ttk.Frame):
 
         msgWin = SiqoMessage(name=self.dat.name, text=text, wpix=800)
 
-        self.logger.debug(f'{self.name}.onInfo: Show info about {self.dat.name}')
+        logger.debug(f'{self.name}.onInfo: Show info about {self.dat.name}')
 
     #==========================================================================
     # Method to apply
@@ -800,12 +800,12 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         metKey = self.varSetMet.get()
         if not metKey:
-            self.logger.warning(f'{self.name}.onMethodPlay: No method selected, nothing to do')
+            logger.warning(f'{self.name}.onMethodPlay: No method selected, nothing to do')
             showinfo(title="Warning", message="No method selected, nothing to do")
             return
 
         if not self.display['valKey']:
-            self.logger.warning(f'{self.name}.onMethodPlay: No value selected, nothing to apply to')
+            logger.warning(f'{self.name}.onMethodPlay: No value selected, nothing to apply to')
             showinfo(title="Warning", message="No value selected, nothing to apply to")
             return
 
@@ -815,7 +815,7 @@ class InfoMatrixGui(ttk.Frame):
         cycles = max(self.varCounter.get(), 1)
 
         if cycles <= 0:
-            self.logger.warning(f'{self.name}.onMethodPlay: Number of cycles is {cycles}, nothing to do')
+            logger.warning(f'{self.name}.onMethodPlay: Number of cycles is {cycles}, nothing to do')
             showinfo(title="Warning", message="Number of cycles must be greater than 0")
             return
 
@@ -839,7 +839,7 @@ class InfoMatrixGui(ttk.Frame):
                 else                         : newEntry = askStr (container=self, title=f"Parameter of {metKey}", prompt=param, initialvalue=entry)
 
                 if newEntry is None:
-                    self.logger.info(f"{self.name}.onMethodPlay: {metKey} cancelled by user")
+                    logger.info(f"{self.name}.onMethodPlay: {metKey} cancelled by user")
                     return
 
                 usrPar[param] = newEntry
@@ -850,7 +850,7 @@ class InfoMatrixGui(ttk.Frame):
         else:
             usrPar = params
 
-        self.logger.audit(f'{self.name}.onMethodPlay: {self.display['valName']}[{self.display['valKey']}] will be set by {metKey} on subset={self.sub2D} with params={usrPar}')
+        logger.audit(f'{self.name}.onMethodPlay: {self.display['valName']}[{self.display['valKey']}] will be set by {metKey} on subset={self.sub2D} with params={usrPar}')
 
         #----------------------------------------------------------------------
         # Vsetko je pripravene: Press button PLAY
@@ -858,19 +858,19 @@ class InfoMatrixGui(ttk.Frame):
         self.btnPlay.configure(style="Red.TButton")
         self.btnPlay['text'      ] = "▶ Playing"
         self.btnPlay['state'     ] = tk.DISABLED
-        self.logger.info(f'{self.name}.onMethodPlay: Play starting for {cycles} cycles')
+        logger.info(f'{self.name}.onMethodPlay: Play starting for {cycles} cycles')
 
         #----------------------------------------------------------------------
         # Main loop for method application
         #----------------------------------------------------------------------
         while (cycles > 0) and (self.btnPlay.instate(['disabled'])):
 
-            self.logger.debug(f'{self.name}.onMethodPlay: Cycle started')
+            logger.debug(f'{self.name}.onMethodPlay: Cycle started')
 
             #--------------------------------------------------------------
             # Apply the method and update the chart
             #--------------------------------------------------------------
-            self.logger.debug(f"{self.name}.methodApply: {metKey}(key={self.display['valKey']}), par={usrPar})")
+            logger.debug(f"{self.name}.methodApply: {metKey}(key={self.display['valKey']}), par={usrPar})")
 
             self.dat.applyMatrixMethod(methodKey=metKey, valueKey=self.display['valKey'], params=usrPar)
             self.viewChanged(force=True)
@@ -886,14 +886,14 @@ class InfoMatrixGui(ttk.Frame):
             #--------------------------------------------------------------
             cycles -= 1
             self.varCounter.set(cycles)
-            self.logger.debug(f'{self.name}.onMethodPlay: {cycles} cycle left')
+            logger.debug(f'{self.name}.onMethodPlay: {cycles} cycle left')
 
         #----------------------------------------------------------------------
         self.btnPlay.configure(style="Default.TButton")
         self.btnPlay['text'      ] = "▶ Play"
         self.btnPlay['state'     ] = tk.NORMAL
 
-        self.logger.info(f'{self.name}.onMethodPlay: Play finished with {cycles} cycles left')
+        logger.info(f'{self.name}.onMethodPlay: Play finished with {cycles} cycles left')
         return
 
     #--------------------------------------------------------------------------
@@ -919,13 +919,13 @@ class InfoMatrixGui(ttk.Frame):
         self.display['keyX']     = 'None'             # Default key for Axis X to show
         self.display['keyY']     = 'None'             # Default key for Axis Y to show
 
-        self.logger.info(f'{self.name}.reset: done')
+        logger.info(f'{self.name}.reset: done')
 
     #--------------------------------------------------------------------------
     def clear(self):
         "Clears all data but structure is preserved"
 
-        self.logger.debug(f'{self.name}.clear:')
+        logger.debug(f'{self.name}.clear:')
 
         #----------------------------------------------------------------------
         # Clear InfoMatrix base data
@@ -943,12 +943,12 @@ class InfoMatrixGui(ttk.Frame):
 
         self.clear()
         self.dat = dat
-        self.logger.info(f'{self.name}.applyPointMethod: New data name = {self.dat.name}')
+        logger.info(f'{self.name}.applyPointMethod: New data name = {self.dat.name}')
 
     #--------------------------------------------------------------------------
     def setPoint(self, c):
 
-        self.logger.info(f'{self.name}.setPoint: {self.actPoint} = {c}')
+        logger.info(f'{self.name}.setPoint: {self.actPoint} = {c}')
 
         self.actPoint.setComp(c)
         self.viewChanged()
@@ -975,20 +975,19 @@ class InfoMatrixGui(ttk.Frame):
     def getObjScatter(self):
         "Returns plotable data for Object value"
 
-        self.logger.info( f"{self.name}.getObjScatter" )
+        logger.info( f"{self.name}.getObjScatter" )
 
 #        return lib.squareData(baseObj=self.obj, vec=self.obj.prtLst)
 #        return lib.spiralData(baseObj=self.obj, vec=self.obj.prtLst)
 
-
-
-
 #==============================================================================
-#   Inicializacia kniznice
+# Inicializacia modulu
 #------------------------------------------------------------------------------
-print(f'SIQO InfoMatrixGui library ver {_VER}')
+print(f'InfoMatrixGui ver {_VER}')
 
 if __name__ == '__main__':
+
+    logger.info("Testing InfoMatrixGui class")
 
     from   idata.imatrix          import InfoMatrix
 

@@ -10,9 +10,9 @@ from   siqolib.message        import SiqoMessage, askInt, askReal
 from   idata.ipoint           import InfoPoint
 
 #==============================================================================
-# package's constants
+# Module's constants
 #------------------------------------------------------------------------------
-_VER            = '1.1'
+_VER            = '1.1.2'
 _WIN            = '800x540'
 _DPI            = 100
 
@@ -21,8 +21,9 @@ _PADX           =  5
 _PADY           =  5
 
 #==============================================================================
-# package's variables
+# Module's variables
 #------------------------------------------------------------------------------
+logger = SiqoLogger(name='InfoPointGui')   # Logger for InfoPoint
 
 #==============================================================================
 # Class InfoPointGui: Schema editor for InfoPoint
@@ -35,8 +36,7 @@ class InfoPointGui(tk.Toplevel):
     def __init__(self, name, container, ipType, **kwargs):
         "Call constructor of InfoPointGui and initialise it for respective data"
 
-        self.logger = SiqoLogger(name=name)
-        self.logger.audit(f'{name}.init:')
+        logger.audit(f'{name}.init:')
 
         self.name     = name               # Name of this chart
         self.ipType   = ipType             # InfoPoint type to work with
@@ -90,7 +90,7 @@ class InfoPointGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Initialisation
         #----------------------------------------------------------------------
-        self.logger.audit(f'{name}.init: Done')
+        logger.audit(f'{name}.init: Done')
 
     #--------------------------------------------------------------------------
 
@@ -100,7 +100,7 @@ class InfoPointGui(tk.Toplevel):
     def showParams(self, tab, paramType:str, params:dict, lblParam='Parameter', lblName='Name'):
         "Show parameters in the respective tab"
 
-        self.logger.debug(f'{self.name}.showParams:')
+        logger.debug(f'{self.name}.showParams:')
 
         #----------------------------------------------------------------------
         # Clear the tab
@@ -123,7 +123,7 @@ class InfoPointGui(tk.Toplevel):
         row = 1
         for key, val in params.items():
 
-            self.logger.debug(f'{self.name}.showParams: {paramType}: {key} = {val}')
+            logger.debug(f'{self.name}.showParams: {paramType}: {key} = {val}')
 
             lbl = ttk.Label(tab, text=str(key))
             lbl.grid(column=0, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
@@ -160,14 +160,14 @@ class InfoPointGui(tk.Toplevel):
     def setParam(self, paramType:str, key:str, val:str):
         "Update or Add new parameter to the InfoPoint"
 
-        self.logger.debug(f'{self.name}.setParam: {paramType} : {key} : {val}')
+        logger.debug(f'{self.name}.setParam: {paramType} : {key} : {val}')
 
         #----------------------------------------------------------------------
         # Add Axe
         #----------------------------------------------------------------------
         if paramType == 'axes':
             InfoPoint.setSchemaAxe(self.ipType, key, val)
-            self.logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
+            logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
             self.showParams(self.tabAxe, 'axes', InfoPoint.getSchemaAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
 
         #----------------------------------------------------------------------
@@ -175,27 +175,27 @@ class InfoPointGui(tk.Toplevel):
         #----------------------------------------------------------------------
         elif paramType == 'vals':
             InfoPoint.setSchemaVal(self.ipType, key, val)
-            self.logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
+            logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
             self.showParams(self.tabVal, 'vals', InfoPoint.getSchemaVals(self.ipType), lblParam='Value', lblName='Value Name')
 
         #----------------------------------------------------------------------
         # Unknown parameter type
         #----------------------------------------------------------------------
         else:
-            self.logger.error(f'{self.name}.setParam: Unknown paramType {paramType}')
+            logger.error(f'{self.name}.setParam: Unknown paramType {paramType}')
 
     #--------------------------------------------------------------------------
     def delParam(self, paramType:str, key:str):
         "Delete parameter from the InfoPoint"
 
-        self.logger.debug(f'{self.name}.delParam: {paramType} : {key}')
+        logger.debug(f'{self.name}.delParam: {paramType} : {key}')
 
         #----------------------------------------------------------------------
         # Del Axe
         #----------------------------------------------------------------------
         if paramType == 'axes':
             InfoPoint.delSchemaAxe(self.ipType, key)
-            self.logger.warning(f'{self.name}.delParam: {paramType}.{key} deleted')
+            logger.warning(f'{self.name}.delParam: {paramType}.{key} deleted')
             self.showParams(self.tabAxe, 'axes', InfoPoint.getSchemaAxes(self.ipType), lblParam='Axe', lblName='Axe Name')
 
         #----------------------------------------------------------------------
@@ -203,27 +203,27 @@ class InfoPointGui(tk.Toplevel):
         #----------------------------------------------------------------------
         elif paramType == 'vals':
             InfoPoint.delSchemaVal(self.ipType, key)
-            self.logger.warning(f'{self.name}.delParam: {paramType}.{key} deleted')
+            logger.warning(f'{self.name}.delParam: {paramType}.{key} deleted')
             self.showParams(self.tabVal, 'vals', InfoPoint.getSchemaVals(self.ipType), lblParam='Value', lblName='Value Name')
 
         #----------------------------------------------------------------------
         # Unknown parameter type
         #----------------------------------------------------------------------
         else:
-            self.logger.error(f'{self.name}.delParam: Unknown paramType {paramType}')
+            logger.error(f'{self.name}.delParam: Unknown paramType {paramType}')
 
     #--------------------------------------------------------------------------
     def ok(self):
         "Parse user inputs"
 
         newSchema = InfoPoint.getSchema(self.ipType)
-        self.logger.info(f'{self.name}.ok: New schema = {newSchema}')
+        logger.info(f'{self.name}.ok: New schema = {newSchema}')
 
         #----------------------------------------------------------------------
         # Porovnanie aktualnych hodnot s povodnymi
         #----------------------------------------------------------------------
         test = InfoPoint.equalSchema(self.ipType, self.origSchema)
-        self.logger.debug(f'{self.name}.onDataSchema: Schema test = {test}')
+        logger.debug(f'{self.name}.onDataSchema: Schema test = {test}')
 
         #----------------------------------------------------------------------
         # Ak ipType existuje
@@ -238,16 +238,16 @@ class InfoPointGui(tk.Toplevel):
                 if askyesno(title='Axes changed', message='Axes was changed. Apply changes and reset  data?'):
 
                     self.changed = True
-                    self.logger.warning(f'{self.name}.onDataSchema: Axes changed from {self.origSchema} to {newSchema}, reset data')
+                    logger.warning(f'{self.name}.onDataSchema: Axes changed from {self.origSchema} to {newSchema}, reset data')
 
                 else:
                     self.dat.setSchema(self.origSchema)
                     self.changed = False
-                    self.logger.warning(f'{self.name}.onDataSchema: Axes changed from {self.origSchema} to {newSchema}, but user cancelled changes, schema restored')
+                    logger.warning(f'{self.name}.onDataSchema: Axes changed from {self.origSchema} to {newSchema}, but user cancelled changes, schema restored')
 
             else:
                 self.changed = False
-                self.logger.info(f'{self.name}.ok: {self.ipType} schema unchanged')
+                logger.info(f'{self.name}.ok: {self.ipType} schema unchanged')
 
         #----------------------------------------------------------------------
         self.destroy()
@@ -258,7 +258,7 @@ class InfoPointGui(tk.Toplevel):
 
         InfoPoint.setSchema(self.ipType, self.origSchema)
         self.changed = False
-        self.logger.info(f'{self.name}.cancel: Changes were cancelled, schema restored')
+        logger.info(f'{self.name}.cancel: Changes were cancelled, schema restored')
 
         self.destroy()
 
@@ -275,8 +275,8 @@ class InfoPointValsGui(tk.Toplevel):
     def __init__(self, name, container, point:InfoPoint):
         "Call constructor of InfoPointValsGui and initialise it for respective data"
 
-        self.logger = SiqoLogger(name)
-        self.logger.audit(f'{name}.init:')
+        logger = SiqoLogger(name)
+        logger.audit(f'{name}.init:')
 
         self.name     = name               # Name of this chart
         self.point    = point              # InfoPoint to work with
@@ -346,13 +346,13 @@ class InfoPointValsGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Initialisation
         #----------------------------------------------------------------------
-        self.logger.audit(f'{name}.init: Done')
+        logger.audit(f'{name}.init: Done')
 
     #--------------------------------------------------------------------------
     def setParam(self, key:str, val:str):
         "Update value of the InfoPoint"
 
-        self.logger.debug(f'{self.name}.setParam: {key} : {val}')
+        logger.debug(f'{self.name}.setParam: {key} : {val}')
         self.point.setVal(key, val)
 
     #--------------------------------------------------------------------------
@@ -360,7 +360,7 @@ class InfoPointValsGui(tk.Toplevel):
         "Parse user inputs"
 
         newVals = self.point.info()['vals']
-        self.logger.info(f'{self.name}.ok: New values = {newVals}')
+        logger.info(f'{self.name}.ok: New values = {newVals}')
 
         #----------------------------------------------------------------------
         # Porovnanie aktualnych hodnot s povodnymi
@@ -370,16 +370,16 @@ class InfoPointValsGui(tk.Toplevel):
             if askyesno(title='Vales changed', message=f'Values was changed {self.origVals}->{newVals}. Apply changes?'):
 
                 self.changed = True
-                self.logger.warning(f'{self.name}.ok: Values changed from {self.origVals}->{newVals}')
+                logger.warning(f'{self.name}.ok: Values changed from {self.origVals}->{newVals}')
 
             else:
                 self.point.set(vals=self.origVals)
                 self.changed = False
-                self.logger.warning(f'{self.name}.ok: Values changed from {self.origVals}->{newVals}, but user cancelled changes, values restored')
+                logger.warning(f'{self.name}.ok: Values changed from {self.origVals}->{newVals}, but user cancelled changes, values restored')
 
         else:
             self.changed = False
-            self.logger.info(f'{self.name}.ok: values unchanged')
+            logger.info(f'{self.name}.ok: values unchanged')
 
         #----------------------------------------------------------------------
         self.destroy()
@@ -390,16 +390,16 @@ class InfoPointValsGui(tk.Toplevel):
 
         self.point.set(vals=self.origVals)
         self.changed = False
-        self.logger.info(f'{self.name}.cancel: Changes were cancelled, schema restored')
+        logger.info(f'{self.name}.cancel: Changes were cancelled, schema restored')
 
         self.destroy()
 
     #--------------------------------------------------------------------------
 
 #==============================================================================
-#   Inicializacia kniznice
+# Inicializacia modulu
 #------------------------------------------------------------------------------
-print(f'SIQO InfoPointGui library ver {_VER}')
+print(f'InfoPointGui ver {_VER}')
 
 if __name__ == '__main__':
 

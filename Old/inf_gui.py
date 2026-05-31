@@ -54,7 +54,7 @@ class IFieldGui(tk.Tk):
     def __init__(self, journal, name):
         "Create and show GUI for Information field"
 
-        self.logger.debug('IFieldGui constructor...')
+        logger.debug('IFieldGui constructor...')
 
         #----------------------------------------------------------------------
         # inicializacia tk.Tk
@@ -80,7 +80,7 @@ class IFieldGui(tk.Tk):
         #----------------------------------------------------------------------
         # Start GUI
         #----------------------------------------------------------------------
-        self.logger.info(f"{self.name}.init: Start application")
+        logger.info(f"{self.name}.init: Start application")
         self.show()
 
 
@@ -94,7 +94,7 @@ class IFieldGui(tk.Tk):
     #--------------------------------------------------------------------------
     def show(self):
 
-        self.logger.debug(f"{self.name}.show:")
+        logger.debug(f"{self.name}.show:")
 
         #----------------------------------------------------------------------
         # Nastavenia root window
@@ -159,7 +159,7 @@ class IFieldGui(tk.Tk):
         # get selected tab name
         #----------------------------------------------------------------------
         selected_tab_name = self.tabs.tab(self.tabs.select(), 'text')
-        self.logger.debug(f"{self.name}.refresh: tabSelected = {selected_tab_name}")
+        logger.debug(f"{self.name}.refresh: tabSelected = {selected_tab_name}")
 
         #----------------------------------------------------------------------
         # Refreshnem aktivny tab v notebooku podla nazvu zalozky
@@ -175,7 +175,7 @@ class IFieldGui(tk.Tk):
     #--------------------------------------------------------------------------
     def statusBarShow(self):
 
-        self.logger.debug(f"{self.name}.statusBarShow:")
+        logger.debug(f"{self.name}.statusBarShow:")
 
         frame_status_bar = tk.Frame(self, relief=tk.RAISED, borderwidth=2, bg='silver')
         frame_status_bar.pack(side='bottom', anchor='s', fill='x')
@@ -193,13 +193,13 @@ class IFieldGui(tk.Tk):
     #--------------------------------------------------------------------------
     def setStatus(self, msg):
 
-        self.logger.info(f"{self.name}.setStatus: {msg}")
+        logger.info(f"{self.name}.setStatus: {msg}")
         self.str_status_msg.set(msg)
 
     #--------------------------------------------------------------------------
     def changeModel(self):
 
-        self.logger.debug(f"{self.name}.changeModel:")
+        logger.debug(f"{self.name}.changeModel:")
 
         #----------------------------------------------------------------------
         # Odpojenie od aktualneho modelu
@@ -224,7 +224,7 @@ class IFieldGui(tk.Tk):
     #--------------------------------------------------------------------------
     def tabInfShow(self):
 
-        self.logger.debug(f"{self.name}.tabInfShow:")
+        logger.debug(f"{self.name}.tabInfShow:")
 
         #----------------------------------------------------------------------
         # Vytvorim frame a skonfigurujem grid
@@ -274,7 +274,7 @@ class IFieldGui(tk.Tk):
     #--------------------------------------------------------------------------
     def tabInfRefresh(self, event=None):
 
-        self.logger.debug(f"{self.name}.tabInfRefresh:")
+        logger.debug(f"{self.name}.tabInfRefresh:")
 
 
 
@@ -285,7 +285,7 @@ class IFieldGui(tk.Tk):
     #--------------------------------------------------------------------------
     def tabSptShow(self):
 
-        self.logger.debug(f"{self.name}.tabSptShow:")
+        logger.debug(f"{self.name}.tabSptShow:")
 
         #----------------------------------------------------------------------
         # Vytvorim frame a skonfigurujem grid
@@ -330,7 +330,7 @@ class IFieldGui(tk.Tk):
     #--------------------------------------------------------------------------
     def tabSptRefresh(self):
 
-        self.logger.debug(f"{self.name}.tabSptRefresh:")
+        logger.debug(f"{self.name}.tabSptRefresh:")
 
 
 
@@ -398,7 +398,7 @@ class IFieldGui(tk.Tk):
         #self.pnw.sash_place(index=0, x=100, y=100)
 
 #        self.show()   # Initial drawing
-        self.logger.debug('IFieldGui created for Object {}'.format(self.name))
+        logger.debug('IFieldGui created for Object {}'.format(self.name))
 
         self.win.mainloop()       # Start listening for events
 

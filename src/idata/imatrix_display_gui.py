@@ -12,9 +12,9 @@ from   siqolib.message        import SiqoMessage, askInt, askReal
 from   idata.ipoint           import InfoPoint
 
 #==============================================================================
-# package's constants
+# Module's constants
 #------------------------------------------------------------------------------
-_VER            = '1.1'
+_VER            = '1.1.0'
 _WIN            = '800x540'
 _DPI            = 100
 
@@ -23,8 +23,9 @@ _PADX           =  5
 _PADY           =  5
 
 #==============================================================================
-# package's variables
+# Module's variables
 #------------------------------------------------------------------------------
+logger = SiqoLogger(name='InfoMatrixDisplayGui')   # Logger for InfoMatrixDisplayGui
 
 #==============================================================================
 # Class InfoMatrixDisplayGui
@@ -37,8 +38,7 @@ class InfoMatrixDisplayGui(tk.Toplevel):
     def __init__(self, name, container, display, **kwargs):
         "Call constructor of InfoMatrixDisplayGui and initialise it for respective data"
 
-        self.logger = SiqoLogger(name)
-        self.logger.audit(f'{name}.init: {display}')
+        logger.audit(f'{name}.init: {display}')
 
         self.name     = name                       # Name of this chart
         self.display  = deepcopy(display)          # Display options to be edited
@@ -185,7 +185,7 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Initialisation
         #----------------------------------------------------------------------
-        self.logger.audit(f'{name}.init: Done')
+        logger.audit(f'{name}.init: Done')
 
     #--------------------------------------------------------------------------
 
@@ -213,7 +213,7 @@ class InfoMatrixDisplayGui(tk.Toplevel):
                 self.display['sub2D'][key] = self.frzIdxs[key].get()
 
         #----------------------------------------------------------------------
-        self.logger.warning(f'{self.name}.ok: {self.display}')
+        logger.warning(f'{self.name}.ok: {self.display}')
         self.destroy()
 
     #--------------------------------------------------------------------------
@@ -221,17 +221,19 @@ class InfoMatrixDisplayGui(tk.Toplevel):
         "Cancel changes and restore original settings"
 
         self.display = self.origDisplay.copy()
-        self.logger.info(f'{self.name}.cancel: Display options restored to {self.display}')
+        logger.info(f'{self.name}.cancel: Display options restored to {self.display}')
         self.destroy()
 
     #--------------------------------------------------------------------------
 
 #==============================================================================
-#   Inicializacia kniznice
+# Inicializacia modulu
 #------------------------------------------------------------------------------
-print(f'SIQO InfoMatrixDisplayGui library ver {_VER}')
+print(f'InfoMatrixDisplayGui ver {_VER}')
 
 if __name__ == '__main__':
+
+    logger.info("Testing InfoMatrixDisplayGui class")
 
     from   idata.ipoint           import InfoPoint
     from   idata.imatrix          import InfoMatrix
