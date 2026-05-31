@@ -7,7 +7,7 @@ from   tkinter                  import ttk
 from   siqolib.logger           import SiqoLogger
 from   siqolib.message          import SiqoMessage
 from   idata.imatrix_gui        import InfoMatrixGui
-from   .imatrix                 import InfoFieldMatrix
+from   .ifield_matrix           import InfoFieldMatrix
 
 #==============================================================================
 # Module's constants

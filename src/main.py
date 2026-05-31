@@ -4,14 +4,13 @@
 import tkinter                  as tk
 
 from   siqolib.logger           import SiqoLogger
-from   ifield.imatrix           import InfoFieldMatrix
-from   ifield.imatrix_gui       import IFieldMatrixGui
+from   ifield.ifield_matrix     import InfoFieldMatrix
+from   ifield.ifield_matrix_gui import IFieldMatrixGui
 
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
 _VALS_MAX  = 100000
-
 
 #==============================================================================
 # package's tools
