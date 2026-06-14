@@ -487,13 +487,23 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def mapSetMethods(self) -> dict:
-        """Returns map of methods for one InfoPoint setting keyed value to function value for respective parameters.
-           Returns dict of {pointMethodName: {'pointMethod': callable_function, 'params':{paramName: defaultValue}, 'visible':True/False, 'type':'ask'/'noAsk'}}.
-           params is dict of parameters for the method with default values.
-           If type is 'ask', these parameters should be asked to user in GUI, if type is 'noAsk', these parameters are not asked to user and default values are used.
-           If visible is False, this method should not be shown to user in GUI, if visible is True, this method should be shown to user in GUI.
-        """
+        """Returns map of methods for one InfoPoint setting.
 
+        Structure:
+            {pointMethodName: {'pointMethod': callable_function,
+                              'params': {paramName: defaultValue},
+                              'visible': True/False,
+                              'type': 'ask'/'noAsk'}}
+
+        where 'params' is dict of parameters for the method with default values.
+
+        Note:
+        - If type is 'ask', parameters should be asked to user in GUI
+        - If type is 'noAsk', default values are used without asking
+        - If visible is False, method should not be shown in GUI
+        - If visible is True, method should be shown in GUI
+        """
+        
         methods = InfoPoint.mapSetMethods()
 
         methods['<Matrix Methods>'] = {'matrixMethod': self.nullMethod, 'pointMethod':None,  'params':{}                                        , 'visible':True, 'type':'ask'}
@@ -911,12 +921,12 @@ class InfoMatrix:
         """Initialise InfoMatrix structure with already set parameters
            or You can provide new matrix structure parameters.
 
-           cnts  is dict of {axeKey: cnt} where cnt is count of points in respective axe.
-           origs is dict of {axeKey: orig} where orig is origin coordinate in lambda units for respective axe.
-           rects is dict of {axeKey: rect} where rect is rectangle in lambda units for respective axe.
+           1. cnts  is dict of {axeKey: cnt} where cnt is count of points in respective axe.
+           2. origs is dict of {axeKey: orig} where orig is origin coordinate in lambda units for respective axe.
+              If origs is not provided, origin for respective axe will be set to 0.
 
-           If origs is not provided, origin for respective axe will be set to 0.
-           If rects is not provided, rectangle for respective axe will be set to (cnt-1)*diff where diff
+           3. rects is dict of {axeKey: rect} where rect is rectangle in lambda units for respective axe.
+              If rects is not provided, rectangle for respective axe will be set to (cnt-1)*diff where diff
               is distance between two points in respective axe.
 
            Returns count of created InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
@@ -1154,10 +1164,16 @@ class InfoMatrix:
     # Dynamic Methods application
     #--------------------------------------------------------------------------
     def applyMatrixMethod(self, methodKey:str, valueKey:str, params:dict=None) -> int|None:
-        """Special matrix method for applying dynamic matrix methods.
-               methodKey : Name of the method to apply
-               valueKey  : Key of the value to be set by the method
-               params    : Parameters for the method as dict
+        """Dynamic matrix method for applying to matrix.
+
+             1. methodKey: Name of the method to apply.
+                           If methodKey is not in defined methods, logs error and returns None.
+                           If 'pointMethod'  is defined in the method, it will be applied to all points in the active submatrix.
+                           If 'matrixMethod' is defined in the method, it will be applied directly to the matrix.
+
+             2. valueKey : Key of the value to be set by the method
+             3. params   : Parameters for the method as dict
+
            Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
@@ -1209,10 +1225,14 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def _applyPointMethod(self, pointMethod, valueKey:str, params:dict=None) -> int|None:
-        """Special matrix method for applying Point methods to all or active subset of InfoPoints.
-               pointMethod : Name of the Point method to apply
-               valueKey    : Key of the value to be set by the method
-               params      : Parameters for the method as dict
+        """Dynamic matrix method for applying to list of Points.
+
+               1. pointMethod : Name of the Point method to apply
+               2. valueKey    : Key of the value to be set by the method
+               3. params      : Parameters for the method as dict
+                                If 'all' in params and params['all'] == True, method will be applied to all points,
+                                otherwise only to active subset of points.
+
             Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 

@@ -516,8 +516,10 @@ class InfoPoint:
         """
 
         return {'<Point Methods>'        : {'pointMethod':InfoPoint.nullMethod,    'params':{                                                           }, 'visible':True}
+               ,'Integer constant'       : {'pointMethod':InfoPoint.intConst,      'params':{'const'  :0                                                }, 'visible':True, 'type':'ask'}
+               ,'Integer random uniform' : {'pointMethod':InfoPoint.intRandUni,    'params':{'min'    :0,   'max'   :1                                  }, 'visible':True, 'type':'ask'}
                ,'Real constant'          : {'pointMethod':InfoPoint.fltConst,      'params':{'const'  :0                                                }, 'visible':True, 'type':'ask'}
-               ,'Random uniform'         : {'pointMethod':InfoPoint.fltRandUni,    'params':{'min'    :0,   'max'   :1                                  }, 'visible':True, 'type':'ask'}
+               ,'Real random uniform'    : {'pointMethod':InfoPoint.fltRandUni,    'params':{'min'    :0,   'max'   :1                                  }, 'visible':True, 'type':'ask'}
                ,'Random bit'             : {'pointMethod':InfoPoint.fltRandBit,    'params':{'prob1'  :0.1                                              }, 'visible':True, 'type':'ask'}
                ,'Comp constant (re/im)'  : {'pointMethod':InfoPoint.cmpConstR,     'params':{'real'   :0,   'imag'  :0                                  }, 'visible':True, 'type':'ask'}
                ,'Comp constant (abs/phs)': {'pointMethod':InfoPoint.cmpConstP,     'params':{'abs'    :0,   'phase' :0                                  }, 'visible':True, 'type':'ask'}
@@ -805,7 +807,35 @@ class InfoPoint:
            Retuns 1 if value was set, otherwise 0.
         """
 
-        return 0
+        return 1
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def intConst(infoPoint, valueKey:str, params:dict) -> int:
+        """Set keyed value to constant integer value.
+           params should have key 'const' with constant value to set.
+           Retuns 1 if value was set, otherwise 0.
+        """
+
+        const = int(params.get('const', 0))
+        infoPoint.set(vals={valueKey: const})
+        return 1
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def intRandUni(infoPoint, valueKey:str, params:dict) -> int:
+        """Set keyed value to random uniform integer value in range <min, max>.
+           params should have keys 'min' and 'max' with range limits.
+           Retuns 1 if value was set, otherwise 0.
+        """
+
+        minVal = int(params.get('min',  0))
+        maxVal = int(params.get('max', 10))
+
+        val = rnd.randint(minVal, maxVal)
+
+        infoPoint.set(vals={valueKey: val})
+        return 1
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -815,7 +845,7 @@ class InfoPoint:
            Retuns 1 if value was set, otherwise 0.
         """
 
-        const = params.get('const', 0)
+        const = float(params.get('const', 0))
         infoPoint.set(vals={valueKey: const})
         return 1
 
@@ -827,10 +857,10 @@ class InfoPoint:
            Retuns 1 if value was set, otherwise 0.
         """
 
-        minVal = params.get('min', 0)
-        maxVal = params.get('max', 1)
+        minVal = float(params.get('min', 0))
+        maxVal = float(params.get('max', 1))
 
-        val = minVal + (maxVal - minVal) * rnd.random()
+        val = rnd.uniform(minVal, maxVal)
 
         infoPoint.set(vals={valueKey: val})
         return 1
