@@ -3,10 +3,10 @@
 #------------------------------------------------------------------------------
 import math
 import cmath
-import numpy                    as np
-import random                   as rnd
+import numpy                  as np
+import random                 as rnd
 
-from   siqolib.logger           import SiqoLogger
+from   .                      import logger
 
 #==============================================================================
 # Module's constants
@@ -19,7 +19,6 @@ _FNAME          = 'InfoModel.ifm'
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
-logger = SiqoLogger(name='InfoModel')   # Logger for InfoModel
 
 #==============================================================================
 # InfoModel

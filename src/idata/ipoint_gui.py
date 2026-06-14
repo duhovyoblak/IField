@@ -5,8 +5,9 @@ import tkinter                as tk
 from   tkinter                import (ttk, font, PanedWindow)
 from   tkinter.messagebox     import showinfo, askokcancel, askyesno
 
-from   siqolib.logger         import SiqoLogger
 from   siqolib.message        import SiqoMessage, askInt, askReal
+
+from   .                      import logger
 from   idata.ipoint           import InfoPoint
 
 #==============================================================================
@@ -23,7 +24,6 @@ _PADY           =  5
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
-logger = SiqoLogger(name='InfoPointGui')   # Logger for InfoPoint
 
 #==============================================================================
 # Class InfoPointGui: Schema editor for InfoPoint

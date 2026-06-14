@@ -3,8 +3,8 @@
 #------------------------------------------------------------------------------
 import cmath
 
-from   siqolib.logger           import SiqoLogger
-from   idata.imatrix            import InfoMatrix
+from   .                      import logger
+from   idata.imatrix          import InfoMatrix
 
 #==============================================================================
 # Module's constants
@@ -18,7 +18,6 @@ _PHASES =   2       # Default number of the discrete phases for complex values
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
-logger = SiqoLogger(name='InfoFieldMatrix')   # Logger for InfoFieldMatrix
 
 #==============================================================================
 # InfoFieldMatrix

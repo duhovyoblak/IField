@@ -1,13 +1,15 @@
 #==============================================================================
 # Info tkChart library
 #------------------------------------------------------------------------------
-import tkinter                  as tk
-from   tkinter                  import ttk
+import tkinter                as tk
+from   tkinter                import ttk
 
-from   siqolib.logger           import SiqoLogger
-from   siqolib.message          import SiqoMessage
-from   idata.imatrix_gui        import InfoMatrixGui
-from   .ifield_matrix           import InfoFieldMatrix
+from   siqolib.message        import SiqoMessage
+
+from   idata.imatrix_gui      import InfoMatrixGui
+
+from   .                      import logger
+from   .ifield_matrix         import InfoFieldMatrix
 
 #==============================================================================
 # Module's constants
@@ -20,7 +22,6 @@ _PADY           =  5
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
-logger = SiqoLogger(name='IFieldMatrixGui')   # Logger for IFieldMatrixGui
 
 #==============================================================================
 # Class IFieldMatrixGui

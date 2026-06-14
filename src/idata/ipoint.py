@@ -6,7 +6,7 @@ import math
 import cmath
 import random                 as rnd
 
-from   siqolib.logger         import SiqoLogger
+from   .                      import logger
 
 #==============================================================================
 # Module's constants
@@ -34,7 +34,6 @@ _CLOSE_ZERO  = 1e-12                   # Close to zero threshold
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
-logger = SiqoLogger(name='InfoPoint')   # Logger for InfoPoint
 
 #==============================================================================
 # InfoPoint

@@ -10,8 +10,9 @@ from   tkinter.messagebox                import showinfo
 import matplotlib.pyplot                 as plt
 from   matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
-from   siqolib.logger                    import SiqoLogger
 from   siqolib.message                   import SiqoMessage, askInt, askReal, askStr
+
+from   .                                 import logger
 from   idata.imatrix                     import InfoMatrix
 from   idata.ipoint_gui                  import InfoPointGui, InfoPointValsGui
 from   idata.imatrix_data_gui            import InfoMatrixDataGui
@@ -43,7 +44,6 @@ _CMAP           = _COLORMAPS['Qualitative'][2]       # Default colormap
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
-logger = SiqoLogger(name='InfoMatrixGui')   # Logger for InfoMatrixGui
 
 #==============================================================================
 # Class InfoMatrixGui

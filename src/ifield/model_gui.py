@@ -2,14 +2,14 @@
 # InfoModel GUI
 #------------------------------------------------------------------------------
 import os
-from   ast                      import literal_eval
+from   ast                    import literal_eval
 
-import tkinter                  as tk
-from   tkinter                  import (ttk, font, PanedWindow)
-from   tkinter                  import (messagebox, filedialog, scrolledtext)
+import tkinter                as tk
+from   tkinter                import (ttk, font, PanedWindow)
+from   tkinter                import (messagebox, filedialog, scrolledtext)
 
-from   siqolib.logger           import SiqoLogger
-from   .model                   import InfoModel
+from   .                      import logger
+from   .model                 import InfoModel
 
 #==============================================================================
 # Module's constants
@@ -28,7 +28,6 @@ _PADY           = 5
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
-logger = SiqoLogger(name='InfoModelGui')   # Logger for InfoModelGui
 
 #==============================================================================
 # Class InfoModelGui

@@ -7,7 +7,7 @@ import cmath
 import numpy                  as np
 import random                 as rnd
 
-from   siqolib.logger         import SiqoLogger
+from   .                      import logger
 from   .ipoint                import InfoPoint
 
 #==============================================================================
@@ -22,7 +22,6 @@ _F_POS  =  8          # Format for position
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
-logger = SiqoLogger(name='InfoMatrix')   # Logger for InfoMatrix
 
 #==============================================================================
 # Only when matrix is not empty
