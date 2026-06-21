@@ -97,17 +97,17 @@ class InfoMatrixGui(ttk.Frame):
         axeKeys  = list(self.dat.getSchemaAxes().keys())
         axeNames = list(self.dat.getSchemaAxes().values())
 
-        self.display  = {'type'       : 'SCATTER'                            # Actual type of the chart
-                        ,'needShow'   : False                                # Flag to show the chart, True means data changed and need to be shown
-                        ,'axeKeys'    : axeKeys                              # List of axes keys
-                        ,'axeNames'   : axeNames                             # List of axes names
-                        ,'sub2D'      : self.sub2D.copy()                    # Subset of frozen axes with desired values e.g. {'x':4, 't':17}
-                        ,'keyX'       : axeKeys[0] if len(axeKeys)>0 else '' # key for Axis X to show
-                        ,'keyY'       : axeKeys[1] if len(axeKeys)>1 else '' # key for Axis Y to show
-                        ,'keyZ'       : axeKeys[2] if len(axeKeys)>2 else '' # key for Axis Z to show
-                        ,'showMethod' : ''                                   # key for methods for value to show
-                        ,'valName'    : ''                                   # Value name to show
-                        ,'valKey'     : ''                                   # Value key to show
+        self.display  = {'type'       : 'SCATTER' if len(axeKeys)>1 else 'LINE'  # Actual type of the chart
+                        ,'needShow'   : False                                    # Flag to show the chart, True means data changed and need to be shown
+                        ,'axeKeys'    : axeKeys                                  # List of axes keys
+                        ,'axeNames'   : axeNames                                 # List of axes names
+                        ,'sub2D'      : self.sub2D.copy()                        # Subset of frozen axes with desired values e.g. {'x':4, 't':17}
+                        ,'keyX'       : axeKeys[0] if len(axeKeys)>0 else ''     # key for Axis X to show
+                        ,'keyY'       : axeKeys[1] if len(axeKeys)>1 else ''     # key for Axis Y to show
+                        ,'keyZ'       : axeKeys[2] if len(axeKeys)>2 else ''     # key for Axis Z to show
+                        ,'showMethod' : ''                                       # key for methods for value to show
+                        ,'valName'    : ''                                       # Value name to show
+                        ,'valKey'     : ''                                       # Value key to show
                         }
 
         self.display['axeKeys' ].append('None')
@@ -435,6 +435,7 @@ class InfoMatrixGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Prepare data for the chart
         #----------------------------------------------------------------------
+        logger.info(f'{self.name}.updateChart: <{self.display['showMethod']}>({self.display['valKey']}) to show in {self.display["type"]} chart with axes X={self.display["keyX"]}, Y={self.display["keyY"]}')
         npX, npY, npC, npU, npV = self.prepareChartData()
 
         #----------------------------------------------------------------------
@@ -484,10 +485,10 @@ class InfoMatrixGui(ttk.Frame):
             #------------------------------------------------------------------
             # Vyber zobrazenej osi
             #------------------------------------------------------------------
-            if self.display['keyX']: axis = npX
-            else                   : axis = npY
-
-            chrtObj = chart.plot(axis, npU) #, linewidths=1, edgecolors='gray')
+            if       self.display['keyX'] and     self.display['keyY']: chrtObj = chart.plot(npX, npY, npC) #, linewidths=1, edgecolors='gray')
+            elif     self.display['keyX'] and not self.display['keyY']: chrtObj = chart.plot(npX,      npC) #, linewidths=1, edgecolors='gray')
+            elif not self.display['keyX'] and     self.display['keyY']: chrtObj = chart.plot(npY,      npC) #, linewidths=1, edgecolors='gray')
+            elif not self.display['keyX'] and not self.display['keyY']: chrtObj = chart.plot(          npC) #, linewidths=1, edgecolors='gray')
 
         #----------------------------------------------------------------------
         # Show SCATTER chart
@@ -496,6 +497,11 @@ class InfoMatrixGui(ttk.Frame):
             logger.debug(f'{self.name}.updateChart: Chart type SCATTER selected')
 
             chrtObj = chart.scatter( x=npX, y=npY, c=npC, marker="s", cmap=_CMAP) # , lw=0, s=(72./self.figure.dpi)**2
+
+            #------------------------------------------------------------------
+            # Colorbar
+            #------------------------------------------------------------------
+            self.figure.colorbar(chrtObj, ax=chart, fraction=0.03, pad=0.01)
 
         #----------------------------------------------------------------------
         # Show QUIVER chart
@@ -514,17 +520,17 @@ class InfoMatrixGui(ttk.Frame):
 
             chrtObj = chart.quiver(npX, npY, npU, npV, npC, cmap='RdYlBu_r')
 
+            #------------------------------------------------------------------
+            # Colorbar
+            #------------------------------------------------------------------
+            self.figure.colorbar(chrtObj, ax=chart, fraction=0.03, pad=0.01)
+
         #----------------------------------------------------------------------
         # Neznamy typ chartu
         #----------------------------------------------------------------------
         else:
             logger.error(f"{self.name}.updateChart: Unknown chart type {self.display['type']} is not supported")
             return
-
-        #----------------------------------------------------------------------
-        # Colorbar
-        #----------------------------------------------------------------------
-        self.figure.colorbar(chrtObj, ax=chart, fraction=0.03, pad=0.01)
 
         #----------------------------------------------------------------------
         # Vykreslenie noveho grafu
@@ -593,7 +599,7 @@ class InfoMatrixGui(ttk.Frame):
         npV = np.array(listV)
 
         #----------------------------------------------------------------------
-        logger.info(f'{self.name}.prepareChartData: {len(self.dat.actList)} iPoints produced [{npX.size}, {npY.size}] {npC.size}, ({npU.size}, {npV.size}) values for chart')
+        logger.info(f'{self.name}.prepareChartData: {len(self.dat.actList)} iPoints produced: axes [{npX.size}, {npY.size}] colors [{npC.size}], quivers([{npU.size}, {npV.size}])')
         return npX, npY, npC, npU, npV
 
     #==========================================================================

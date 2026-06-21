@@ -127,6 +127,7 @@ class InfoFieldMatrix(InfoMatrix):
     #--------------------------------------------------------------------------
     def epochStep(self, valueKey:str, params:dict):
         """Compute next epoch state."""
+        
         logger.info(f"{self.name}.epochStep: for key '{valueKey}' with params {params}")
         pts = 0
 

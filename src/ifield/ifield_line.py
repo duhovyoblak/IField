@@ -47,10 +47,10 @@ class InfoFieldLine(InfoMatrix):
         # Inicializacia
         #----------------------------------------------------------------------
         self.setIpType('ipIntLine')
-        self.setSchema({'axes': {'l': 'Lambda'}, 'vals': {'s': 'State'}})
+        self.setSchema({'axes': {'l': 'Lambda'}, 'vals': {'s': 'State', 'd': 'Delta', 'a': 'Autocorr'}})
         self.init(cnts={'l':_LAMBDA})
 
-        self.applyMatrixMethod(methodKey='Integer random uniform', valueKey='s', params={'min':-_AMP, 'max':_AMP})
+        self.applyMatrixMethod(methodKey='Integer random uniform', valueKey='s', params={'min':0, 'max':_AMP})
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.constructor: done")
@@ -63,6 +63,7 @@ class InfoFieldLine(InfoMatrix):
 
         methods = super().mapSetMethods()
 
+        methods['ILine deltas'      ] = {'matrixMethod': self.deltas,    'pointMethod':None, 'params':{}                               , 'type':'ask'  }
         methods['ILine epoch step'  ] = {'matrixMethod': self.epochStep, 'pointMethod':None, 'params':{}                               , 'type':'ask'  }
 
         for methodKey in methods.keys():
@@ -72,6 +73,61 @@ class InfoFieldLine(InfoMatrix):
 
     #==========================================================================
     # Line methods to apply in Dynamics methods
+    #--------------------------------------------------------------------------
+    def deltas(self, valueKey:str, params:dict):
+        """Compute deltas of states between consecutive points."""
+
+        logger.info(f"{self.name}.deltas: for key '{valueKey}' with params {params}")
+        pts = 0
+
+        #----------------------------------------------------------------------
+        # Vsetky IPoints nastavim do subMatrix listu
+        #----------------------------------------------------------------------
+        points = self.actSubmatrix()
+        prevL = -1
+        prevS = 0
+
+        #----------------------------------------------------------------------
+        # Prejdem vsetky boby v subMatrix a pre kazdy bod nastavim hodnotu ako rozdiel medzi hodnotou bodu a predosleho bodu
+        #----------------------------------------------------------------------
+        for point in points:
+
+            currL = point.pos(axeKey='l')
+            currS = point.val(valKey='s')
+
+            #------------------------------------------------------------------
+            # Kontrola, ci sa body nachadzaju v poradi podla osi Lambda
+            #------------------------------------------------------------------
+            if currL != prevL + 1:
+                logger.error(f"{self.name}.deltas: Lambda {currL} is not in order after {prevL}, method skipped")
+                break
+
+            #------------------------------------------------------------------
+            # Vypocet a nastavenie delty
+            #------------------------------------------------------------------
+            delta = currS - prevS
+            point.set( vals = {valueKey: delta})
+
+            #------------------------------------------------------------------
+            # Posun na nasledujuci bod
+            #------------------------------------------------------------------
+            prevL = currL
+            prevS = currS
+            pts += 1
+
+        #----------------------------------------------------------------------
+        logger.info(f"{self.name}.deltas: {pts} InfoPoints was updated for key '{valueKey}' in deltas")
+
+    #--------------------------------------------------------------------------
+    def epochStep(self, valueKey:str, params:dict):
+        """Compute next epoch state."""
+
+        logger.info(f"{self.name}.epochStep: for key '{valueKey}' with params {params}")
+        pts = 0
+
+
+        logger.info(f"{self.name}.epochStep: {pts} InfoPoints was updated for key '{valueKey}' in epoch step")
+
     #--------------------------------------------------------------------------
     def rndBool(self, valueKey:str, params:dict):
         """Clear all model and set state as random Boolean values."""

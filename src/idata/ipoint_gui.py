@@ -275,7 +275,6 @@ class InfoPointValsGui(tk.Toplevel):
     def __init__(self, name, container, point:InfoPoint):
         "Call constructor of InfoPointValsGui and initialise it for respective data"
 
-        logger = SiqoLogger(name)
         logger.audit(f'{name}.init:')
 
         self.name     = name               # Name of this chart

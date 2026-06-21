@@ -9,7 +9,7 @@ from   siqolib.message        import SiqoMessage
 from   idata.imatrix_gui      import InfoMatrixGui
 
 from   .                      import logger
-from   .ifield_matrix         import InfoFieldLine
+from   .ifield_line           import InfoFieldLine
 
 #==============================================================================
 # Module's constants
@@ -24,27 +24,20 @@ _PADY           =  5
 #------------------------------------------------------------------------------
 
 #==============================================================================
-# Class IFieldMatrixGui
+# Class IFieldLineGui
 #------------------------------------------------------------------------------
-class IFieldMatrixGui(InfoMatrixGui):
+class IFieldLineGui(InfoMatrixGui):
 
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, container, dat:InfoFieldLine):
-        "Call constructor of IFieldMatrixGui and initialise it for respective data"
+        "Call constructor of IFieldLineGui and initialise it for respective data"
 
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self.varL2E   = tk.IntVar   (value=dat.l2e  )
-        self.varPhs   = tk.IntVar   (value=dat.phs  )
-        self.varL2P   = tk.IntVar   (value=dat.l2p  )
-
-        self.varSType = tk.StringVar(value=dat.sType)
-        self.varSAgg  = tk.StringVar(value=dat.sAgg )
-        self.varRule  = tk.StringVar(value=dat.rule )
-        self.varMaxL  = tk.IntVar   (value=dat.maxL )
+#        self.varL2E   = tk.IntVar   (value=dat.l2e  )
 
         #----------------------------------------------------------------------
         # Initialise InfoMatrixGui
@@ -67,86 +60,23 @@ class IFieldMatrixGui(InfoMatrixGui):
         lbl = ttk.Label(container, text="L2E (epoch per lambda):")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
-        spinBox = ttk.Spinbox(container, from_=0, to=100, textvariable=self.varL2E, width=10, command=self.updateChildFrame)
-        spinBox['state'] = 'normal'
-        spinBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
+#        spinBox = ttk.Spinbox(container, from_=0, to=100, textvariable=self.varL2E, width=10, command=self.updateChildFrame)
+#        spinBox['state'] = 'normal'
+#        spinBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
-        lbl = ttk.Label(container, text="Number of phases:")
-        lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
-        spinBox = ttk.Spinbox(container, from_=1, to=360, textvariable=self.varPhs, width=10, command=self.updateChildFrame)
-        spinBox['state'] = 'normal'
-        spinBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
-
-        lbl = ttk.Label(container, text="L2P (delta phase per lambda):")
-        lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
-
-        spinBox = ttk.Spinbox(container, from_=0, to=100, textvariable=self.varL2P, width=10, command=self.updateChildFrame)
-        spinBox['state'] = 'normal'
-        spinBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
-
-        ttk.Label(container, text="").pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, pady=_PADY)
-
-        lbl = ttk.Label(container, text="State type:")
-        lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
-
-        comboBox = ttk.Combobox(container, textvariable=self.varSType, state='readonly')
-        comboBox['values'] = self.dat.sTypes
-        comboBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
-        comboBox.bind('<<ComboboxSelected>>', lambda event: self.updateChildFrame())
-
-        lbl = ttk.Label(container, text="Aggregation method:")
-        lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
-        comboBox = ttk.Combobox(container, textvariable=self.varSAgg, state='readonly')
-        comboBox['values'] = self.dat.sAggs
-        comboBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
-        comboBox.bind('<<ComboboxSelected>>', lambda event: self.updateChildFrame())
-
-        lbl = ttk.Label(container, text="Neighbors' rule:")
-        lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
-        comboBox = ttk.Combobox(container, textvariable=self.varRule, state='readonly')
-        comboBox['values'] = self.dat.rules
-        comboBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
-        comboBox.bind('<<ComboboxSelected>>', lambda event: self.updateChildFrame())
-
-        lbl = ttk.Label(container, text="Neighbors' to consider")
-        lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
-
-        spinBox = ttk.Spinbox(container, from_=0, to=1000, textvariable=self.varMaxL, width=10, command=self.updateChildFrame)
-        spinBox['state'] = 'normal'
-        spinBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
+#        comboBox = ttk.Combobox(container, textvariable=self.varSType, state='readonly')
+#        comboBox['values'] = self.dat.sTypes
+#        comboBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
+#        comboBox.bind('<<ComboboxSelected>>', lambda event: self.updateChildFrame())
 
     #--------------------------------------------------------------------------
     def updateChildFrame(self):
         """Update frame in parent container InfoMatrixGui dedicated to child classes."""
 
-        if self.dat.l2e != self.varL2E.get():
-            logger.warning(f'{self.name}.updateChildFrame: L2E changed {self.dat.l2e} -> {self.varL2E.get()}')
-            self.dat.l2e = self.varL2E.get()
-
-        if self.dat.phs != self.varPhs.get():
-            logger.warning(f'{self.name}.updateChildFrame: Number of phases changed {self.dat.phs} -> {self.varPhs.get()}')
-            self.dat.phs = self.varPhs.get()
-
-        if self.dat.l2p != self.varL2P.get():
-            logger.warning(f'{self.name}.updateChildFrame: L2P changed {self.dat.l2p} -> {self.varL2P.get()}')
-            self.dat.l2p = self.varL2P.get()
-
-        if self.dat.sType != self.varSType.get():
-            logger.warning(f'{self.name}.updateChildFrame: State type changed {self.dat.sType} -> {self.varSType.get()}')
-            self.dat.sType = self.varSType.get()
-
-        if self.dat.sAgg != self.varSAgg.get():
-            logger.warning(f'{self.name}.updateChildFrame: Aggregation method changed {self.dat.sAgg} -> {self.varSAgg.get()}')
-            self.dat.sAgg = self.varSAgg.get()
-
-        if self.dat.rule != self.varRule.get():
-            logger.warning(f'{self.name}.updateChildFrame: Neighbors\' rule changed {self.dat.rule} -> {self.varRule.get()}')
-            self.dat.rule = self.varRule.get()
-
-        if self.dat.maxL != self.varMaxL.get():
-            logger.warning(f'{self.name}.updateChildFrame: Maximal number of neighbors changed {self.dat.maxL} -> {self.varMaxL.get()}')
-            self.dat.maxL = self.varMaxL.get()
+#        if self.dat.l2e != self.varL2E.get():
+#            logger.warning(f'{self.name}.updateChildFrame: L2E changed {self.dat.l2e} -> {self.varL2E.get()}')
+#            self.dat.l2e = self.varL2E.get()
 
         logger.debug(f'{self.name}.updateChildFrame: Done')
 
@@ -166,30 +96,16 @@ class IFieldMatrixGui(InfoMatrixGui):
         text.append(f"{str(self.actPoint)} at {idxs}")
         text.append('')
 
-        leftStates, rightStates = self.dat.getNeighStates(valueKey=valueKey, l=idxs[0], e=idxs[1])
-        text.append(f'Left states  : {leftStates}')
-        text.append(f'Right states : {rightStates}')
-        text.append('')
-
-        leftState = self.dat.aggStates(leftStates )
-        rightState= self.dat.aggStates(rightStates)
-        text.append(f'Aggregated left  state : {leftState}')
-        text.append(f'Aggregated right state : {rightState}')
-        text.append('')
-
-        newState = self.dat.aggNeighbors(leftState, actState, rightState)
-        text.append(f'New state after applying neighbors\' rule : {newState}')
-
         msgWin = SiqoMessage(name=self.dat.name, text=text, wpix=800)
 
 #==============================================================================
 # Inicializacia modulu
 #------------------------------------------------------------------------------
-print(f'IFieldMatrixGui ver {_VER}')
+print(f'IFieldLineGui ver {_VER}')
 
 if __name__ == '__main__':
 
-    logger.info("Testing IFieldMatrixGui class")
+    logger.info("Testing IFieldLineGui class")
 
 #==============================================================================
 #                              END OF FILE
