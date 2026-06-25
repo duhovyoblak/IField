@@ -164,6 +164,149 @@ class InfoFieldLine(InfoMatrix):
         logger.info(f"{self.name}.autoCorr: Done")
 
     #--------------------------------------------------------------------------
+    def RFT( self, valueKey:str, params:dict):
+        """Compute Fast Fourier transform of real states in subMatrix.
+        Parameters:
+        - 'rad': radix level for FFT (default 8, i.e., 256 points)
+        - 'step': step size for moving the FFT window (default: size)
+        """
+
+        rad  = params.get('rad' , 8   )  # Default radix level for FFT (256 = 2^8)
+        size = 1 << rad                  # Length of the FFT window (must be a power of 2)
+        step = params.get('step', size)  # Step size for moving the FFT window
+
+        logger.info(f"{self.name}.RFT: For rad = {rad}, size = {size}, step = {step}")
+
+        #----------------------------------------------------------------------
+        # Vsetky IPoints nastavim do subMatrix listu a vytvorim vektor vec
+        #----------------------------------------------------------------------
+        points = self.actSubmatrix()
+        n = len(points)
+
+        vec = [0.0] * n
+        for i in range(n):
+            vec[i] = points[i].val(valKey='s')
+
+        #----------------------------------------------------------------------
+        # Posuvam okno vec[] s dlzkou size o krok step a pre kazde okno vypocitam FFT
+        #----------------------------------------------------------------------
+        start = 0
+        size  = 1 << rad  # Size of the FFT window (must be a power of 2)
+        step  = 50  # Step size for moving the window
+
+        self._RFT( vec, ft, int(cmath.log(n, 2).real) )
+
+        #----------------------------------------------------------------------
+        # Nastavim vysledky do subMatrix listu
+        #----------------------------------------------------------------------
+        for i in range(n):
+            points[i].set(vals={'a': abs(ft[i])})
+
+        logger.info(f"{self.name}.RFT: Done")
+
+    #--------------------------------------------------------------------------
+    def _FFT( self, vec:list, fft:list[complex], rad:int, base:list[complex]|None=None, depth:int=0 ):
+        """Compute Fast Fourier transform for list of real values in vector `vec`
+        Cooley-Tukey FFT algorithm (odd-even decomposition).
+
+        Parameters:
+        - vec: input real values
+        - fft: output complex Fourier coefficients (modified in-place)
+        - rad: current radix level; size = 2^rad
+        - base: base vector of twiddle factors z = e^(-i*2*pi*k/size) (created at depth=0)
+        - depth: recursion depth (0 == top level where initialization happens)
+        """
+
+        if depth == 0: logger.info (f"{self.name}._FFT: Computing FFT with rad={rad}")
+        else         : logger.debug(f"{self.name}._FFT: Recursion depth={depth}, rad={rad}")
+
+        size  = 1 << rad       # 2^rad - FFT resolution at top level
+        nasob = 1 << depth     # 2^depth - data stride (sample step) at current recursion level
+
+        #----------------------------------------------------------------------
+        # Initialize at top level (depth == 0)
+        #----------------------------------------------------------------------
+        if depth == 0:
+            # Mutate fft in-place: clear and initialize with zeros
+            fft.clear()
+            fft.extend([0+0j] * size)
+
+            # Create and initialize base vector with twiddle factors
+            # base[k] = e^(-i*2*pi*k/size) for k=0..size/2-1
+            # base[k+size/2] = -base[k] (symmetry: reduces computation)
+            base = [0+0j] * size
+            logger.debug(f"{self.name}._FFT: initialize twiddle factors (size={size})")
+
+            theta = 2 * cmath.pi / size
+            half = size // 2
+
+            # First half: e^(-i*theta*k)
+            for i in range(half):
+                base[i] = cmath.exp(complex(0, -i * theta))
+
+            # Second half: -base[k] for k in [0, half-1]
+            # This exploits: e^(-i*theta*(half+k)) = -e^(-i*theta*k)
+            for i in range(half, size):
+                base[i] = -base[i - half]
+
+        #----------------------------------------------------------------------
+        # Base case: rad <= 1 (single 2-point FFT)
+        # Computes: fft[k] = sum_{n=0,2,4,...} vec[n*nasob] * base[k*n % size]
+        #----------------------------------------------------------------------
+        if rad <= 1:
+            logger.debug(f"{self.name}._FFT: base case FFT (rad={rad}, depth={depth}, size=2)")
+
+            # Two-point FFT:
+            # fft[0] = vec[0]*base[0] + vec[nasob]*base[0] = (vec[0] + vec[nasob]) * 1
+            # fft[1] = vec[0]*base[0] + vec[nasob]*base[nasob] = vec[0] - vec[nasob] (since base[nasob]==-base[0])
+            fft[0] = vec[0] * base[0] + vec[nasob] * base[0]
+            fft[1] = vec[0] * base[0] + vec[nasob] * base[nasob]
+
+            # Replicate results to fill the FFT array
+            # At maximum frequency resolution, pattern repeats
+            for i in range(2, len(fft), 2):
+                fft[i] = fft[0]
+                if i + 1 < len(fft):
+                    fft[i + 1] = fft[1]
+
+        else:
+            # Recursive case: combine even (from lower recursion) and odd indices
+            self._FFT(vec, fft, rad - 1, base, depth + 1)
+            logger.debug(f"{self.name}._FFT: merging level {rad} (depth={depth})")
+
+            # Butterfly operation: combine even-indexed terms (already in fft)
+            # with odd-indexed terms (computed below)
+            border = size
+            if depth == 0:
+                border //= 2  # FFT symmetry at top level
+
+            # For each output frequency bin i in [0, border):
+            # fft[i + k*size] += sum of odd-indexed input terms
+            # This implements: X[k] = sum_{n even} + W^k * sum_{n odd}
+            for i in range(border):
+                z = 0 + 0j
+                i_nas = i * nasob
+
+                # Sum contributions from odd input indices (1, 3, 5, ...)
+                # at stride nasob: vec[nasob], vec[3*nasob], vec[5*nasob], ...
+                for j in range(1, size, 2):
+                    idx = j * nasob
+                    # Twiddle factor: base[(i_nas * j) % size]
+                    # = e^(-i*2*pi*i*j/size) at this recursion level
+                    base_idx = (i_nas * j) % len(base)
+                    z += vec[idx] * base[base_idx]
+
+                # Distribute combined result across all k such that k ≡ i (mod border)
+                p = i
+                while p < len(fft):
+                    fft[p] += z
+                    p += size
+
+        #----------------------------------------------------------------------
+        if depth == 0:
+            logger.info(f"{self.name}._FFT: FFT computation complete (size={size})")
+
+    #--------------------------------------------------------------------------
     def epochStep(self, valueKey:str, params:dict):
         """Compute next epoch state."""
 
