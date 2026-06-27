@@ -87,8 +87,8 @@ class InfoFieldMatrix(InfoData):
 
         methods = super().mapSetMethods()
 
-        methods['IField init Complex'] = {'dataMethod': self.rndComplex,'pointMethod':None, 'params':{'probAbs':0.5, 'phases':_PHASES}, 'type':'quiet'}
-        methods['IField epoch step'  ] = {'dataMethod': self.epochStep, 'pointMethod':None, 'params':{}                               , 'type':'ask'  }
+        methods['IField init Complex'] = {'dataMethod': self.rndComplex,'pointMethod':None, 'params':{'probAbs':0.5, 'phases':_PHASES}, 'paramAsk':'quiet'}
+        methods['IField epoch step'  ] = {'dataMethod': self.epochStep, 'pointMethod':None, 'params':{}                               , 'paramAsk':'ask'  }
 
         for methodKey in methods.keys():
             if not methodKey.startswith('IField '): methods[methodKey]['visible'] = False

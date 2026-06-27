@@ -15,8 +15,8 @@ from   siqolib.message                   import SiqoMessage, askInt, askReal, as
 from   .                                 import logger
 from   idata.idata                       import InfoData
 from   idata.ipoint_gui                  import InfoPointGui, InfoPointValsGui
-from   idata.idata_data_gui               import InfoDataDataGui
-from   idata.idata_display_gui            import InfoDataDisplayGui
+from   idata.idata_data_gui              import InfoDataDataGui
+from   idata.idata_display_gui           import InfoDataDisplayGui
 
 #==============================================================================
 # Module's constants
@@ -51,6 +51,11 @@ _CMAP           = _COLORMAPS['Qualitative'][2]       # Default colormap
 class InfoDataGui(ttk.Frame):
 
     #==========================================================================
+    # Static variables & methods
+    #--------------------------------------------------------------------------
+    guis = {}  # Static dict of all InfoDataGui instances as {name: {'container': container, 'gui': InfoDataGui}}
+
+    #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, container, data:InfoData, **kwargs):
@@ -67,6 +72,11 @@ class InfoDataGui(ttk.Frame):
         self.display   = {}                 # Display options
 
         self.resetDisplay()                 # Display options
+
+        #----------------------------------------------------------------------
+        # Register this GUI instance
+        #----------------------------------------------------------------------
+        InfoDataGui.guis[self.name] = {'container': self.container, 'gui': self}
 
         #----------------------------------------------------------------------
         # Internal objects
@@ -173,14 +183,15 @@ class InfoDataGui(ttk.Frame):
         fileMenu.add_separator()
 
         # Pridanie Data menu
-        dataMenu = tk.Menu(mainMenu, tearoff=0)
-        mainMenu.add_cascade(label="Data", menu=dataMenu)
-        dataMenu.add_command(label="Data Point Schema",     command=self.onDataSchema   )
-        dataMenu.add_command(label="Data properties",     command=self.onDataMatrix   )
+        self.dataMenu = tk.Menu(mainMenu, tearoff=0)
+        mainMenu.add_cascade(label="Data", menu=self.dataMenu)
+        self.refreshDataMenu()
 
-        # Pridanie Method menu
-        dataMeth = tk.Menu(mainMenu, tearoff=0)
-        mainMenu.add_cascade(label="Method", menu=dataMeth)
+        # Pridanie Schema menu
+        schmMenu = tk.Menu(mainMenu, tearoff=0)
+        mainMenu.add_cascade(label="Schema", menu=schmMenu)
+        schmMenu.add_command(label="Point Schema",          command=self.onSchemaSchema )
+        schmMenu.add_command(label="Data properties",       command=self.onSchemaData   )
 
         # Pridanie Display menu
         dispMenu = tk.Menu(mainMenu, tearoff=0)
@@ -193,8 +204,8 @@ class InfoDataGui(ttk.Frame):
         # Pridanie Info menu
         helpMenu = tk.Menu(mainMenu, tearoff=0)
         mainMenu.add_cascade(label="Info", menu=helpMenu)
-        helpMenu.add_command(label="Data info short",     command=lambda: self.onInfo(mode='short'))
-        helpMenu.add_command(label="Data info full",      command=lambda: self.onInfo(mode='full' ))
+        helpMenu.add_command(label="Data info short",       command=lambda: self.onInfo(mode='short'))
+        helpMenu.add_command(label="Data info full",        command=lambda: self.onInfo(mode='full' ))
         helpMenu.add_separator()
         helpMenu.add_command(label="Set Logger to   AUDIT", command=lambda: logger.setLevel('AUDIT')  )
         helpMenu.add_command(label="Set Logger to   ERROR", command=lambda: logger.setLevel('ERROR')  )
@@ -687,10 +698,61 @@ class InfoDataGui(ttk.Frame):
     #==========================================================================
     # Data menu
     #--------------------------------------------------------------------------
-    def onDataSchema(self, event=None):
+    def refreshDataMenu(self):
+        "Refresh Data menu with current dict of IData.datas"
+
+        logger.info(f'{self.name}.refreshDataMenu:')
+        toRet = 0
+
+        #----------------------------------------------------------------------
+        # Zmazanie vsetkych poloziek zo self.dataMenu
+        #----------------------------------------------------------------------
+        self.dataMenu.delete(0, tk.END)
+
+        #----------------------------------------------------------------------
+        # Vytvorenie poloziek pre vsetky IData.datas
+        #----------------------------------------------------------------------
+        for dataName, dataObj in self.data.getDatas(noSelf=True).items():
+
+            self.dataMenu.add_command(label=dataName, command=lambda dataObj=dataObj: self.onDataShow(dataObj))
+            toRet += 1
+
+        #----------------------------------------------------------------------
+        logger.debug(f'{self.name}.refreshDataMenu: {toRet} commands created in Data menu')
+
+    #--------------------------------------------------------------------------
+    def onDataShow(self, event=None, dataObj=None):
+        "Show GUI for respective IData (ne-modalne okno)"
+
+        logger.info(f'{self.name}.onDataShow:')
+
+        #---------------------------------------------------------------------
+        # Kontrola ci bol zadany dataObj
+        #----------------------------------------------------------------------
+        if dataObj is None:
+            logger.warning(f'{self.name}.onDataShow: No dataObj given, nothing to do')
+            return
+
+        #----------------------------------------------------------------------
+        # Vytvorenie noveho samostatneho okna (ne-modalne)
+        #----------------------------------------------------------------------
+        newWindow = tk.Toplevel(self.container)
+        newWindow.title(f"Data: {dataObj.name}")
+        newWindow.geometry("1300x740")
+
+        dataObjGui = InfoDataGui(container=newWindow, data=dataObj)
+        dataObjGui.pack(fill=tk.BOTH, expand=True)
+
+        #----------------------------------------------------------------------
+        logger.debug(f'{self.name}.onDataShow: Nemodale okno otvorene pre {dataObj.name}')
+
+    #==========================================================================
+    # Schema menu
+    #--------------------------------------------------------------------------
+    def onSchemaSchema(self, event=None):
         "Set schema for data points: axes {key:name}, values {key:name}"
 
-        logger.info(f'{self.name}.onDataSchema:')
+        logger.info(f'{self.name}.onSchemaSchema:')
 
         origSchema = self.data.getSchema()
 
@@ -712,16 +774,16 @@ class InfoDataGui(ttk.Frame):
                 self.data.init()
                 self.viewChanged()
 
-                logger.warning(f'{self.name}.onDataSchema: Axes changed from {origSchema} to {self.data.getSchema()}, reset data')
+                logger.warning(f'{self.name}.onSchemaSchema: Axes changed from {origSchema} to {self.data.getSchema()}, reset data')
 
         #----------------------------------------------------------------------
-        logger.debug(f'{self.name}.onDataSchema: InfoPointGui window closed')
+        logger.debug(f'{self.name}.onSchemaSchema: InfoPointGui window closed')
 
     #--------------------------------------------------------------------------
-    def onDataMatrix(self, event=None):
+    def onSchemaData(self, event=None):
         "Set axes parameters: self._cnts, self._origs, self._rects"
 
-        logger.info(f'{self.name}.onDataMatrix:')
+        logger.info(f'{self.name}.onSchemaData:')
 
         gui = InfoDataDataGui(name=f'Data {self.data.name}', container=self, data=self.data)
         gui.grab_set()
@@ -734,7 +796,7 @@ class InfoDataGui(ttk.Frame):
         self.viewChanged(force=True)
 
         #----------------------------------------------------------------------
-        logger.debug(f'{self.name}.onDataMatrix: Data properties set')
+        logger.debug(f'{self.name}.onSchemaData: Data properties set')
 
     #--------------------------------------------------------------------------
     def onDisplayProp(self, event=None):
@@ -834,7 +896,7 @@ class InfoDataGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Ak je typ parametrov 'ask', ziskaj hodnoty parametrov od usera
         #----------------------------------------------------------------------
-        if metDef['type'] == 'ask':
+        if metDef['paramAsk']:
 
             usrPar = {}
 
@@ -859,6 +921,21 @@ class InfoDataGui(ttk.Frame):
         logger.audit(f'{self.name}.onMethodPlay: {self.display['valName']}[{self.display['valKey']}] will be set by {metKey} on subset={self.sub2D} with params={usrPar}')
 
         #----------------------------------------------------------------------
+        # Ziskam vystupny IData objekt a jeho valKey
+        #----------------------------------------------------------------------
+        if metDef['outType'] == 'self':
+
+            #------------------------------------------------------------------
+            # Typ vystupu 'self', vystup smerovany do tohto IData objektu
+            #------------------------------------------------------------------
+            outData = self.data
+
+            #------------------------------------------------------------------
+            # Urcim vystupny valKey
+            #------------------------------------------------------------------
+            outKey = self.display['valKey']
+
+        #----------------------------------------------------------------------
         # Vsetko je pripravene: Press button PLAY
         #----------------------------------------------------------------------
         self.btnPlay.configure(style="Red.TButton")
@@ -878,7 +955,7 @@ class InfoDataGui(ttk.Frame):
             #--------------------------------------------------------------
             logger.debug(f"{self.name}.methodApply: {metKey}(key={self.display['valKey']}), par={usrPar})")
 
-            self.data.applyDataMethod(methodKey=metKey, valueKey=self.display['valKey'], params=usrPar)
+            self.data.applyDataMethod(methodKey=metKey, outData=outData, outKey=outKey, params=usrPar)
             self.viewChanged(force=True)
 
             #--------------------------------------------------------------

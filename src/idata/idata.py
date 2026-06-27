@@ -76,6 +76,7 @@ class InfoData:
     #==========================================================================
     # Static variables & methods
     #--------------------------------------------------------------------------
+    datas = {}  # Static dict of all InfoData instances as {name: InfoData}
 
     #==========================================================================
     # Constructor & utilities
@@ -116,6 +117,7 @@ class InfoData:
         #----------------------------------------------------------------------
         # Inicializacia
         #----------------------------------------------------------------------
+        InfoData.datas[self.name] = self
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.constructor: done")
@@ -150,7 +152,16 @@ class InfoData:
         #----------------------------------------------------------------------
         return np.array(mtrx)
 
-     #--------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+    def getDatas(self, noSelf=False) -> dict:
+        """Returns dict of all InfoData instances as {name: InfoData}.
+           If noSelf is True, this InfoData is not included in the returned dict.
+        """
+
+        if noSelf: return {name: data for name, data in InfoData.datas.items() if data != self}
+        else     : return InfoData.datas.copy()
+
+    #--------------------------------------------------------------------------
     def setIpType(self, ipType:str, force:bool=False):
         """Set ipType of this InfoData and reset all data.
            If not force, ipType is set only if it is different from the current one,
@@ -495,21 +506,21 @@ class InfoData:
                               'pointMethod': callable_function,   -- method to be applied to each point in the active subdata
                               'params'     : {paramName: defaultValue},
                               'visible'    : True/False,
-                              'type'       : 'ask'/'noAsk'}}
+                              'paramAsk'   : True/False}}
 
         where 'params' is dict of parameters for the method with default values.
 
         Note:
-        - If type is 'ask', parameters should be asked to user in GUI
-        - If type is 'noAsk', default values are used without asking
+        - If paramAsk is True,  parameters should be asked to user in GUI
+        - If paramAsk is False, default values are used without asking
         - If visible is False, method should not be shown in GUI
         - If visible is True, method should be shown in GUI
         """
 
         methods = InfoPoint.mapSetMethods()
 
-        methods['<Data Methods>'] = {'dataMethod': self.nullMethod, 'pointMethod':None,  'params':{}                                        , 'visible':True, 'type':'ask'}
-        methods['Move data'     ] = {'dataMethod': self.moveData,   'pointMethod':None,  'params':{'axeKey':'x', 'startIdx':0, 'deltaIdx':1}, 'visible':True, 'type':'ask'}
+        methods['<Data Methods>'] = {'dataMethod': self.nullMethod, 'pointMethod':None,  'params':{}                                        , 'visible':True, 'paramAsk':True}
+        methods['Move data'     ] = {'dataMethod': self.moveData,   'pointMethod':None,  'params':{'axeKey':'x', 'startIdx':0, 'deltaIdx':1}, 'visible':True, 'paramAsk':True}
 
         return methods
 
@@ -1165,7 +1176,7 @@ class InfoData:
     #==========================================================================
     # Dynamic Methods application
     #--------------------------------------------------------------------------
-    def applyDataMethod(self, methodKey:str, valueKey:str, params:dict=None) -> int|None:
+    def applyDataMethod(self, methodKey:str, outData:'InfoData', outKey:str, params:dict=None) -> int|None:
         """Dynamic data method for applying to data.
 
              1. methodKey: Name of the method to apply.
@@ -1173,13 +1184,14 @@ class InfoData:
                            If 'pointMethod'  is defined in the method, it will be applied to all points in the active subdata.
                            If 'dataMethod' is defined in the method, it will be applied directly to the data.
 
-             2. valueKey : Key of the value to be set by the method
-             3. params   : Parameters for the method as dict
+             2. outData : IData object where the output will be stored
+             3. outKey  : Key of the value to be set in the outData
+             4. params  : Parameters for the method as dict
 
            Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.warning(f"{self.name}.applyDataMethod: methodKey='{methodKey}', valueKey='{valueKey}', params={params}")
+        logger.warning(f"{self.name}.applyDataMethod: methodKey='{methodKey}', outData='{outData}', outKey='{outKey}', params={params}")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -1200,9 +1212,9 @@ class InfoData:
         if 'pointMethod' in method.keys() and method['pointMethod'] is not None:
 
             pointMethod = method['pointMethod']
-            logger.debug(f"{self.name}.applyDataMethod: {pointMethod.__name__}({params}) for value key='{valueKey}'")
+            logger.debug(f"{self.name}.applyDataMethod: {pointMethod.__name__}({params}) for value key='{outKey}' in outData='{outData.name}'")
 
-            pts = self._applyPointMethod(pointMethod=pointMethod, valueKey=valueKey, params=params)
+            pts = self._applyPointMethod(pointMethod=pointMethod, outKey=outKey, params=params)
 
         #----------------------------------------------------------------------
         # Ak je definovana dataMethod, aplikujem ju priamo
@@ -1210,9 +1222,9 @@ class InfoData:
         elif 'dataMethod' in method.keys() and method['dataMethod'] is not None:
 
             dataMethod = method['dataMethod']
-            logger.debug(f"{self.name}.applyDataMethod: {dataMethod.__name__}({params}) for value key='{valueKey}'")
+            logger.debug(f"{self.name}.applyDataMethod: {dataMethod.__name__}({params}) for value key='{outKey}' in outData='{outData.name}'")
 
-            pts = dataMethod(valueKey=valueKey, params=params)   # self uz bolo predane pri priradeni do premennej dataMethod
+            pts = dataMethod(outData=outData, outKey=outKey, params=params)   # self uz bolo predane pri priradeni do premennej dataMethod
 
         #----------------------------------------------------------------------
         # Nie je definovana ziadna metoda
@@ -1222,15 +1234,15 @@ class InfoData:
             return None
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.applyDataMethod: {pts} InfoPoints was updated for '{valueKey}'<-{methodKey}({params})")
+        logger.info(f"{self.name}.applyDataMethod: {pts} InfoPoints was updated for '{outKey}'<-{methodKey}({params})")
         return pts
 
     #--------------------------------------------------------------------------
-    def _applyPointMethod(self, pointMethod, valueKey:str, params:dict=None) -> int|None:
+    def _applyPointMethod(self, pointMethod, outKey:str, params:dict=None) -> int|None:
         """Dynamic data method for applying to list of Points.
 
                1. pointMethod : Name of the Point method to apply
-               2. valueKey    : Key of the value to be set by the method
+               2. outKey      : Key of the value to be set by the method
                3. params      : Parameters for the method as dict
                                 If 'all' in params and params['all'] == True, method will be applied to all points,
                                 otherwise only to active subset of points.
@@ -1238,7 +1250,7 @@ class InfoData:
             Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.debug(f"{self.name}._applyPointMethod: {pointMethod.__name__}({params}) for value key='{valueKey}'")
+        logger.debug(f"{self.name}._applyPointMethod: {pointMethod.__name__}({params}) for value key='{outKey}'")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -1253,41 +1265,41 @@ class InfoData:
         pts = 0  # Counter of points
 
         for point in tgtList:
-            pointMethod(point, valueKey=valueKey, params=params)
+            pointMethod(point, outKey=outKey, params=params)
             pts += 1
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}._applyPointMethod: {pts} InfoPoints was updated for '{valueKey}'<-{pointMethod.__name__}({params})")
+        logger.info(f"{self.name}._applyPointMethod: {pts} InfoPoints was updated for '{outKey}'<-{pointMethod.__name__}({params})")
         return pts
 
     #==========================================================================
     # Data methods to apply in Dynamics methods
     #--------------------------------------------------------------------------
-    def nullMethod(self, valueKey:str, params:dict) -> int|None:
+    def nullMethod(self, outData:'InfoData', outKey:str, params:dict) -> int|None:
         """Default null method for InfoPoint for keyed value (do nothing)
-               valueKey : Key of the value to be set by the method
+               outKey : Key of the value to be set by the method
                params   : Parameters for the method as dict
            Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.debug(f"{self.name}.nullMethod: do nothing for key '{valueKey}' with params {params}")
+        logger.debug(f"{self.name}.nullMethod: do nothing for key '{outKey}' with params {params}")
         return 1
 
     #--------------------------------------------------------------------------
-    def moveData(self, valueKey:str, params:dict) -> int|None:
+    def moveData(self, outData:'InfoData', outKey:str, params:dict) -> int|None:
         """Move data by deltaIdx from startIdx in axeKey
-               valueKey : Key of the value to be set by the method
+               outKey : Key of the value to be set by the method
                params   : Parameters for the method as dict
            Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.debug(f"{self.name}.moveData: for key '{valueKey}' with params {params}")
+        logger.debug(f"{self.name}.moveData: for key '{outKey}' with params {params}")
         return self.moveByAxe(axeKey=params['axeKey'], startIdx=params['startIdx'], deltaIdx=params['deltaIdx'])
 
     #--------------------------------------------------------------------------
     def normAbs(self, nods, norm=None) -> int|None:
         """Normalise set of the nodes by sum of absolute values.
-               valueKey : Key of the value to be set by the method
+               outKey : Key of the value to be set by the method
                params   : Parameters for the method as dict
            Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """

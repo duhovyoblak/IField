@@ -514,29 +514,30 @@ class InfoPoint:
             {pointMethodName: {
                               'pointMethod': callable_function,   -- method to be applied to each point in the active subdata
                               'params'     : {paramName: defaultValue},
-                              'visible'    : True/False,
-                              'type'       : 'ask'/'noAsk'}}
+                              'visible'    : False/True,
+                              'paramAsk'   : False/True
+                              'outType'    : 'valKey' / 'newData'}}
 
         where 'params' is dict of parameters for the method with default values.
 
         Note:
-        - If type is 'ask', parameters should be asked to user in GUI
-        - If type is 'noAsk', default values are used without asking
+        - If paramAsk is True, parameters should be asked to user in GUI
+        - If paramAsk is False, default values are used without asking
         - If visible is False, method should not be shown in GUI
         - If visible is True, method should be shown in GUI
         """
 
-        return {'<Point Methods>'        : {'pointMethod':InfoPoint.nullMethod,    'params':{                                                           }, 'visible':True}
-               ,'Integer constant'       : {'pointMethod':InfoPoint.intConst,      'params':{'const'  :0                                                }, 'visible':True, 'type':'ask'}
-               ,'Integer random uniform' : {'pointMethod':InfoPoint.intRandUni,    'params':{'min'    :0,   'max'   :1                                  }, 'visible':True, 'type':'ask'}
-               ,'Real constant'          : {'pointMethod':InfoPoint.fltConst,      'params':{'const'  :0                                                }, 'visible':True, 'type':'ask'}
-               ,'Real random uniform'    : {'pointMethod':InfoPoint.fltRandUni,    'params':{'min'    :0,   'max'   :1                                  }, 'visible':True, 'type':'ask'}
-               ,'Random bit'             : {'pointMethod':InfoPoint.fltRandBit,    'params':{'prob1'  :0.1                                              }, 'visible':True, 'type':'ask'}
-               ,'Comp constant (re/im)'  : {'pointMethod':InfoPoint.cmpConstR,     'params':{'real'   :0,   'imag'  :0                                  }, 'visible':True, 'type':'ask'}
-               ,'Comp constant (abs/phs)': {'pointMethod':InfoPoint.cmpConstP,     'params':{'abs'    :0,   'phase' :0                                  }, 'visible':True, 'type':'ask'}
-               ,'Comp random   (re/im)'  : {'pointMethod':InfoPoint.cmpRandUniR,   'params':{'reMin'  :0,   'reMax' :1, 'imMin'   :0, 'imMax'   :1      }, 'visible':True, 'type':'ask'}
-               ,'Comp random   (abs/phs)': {'pointMethod':InfoPoint.cmpRandUniP,   'params':{'absMin' :0,   'absMax':1, 'phaseMin':0, 'phaseMax':_CIRCLE}, 'visible':True, 'type':'ask'}
-               ,'Comp discrete phase'    : {'pointMethod':InfoPoint.cmpDiscPhases, 'params':{'probAbs':0.5, 'phases':2                                  }, 'visible':True, 'type':'ask'}
+        return {'<Point Methods>'        : {'pointMethod':InfoPoint.nullMethod,    'params':{                                                           }, 'visible':True, 'paramAsk':False}
+               ,'Integer constant'       : {'pointMethod':InfoPoint.intConst,      'params':{'const'  :0                                                }, 'visible':True, 'paramAsk':True}
+               ,'Integer random uniform' : {'pointMethod':InfoPoint.intRandUni,    'params':{'min'    :0,   'max'   :1                                  }, 'visible':True, 'paramAsk':True}
+               ,'Real constant'          : {'pointMethod':InfoPoint.fltConst,      'params':{'const'  :0                                                }, 'visible':True, 'paramAsk':True}
+               ,'Real random uniform'    : {'pointMethod':InfoPoint.fltRandUni,    'params':{'min'    :0,   'max'   :1                                  }, 'visible':True, 'paramAsk':True}
+               ,'Random bit'             : {'pointMethod':InfoPoint.fltRandBit,    'params':{'prob1'  :0.1                                              }, 'visible':True, 'paramAsk':True}
+               ,'Comp constant (re/im)'  : {'pointMethod':InfoPoint.cmpConstR,     'params':{'real'   :0,   'imag'  :0                                  }, 'visible':True, 'paramAsk':True}
+               ,'Comp constant (abs/phs)': {'pointMethod':InfoPoint.cmpConstP,     'params':{'abs'    :0,   'phase' :0                                  }, 'visible':True, 'paramAsk':True}
+               ,'Comp random   (re/im)'  : {'pointMethod':InfoPoint.cmpRandUniR,   'params':{'reMin'  :0,   'reMax' :1, 'imMin'   :0, 'imMax'   :1      }, 'visible':True, 'paramAsk':True}
+               ,'Comp random   (abs/phs)': {'pointMethod':InfoPoint.cmpRandUniP,   'params':{'absMin' :0,   'absMax':1, 'phaseMin':0, 'phaseMax':_CIRCLE}, 'visible':True, 'paramAsk':True}
+               ,'Comp discrete phase'    : {'pointMethod':InfoPoint.cmpDiscPhases, 'params':{'probAbs':0.5, 'phases':2                                  }, 'visible':True, 'paramAsk':True}
                }
 
     #==========================================================================
@@ -813,7 +814,7 @@ class InfoPoint:
     # Set Methods to set keyed value of this InfoPoint for respective parameters.
     #--------------------------------------------------------------------------
     @staticmethod
-    def nullMethod(infoPoint, valueKey:str, params:dict) -> int:
+    def nullMethod(infoPoint, outKey:str, params:dict) -> int:
         """Null method for testing.
            Retuns 1 if value was set, otherwise 0.
         """
@@ -822,19 +823,19 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def intConst(infoPoint, valueKey:str, params:dict) -> int:
+    def intConst(infoPoint, outKey:str, params:dict) -> int:
         """Set keyed value to constant integer value.
            params should have key 'const' with constant value to set.
            Retuns 1 if value was set, otherwise 0.
         """
 
         const = int(params.get('const', 0))
-        infoPoint.set(vals={valueKey: const})
+        infoPoint.set(vals={outKey: const})
         return 1
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def intRandUni(infoPoint, valueKey:str, params:dict) -> int:
+    def intRandUni(infoPoint, outKey:str, params:dict) -> int:
         """Set keyed value to random uniform integer value in range <min, max>.
            params should have keys 'min' and 'max' with range limits.
            Retuns 1 if value was set, otherwise 0.
@@ -845,24 +846,24 @@ class InfoPoint:
 
         val = rnd.randint(minVal, maxVal)
 
-        infoPoint.set(vals={valueKey: val})
+        infoPoint.set(vals={outKey: val})
         return 1
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def fltConst(infoPoint, valueKey:str, params:dict) -> int:
+    def fltConst(infoPoint, outKey:str, params:dict) -> int:
         """Set keyed value to constant float value.
            params should have key 'const' with constant value to set.
            Retuns 1 if value was set, otherwise 0.
         """
 
         const = float(params.get('const', 0))
-        infoPoint.set(vals={valueKey: const})
+        infoPoint.set(vals={outKey: const})
         return 1
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def fltRandUni(infoPoint, valueKey:str, params:dict) -> int:
+    def fltRandUni(infoPoint, outKey:str, params:dict) -> int:
         """Set keyed value to random uniform float value in range <min, max>.
            params should have keys 'min' and 'max' with range limits.
            Retuns 1 if value was set, otherwise 0.
@@ -873,12 +874,12 @@ class InfoPoint:
 
         val = rnd.uniform(minVal, maxVal)
 
-        infoPoint.set(vals={valueKey: val})
+        infoPoint.set(vals={outKey: val})
         return 1
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def fltRandBit(infoPoint, valueKey:str, params:dict) -> int:
+    def fltRandBit(infoPoint, outKey:str, params:dict) -> int:
         """Set keyed value to random bit value (1 or 0) with probability prob1.
            params should have key 'prob1' with probability of setting value to 1.
            If params does not have key 'prob1', default probability is 0.5.
@@ -887,12 +888,12 @@ class InfoPoint:
         prob1 = params.get('prob1', 0.5)
         val = 1 if rnd.random() < prob1 else 0
 
-        infoPoint.set(vals={valueKey: val})
+        infoPoint.set(vals={outKey: val})
         return 1
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpConstR(infoPoint, valueKey:str, params:dict) -> int:
+    def cmpConstR(infoPoint, outKey:str, params:dict) -> int:
         """Set keyed value to constant complex value given by real and imaginary parts.
            params should have keys 'real' and 'imag' with real and imaginary parts of the complex value to set.
            If params does not have key 'real' or 'imag', default value for respective part is 0.
@@ -903,12 +904,12 @@ class InfoPoint:
         imag = params.get('imag', 0)
         val  = complex(real, imag)
 
-        infoPoint.set(vals={valueKey: val})
+        infoPoint.set(vals={outKey: val})
         return 1
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpConstP(infoPoint, valueKey:str, params:dict) -> int:
+    def cmpConstP(infoPoint, outKey:str, params:dict) -> int:
         """Set keyed value to constant complex value given by absolute value and phase.
            params should have keys 'abs' and 'phase' with absolute value and phase of the complex value to set.
            If params does not have key 'abs' or 'phase', default value for respective part is 0.
@@ -919,12 +920,12 @@ class InfoPoint:
         phase   = params.get('phase', 0)
         val     = abs_val * cmath.exp(complex(0, phase))
 
-        infoPoint.set(vals={valueKey: val})
+        infoPoint.set(vals={outKey: val})
         return 1
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpRandUniR(infoPoint, valueKey:str, params:dict) -> int:
+    def cmpRandUniR(infoPoint, outKey:str, params:dict) -> int:
         """Set keyed value to random complex value with uniform real and imaginary parts in given ranges.
            params should have keys 'reMin', 'reMax', 'imMin' and 'imMax' with ranges for real and imaginary parts of the complex value to set.
            If params does not have key 'reMin', 'reMax', 'imMin' or 'imMax', default value for respective part is 0 for minimum and 1 for maximum.
@@ -940,12 +941,12 @@ class InfoPoint:
         imag = imMin + (imMax - imMin) * rnd.random()
         val  = complex(real, imag)
 
-        infoPoint.set(vals={valueKey: val})
+        infoPoint.set(vals={outKey: val})
         return 1
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpRandUniP(infoPoint, valueKey:str, params:dict) -> int:
+    def cmpRandUniP(infoPoint, outKey:str, params:dict) -> int:
         """Set keyed value to random complex value with uniform absolute value and phase in given ranges.
            params should have keys 'absMin', 'absMax', 'phaseMin' and 'phaseMax' with ranges for absolute value and phase of the complex value to set.
            If params does not have key 'absMin', 'absMax', 'phaseMin' or 'phaseMax', default value for respective part is 0 for minimum and 1 for maximum.
@@ -961,12 +962,12 @@ class InfoPoint:
         phase   = phaseMin + (phaseMax - phaseMin) * rnd.random()
         val     = abs_val * cmath.exp(complex(0, phase))
 
-        infoPoint.set(vals={valueKey: val})
+        infoPoint.set(vals={outKey: val})
         return 1
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpDiscPhases(infoPoint, valueKey:str, params:dict) -> int:
+    def cmpDiscPhases(infoPoint, outKey:str, params:dict) -> int:
         """Set keyed value to random complex value with discrete uniform phases.
            params should have keys 'probAbs' and 'phases' with probability of selecting non-zero absolute value and number of discrete phases.
            If params does not have key 'probAbs' or 'phases', default values are 0.5 and 2 respectively.
@@ -981,7 +982,7 @@ class InfoPoint:
         phase = phase_idx * _CIRCLE / phases
         val = abs_val * cmath.exp(complex(0, phase))
 
-        infoPoint.set(vals={valueKey: val})
+        infoPoint.set(vals={outKey: val})
         return 1
 
 #==============================================================================
