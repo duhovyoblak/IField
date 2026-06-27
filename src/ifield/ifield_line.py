@@ -167,15 +167,10 @@ class InfoFieldLine(InfoMatrix):
     def RFT( self, valueKey:str, params:dict):
         """Compute Fast Fourier transform of real states in subMatrix.
         Parameters:
-        - 'rad': radix level for FFT (default 8, i.e., 256 points)
-        - 'step': step size for moving the FFT window (default: size)
+        - 'rad' : radix level for FFT e.g. size = 2^rad (default 0 for dynamic rad)
         """
 
-        rad  = params.get('rad' , 8   )  # Default radix level for FFT (256 = 2^8)
-        size = 1 << rad                  # Length of the FFT window (must be a power of 2)
-        step = params.get('step', size)  # Step size for moving the FFT window
-
-        logger.info(f"{self.name}.RFT: For rad = {rad}, size = {size}, step = {step}")
+        logger.info(f"{self.name}.RFT: for key '{valueKey}' with params {params}")
 
         #----------------------------------------------------------------------
         # Vsetky IPoints nastavim do subMatrix listu a vytvorim vektor vec
@@ -188,11 +183,55 @@ class InfoFieldLine(InfoMatrix):
             vec[i] = points[i].val(valKey='s')
 
         #----------------------------------------------------------------------
-        # Posuvam okno vec[] s dlzkou size o krok step a pre kazde okno vypocitam FFT
+        # Ak je rad == 0, tak nastavim rad na najvacsiu mocninu dvojky mensiu ako n
         #----------------------------------------------------------------------
+        rad  = params.get('rad', 0 )
+        if rad == 0:  rad = int(cmath.log(n, 2).real)
+
+        #----------------------------------------------------------------------
+        # Inicializujem okno a skontrolujem vykonatelnost
+        #----------------------------------------------------------------------
+        size  = 1 << rad
+        resid = n - size
+        start = 0
+        fft   = [(0+0j, 0)] * size  # Initialize FFT output vector with complex zeros a zero weighta
+
+        if resid < 0:
+            logger.error(f"{self.name}.RFT: Not enough points for FFT (n={n}, rad={rad}, size={size})")
+            return
+
+        logger.info(f"{self.name}.RFT: rad set to {rad}, size = {size}")
+
+        #----------------------------------------------------------------------
+        # Posuvam okno vec[] s dlzkou size o krok step az kym reziduum nebude mensie ako 16
+        #----------------------------------------------------------------------
+        while resid >= 16:
+
+            #------------------------------------------------------------------
+            # Ak je reziduum > 0, tak mozem vykonat FFT pre okno vec[start:start+size]
+            #------------------------------------------------------------------
+            if resid > 0:
+                logger.info(f"{self.name}.RFT: FFT window start={start}, stop={size}, resid={resid}")
+
+                #--------------------------------------------------------------
+                # Vytvorim vektor fft pre FFT vysledky a zavolam FFT
+                #--------------------------------------------------------------
+                fftLocal = [0+0j] * size
+                self._FFT( vec[start:start+size], fftLocal, rad )
+
+                #--------------------------------------------------------------
+                # Pripocitam fftLocal do fft a pre zvysim vahu fft[i] o 1 pre indexy, ktore boli aktualizovane.
+                # Vaha fft je pocet vypoctov
+                #--------------------------------------------------------------
+                for i in range(size):
+                    fft[i] += fftLocal[i]
+                    fft[i].weight += 1
+
+
+
         start = 0
         size  = 1 << rad  # Size of the FFT window (must be a power of 2)
-        step  = 50  # Step size for moving the window
+        step  = size      # Step size for moving the window
 
         self._RFT( vec, ft, int(cmath.log(n, 2).real) )
 
@@ -215,6 +254,14 @@ class InfoFieldLine(InfoMatrix):
         - rad: current radix level; size = 2^rad
         - base: base vector of twiddle factors z = e^(-i*2*pi*k/size) (created at depth=0)
         - depth: recursion depth (0 == top level where initialization happens)
+
+        Returns:
+        - fft: modified in-place with computed Fourier coefficients
+        - index k of fft corresponds to frequency bin:
+        -- for k = 0 → DC zložka (signal average, frequency = 0)
+        -- for k = 1..size/2-1 → positive frequencies
+        -- for k = size/2 → Nyquist frequency (if size is even)
+        -- f(k) = k * (sampling_frequency / size) for k in [0, size/2]
         """
 
         if depth == 0: logger.info (f"{self.name}._FFT: Computing FFT with rad={rad}")
