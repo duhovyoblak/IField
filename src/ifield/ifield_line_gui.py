@@ -6,7 +6,7 @@ from   tkinter                import ttk
 
 from   siqolib.message        import SiqoMessage
 
-from   idata.imatrix_gui      import InfoMatrixGui
+from   idata.idata_gui            import InfoDataGui
 
 from   .                      import logger
 from   .ifield_line           import InfoFieldLine
@@ -26,12 +26,12 @@ _PADY           =  5
 #==============================================================================
 # Class IFieldLineGui
 #------------------------------------------------------------------------------
-class IFieldLineGui(InfoMatrixGui):
+class IFieldLineGui(InfoDataGui):
 
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, container, dat:InfoFieldLine):
+    def __init__(self, container, data:InfoFieldLine):
         "Call constructor of IFieldLineGui and initialise it for respective data"
 
         #----------------------------------------------------------------------
@@ -40,9 +40,9 @@ class IFieldLineGui(InfoMatrixGui):
 #        self.varL2E   = tk.IntVar   (value=dat.l2e  )
 
         #----------------------------------------------------------------------
-        # Initialise InfoMatrixGui
+        # Initialise InfoDataGui
         #----------------------------------------------------------------------
-        super().__init__(container=container, dat=dat)
+        super().__init__(container=container, data=data)
 
         #----------------------------------------------------------------------
         # Inicializacia
@@ -55,7 +55,7 @@ class IFieldLineGui(InfoMatrixGui):
 
     #--------------------------------------------------------------------------
     def showChildFrame(self, container):
-        """Show frame in parent container InfoMatrixGui dedicated to child classes."""
+        """Show frame in parent container InfoDataGui dedicated to child classes."""
 
         lbl = ttk.Label(container, text="L2E (epoch per lambda):")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
@@ -72,7 +72,7 @@ class IFieldLineGui(InfoMatrixGui):
 
     #--------------------------------------------------------------------------
     def updateChildFrame(self):
-        """Update frame in parent container InfoMatrixGui dedicated to child classes."""
+        """Update frame in parent container InfoDataGui dedicated to child classes."""
 
 #        if self.dat.l2e != self.varL2E.get():
 #            logger.warning(f'{self.name}.updateChildFrame: L2E changed {self.dat.l2e} -> {self.varL2E.get()}')
@@ -92,11 +92,11 @@ class IFieldLineGui(InfoMatrixGui):
         text = [f'Information about nearest point to [{round(y,2)}, {round(x,2)}] for value "{valueKey}"']
         text.append('')
 
-        idxs = self.dat.lastPosIdxs()
+        idxs = self.data.lastPosIdxs()
         text.append(f"{str(self.actPoint)} at {idxs}")
         text.append('')
 
-        msgWin = SiqoMessage(name=self.dat.name, text=text, wpix=800)
+        msgWin = SiqoMessage(name=self.data.name, text=text, wpix=800)
 
 #==============================================================================
 # Inicializacia modulu

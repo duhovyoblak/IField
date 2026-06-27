@@ -509,10 +509,21 @@ class InfoPoint:
     @staticmethod
     def mapSetMethods() -> dict:
         """Returns map of methods for one InfoPoint setting keyed value to function value for respective parameters.
-           Returns dict of {pointMethodName: {'pointMethod': callable_function, 'params':{paramName: defaultValue}, 'visible':True/False, 'type':'ask'/'noAsk'}}.
-           params is dict of parameters for the method with default values.
-           If type is 'ask', these parameters should be asked to user in GUI, if type is 'noAsk', these parameters are not asked to user and default values are used.
-           If visible is False, this method should not be shown to user in GUI, if visible is True, this method should be shown to user in GUI.
+
+        Structure:
+            {pointMethodName: {
+                              'pointMethod': callable_function,   -- method to be applied to each point in the active subdata
+                              'params'     : {paramName: defaultValue},
+                              'visible'    : True/False,
+                              'type'       : 'ask'/'noAsk'}}
+
+        where 'params' is dict of parameters for the method with default values.
+
+        Note:
+        - If type is 'ask', parameters should be asked to user in GUI
+        - If type is 'noAsk', default values are used without asking
+        - If visible is False, method should not be shown in GUI
+        - If visible is True, method should be shown in GUI
         """
 
         return {'<Point Methods>'        : {'pointMethod':InfoPoint.nullMethod,    'params':{                                                           }, 'visible':True}

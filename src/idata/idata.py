@@ -1,5 +1,5 @@
 #==============================================================================
-# Siqo class InfoMatrix
+# Siqo class InfoData
 #------------------------------------------------------------------------------
 import functools
 import math
@@ -24,11 +24,11 @@ _F_POS  =  8          # Format for position
 #------------------------------------------------------------------------------
 
 #==============================================================================
-# Only when matrix is not empty
+# Only when data is not empty
 #------------------------------------------------------------------------------
-def noEmptyMatrix(function):
-    """This decorator assures that matrix is not empty before calling decorated function.
-       If matrix is empty, decorated function is not called and warning is logged.
+def noEmptyData(function):
+    """This decorator assures that data is not empty before calling decorated function.
+       If data is empty, decorated function is not called and warning is logged.
     """
 
     #--------------------------------------------------------------------------
@@ -41,14 +41,14 @@ def noEmptyMatrix(function):
         # Before decorated function
         #----------------------------------------------------------------------
         self = args[0]
-        logger.debug(f"{self.name}.noEmptyMatrix: {function.__name__}")
+        logger.debug(f"{self.name}.noEmptyData: {function.__name__}")
         resp = None
 
         #----------------------------------------------------------------------
-        # Kontrola existencie bodov v InfoMatrix
+        # Kontrola existencie bodov v InfoData
         #----------------------------------------------------------------------
         if self.count() > 0: resp = function(*args, **kwargs)
-        else               : logger.warning(f"{self.name}.noEmptyMatrix: Matrix is empty, function {function.__name__} denied")
+        else               : logger.warning(f"{self.name}.noEmptyData: Data is empty, function {function.__name__} denied")
 
         #----------------------------------------------------------------------
         # After decorated function
@@ -61,16 +61,16 @@ def noEmptyMatrix(function):
     return wrapper
 
 #==============================================================================
-# InfoMatrix
+# InfoData
 #------------------------------------------------------------------------------
-class InfoMatrix:
-    """Define InfoMatrix as a dynamic data structure of InfoPoints in the space
+class InfoData:
+    """Define InfoData as a dynamic data structure of InfoPoints in the space
        defined by schema of respective InfoPoint type <ipType>.
-       InfoMatrix is defined by its name and ipType.
-       InfoMatrix contains list of InfoPoints and internal structures for fast
-       retrieval of points by coordinates and definition of active submatrix.
-       InfoMatrix can be copied and its ipType can be changed with reset of all data.
-       InfoMatrix can be converted to 2D numpy array for visualization in IFieldMatrixGui.
+       InfoData is defined by its name and ipType.
+       InfoData contains list of InfoPoints and internal structures for fast
+       retrieval of points by coordinates and definition of active subdata.
+       InfoData can be copied and its ipType can be changed with reset of all data.
+       InfoData can be converted to 2D numpy array for visualization in IFieldMatrixGui.
     """
 
     #==========================================================================
@@ -81,33 +81,33 @@ class InfoMatrix:
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, name):
-        """Calls constructor of InfoMatrix of respective name.
-           Constructor initializes all public and private data structures of InfoMatrix.
-           Constructor does not initialize points in InfoMatrix nor set ipType,
+        """Calls constructor of InfoData of respective name.
+           Constructor initializes all public and private data structures of InfoData.
+           Constructor does not initialize points in InfoData nor set ipType,
            it is expected that they will be added later.
         """
 
-        logger.debug(f"InfoMatrix.constructor: {name}")
+        logger.debug(f"InfoData.constructor: {name}")
 
         #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
-        self.name         = name     # Name of the InfoMatrix
-        self.ipType       = None     # Type of the InfoPoint in this InfoMatrix
+        self.name         = name     # Name of the InfoData
+        self.ipType       = None     # Type of the InfoPoint in this InfoData
         self.staticEdge   = False    # Static edge means value of the edge points is fixed in some methods
         self.points       = []       # List of InfoPoints
 
         self.actVal       = None     # Key of the current InfoPoint's dat value
-        self.actSubIdxs   = {}       # Current active submatrix definition as dict of freezed axesKeys with values
-        self.actList      = []       # Current active list of points in submatrix
-        self.actChanged   = True     # Current sub settings was changed and actSubMatrix needs refresh
+        self.actSubIdxs   = {}       # Current active subdata definition as dict of freezed axesKeys with values
+        self.actList      = []       # Current active list of points in subdata
+        self.actChanged   = True     # Current sub settings was changed and actSubData needs refresh
 
         #----------------------------------------------------------------------
         # Private datove polozky triedy, menia sa v metode init()
         #----------------------------------------------------------------------
         self._cnts        = {}       # Number of InfoPoints in respective axes
-        self._origs       = {}       # Origin's coordinates of the InfoMatrix for respective axes in lambda units
-        self._rects       = {}       # Lenghts of the InfoMatrix for respective axes in lambda units
+        self._origs       = {}       # Origin's coordinates of the InfoData for respective axes in lambda units
+        self._rects       = {}       # Lenghts of the InfoData for respective axes in lambda units
         self._diffs       = {}       # Distance between two points in respective axes in lambda units
 
         self._subProducts = []       # List of subproducts of _cnts [1, A, AB, ABC, ...]
@@ -122,27 +122,27 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def __str__(self):
-        """Returns string representation of this InfoMatrix.
+        """Returns string representation of this InfoData.
         """
 
         return self.info()['msg']
 
     #--------------------------------------------------------------------------
     def __array__(self) -> np.array:
-        """Returns active submatrix of the InfoMatrix as 2D numpy array.
+        """Returns active subdata of the InfoData as 2D numpy array.
            Value of the array is defined by self.actVal as key of the InfoPoint's dat value.
-           This method is used for visualization of InfoMatrix in IFieldMatrixGui.
+           This method is used for visualization of InfoData in IFieldMatrixGui.
 
            This method is not good defined, FIX IN THE FUTURE
         """
 
-        mtrx = self.actSubmatrix(keyVal=self.actVal)
+        mtrx = self.actSubData(keyVal=self.actVal)
 
         #----------------------------------------------------------------------
         # Kontrola existencie vybranej 2D matice
         #----------------------------------------------------------------------
         if mtrx is None:
-            logger.error(f"{self.name}.__array__: actMatrix is None")
+            logger.error(f"{self.name}.__array__: actData is None")
             return None
 
         #----------------------------------------------------------------------
@@ -152,12 +152,12 @@ class InfoMatrix:
 
      #--------------------------------------------------------------------------
     def setIpType(self, ipType:str, force:bool=False):
-        """Set ipType of this InfoMatrix and reset all data.
+        """Set ipType of this InfoData and reset all data.
            If not force, ipType is set only if it is different from the current one,
            otherwise warning is logged and ipType is not changed nor points are destroyed.
            If force or ipType is different than actual self.ipType, set self.ipType to ipType
            and set structures _cnts, _origs, _rects and _diffs to empty dict {}.
-           Destroy all points in this InfoMatrix.
+           Destroy all points in this InfoData.
         """
 
         logger.info(f"{self.name}.setIpType: ipType='{ipType}', force={force}")
@@ -170,31 +170,31 @@ class InfoMatrix:
             return
 
         #----------------------------------------------------------------------
-        # Reset all InfoMatrix's data
+        # Reset all InfoData's data
         #----------------------------------------------------------------------
         self.points.clear()        # List of rows of lists of InfoPoints
         self.ipType     = ipType
         self.staticEdge = False    # Static edge means value of the edge nodes is fixed
 
         self.actVal     = None     # Key of the InfoPoint's current dat value
-        self.actSubIdxs = {}       # Current active submatrix defined as dict of freezed axesKeys with values
-        self.actList    = []       # Current active submatrix/subvector
-        self.actChanged = True     # Current sub settings was changed and actSubMatrix needs refresh
+        self.actSubIdxs = {}       # Current active subdata defined as dict of freezed axesKeys with values
+        self.actList    = []       # Current active subdata/subvector
+        self.actChanged = True     # Current sub settings was changed and actSubData needs refresh
 
         self._cnts      = {}       # Number of InfoPoints in respective axes
-        self._origs     = {}       # Origin's coordinates of the InfoMatrix for respective axes in lambda units
-        self._rects     = {}       # Lenghts of the InfoMatrix for respective axes in lambda units
+        self._origs     = {}       # Origin's coordinates of the InfoData for respective axes in lambda units
+        self._rects     = {}       # Lenghts of the InfoData for respective axes in lambda units
         self._diffs     = {}       # Distance between two points in respective axes in lambda units
 
         #----------------------------------------------------------------------
-        logger.warning(f"{self.name}.setIpType: ipType was set to '{ipType}' and InfoMatrix was reset")
+        logger.warning(f"{self.name}.setIpType: ipType was set to '{ipType}' and InfoData was reset")
 
    #--------------------------------------------------------------------------
     def info(self, indent=0, full=False) -> dict:
-        """Creates info about this InfoMatrix.
+        """Creates info about this InfoData.
            Identation is defined by indent as number of _IND for each line.
-           If full is False, info contains only general info about this InfoMatrix.
-           If full is True, info contains also info about all points in this InfoMatrix.
+           If full is False, info contains only general info about this InfoData.
+           If full is True, info contains also info about all points in this InfoData.
            Returns dict with keys 'res', 'dat' and 'msg' where
            'res' is 'OK' if info was created successfully,
            'dat' is dict of info data
@@ -249,7 +249,7 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def count(self, check=True) -> int:
-        """Returns Count of points in this InfoMatrix as sum of counts in respective
+        """Returns Count of points in this InfoData as sum of counts in respective
            axes as defined in _cnts.
            If check is True, checks if count of points is equal to len(points)
            and if not, logs warning and calls init() to recalculate count.
@@ -277,33 +277,33 @@ class InfoMatrix:
         return toRet
 
     #--------------------------------------------------------------------------
-    def copy(self, name) -> 'InfoMatrix':
-        """Creates full copy of this InfoMatrix with new name.
+    def copy(self, name) -> 'InfoData':
+        """Creates full copy of this InfoData with new name.
         """
 
         logger.debug(f"{self.name}.copy: to {name}")
 
         #----------------------------------------------------------------------
-        # Create new InfoMatrix with the same dimensions
+        # Create new InfoData with the same dimensions
         #----------------------------------------------------------------------
-        toRet = InfoMatrix(name, self.ipType)
+        toRet = InfoData(name, self.ipType)
 
         toRet.points     = []                  # List of InfoPoints
-        toRet.ipType     = self.ipType         # Type of the InfoPoint in this InfoMatrix
+        toRet.ipType     = self.ipType         # Type of the InfoPoint in this InfoData
         toRet.staticEdge = self.staticEdge     # Static edge means value of the edge nodes is fixed
 
         toRet.actVal     = self.actVal         # Key of the InfoPoint's dat value
-        toRet.actSubIdxs = self.actSubIdxs.copy()  # Current active submatrix defined as dict of freezed axesKeys with values
-        toRet.actList    = []                  # Current active submatrix/subvector
-        toRet.actChanged = True                # Current sub settings was changed and actSubMatrix needs refresh
+        toRet.actSubIdxs = self.actSubIdxs.copy()  # Current active subdata defined as dict of freezed axesKeys with values
+        toRet.actList    = []                  # Current active subdata/subvector
+        toRet.actChanged = True                # Current sub settings was changed and actSubData needs refresh
 
         toRet._cnts      = self._cnts.copy()   # Number of InfoPoints in respective axes
-        toRet._origs     = self._origs.copy()  # Origin's coordinates of the InfoMatrix
-        toRet._rects     = self._rects.copy()  # Lengths of the InfoMatrix's axes
+        toRet._origs     = self._origs.copy()  # Origin's coordinates of the InfoData
+        toRet._rects     = self._rects.copy()  # Lengths of the InfoData's axes
         toRet._diffs     = self._diffs.copy()  # Distance between two points in respective axes in lambda units
 
         #----------------------------------------------------------------------
-        # Copy all points from this InfoMatrix to the new one
+        # Copy all points from this InfoData to the new one
         #----------------------------------------------------------------------
         for point in self.points:
             toRet.points.append(self.copy())
@@ -316,7 +316,7 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def clearSchema(self):
         """Clears schema of InfoPoint for respective ipType to {'axes':{}, 'vals':{}}.
-           Destroys all points in this InfoMatrix.
+           Destroys all points in this InfoData.
         """
 
         InfoPoint.clearSchema(self.ipType)
@@ -490,10 +490,12 @@ class InfoMatrix:
         """Returns map of methods for one InfoPoint setting.
 
         Structure:
-            {pointMethodName: {'pointMethod': callable_function,
-                              'params': {paramName: defaultValue},
-                              'visible': True/False,
-                              'type': 'ask'/'noAsk'}}
+            {pointMethodName: {
+                              'dataMethod' : callable_function,   -- method to be applied to the entire data set if pointMethod is not defined
+                              'pointMethod': callable_function,   -- method to be applied to each point in the active subdata
+                              'params'     : {paramName: defaultValue},
+                              'visible'    : True/False,
+                              'type'       : 'ask'/'noAsk'}}
 
         where 'params' is dict of parameters for the method with default values.
 
@@ -503,11 +505,11 @@ class InfoMatrix:
         - If visible is False, method should not be shown in GUI
         - If visible is True, method should be shown in GUI
         """
-        
+
         methods = InfoPoint.mapSetMethods()
 
-        methods['<Matrix Methods>'] = {'matrixMethod': self.nullMethod, 'pointMethod':None,  'params':{}                                        , 'visible':True, 'type':'ask'}
-        methods['Move data'       ] = {'matrixMethod': self.moveData,   'pointMethod':None,  'params':{'axeKey':'x', 'startIdx':0, 'deltaIdx':1}, 'visible':True, 'type':'ask'}
+        methods['<Data Methods>'] = {'dataMethod': self.nullMethod, 'pointMethod':None,  'params':{}                                        , 'visible':True, 'type':'ask'}
+        methods['Move data'     ] = {'dataMethod': self.moveData,   'pointMethod':None,  'params':{'axeKey':'x', 'startIdx':0, 'deltaIdx':1}, 'visible':True, 'type':'ask'}
 
         return methods
 
@@ -599,7 +601,7 @@ class InfoMatrix:
         # Kontrola existencie osi
         #----------------------------------------------------------------------
         if axeKey not in self._cnts.keys():
-            logger.error(f"{self.name}._axeValByIdx: Axe '{axeKey}' is not in InfoMatrix axes {list(self._cnts.keys())}")
+            logger.error(f"{self.name}._axeValByIdx: Axe '{axeKey}' is not in InfoData axes {list(self._cnts.keys())}")
             return None
 
         #----------------------------------------------------------------------
@@ -621,7 +623,7 @@ class InfoMatrix:
         # Kontrola existencie osi
         #----------------------------------------------------------------------
         if axeKey not in self._cnts.keys():
-            logger.error(f"{self.name}._idxByAxeVal: Axe '{axeKey}' is not in InfoMatrix axes {list(self._cnts.keys())}")
+            logger.error(f"{self.name}._idxByAxeVal: Axe '{axeKey}' is not in InfoData axes {list(self._cnts.keys())}")
             return None
 
         #----------------------------------------------------------------------
@@ -734,7 +736,7 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
     def pointByCoord(self, coord:dict) -> InfoPoint|None:
         """Returns nearest InfoPoint in field to respective coordinates.
-           If coord is not compatible with the schema of this InfoMatrix, logs error and returns None. FIX IN THE FUTURE
+           If coord is not compatible with the schema of this InfoData, logs error and returns None. FIX IN THE FUTURE
         """
 
         logger.debug(f"{self.name}.pointByCoord: coord={coord} and actSubIdxs={self.actSubIdxs}")
@@ -790,12 +792,12 @@ class InfoMatrix:
         return self.pointByPos(pos)
 
     #==========================================================================
-    # Active submatrix tools
+    # Active subdata tools
     #--------------------------------------------------------------------------
-    # Active submatrix definition
+    # Active subdata definition
     #--------------------------------------------------------------------------
     def _actSubSet(self, actSubIdxs:dict):
-        """Sets active submatrix definition as dict of freezed axesKeys with values.
+        """Sets active subdata definition as dict of freezed axesKeys with values.
            If actSubIdxs definition is different from current definition, sets actChanged to True.
         """
 
@@ -809,7 +811,7 @@ class InfoMatrix:
         else                            : self.actChanged = False
 
         #----------------------------------------------------------------------
-        # Ak nie je submatica zmenena, vratim sa
+        # Ak nie je subdata zmenena, vratim sa
         #----------------------------------------------------------------------
         if not self.actChanged:
             logger.debug(f"{self.name}._actSubSet: actSubIdxs definition was not changed, no need to update")
@@ -821,11 +823,11 @@ class InfoMatrix:
         for axe, axeIdx in actSubIdxs.items():
 
             if axe not in self._cnts.keys():
-                logger.error(f"{self.name}._actSubSet: Axe '{axe}' is not in InfoMatrix axes {list(self._cnts.keys())}, change denied")
+                logger.error(f"{self.name}._actSubSet: Axe '{axe}' is not in InfoData axes {list(self._cnts.keys())}, change denied")
                 return
 
         #----------------------------------------------------------------------
-        # Nastavenie prazdnej aktivnej submatice
+        # Nastavenie prazdnej aktivnej subdata
         #----------------------------------------------------------------------
         self.actSubIdxs  = actSubIdxs.copy()
         self.actList = []
@@ -834,36 +836,36 @@ class InfoMatrix:
         logger.warning(f"{self.name}._actSubSet: definition was changed {oldActSubIdxs} -> {self.actSubIdxs}")
 
     #--------------------------------------------------------------------------
-    # Active subsmatrix retrieval
+    # Active subdata retrieval
     #--------------------------------------------------------------------------
-    def actSubmatrix(self, actSubIdxs=None, force=False) -> list:
-        """Returns active submatrix of InfoPoints as list of InfoPoints also stored in self.actList.
-           Submatrix is defined by dict of freezed axesKeys with values.
-           If actSubIdxs is NOT provided, whole matrix became active submatrix.
+    def actSubData(self, actSubIdxs=None, force=False) -> list:
+        """Returns active subdata of InfoPoints as list of InfoPoints also stored in self.actList.
+           Subdata is defined by dict of freezed axesKeys with values.
+           If actSubIdxs is NOT provided, whole data became active subdata.
         """
 
-        logger.debug(f"{self.name}.actSubmatrix: actSubIdxs={actSubIdxs}, force={force}")
+        logger.debug(f"{self.name}.actSubData: actSubIdxs={actSubIdxs}, force={force}")
 
         #----------------------------------------------------------------------
-        # Nastavenie aktivnej submatice ak bola dodana definicia
+        # Nastavenie aktivnej subdata ak bola dodana definicia
         #----------------------------------------------------------------------
         if actSubIdxs is not None: self._actSubSet(actSubIdxs   )
-        else                     : self._actSubSet(actSubIdxs={}) # Full matrix will be active submatrix
+        else                     : self._actSubSet(actSubIdxs={}) # Full data will be active subdata
 
         #----------------------------------------------------------------------
-        # Kontrola potreby obnovenia aktivnej submatice pri zmene definicie submatice
+        # Kontrola potreby obnovenia aktivnej subdata pri zmene definicie subdata
         #----------------------------------------------------------------------
         if (not self.actChanged) and (not force):
-            logger.debug(f"{self.name}.actSubmatrix: subMatrix definition was not changed, no need to refresh")
+            logger.debug(f"{self.name}.actSubData: subData definition was not changed, no need to refresh")
             return self.actList
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}.actSubmatrix: Refresh for actSubIdxs={self.actSubIdxs}, force={force}")
+        logger.debug(f"{self.name}.actSubData: Refresh for actSubIdxs={self.actSubIdxs}, force={force}")
 
         #----------------------------------------------------------------------
-        # Inicializujem mnozinu pozicii submatrixu vsetkymi bodmi
+        # Inicializujem mnozinu pozicii subdata vsetkymi bodmi
         #----------------------------------------------------------------------
-        poss = set(range(self.count())) # Set of positions of InfoPoints in the active submatrix
+        poss = set(range(self.count())) # Set of positions of InfoPoints in the active subdata
 
         #----------------------------------------------------------------------
         # Prejdem vsetky osi so zmrazenou hodnotou idx
@@ -874,7 +876,7 @@ class InfoMatrix:
             # Kontrola, ci je daná os freezed
             #------------------------------------------------------------------
             if axeIdx is None:
-                logger.debug(f"{self.name}.actSubmatrix: Axe '{axe}' is not freezed, skipping")
+                logger.debug(f"{self.name}.actSubData: Axe '{axe}' is not freezed, skipping")
                 continue
 
             #------------------------------------------------------------------
@@ -886,7 +888,7 @@ class InfoMatrix:
             # Vytvorim prienik poss s touto mnozinou pozicii = odstranim body, ktore nepatria do danej osi
             #------------------------------------------------------------------
             poss = poss.intersection(actPoss)
-            logger.debug(f"{self.name}.actSubmatrix: After axe '{axe}' with idx {axeIdx}, {len(poss)} positions remain in active submatrix")
+            logger.debug(f"{self.name}.actSubData: After axe '{axe}' with idx {axeIdx}, {len(poss)} positions remain in active subdata")
 
         #----------------------------------------------------------------------
         # Create vector of InfoPoints for respective positions
@@ -896,7 +898,7 @@ class InfoMatrix:
             self.actList.append(self.pointByPos(pos))
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.actSubmatrix: Found {len(self.actList)} positions in active submatrix for actSubIdxs={self.actSubIdxs}")
+        logger.info(f"{self.name}.actSubData: Found {len(self.actList)} positions in active subdata for actSubIdxs={self.actSubIdxs}")
         return self.actList
 
     #==========================================================================
@@ -918,8 +920,8 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def init(self, *, cnts:dict={}, origs:dict={}, rects:dict={} ) -> int|None:
-        """Initialise InfoMatrix structure with already set parameters
-           or You can provide new matrix structure parameters.
+        """Initialise InfoData structure with already set parameters
+           or You can provide new data structure parameters.
 
            1. cnts  is dict of {axeKey: cnt} where cnt is count of points in respective axe.
            2. origs is dict of {axeKey: orig} where orig is origin coordinate in lambda units for respective axe.
@@ -936,7 +938,7 @@ class InfoMatrix:
         # Kontrola definicie ipType
         #----------------------------------------------------------------------
         if self.ipType is None:
-            logger.error(f"{self.name}.init: InfoPoint type is not defined, cannot initialise InfoMatrix")
+            logger.error(f"{self.name}.init: InfoPoint type is not defined, cannot initialise InfoData")
             return None
 
         #----------------------------------------------------------------------
@@ -945,17 +947,17 @@ class InfoMatrix:
         schAxes = InfoPoint.getSchemaAxes(self.ipType)
 
         if cnts.keys() != schAxes.keys():
-            logger.error(f"{self.name}.init: InfoPoint type '{self.ipType}' axes {list(schAxes.keys())} are not compatible with cnts axes {list(cnts.keys())}, cannot initialise InfoMatrix")
+            logger.error(f"{self.name}.init: InfoPoint type '{self.ipType}' axes {list(schAxes.keys())} are not compatible with cnts axes {list(cnts.keys())}, cannot initialise InfoData")
             return None
 
         #----------------------------------------------------------------------
         # Priprava na init()
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.init: {cnts}, {origs}, {rects}")
-        self.points.clear()    # Clear all points in the InfoMatrix
+        self.points.clear()    # Clear all points in the InfoData
 
         #----------------------------------------------------------------------
-        # Set new Matrix structure parameters
+        # Set new data structure parameters
         #----------------------------------------------------------------------
         if cnts : self._cnts  = cnts
         if origs: self._origs = origs
@@ -1008,9 +1010,9 @@ class InfoMatrix:
             self.points.append(point)
 
         #----------------------------------------------------------------------
-        # Active subset je full matrix
+        # Active subset je full data
         #----------------------------------------------------------------------
-        self.actSubmatrix(actSubIdxs={}, force=True)
+        self.actSubData(actSubIdxs={}, force=True)
 
         #----------------------------------------------------------------------
         pts = len(self.points)
@@ -1020,10 +1022,10 @@ class InfoMatrix:
     #--------------------------------------------------------------------------
 
     #==========================================================================
-    # Matrix methods
+    # Data methods
     #--------------------------------------------------------------------------
-    def copyFrom(self, src, *, key=None, tgtSlice=(0,0,0,0), srcFrom=(0,0)) -> 'InfoMatrix':
-        "Copy point's values from srcs 2D matrix into tgts 2D matrix"
+    def copyFrom(self, src, *, key=None, tgtSlice=(0,0,0,0), srcFrom=(0,0)) -> 'InfoData':
+        "Copy point's values from srcs 2D data into tgts 2D data"
 
         logger.debug(f"{self.name}.copyFrom: From {src.name} starting at {srcFrom} to nodes {tgtSlice} for key={key}")
         pts = 0
@@ -1079,9 +1081,9 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def moveByAxe(self, axeKey, startIdx, deltaIdx, defVals={}) -> int:
-        """Move whole matrix data by deltaIdx from start index in respective axe.
+        """Move whole data by deltaIdx from start index in respective axe.
            Positive deltaIdx moves data to higher indices, negative to lower indices.
-           Data moved out of matrix bounds are lost, new data positions are cleared to default values.
+           Data moved out of data bounds are lost, new data positions are cleared to default values.
            Returns count of moved points.
         """
         logger.debug(f"{self.name}.moveByAxe: From {startIdx} by {deltaIdx} for axe key={axeKey}")
@@ -1091,7 +1093,7 @@ class InfoMatrix:
         # Kontrola existencie osi
         #----------------------------------------------------------------------
         if axeKey not in self._cnts.keys():
-            logger.error(f"{self.name}.moveByAxe: Axe '{axeKey}' is not in InfoMatrix axes {list(self._cnts.keys())}, change denied")
+            logger.error(f"{self.name}.moveByAxe: Axe '{axeKey}' is not in InfoData axes {list(self._cnts.keys())}, change denied")
             return pts
 
         #----------------------------------------------------------------------
@@ -1163,13 +1165,13 @@ class InfoMatrix:
     #==========================================================================
     # Dynamic Methods application
     #--------------------------------------------------------------------------
-    def applyMatrixMethod(self, methodKey:str, valueKey:str, params:dict=None) -> int|None:
-        """Dynamic matrix method for applying to matrix.
+    def applyDataMethod(self, methodKey:str, valueKey:str, params:dict=None) -> int|None:
+        """Dynamic data method for applying to data.
 
              1. methodKey: Name of the method to apply.
                            If methodKey is not in defined methods, logs error and returns None.
-                           If 'pointMethod'  is defined in the method, it will be applied to all points in the active submatrix.
-                           If 'matrixMethod' is defined in the method, it will be applied directly to the matrix.
+                           If 'pointMethod'  is defined in the method, it will be applied to all points in the active subdata.
+                           If 'dataMethod' is defined in the method, it will be applied directly to the data.
 
              2. valueKey : Key of the value to be set by the method
              3. params   : Parameters for the method as dict
@@ -1177,7 +1179,7 @@ class InfoMatrix:
            Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.warning(f"{self.name}.applyMatrixMethod: methodKey='{methodKey}', valueKey='{valueKey}', params={params}")
+        logger.warning(f"{self.name}.applyDataMethod: methodKey='{methodKey}', valueKey='{valueKey}', params={params}")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -1186,7 +1188,7 @@ class InfoMatrix:
         methods = self.mapSetMethods()
 
         if methodKey not in methods.keys():
-            logger.error(f"{self.name}.applyMatrixMethod: '{methodKey}' is not in defined functions, command denied")
+            logger.error(f"{self.name}.applyDataMethod: '{methodKey}' is not in defined functions, command denied")
             return None
 
         else:
@@ -1198,34 +1200,34 @@ class InfoMatrix:
         if 'pointMethod' in method.keys() and method['pointMethod'] is not None:
 
             pointMethod = method['pointMethod']
-            logger.debug(f"{self.name}.applyMatrixMethod: {pointMethod.__name__}({params}) for value key='{valueKey}'")
+            logger.debug(f"{self.name}.applyDataMethod: {pointMethod.__name__}({params}) for value key='{valueKey}'")
 
             pts = self._applyPointMethod(pointMethod=pointMethod, valueKey=valueKey, params=params)
 
         #----------------------------------------------------------------------
-        # Ak je definovana matrixMethod, aplikujem ju priamo
+        # Ak je definovana dataMethod, aplikujem ju priamo
         #----------------------------------------------------------------------
-        elif 'matrixMethod' in method.keys() and method['matrixMethod'] is not None:
+        elif 'dataMethod' in method.keys() and method['dataMethod'] is not None:
 
-            matrixMethod = method['matrixMethod']
-            logger.debug(f"{self.name}.applyMatrixMethod: {matrixMethod.__name__}({params}) for value key='{valueKey}'")
+            dataMethod = method['dataMethod']
+            logger.debug(f"{self.name}.applyDataMethod: {dataMethod.__name__}({params}) for value key='{valueKey}'")
 
-            pts = matrixMethod(valueKey=valueKey, params=params)   # self uz bolo predane pri priradeni do premennej matrixMethod
+            pts = dataMethod(valueKey=valueKey, params=params)   # self uz bolo predane pri priradeni do premennej dataMethod
 
         #----------------------------------------------------------------------
         # Nie je definovana ziadna metoda
         #----------------------------------------------------------------------
         else:
-            logger.error(f"{self.name}.applyMatrixMethod: '{methodKey}' has neither pointMethod nor matrixMethod defined")
+            logger.error(f"{self.name}.applyDataMethod: '{methodKey}' has neither pointMethod nor dataMethod defined")
             return None
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.applyMatrixMethod: {pts} InfoPoints was updated for '{valueKey}'<-{methodKey}({params})")
+        logger.info(f"{self.name}.applyDataMethod: {pts} InfoPoints was updated for '{valueKey}'<-{methodKey}({params})")
         return pts
 
     #--------------------------------------------------------------------------
     def _applyPointMethod(self, pointMethod, valueKey:str, params:dict=None) -> int|None:
-        """Dynamic matrix method for applying to list of Points.
+        """Dynamic data method for applying to list of Points.
 
                1. pointMethod : Name of the Point method to apply
                2. valueKey    : Key of the value to be set by the method
@@ -1259,7 +1261,7 @@ class InfoMatrix:
         return pts
 
     #==========================================================================
-    # Matrix methods to apply in Dynamics methods
+    # Data methods to apply in Dynamics methods
     #--------------------------------------------------------------------------
     def nullMethod(self, valueKey:str, params:dict) -> int|None:
         """Default null method for InfoPoint for keyed value (do nothing)
@@ -1273,7 +1275,7 @@ class InfoMatrix:
 
     #--------------------------------------------------------------------------
     def moveData(self, valueKey:str, params:dict) -> int|None:
-        """Move data in matrix by deltaIdx from startIdx in axeKey
+        """Move data by deltaIdx from startIdx in axeKey
                valueKey : Key of the value to be set by the method
                params   : Parameters for the method as dict
            Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
@@ -1330,20 +1332,20 @@ class InfoMatrix:
 #==============================================================================
 # Inicializacia modulu
 #------------------------------------------------------------------------------
-print(f"InfoMatrix ver {_VER}")
+print(f"InfoData ver {_VER}")
 
 if __name__ == '__main__':
 
-    logger.info("Testing InfoMatrix class")
+    logger.info("Testing InfoData class")
 
     #--------------------------------------------------------------------------
-    # Test of the InfoMatrix class
+    # Test of the InfoData class
     #--------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------
     # Vytvorenie, generovanie osi
     #--------------------------------------------------------------------------
-    im = InfoMatrix('Test matrix')
+    im = InfoData('Test data')
     im.logger.setLevel('DEBUG')
 
     print(im)
@@ -1381,13 +1383,13 @@ if __name__ == '__main__':
     # generovanie hodnot
     #--------------------------------------------------------------------------
     im.logger.setLevel('DEBUG')
-    im.applyMatrixMethod(methodKey='Bandom Bniform', valueKey='m', params={'min':0, 'max':5})
-    im.applyMatrixMethod(methodKey='Random uniform', valueKey='m', params={'min':0, 'max':5})
+    im.applyDataMethod(methodKey='Bandom Bniform', valueKey='m', params={'min':0, 'max':5})
+    im.applyDataMethod(methodKey='Random uniform', valueKey='m', params={'min':0, 'max':5})
     print(im.info(full=True)['msg'])
     input('Press Enter to continue...')
 
     #--------------------------------------------------------------------------
-    # Submatrix
+    # Subdata
     #--------------------------------------------------------------------------
 
 

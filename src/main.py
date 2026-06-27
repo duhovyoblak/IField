@@ -45,7 +45,7 @@ if __name__ =='__main__':
 
     print(matrix.info(full=False)['msg'])
 
-    matrixGui = IFieldMatrixGui(container=win, dat=matrix)
+    matrixGui = IFieldMatrixGui(container=win, data=matrix)
     matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
     logger.setLevel('INFO')

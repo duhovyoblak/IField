@@ -4,7 +4,7 @@
 import cmath
 
 from   .                      import logger
-from   idata.imatrix          import InfoMatrix
+from   idata.idata            import InfoData
 
 #==============================================================================
 # Module's constants
@@ -21,7 +21,7 @@ _AMP    =  200       # Default amplituda
 #==============================================================================
 # InfoFieldLine
 #------------------------------------------------------------------------------
-class InfoFieldLine(InfoMatrix):
+class InfoFieldLine(InfoData):
 
     #==========================================================================
     # Static variables & methods
@@ -50,7 +50,7 @@ class InfoFieldLine(InfoMatrix):
         self.setSchema({'axes': {'l': 'Lambda'}, 'vals': {'s': 'State', 'd': 'Delta', 'c': 'Autocorr', 'a': 'Amplitude'}})
         self.init(cnts={'l':_LAMBDA})
 
-        self.applyMatrixMethod(methodKey='Integer random uniform', valueKey='s', params={'min':0, 'max':_AMP})
+        self.applyDataMethod(methodKey='Integer random uniform', valueKey='s', params={'min':0, 'max':_AMP})
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.constructor: done")
@@ -63,9 +63,9 @@ class InfoFieldLine(InfoMatrix):
 
         methods = super().mapSetMethods()
 
-        methods['ILine deltas'      ] = {'matrixMethod': self.deltas,    'pointMethod':None, 'params':{}                               , 'type':'ask'  }
-        methods['ILine autocorr'    ] = {'matrixMethod': self.autoCorr,  'pointMethod':None, 'params':{}                               , 'type':'ask'  }
-        methods['ILine epoch step'  ] = {'matrixMethod': self.epochStep, 'pointMethod':None, 'params':{}                               , 'type':'ask'  }
+        methods['ILine deltas'      ] = {'dataMethod': self.deltas,    'pointMethod':None, 'params':{}                               , 'type':'ask'  }
+        methods['ILine autocorr'    ] = {'dataMethod': self.autoCorr,  'pointMethod':None, 'params':{}                               , 'type':'ask'  }
+        methods['ILine epoch step'  ] = {'dataMethod': self.epochStep, 'pointMethod':None, 'params':{}                               , 'type':'ask'  }
 
         for methodKey in methods.keys():
             if not methodKey.startswith('ILine '): methods[methodKey]['visible'] = False
@@ -84,13 +84,13 @@ class InfoFieldLine(InfoMatrix):
         #----------------------------------------------------------------------
         # Vsetky IPoints nastavim do subMatrix listu
         #----------------------------------------------------------------------
-        points = self.actSubmatrix()
+        points = self.actSubData()
 
         prevS = 0
         points[0].set( vals = {'d': prevS} )
 
         #----------------------------------------------------------------------
-        # Prejdem vsetky boby v subMatrix a pre kazdy bod nastavim hodnotu ako rozdiel medzi hodnotou bodu a predosleho bodu
+        # Prejdem vsetky boby v subdata a pre kazdy bod nastavim hodnotu ako rozdiel medzi hodnotou bodu a predosleho bodu
         #----------------------------------------------------------------------
         for i in range(1, len(points)):
 
@@ -121,11 +121,11 @@ class InfoFieldLine(InfoMatrix):
         #----------------------------------------------------------------------
         # Vsetky IPoints nastavim do subMatrix listu
         #----------------------------------------------------------------------
-        points = self.actSubmatrix()
+        points = self.actSubData()
         n = len(points)
 
         #----------------------------------------------------------------------
-        # Prejdem tau od 0 po N-1, kde N je pocet bodov v subMatrixe
+        # Prejdem tau od 0 po N-1, kde N je pocet bodov v subdata
         #----------------------------------------------------------------------
         for tau in range(n-1):
 
@@ -165,7 +165,7 @@ class InfoFieldLine(InfoMatrix):
 
     #--------------------------------------------------------------------------
     def RFT( self, valueKey:str, params:dict):
-        """Compute Fast Fourier transform of real states in subMatrix.
+        """Compute Fast Fourier transform of real states in subdata.
         Parameters:
         - 'rad' : radix level for FFT e.g. size = 2^rad (default 0 for dynamic rad)
         """
@@ -173,9 +173,9 @@ class InfoFieldLine(InfoMatrix):
         logger.info(f"{self.name}.RFT: for key '{valueKey}' with params {params}")
 
         #----------------------------------------------------------------------
-        # Vsetky IPoints nastavim do subMatrix listu a vytvorim vektor vec
+        # Vsetky IPoints nastavim do subdata listu a vytvorim vektor vec
         #----------------------------------------------------------------------
-        points = self.actSubmatrix()
+        points = self.actSubData()
         n = len(points)
 
         vec = [0.0] * n
@@ -236,7 +236,7 @@ class InfoFieldLine(InfoMatrix):
         self._RFT( vec, ft, int(cmath.log(n, 2).real) )
 
         #----------------------------------------------------------------------
-        # Nastavim vysledky do subMatrix listu
+        # Nastavim vysledky do subdata listu
         #----------------------------------------------------------------------
         for i in range(n):
             points[i].set(vals={'a': abs(ft[i])})
@@ -370,9 +370,9 @@ class InfoFieldLine(InfoMatrix):
         pts = 0
 
         self.clearPoints(defs={valueKey: False})
-        self.actSubmatrix( {'e': 0} )
-        pts = self.applyMatrixMethod(methodKey='Random bit', valueKey=valueKey, params=params)
-        self.actSubmatrix()
+        self.actSubData( {'e': 0} )
+        pts = self.applyDataMethod(methodKey='Random bit', valueKey=valueKey, params=params)
+        self.actSubData()
 
         logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
 

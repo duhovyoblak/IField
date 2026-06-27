@@ -19,16 +19,16 @@ IField/
 │   ├── idata/                                # Dátový balíček (Info bázové triedy)
 │   │   ├── __init__.py
 │   │   ├── ipoint.py                         # InfoPoint - základný bod v poli
-│   │   ├── imatrix.py                        # InfoMatrix - matica bodov
+│   │   ├── imatrix.py                        # InfoData - matica bodov
 │   │   ├── ipoint_gui.py                     # GUI pre body
-│   │   ├── imatrix_gui.py                    # GUI pre matice
-│   │   ├── imatrix_data_gui.py               # GUI pre dáta matíc
-│   │   ├── imatrix_display_gui.py            # GUI pre zobrazenie matíc
-│   │   └── imatrix_method_gui.py             # GUI pre metódy matíc
+│   │   ├── idata_gui.py                      # GUI pre matice
+│   │   ├── idata_data_gui.py                 # GUI pre dáta matíc
+│   │   ├── idata_display_gui.py              # GUI pre zobrazovanie matíc
+│   │   └── idata_method_gui.py               # GUI pre metódy matíc
 │   ├── ifield/                               # IField balíček (aplikačná logika)
 │   │   ├── __init__.py
 │   │   ├── imatrix.py                        # InfoFieldMatrix - IField-špecifická matica
-│   │   ├── imatrix_gui.py                    # GUI pre IField matice
+│   │   ├── idata_gui.py                      # GUI pre IField matice
 │   │   ├── imodel.py                         # Informačný model
 │   │   └── imodel_gui.py                     # GUI pre model
 ├── test/                                     # Testovací kód
@@ -61,13 +61,13 @@ Projekt je organizovaný do dvoch Python balíčkov:
 #### `idata` balíček - Dátové štruktúry
 Základné triedy bez špecifickej aplikačnej logiky:
 - **InfoPoint** (`ipoint.py`) - Jednotlivý bod v informačnom poli s hodnotami a polohou
-- **InfoMatrix** (`imatrix.py`) - Matica InfoPoint objektov s osami a podmaticami
+- **InfoData** (`imatrix.py`) - Matica InfoPoint objektov s osami a podmaticami
 - **GUI komponenty** - Grafické rozhrania pre zobrazenie a editáciu dát
 
 #### `ifield` balíček - Aplikačná logika
 IField-špecifické implementácie:
-- **InfoFieldMatrix** (`imatrix.py`) - Rozšírenie InfoMatrix s komplexnými hodnotami a dynamikou polí
-- **IFieldMatrixGui** (`imatrix_gui.py`) - Špecializované GUI pre IField matice
+- **InfoFieldMatrix** (`imatrix.py`) - Rozšírenie InfoData s komplexnými hodnotami a dynamikou polí
+- **IFieldMatrixGui** (`idata_gui.py`) - Špecializované GUI pre IField matice
 - **InfoModel** (`imodel.py`) - Informačný model pre úlohy
 - **InfoModelGui** (`imodel_gui.py`) - GUI pre prácu s modelom
 
@@ -79,7 +79,7 @@ Hlavný vstupný bod aplikácie. Inicializuje:
 - IFieldMatrixGui grafické rozhranie
 
 ### Importy
-- Z balíčka `idata`: `from idata.imatrix import InfoMatrix`
+- Z balíčka `idata`: `from idata.idata import InfoData`
 - Z balíčka `ifield`: `from ifield.imatrix import InfoFieldMatrix`
 - Relatívne importy v balíčkoch: `from .imatrix import InfoFieldMatrix`
 

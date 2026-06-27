@@ -26,15 +26,15 @@ _PADY           =  5
 #------------------------------------------------------------------------------
 
 #==============================================================================
-# Class InfoMatrixMethodGui
+# Class InfoDataMethodGui
 #------------------------------------------------------------------------------
-class InfoMatrixMethodGui(tk.Toplevel):
+class InfoDataMethodGui(tk.Toplevel):
 
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, name, container, params, **kwargs):
-        "Call constructor of InfoMatrixMethodGui and initialise it for respective data"
+        "Call constructor of InfoDataMethodGui and initialise it for respective data"
 
         logger.audit(f'{name}.init: {params}')
 
@@ -134,18 +134,18 @@ class InfoMatrixMethodGui(tk.Toplevel):
 #==============================================================================
 # Inicializacia modulu
 #------------------------------------------------------------------------------
-print(f'InfoMatrixMethodGui ver {_VER}')
+print(f'InfoDataMethodGui ver {_VER}')
 
 if __name__ == '__main__':
 
-    logger.info("Testing InfoMatrixMethodGui class")
+    logger.info("Testing InfoDataMethodGui class")
 
     #--------------------------------------------------------------------------
-    # Test of the InfoMatrixMethodGui class
+    # Test of the InfoDataMethodGui class
     #--------------------------------------------------------------------------
     win = tk.Tk()
     win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
-    win.title('Test of InfoMatrixMethodGui class')
+    win.title('Test of InfoDataMethodGui class')
     #win.maxsize(width=900, height=800)
     win.minsize(width=400, height=300)
     win.config(highlightbackground = "green", highlightcolor= "green")
@@ -161,10 +161,10 @@ if __name__ == '__main__':
                ,'keyY'     : 'None' # key for Axis Y to show
             }
 
-    gui = InfoMatrixMethodGui(name='Method parameters set', container=win, params=params)
+    gui = InfoDataMethodGui(name='Method parameters set', container=win, params=params)
 
     win.mainloop()
-    gui.logger.info('Stop of InfoMatrixMethodGui test')
+    gui.logger.info('Stop of InfoDataMethodGui test')
 
 #==============================================================================
 #                              END OF FILE

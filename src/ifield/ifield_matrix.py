@@ -4,7 +4,7 @@
 import cmath
 
 from   .                      import logger
-from   idata.imatrix          import InfoMatrix
+from   idata.idata            import InfoData
 
 #==============================================================================
 # Module's constants
@@ -22,7 +22,7 @@ _PHASES =   2       # Default number of the discrete phases for complex values
 #==============================================================================
 # InfoFieldMatrix
 #------------------------------------------------------------------------------
-class InfoFieldMatrix(InfoMatrix):
+class InfoFieldMatrix(InfoData):
 
     #==========================================================================
     # Static variables & methods
@@ -74,7 +74,7 @@ class InfoFieldMatrix(InfoMatrix):
         self.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State', 'omg': 'Omega'}})
         self.init(cnts={'l':_LAMBDA, 'e':_EPOCH})
 
-        self.applyMatrixMethod(methodKey='Comp constant (re/im)', valueKey='s', params={'real':0, 'imag':0})
+        self.applyDataMethod(methodKey='Comp constant (re/im)', valueKey='s', params={'real':0, 'imag':0})
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.constructor: done")
@@ -87,8 +87,8 @@ class InfoFieldMatrix(InfoMatrix):
 
         methods = super().mapSetMethods()
 
-        methods['IField init Complex'] = {'matrixMethod': self.rndComplex,'pointMethod':None, 'params':{'probAbs':0.5, 'phases':_PHASES}, 'type':'quiet'}
-        methods['IField epoch step'  ] = {'matrixMethod': self.epochStep, 'pointMethod':None, 'params':{}                               , 'type':'ask'  }
+        methods['IField init Complex'] = {'dataMethod': self.rndComplex,'pointMethod':None, 'params':{'probAbs':0.5, 'phases':_PHASES}, 'type':'quiet'}
+        methods['IField epoch step'  ] = {'dataMethod': self.epochStep, 'pointMethod':None, 'params':{}                               , 'type':'ask'  }
 
         for methodKey in methods.keys():
             if not methodKey.startswith('IField '): methods[methodKey]['visible'] = False
@@ -96,7 +96,7 @@ class InfoFieldMatrix(InfoMatrix):
         return methods
 
     #==========================================================================
-    # Matrix methods to apply in Dynamics methods
+    # Data methods to apply in Dynamics methods
     #--------------------------------------------------------------------------
     def rndBool(self, valueKey:str, params:dict):
         """Clear all model and set state as random Boolean values."""
@@ -104,9 +104,9 @@ class InfoFieldMatrix(InfoMatrix):
         pts = 0
 
         self.clearPoints(defs={valueKey: False})
-        self.actSubmatrix( {'e': 0} )
-        pts = self.applyMatrixMethod(methodKey='Random bit', valueKey=valueKey, params=params)
-        self.actSubmatrix()
+        self.actSubData( {'e': 0} )
+        pts = self.applyDataMethod(methodKey='Random bit', valueKey=valueKey, params=params)
+        self.actSubData()
 
         logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
 
@@ -117,17 +117,17 @@ class InfoFieldMatrix(InfoMatrix):
         pts = 0
 
         self.clearPoints(defs={valueKey: False})
-        self.actSubmatrix( {'e': 0} )
+        self.actSubData( {'e': 0} )
         params['phases'] = self.phs
-        pts = self.applyMatrixMethod(methodKey='Comp discrete phase', valueKey=valueKey, params=params)
-        self.actSubmatrix()
+        pts = self.applyDataMethod(methodKey='Comp discrete phase', valueKey=valueKey, params=params)
+        self.actSubData()
 
         logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
 
     #--------------------------------------------------------------------------
     def epochStep(self, valueKey:str, params:dict):
         """Compute next epoch state."""
-        
+
         logger.info(f"{self.name}.epochStep: for key '{valueKey}' with params {params}")
         pts = 0
 

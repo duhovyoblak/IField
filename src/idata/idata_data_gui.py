@@ -26,31 +26,31 @@ _PADY           =  5
 #------------------------------------------------------------------------------
 
 #==============================================================================
-# Class InfoMatrixDataGui
+# Class InfoDataDataGui
 #------------------------------------------------------------------------------
-class InfoMatrixDataGui(tk.Toplevel):
+class InfoDataDataGui(tk.Toplevel):
 
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, name, container, matrix, **kwargs):
-        "Call constructor of InfoMatrixDataGui and initialise it for respective data"
+    def __init__(self, name, container, data, **kwargs):
+        "Call constructor of InfoDataDataGui and initialise it for respective data"
 
         logger.audit(f'{name}.init:')
 
-        self.name     = name               # Name of this chart
-        self.matrix   = matrix             # Matrix type to work with
+        self.name     = name                      # Name of this GUI
+        self.data     = data                      # Data type to work with
 
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self._cnts  = self.matrix._cnts.copy()      # _cnts  pre prikaz Apply
-        self._rects = self.matrix._rects.copy()     # _rects pre prikaz Apply
-        self._origs = self.matrix._origs.copy()     # _origs pre prikaz Apply
+        self._cnts  = self.data._cnts.copy()      # _cnts  pre prikaz Apply
+        self._rects = self.data._rects.copy()     # _rects pre prikaz Apply
+        self._origs = self.data._origs.copy()     # _origs pre prikaz Apply
 
-        self.origCnts  = self.matrix._cnts.copy()   # Original _cnts  pre prikaz Cancel
-        self.origRects = self.matrix._rects.copy()  # Original _rects pre prikaz Cancel
-        self.origOrigs = self.matrix._origs.copy()  # Original _origs pre prikaz Cancel
+        self.origCnts  = self.data._cnts.copy()   # Original _cnts  pre prikaz Cancel
+        self.origRects = self.data._rects.copy()  # Original _rects pre prikaz Cancel
+        self.origOrigs = self.data._origs.copy()  # Original _origs pre prikaz Cancel
 
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
@@ -147,7 +147,7 @@ class InfoMatrixDataGui(tk.Toplevel):
 
     #--------------------------------------------------------------------------
     def setParam(self, paramType:str, key:str, val:str):
-        "Update or Add new parameter to the matrix setting"
+        "Update or Add new parameter to the data setting"
 
         logger.debug(f'{self.name}.setParam: {paramType}[{key}] = {val}')
 
@@ -207,20 +207,20 @@ class InfoMatrixDataGui(tk.Toplevel):
 
     #--------------------------------------------------------------------------
     def apply(self):
-        "Apply inputs and initialise the matrix"
+        "Apply inputs and initialise the data"
 
-        self.matrix.init( cnts=self._cnts, rects=self._rects, origs=self._origs )
+        self.data.init( cnts=self._cnts, rects=self._rects, origs=self._origs )
 
-        logger.warning(f'{self.name}.apply: Changes were applied, matrix initialised')
+        logger.warning(f'{self.name}.apply: Changes were applied, data initialised')
         self.destroy()
 
     #--------------------------------------------------------------------------
     def cancel(self):
         "Cancel changes and restore original settings"
 
-        self.matrix._cnts  = self.origCnts      # Original _cnts
-        self.matrix._rects = self.origRects     # Original _rects
-        self.matrix._origs = self.origOrigs     # Original _origs
+        self.data._cnts  = self.origCnts      # Original _cnts
+        self.data._rects = self.origRects     # Original _rects
+        self.data._origs = self.origOrigs     # Original _origs
 
         logger.info(f'{self.name}.cancel: Changes were cancelled, settings restored')
         self.destroy()
@@ -230,22 +230,22 @@ class InfoMatrixDataGui(tk.Toplevel):
 #==============================================================================
 # Inicializacia modulu
 #------------------------------------------------------------------------------
-print(f'InfoMatrixDataGui ver {_VER}')
+print(f'InfoDataDataGui ver {_VER}')
 
 if __name__ == '__main__':
 
 
-    logger.info("Testing InfoMatrixDataGui class")
+    logger.info("Testing InfoDataDataGui class")
 
     from   idata.ipoint           import InfoPoint
-    from   idata.imatrix          import InfoMatrix
+    from   idata.idata            import InfoData
 
     #--------------------------------------------------------------------------
-    # Test of the InfoMatrixDataGui class
+    # Test of the InfoDataDataGui class
     #--------------------------------------------------------------------------
     win = tk.Tk()
     win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
-    win.title('Test of InfoMatrixDataGui class')
+    win.title('Test of InfoDataDataGui class')
     #win.maxsize(width=900, height=800)
     win.minsize(width=400, height=300)
     win.config(highlightbackground = "green", highlightcolor= "green")
@@ -253,7 +253,7 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Zaciatok testu
     #--------------------------------------------------------------------------
-    im = InfoMatrix('Test matrix')
+    im = InfoData('Test data')
     logger.setLevel('DEBUG')
     logger.frameDepth = 2
 
@@ -261,10 +261,10 @@ if __name__ == '__main__':
     im.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
     im.init(cnts={'l':30, 'e':10})
 
-    matGui = InfoMatrixDataGui(name='Schema test', container=win, matrix=im)
+    matGui = InfoDataDataGui(name='Schema test', container=win, data=im)
 
     win.mainloop()
-    logger.info('Stop of InfoMatrixDataGui test')
+    logger.info('Stop of InfoDataDataGui test')
 
 #==============================================================================
 #                              END OF FILE

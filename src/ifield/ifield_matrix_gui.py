@@ -6,7 +6,7 @@ from   tkinter                import ttk
 
 from   siqolib.message        import SiqoMessage
 
-from   idata.imatrix_gui      import InfoMatrixGui
+from   idata.idata_gui            import InfoDataGui
 
 from   .                      import logger
 from   .ifield_matrix         import InfoFieldMatrix
@@ -26,30 +26,30 @@ _PADY           =  5
 #==============================================================================
 # Class IFieldMatrixGui
 #------------------------------------------------------------------------------
-class IFieldMatrixGui(InfoMatrixGui):
+class IFieldMatrixGui(InfoDataGui):
 
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, container, dat:InfoFieldMatrix):
+    def __init__(self, container, data:InfoFieldMatrix):
         "Call constructor of IFieldMatrixGui and initialise it for respective data"
 
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self.varL2E   = tk.IntVar   (value=dat.l2e  )
-        self.varPhs   = tk.IntVar   (value=dat.phs  )
-        self.varL2P   = tk.IntVar   (value=dat.l2p  )
+        self.varL2E   = tk.IntVar   (value=data.l2e  )
+        self.varPhs   = tk.IntVar   (value=data.phs  )
+        self.varL2P   = tk.IntVar   (value=data.l2p  )
 
-        self.varSType = tk.StringVar(value=dat.sType)
-        self.varSAgg  = tk.StringVar(value=dat.sAgg )
-        self.varRule  = tk.StringVar(value=dat.rule )
-        self.varMaxL  = tk.IntVar   (value=dat.maxL )
+        self.varSType = tk.StringVar(value=data.sType)
+        self.varSAgg  = tk.StringVar(value=data.sAgg )
+        self.varRule  = tk.StringVar(value=data.rule )
+        self.varMaxL  = tk.IntVar   (value=data.maxL )
 
         #----------------------------------------------------------------------
-        # Initialise InfoMatrixGui
+        # Initialise InfoDataGui
         #----------------------------------------------------------------------
-        super().__init__(container=container, dat=dat)
+        super().__init__(container=container, data=data)
 
         #----------------------------------------------------------------------
         # Inicializacia
@@ -62,7 +62,7 @@ class IFieldMatrixGui(InfoMatrixGui):
 
     #--------------------------------------------------------------------------
     def showChildFrame(self, container):
-        """Show frame in parent container InfoMatrixGui dedicated to child classes."""
+        """Show frame in parent container InfoDataGui dedicated to child classes."""
 
         lbl = ttk.Label(container, text="L2E (epoch per lambda):")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
@@ -91,21 +91,21 @@ class IFieldMatrixGui(InfoMatrixGui):
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
 
         comboBox = ttk.Combobox(container, textvariable=self.varSType, state='readonly')
-        comboBox['values'] = self.dat.sTypes
+        comboBox['values'] = self.data.sTypes
         comboBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
         comboBox.bind('<<ComboboxSelected>>', lambda event: self.updateChildFrame())
 
         lbl = ttk.Label(container, text="Aggregation method:")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
         comboBox = ttk.Combobox(container, textvariable=self.varSAgg, state='readonly')
-        comboBox['values'] = self.dat.sAggs
+        comboBox['values'] = self.data.sAggs
         comboBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
         comboBox.bind('<<ComboboxSelected>>', lambda event: self.updateChildFrame())
 
         lbl = ttk.Label(container, text="Neighbors' rule:")
         lbl.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
         comboBox = ttk.Combobox(container, textvariable=self.varRule, state='readonly')
-        comboBox['values'] = self.dat.rules
+        comboBox['values'] = self.data.rules
         comboBox.pack(fill=tk.X, expand=False, side=tk.TOP, anchor=tk.N, padx=_PADX, pady=_PADY)
         comboBox.bind('<<ComboboxSelected>>', lambda event: self.updateChildFrame())
 
@@ -118,35 +118,35 @@ class IFieldMatrixGui(InfoMatrixGui):
 
     #--------------------------------------------------------------------------
     def updateChildFrame(self):
-        """Update frame in parent container InfoMatrixGui dedicated to child classes."""
+        """Update frame in parent container InfoDataGui dedicated to child classes."""
 
-        if self.dat.l2e != self.varL2E.get():
-            logger.warning(f'{self.name}.updateChildFrame: L2E changed {self.dat.l2e} -> {self.varL2E.get()}')
-            self.dat.l2e = self.varL2E.get()
+        if self.data.l2e != self.varL2E.get():
+            logger.warning(f'{self.name}.updateChildFrame: L2E changed {self.data.l2e} -> {self.varL2E.get()}')
+            self.data.l2e = self.varL2E.get()
 
-        if self.dat.phs != self.varPhs.get():
-            logger.warning(f'{self.name}.updateChildFrame: Number of phases changed {self.dat.phs} -> {self.varPhs.get()}')
-            self.dat.phs = self.varPhs.get()
+        if self.data.phs != self.varPhs.get():
+            logger.warning(f'{self.name}.updateChildFrame: Number of phases changed {self.data.phs} -> {self.varPhs.get()}')
+            self.data.phs = self.varPhs.get()
 
-        if self.dat.l2p != self.varL2P.get():
-            logger.warning(f'{self.name}.updateChildFrame: L2P changed {self.dat.l2p} -> {self.varL2P.get()}')
-            self.dat.l2p = self.varL2P.get()
+        if self.data.l2p != self.varL2P.get():
+            logger.warning(f'{self.name}.updateChildFrame: L2P changed {self.data.l2p} -> {self.varL2P.get()}')
+            self.data.l2p = self.varL2P.get()
 
-        if self.dat.sType != self.varSType.get():
-            logger.warning(f'{self.name}.updateChildFrame: State type changed {self.dat.sType} -> {self.varSType.get()}')
-            self.dat.sType = self.varSType.get()
+        if self.data.sType != self.varSType.get():
+            logger.warning(f'{self.name}.updateChildFrame: State type changed {self.data.sType} -> {self.varSType.get()}')
+            self.data.sType = self.varSType.get()
 
-        if self.dat.sAgg != self.varSAgg.get():
-            logger.warning(f'{self.name}.updateChildFrame: Aggregation method changed {self.dat.sAgg} -> {self.varSAgg.get()}')
-            self.dat.sAgg = self.varSAgg.get()
+        if self.data.sAgg != self.varSAgg.get():
+            logger.warning(f'{self.name}.updateChildFrame: Aggregation method changed {self.data.sAgg} -> {self.varSAgg.get()}')
+            self.data.sAgg = self.varSAgg.get()
 
-        if self.dat.rule != self.varRule.get():
-            logger.warning(f'{self.name}.updateChildFrame: Neighbors\' rule changed {self.dat.rule} -> {self.varRule.get()}')
-            self.dat.rule = self.varRule.get()
+        if self.data.rule != self.varRule.get():
+            logger.warning(f'{self.name}.updateChildFrame: Neighbors\' rule changed {self.data.rule} -> {self.varRule.get()}')
+            self.data.rule = self.varRule.get()
 
-        if self.dat.maxL != self.varMaxL.get():
-            logger.warning(f'{self.name}.updateChildFrame: Maximal number of neighbors changed {self.dat.maxL} -> {self.varMaxL.get()}')
-            self.dat.maxL = self.varMaxL.get()
+        if self.data.maxL != self.varMaxL.get():
+            logger.warning(f'{self.name}.updateChildFrame: Maximal number of neighbors changed {self.data.maxL} -> {self.varMaxL.get()}')
+            self.data.maxL = self.varMaxL.get()
 
         logger.debug(f'{self.name}.updateChildFrame: Done')
 

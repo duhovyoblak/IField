@@ -29,19 +29,19 @@ _PADY           =  5
 #------------------------------------------------------------------------------
 
 #==============================================================================
-# Class InfoMatrixDisplayGui
+# Class InfoDataDisplayGui
 #------------------------------------------------------------------------------
-class InfoMatrixDisplayGui(tk.Toplevel):
+class InfoDataDisplayGui(tk.Toplevel):
 
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, name, container, display, **kwargs):
-        "Call constructor of InfoMatrixDisplayGui and initialise it for respective data"
+        "Call constructor of InfoDataDisplayGui and initialise it for respective data"
 
         logger.audit(f'{name}.init: {display}')
 
-        self.name     = name                       # Name of this chart
+        self.name     = name                       # Name of this GUI
         self.display  = deepcopy(display)          # Display options to be edited
 
         #----------------------------------------------------------------------
@@ -230,21 +230,21 @@ class InfoMatrixDisplayGui(tk.Toplevel):
 #==============================================================================
 # Inicializacia modulu
 #------------------------------------------------------------------------------
-print(f'InfoMatrixDisplayGui ver {_VER}')
+print(f'InfoDataDisplayGui ver {_VER}')
 
 if __name__ == '__main__':
 
-    logger.info("Testing InfoMatrixDisplayGui class")
+    logger.info("Testing InfoDataDisplayGui class")
 
     from   idata.ipoint           import InfoPoint
-    from   idata.imatrix          import InfoMatrix
+    from   idata.idata            import InfoData
 
     #--------------------------------------------------------------------------
-    # Test of the InfoMatrixDisplayGui class
+    # Test of the InfoDataDisplayGui class
     #--------------------------------------------------------------------------
     win = tk.Tk()
     win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
-    win.title('Test of InfoMatrixDisplayGui class')
+    win.title('Test of InfoDataDisplayGui class')
     #win.maxsize(width=900, height=800)
     win.minsize(width=400, height=300)
     win.config(highlightbackground = "green", highlightcolor= "green")
@@ -256,7 +256,7 @@ if __name__ == '__main__':
     #--------------------------------------------------------------------------
     # Zaciatok testu
     #--------------------------------------------------------------------------
-    im = InfoMatrix('Test matrix')
+    im = InfoData('Test data')
     im.setIpType('ipTest')
     im.logger.setLevel('DEBUG')
     im.logger.frameDepth = 2
@@ -276,10 +276,10 @@ if __name__ == '__main__':
     display['axeKeys' ].append('None')
     display['axeNames'].append('None')
 
-    matGui = InfoMatrixDisplayGui(name='Display test', container=win, display=display)
+    matGui = InfoDataDisplayGui(name='Display test', container=win, display=display)
 
     win.mainloop()
-    matGui.logger.info('Stop of InfoMatrixDisplayGui test')
+    matGui.logger.info('Stop of InfoDataDisplayGui test')
 
 #==============================================================================
 #                              END OF FILE
