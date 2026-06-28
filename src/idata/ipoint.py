@@ -11,7 +11,7 @@ from   .                      import logger
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER      = '3.2.2'
+_VER      = '3.3.0'
 
 _IND      = '|  '                      # Info indentation
 _F_SCHEMA = 1                          # Format for ipType
@@ -823,7 +823,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def intConst(infoPoint, outKey:str, params:dict) -> int:
+    def intConst(infoPoint, inKey:str, outKey:str, params:dict) -> int:
         """Set keyed value to constant integer value.
            params should have key 'const' with constant value to set.
            Retuns 1 if value was set, otherwise 0.
@@ -835,7 +835,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def intRandUni(infoPoint, outKey:str, params:dict) -> int:
+    def intRandUni(infoPoint, inKey:str, outKey:str, params:dict) -> int:
         """Set keyed value to random uniform integer value in range <min, max>.
            params should have keys 'min' and 'max' with range limits.
            Retuns 1 if value was set, otherwise 0.
@@ -851,7 +851,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def fltConst(infoPoint, outKey:str, params:dict) -> int:
+    def fltConst(infoPoint, inKey:str, outKey:str, params:dict) -> int:
         """Set keyed value to constant float value.
            params should have key 'const' with constant value to set.
            Retuns 1 if value was set, otherwise 0.
@@ -863,7 +863,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def fltRandUni(infoPoint, outKey:str, params:dict) -> int:
+    def fltRandUni(infoPoint, inKey:str, outKey:str, params:dict) -> int:
         """Set keyed value to random uniform float value in range <min, max>.
            params should have keys 'min' and 'max' with range limits.
            Retuns 1 if value was set, otherwise 0.
@@ -879,7 +879,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def fltRandBit(infoPoint, outKey:str, params:dict) -> int:
+    def fltRandBit(infoPoint, inKey:str, outKey:str, params:dict) -> int:
         """Set keyed value to random bit value (1 or 0) with probability prob1.
            params should have key 'prob1' with probability of setting value to 1.
            If params does not have key 'prob1', default probability is 0.5.
@@ -893,7 +893,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpConstR(infoPoint, outKey:str, params:dict) -> int:
+    def cmpConstR(infoPoint, inKey:str, outKey:str, params:dict) -> int:
         """Set keyed value to constant complex value given by real and imaginary parts.
            params should have keys 'real' and 'imag' with real and imaginary parts of the complex value to set.
            If params does not have key 'real' or 'imag', default value for respective part is 0.
@@ -909,7 +909,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpConstP(infoPoint, outKey:str, params:dict) -> int:
+    def cmpConstP(infoPoint, inKey:str, outKey:str, params:dict) -> int:
         """Set keyed value to constant complex value given by absolute value and phase.
            params should have keys 'abs' and 'phase' with absolute value and phase of the complex value to set.
            If params does not have key 'abs' or 'phase', default value for respective part is 0.
@@ -925,7 +925,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpRandUniR(infoPoint, outKey:str, params:dict) -> int:
+    def cmpRandUniR(infoPoint, inKey:str, outKey:str, params:dict) -> int:
         """Set keyed value to random complex value with uniform real and imaginary parts in given ranges.
            params should have keys 'reMin', 'reMax', 'imMin' and 'imMax' with ranges for real and imaginary parts of the complex value to set.
            If params does not have key 'reMin', 'reMax', 'imMin' or 'imMax', default value for respective part is 0 for minimum and 1 for maximum.
@@ -946,7 +946,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpRandUniP(infoPoint, outKey:str, params:dict) -> int:
+    def cmpRandUniP(infoPoint, inKey:str, outKey:str, params:dict) -> int:
         """Set keyed value to random complex value with uniform absolute value and phase in given ranges.
            params should have keys 'absMin', 'absMax', 'phaseMin' and 'phaseMax' with ranges for absolute value and phase of the complex value to set.
            If params does not have key 'absMin', 'absMax', 'phaseMin' or 'phaseMax', default value for respective part is 0 for minimum and 1 for maximum.
@@ -967,7 +967,7 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def cmpDiscPhases(infoPoint, outKey:str, params:dict) -> int:
+    def cmpDiscPhases(infoPoint, inKey:str, outKey:str, params:dict) -> int:
         """Set keyed value to random complex value with discrete uniform phases.
            params should have keys 'probAbs' and 'phases' with probability of selecting non-zero absolute value and number of discrete phases.
            If params does not have key 'probAbs' or 'phases', default values are 0.5 and 2 respectively.

@@ -31,14 +31,13 @@ class ISeries(InfoData):
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, name, dTime=1, cnt:dict|tuple=_CNT, defVal=0, axes:dict|tuple=_AXES, vals:dict|tuple=_VALS):
+    def __init__(self, name, dTime=1, cnt:dict|tuple=_CNT, axes:dict|tuple=_AXES, vals:dict|tuple=_VALS):
         """Calls constructor of ISeries, e.g. one-dimensional InfoData
         Parameters:
         - name   : Name of the ISeries object
         - dTime  : Time step between consecutive points in seconds
         - cnt    : Number of points in the series (default 1200)
-        - defVal : Default value for all points in the series, can be integer, float, complex (default 0)
-        - axes   : Axes of the series (default {'i': 'Time tick'})
+        - axes   : Axes   of the series (default {'i': 'Time tick'})
         - vals   : Values of the series (default {'s': 'State', 'd': 'Delta'})
         """
 
@@ -59,10 +58,9 @@ class ISeries(InfoData):
         self.setSchema({'axes': axes, 'vals': vals})
 
         #----------------------------------------------------------------------
-        # Inicializacia
+        # Inicializacia cnt InfoPoints
         #----------------------------------------------------------------------
-        defs = {valKey: defVal for valKey in self.vals.keys()}
-        self.init( cnts=(cnt,), defs=defs )
+        self.init( cnts=(cnt,) )
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.constructor: done")
@@ -104,8 +102,14 @@ class ISeries(InfoData):
     #==========================================================================
     # Line methods to apply in Dynamics methods
     #--------------------------------------------------------------------------
-    def deltas(self, outData:'InfoData', outKey:str, params:dict):
-        """Compute deltas of states between consecutive points."""
+    def deltas(self, inKey:str, outKey:str, params:dict, outData:'InfoData|None'=None) -> int|None:
+        """Compute deltas of states between consecutive points.
+        - inKey  : Key of the value to be read by the method
+        - outKey : Key of the value to be set by the method
+        - params : Parameters for the method as dict
+        - outData: Optional InfoData to store output data, if None, output is stored in self
+        Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
+        """
 
         logger.info(f"{self.name}.deltas: for key '{outKey}' with params {params}")
         pts = 0
@@ -142,7 +146,7 @@ class ISeries(InfoData):
         logger.info(f"{self.name}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
 
     #--------------------------------------------------------------------------
-    def autoCorr(self, outData:'InfoData', outKey:str, params:dict):
+    def autoCorr(self, inKey:str, outKey:str, params:dict, outData:'InfoData|None'=None) -> int|None:
         """Compute auto-correlation of states."""
 
         logger.info(f"{self.name}.autoCorr: for key '{outKey}' with params {params}")
@@ -193,7 +197,7 @@ class ISeries(InfoData):
         logger.info(f"{self.name}.autoCorr: Done")
 
     #--------------------------------------------------------------------------
-    def RFT( self, outData:'InfoData', outKey:str, params:dict):
+    def RFT(self, inKey:str, outKey:str, params:dict, outData:'InfoData|None'=None) -> int|None:
         """Compute Fast Fourier transform of real states in subdata.
         Parameters:
         - 'rad' : radix level for FFT e.g. size = 2^rad (default 0 for dynamic rad)
@@ -383,7 +387,7 @@ class ISeries(InfoData):
             logger.info(f"{self.name}._FFT: FFT computation complete (size={size})")
 
     #--------------------------------------------------------------------------
-    def epochStep(self, outKey:str, params:dict):
+    def epochStep(self, inKey:str, outKey:str, params:dict, outData:'InfoData|None'=None) -> int|None:
         """Compute next epoch state."""
 
         logger.info(f"{self.name}.epochStep: for key '{outKey}' with params {params}")
@@ -393,8 +397,9 @@ class ISeries(InfoData):
         logger.info(f"{self.name}.epochStep: {pts} InfoPoints was updated for key '{outKey}' in epoch step")
 
     #--------------------------------------------------------------------------
-    def rndBool(self, outKey:str, params:dict):
+    def rndBool(self, inKey:str, outKey:str, params:dict, outData:'InfoData|None'=None) -> int|None:
         """Clear all model and set state as random Boolean values."""
+
         logger.debug(f"{self.name}.rndBool: for key '{outKey}' with params {params}")
         pts = 0
 
