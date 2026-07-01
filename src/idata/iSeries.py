@@ -85,7 +85,7 @@ class ISeries(InfoData):
                                           ,'visible'    :True
                                           ,'paramAsk'   :True
                                           ,'outData'    :None
-                                          ,'outKey'     :None
+                                          ,'outKey'     :'d'
                                           }
         methods['ISeries autocorr'    ] = {'dataMethod' : self.autoCorr
                                           ,'pointMethod':None
@@ -115,9 +115,9 @@ class ISeries(InfoData):
         pts = 0
 
         #----------------------------------------------------------------------
-        # Vsetky IPoints nastavim do subMatrix listu
+        # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
         #----------------------------------------------------------------------
-        points = self.actSubData()
+        points = self.actList
 
         prevS = 0
         points[0].set( vals = {outKey: prevS} )
@@ -152,9 +152,9 @@ class ISeries(InfoData):
         logger.info(f"{self.name}.autoCorr: for key '{outKey}' with params {params}")
 
         #----------------------------------------------------------------------
-        # Vsetky IPoints nastavim do subMatrix listu
+        # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
         #----------------------------------------------------------------------
-        points = self.actSubData()
+        points = self.actList
         n = len(points)
 
         #----------------------------------------------------------------------
@@ -206,9 +206,9 @@ class ISeries(InfoData):
         logger.info(f"{self.name}.RFT: for key '{outKey}' with params {params}")
 
         #----------------------------------------------------------------------
-        # Vsetky IPoints nastavim do subdata listu a vytvorim vektor vec
+        # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
         #----------------------------------------------------------------------
-        points = self.actSubData()
+        points = self.actList
         n = len(points)
 
         vec = [0.0] * n
