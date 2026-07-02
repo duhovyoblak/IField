@@ -891,7 +891,6 @@ class InfoDataGui(ttk.Frame):
         # Ziskanie definicie metody
         #----------------------------------------------------------------------
         metDef = self.data.mapSetMethods()[metKey]
-        print(f"metDef[{metKey}] = {metDef}")
         params = metDef['params']
 
         #----------------------------------------------------------------------
@@ -919,40 +918,44 @@ class InfoDataGui(ttk.Frame):
         else:
             usrPar = params
 
-        logger.audit(f'{self.name}.onMethodPlay: {self.display['valName']}[{self.display['valKey']}] will be set by {metKey} on subset={self.sub2D} with params={usrPar}')
-
         #----------------------------------------------------------------------
         # Ak je parameter 'all' = True, resetnem subData na vsetky InfoPoints, inak pouzijem aktualny subData
         #----------------------------------------------------------------------
         if 'all' in params.keys() and params['all'] == True: self.data.actSubData()
 
         #----------------------------------------------------------------------
-        # Ziskam vystupny IData objekt
+        # Urcim vstupny valKey
         #----------------------------------------------------------------------
-        if metDef['outData'] is None:
+        inKey = self.display['valKey']
 
+        #----------------------------------------------------------------------
+        # Ziskam vystupny IData objekt outData
+        #----------------------------------------------------------------------
+        if 'outData' in metDef and metDef['outData']:
+
+            #------------------------------------------------------------------
+            # Vystup smerovany do ineho IData objektu
+            #------------------------------------------------------------------
+            outData = self.data    # zatial....
+
+        else:
             #------------------------------------------------------------------
             # Vystup smerovany do tohto IData objektu
             #------------------------------------------------------------------
             outData = self.data
 
-        else:
-            #------------------------------------------------------------------
-            # Vystup smerovany do ineho IData objektu
-            #------------------------------------------------------------------
-            outData = None
-
         #----------------------------------------------------------------------
         # Urcim vystupny valKey a zabezpecim, ze bude v scheme vystupneho IData objektu
         #----------------------------------------------------------------------
-        outKey = metDef['outKey']
+        if 'outKey' in metDef and metDef['outKey']: outKey = metDef['outKey']
+        else                                      : outKey = inKey
 
-        if outData is not None and outKey is not None:
+        if not outData.isInSchema(valKeys=[outKey]):
 
-            if not outData.isInSchema(valKeys=[outKey]):
+            outData.setSchemaVal(key=outKey, name=metKey)
+            logger.warning(f'{self.name}.onMethodPlay: Value key {outKey} was added into schema of {outData.name}')
 
-                outData.setSchemaVal(key=outKey, name=metKey)
-                logger.warning(f'{self.name}.onMethodPlay: Value key {outKey} was added into schema of {outData.name}')
+        logger.audit(f'{self.name}.onMethodPlay: {outData.name}[{outKey}] = <{metKey}>({inKey}) with params={usrPar} on subset={self.sub2D}')
 
         #----------------------------------------------------------------------
         # Vsetko je pripravene: Press button PLAY
@@ -972,9 +975,9 @@ class InfoDataGui(ttk.Frame):
             #--------------------------------------------------------------
             # Apply the method and update the chart
             #--------------------------------------------------------------
-            logger.debug(f"{self.name}.methodApply: {outData.name} = {metKey}(key={self.display['valKey']}), par={usrPar})")
+            logger.debug(f"{self.name}.methodApply: {outData.name} = {metKey}({inKey}), par={usrPar})")
 
-            self.data.applyDataMethod(methodKey=metKey, outData=outData, outKey=outKey, params=usrPar)
+            self.data.applyDataMethod(methodKey=metKey, inKey=inKey, outKey=outKey, params=usrPar, outData=outData)
             self.viewChanged(force=True)
 
             #--------------------------------------------------------------
