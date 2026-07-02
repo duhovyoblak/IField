@@ -102,16 +102,16 @@ class ISeries(InfoData):
     #==========================================================================
     # Line methods to apply in Dynamics methods
     #--------------------------------------------------------------------------
-    def deltas(self, inKey:str, outKey:str, params:dict, outData:'InfoData|None'=None) -> int|None:
+    def deltas(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
         """Compute deltas of states between consecutive points.
         - inKey  : Key of the value to be read by the method
         - outKey : Key of the value to be set by the method
         - params : Parameters for the method as dict
-        - outData: Optional InfoData to store output data, if None, output is stored in self
+        - outData: InfoData to store output data
         Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.name}.deltas: for key '{outKey}' with params {params}")
+        logger.info(f"{self.name}.deltas: {outData.name}[{outKey}] = <Deltas>({inKey}) with params {params}")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -146,10 +146,16 @@ class ISeries(InfoData):
         logger.info(f"{self.name}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
 
     #--------------------------------------------------------------------------
-    def autoCorr(self, inKey:str, outKey:str, params:dict, outData:'InfoData|None'=None) -> int|None:
-        """Compute auto-correlation of states."""
+    def autoCorr(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
+        """Compute auto-correlation of states.
+        - inKey  : Key of the value to be read by the method
+        - outKey : Key of the value to be set by the method
+        - params : Parameters for the method as dict
+        - outData: InfoData to store output data
+        Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
+        """
 
-        logger.info(f"{self.name}.autoCorr: for key '{outKey}' with params {params}")
+        logger.info(f"{self.name}.autoCorr: {outData.name}[{outKey}] = <AutoCorr>({inKey}) with params {params}")
 
         #----------------------------------------------------------------------
         # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
@@ -197,13 +203,73 @@ class ISeries(InfoData):
         logger.info(f"{self.name}.autoCorr: Done")
 
     #--------------------------------------------------------------------------
-    def RFT(self, inKey:str, outKey:str, params:dict, outData:'InfoData|None'=None) -> int|None:
-        """Compute Fast Fourier transform of real states in subdata.
-        Parameters:
-        - 'rad' : radix level for FFT e.g. size = 2^rad (default 0 for dynamic rad)
+    def autoPhaseCorr(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
+        """Compute auto-correlation of states for each phase.
+        - inKey  : Key of the value to be read by the method
+        - outKey : Key of the value to be set by the method
+        - params : Parameters for the method as dict
+        - outData: InfoData to store output data
+        Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.name}.RFT: for key '{outKey}' with params {params}")
+        logger.info(f"{self.name}.autoPhaseCorr: {outData.name}[{outKey}] = <AutoPhaseCorr>({inKey}) with params {params}")
+
+        #----------------------------------------------------------------------
+        # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
+        #----------------------------------------------------------------------
+        points = self.actList
+        n = len(points)
+
+        #----------------------------------------------------------------------
+        # Prejdem tau od 0 po N-1, kde N je pocet bodov v subdata
+        #----------------------------------------------------------------------
+        for tau in range(n-1):
+
+            suma = 0
+            prod = 0
+            maxP = 0
+
+            #------------------------------------------------------------------
+            # Prejdem dvojice bodov (i, i+tau) a pre kazdu dvojicu bodov vypocitam produkt ich hodnot a pripoctem k sume
+            #------------------------------------------------------------------
+            for i in range(n):
+
+                # Pouzijem modularnu algebru, aby som pre lub
+                iPos =  i        % n
+                jPos = (i + tau) % n
+
+                iVal = points[iPos].val(valKey='s')
+                jVal = points[jPos].val(valKey='s')
+
+                prod = iVal * jVal
+                if prod > maxP: maxP = prod
+
+                suma += prod
+
+            #------------------------------------------------------------------
+            # Normujem sumu podla poctu bodov a nastavim hodnotu auto-korelacie pre tau
+            #------------------------------------------------------------------
+            points[tau].set(vals={outKey: (suma/n) })
+
+        #----------------------------------------------------------------------
+        # Posledny bod nastavim na 0
+        #----------------------------------------------------------------------
+        points[n-1].set(vals={outKey: 0})
+
+        #----------------------------------------------------------------------
+        logger.info(f"{self.name}.autoPhaseCorr: Done")
+
+    #--------------------------------------------------------------------------
+    def RFT(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
+        """Compute Fast Fourier transform of real states in subdata.
+        - inKey  : Key of the value to be read by the method
+        - outKey : Key of the value to be set by the method
+        - params : Parameters for the method as dict
+        -- 'rad' : radix level for FFT e.g. size = 2^rad (default 0 for dynamic rad)
+        - outData: InfoData to store output data
+        """
+
+        logger.info(f"{self.name}.RFT: {outData.name}[{outKey}] = <RFT>({inKey}) with params {params}")
 
         #----------------------------------------------------------------------
         # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
@@ -227,7 +293,7 @@ class ISeries(InfoData):
         size  = 1 << rad
         resid = n - size
         start = 0
-        fft   = [(0+0j, 0)] * size  # Initialize FFT output vector with complex zeros a zero weighta
+        fft   = [0+0j] * size  # Initialize FFT output vector with complex zeros
 
         if resid < 0:
             logger.error(f"{self.name}.RFT: Not enough points for FFT (n={n}, rad={rad}, size={size})")
@@ -253,20 +319,33 @@ class ISeries(InfoData):
                 self._FFT( vec[start:start+size], fftLocal, rad )
 
                 #--------------------------------------------------------------
-                # Pripocitam fftLocal do fft a pre zvysim vahu fft[i] o 1 pre indexy, ktore boli aktualizovane.
-                # Vaha fft je pocet vypoctov
+                # Pripocitam fftLocal do fft pre indexy, ktore boli aktualizovane.
                 #--------------------------------------------------------------
                 for i in range(size):
                     fft[i] += fftLocal[i]
-                    fft[i].weight += 1
 
+                #--------------------------------------------------------------
+                # Posuniem okno o krok size a aktualizujem reziduum
+                #--------------------------------------------------------------
+                start += size
+                resid -= size
 
+            else:
+                #--------------------------------------------------------------
+                # Ak je reziduum < 0, znizim rad o 1 a skusim znova
+                #--------------------------------------------------------------
+                #rad  -= 1
+                #size  = 1 << rad
+                resid = n - size
 
-        start = 0
-        size  = 1 << rad  # Size of the FFT window (must be a power of 2)
-        step  = size      # Step size for moving the window
-
-        self._RFT( vec, fft, int(cmath.log(n, 2).real) )
+        #----------------------------------------------------------------------
+        # Ak je reziduum > 0, vykonam FFT pre celu zvysnu cast
+        #----------------------------------------------------------------------
+        if resid > 0:
+            fftLocal = [0+0j] * size
+            self._FFT( vec[start:start+size] + [0]*(size-resid), fftLocal, rad )
+            for i in range(size):
+                fft[i] += fftLocal[i]
 
         #----------------------------------------------------------------------
         # Nastavim vysledky do subdata listu
@@ -274,8 +353,25 @@ class ISeries(InfoData):
         for i in range(n):
             points[i].set(vals={outKey: abs(fft[i])})
 
-        logger.info(f"{self.name}.RFT: Done")
+        logger.info(f"{self.name}.RFT: {outData.name}[{outKey}] = <RFT>({inKey}) Done")
 
+    #--------------------------------------------------------------------------
+    def rndBool(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
+        """Clear all model and set state as random Boolean values.
+        """
+
+        logger.info(f"{self.name}.rndBool: {outData.name}[{outKey}] = <RFT>({inKey}) with params {params}")
+        pts = 0
+
+        self.clearPoints(defs={outKey: False})
+        self.actSubData( {'e': 0} )
+        pts = self.applyDataMethod(methodKey='Random bit', valueKey=outKey, params=params)
+        self.actSubData()
+
+        logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{outKey}'")
+
+    #==========================================================================
+    # Internal tools
     #--------------------------------------------------------------------------
     def _FFT( self, vec:list, fft:list[complex], rad:int, base:list[complex]|None=None, depth:int=0 ):
         """Compute Fast Fourier transform for list of real values in vector `vec`
@@ -386,32 +482,6 @@ class ISeries(InfoData):
         if depth == 0:
             logger.info(f"{self.name}._FFT: FFT computation complete (size={size})")
 
-    #--------------------------------------------------------------------------
-    def epochStep(self, inKey:str, outKey:str, params:dict, outData:'InfoData|None'=None) -> int|None:
-        """Compute next epoch state."""
-
-        logger.info(f"{self.name}.epochStep: for key '{outKey}' with params {params}")
-        pts = 0
-
-
-        logger.info(f"{self.name}.epochStep: {pts} InfoPoints was updated for key '{outKey}' in epoch step")
-
-    #--------------------------------------------------------------------------
-    def rndBool(self, inKey:str, outKey:str, params:dict, outData:'InfoData|None'=None) -> int|None:
-        """Clear all model and set state as random Boolean values."""
-
-        logger.debug(f"{self.name}.rndBool: for key '{outKey}' with params {params}")
-        pts = 0
-
-        self.clearPoints(defs={outKey: False})
-        self.actSubData( {'e': 0} )
-        pts = self.applyDataMethod(methodKey='Random bit', valueKey=outKey, params=params)
-        self.actSubData()
-
-        logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{outKey}'")
-
-    #==========================================================================
-    # Internal tools
     #--------------------------------------------------------------------------
 
     #==========================================================================
