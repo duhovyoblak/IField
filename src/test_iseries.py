@@ -38,7 +38,7 @@ if __name__ =='__main__':
     #--------------------------------------------------------------------------
     # Zaciatok testu
     #--------------------------------------------------------------------------
-    data = ISeries('ISeries')
+    data = ISeries('ISeries data')
 
     logger.setLevel('INFO')
     logger.info('Test of ISeries class')

@@ -11,9 +11,12 @@ from   .idata                 import InfoData
 #------------------------------------------------------------------------------
 _VER    = '1.1.0'
 
-_CNT   = 1200                     # Default number of points
-_AXES  = {'x': 'Os X'}            # Default axes
-_VALS  = {'f': 'Ftion value'}     # Default values
+_CNT   = (100,)                                            # Default number of points
+_AX1D  = {'x': 'Os X'}                                     # Default axes for ftion of one variable
+_AX2D  = {'x': 'Os X','y': 'Os Y'}                         # Default axes for ftion of two variables
+_AX3D  = {'x': 'Os X','y': 'Os Y','z': 'Os Z'}             # Default axes for ftion of three variables
+_AX4D  = {'x': 'Os X','y': 'Os Y','z': 'Os Z','w': 'Os W'} # Default axes for ftion of four variables
+_VALS  = {'f': 'Ftion value'}                              # Default values
 
 #==============================================================================
 # Module's variables
@@ -31,7 +34,7 @@ class IFtion(InfoData):
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, name, cnt:dict|tuple=_CNT, axes:dict|tuple=_AXES, vals:dict|tuple=_VALS):
+    def __init__(self, name, cnts:dict|tuple=_CNT, dim='1D'):
         "Calls constructor of ICurve"
 
         #----------------------------------------------------------------------
@@ -45,11 +48,38 @@ class IFtion(InfoData):
 
 
         #----------------------------------------------------------------------
-        # Inicializacia
+        # Inicializujem schemu a ipType podla dimenzie ftion
         #----------------------------------------------------------------------
-        self.setIpType('ipFtion')
-        self.setSchema({'axes': axes, 'vals': vals})
-        self.init( cnts=(cnt,) )
+        if dim == '1D':
+            self.setIpType('ipFtion1D')
+            self.setSchema({'axes': _AX1D, 'vals': _VALS})
+
+        elif dim == '2D':
+            self.setIpType('ipFtion2D')
+            self.setSchema({'axes': _AX2D, 'vals': _VALS})
+
+        elif dim == '3D':
+            self.setIpType('ipFtion3D')
+            self.setSchema({'axes': _AX3D, 'vals': _VALS})
+
+        elif dim == '4D':
+            self.setIpType('ipFtion4D')
+            self.setSchema({'axes': _AX4D, 'vals': _VALS})
+
+        else:
+            logger.error(f"{self.name}.constructor: Invalid dimension '{dim}' for IFtion")
+            raise ValueError(f"Invalid dimension '{dim}' for IFtion")
+        
+        #----------------------------------------------------------------------
+        # Ak tuple cnts neobsahuje dostatok prvkov, doplnim ho pridanim 1
+        #----------------------------------------------------------------------
+        if isinstance(cnts, tuple):
+            while len(cnts) < len(self.getSchemaAxes()): cnts = cnts + (1,)
+
+        #----------------------------------------------------------------------
+        # Inicializujem InfoPoints s poctom bodov podla cnts
+        #----------------------------------------------------------------------
+        self.init( cnts=cnts )
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.constructor: done")

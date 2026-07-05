@@ -317,18 +317,18 @@ class InfoData:
         # Copy all points from this InfoData to the new one
         #----------------------------------------------------------------------
         for point in self.points:
-            toRet.points.append(self.copy())
+            toRet.points.append(point.copy())
 
         #----------------------------------------------------------------------
         return toRet
 
     #--------------------------------------------------------------------------
-    def newData(self, name, iDataType:str='InfoData') -> 'InfoData|None':
+    def new(self, name, iDataType:str) -> 'InfoData|None':
         """Creates new InfoData of type iDataType with name.
            Returns new InfoData instance or None if iDataType is not defined.
         """
 
-        logger.info(f"{self.name}.newData: name='{name}', iDataType='{iDataType}'")
+        logger.info(f"{self.name}.new: name='{name}', iDataType='{iDataType}'")
         toRet = None
 
         #----------------------------------------------------------------------
@@ -336,35 +336,32 @@ class InfoData:
         #----------------------------------------------------------------------
         if   iDataType == 'InfoData':
 
-            #------------------------------------------------------------------
-            # iDataType je InfoData, vytvorim novy InfoData s tymto typom
-            #------------------------------------------------------------------
             toRet = InfoData(name=name)
-            logger.info(f"{self.name}.newData: Created new InfoData '{toRet.name}' with ipType='{toRet.ipType}'")
+            logger.info(f"{self.name}.new: Created new InfoData '{toRet.name}' with ipType='{toRet.ipType}'")
 
         elif iDataType == 'ISeries':
 
-            #------------------------------------------------------------------
-            # iDataType je ISeries, vytvorim novy ISeries s tymto typom
-            #------------------------------------------------------------------
             from .iseries import ISeries
             toRet = ISeries(name=name)
-            logger.info(f"{self.name}.newData: Created new ISeries '{toRet.name}' with ipType='{toRet.ipType}'")
+            logger.info(f"{self.name}.new: Created new ISeries '{toRet.name}' with ipType='{toRet.ipType}'")
+
+        elif iDataType == 'IFtion':
+
+            from .iftion import IFtion
+            toRet = IFtion(name=name)
+            logger.info(f"{self.name}.new: Created new IFtion '{toRet.name}' with ipType='{toRet.ipType}'")
 
         elif iDataType == 'IVector':
 
-            #------------------------------------------------------------------
-            # iDataType je IVector, vytvorim novy IVector s tymto typom
-            #------------------------------------------------------------------
             from .ivector import IVector
             toRet = IVector(name=name)
-            logger.info(f"{self.name}.newData: Created new IVector '{toRet.name}' with ipType='{toRet.ipType}'")
+            logger.info(f"{self.name}.new: Created new IVector '{toRet.name}' with ipType='{toRet.ipType}'")
 
         else:
             #------------------------------------------------------------------
             # iDataType je neznamy, logujem chybu a vratim None
             #------------------------------------------------------------------
-            logger.error(f"{self.name}.newData: iDataType '{iDataType}' is not defined, command denied")
+            logger.error(f"{self.name}.new: iDataType '{iDataType}' is not defined, command denied")
             toRet = None
 
         #----------------------------------------------------------------------
@@ -574,17 +571,17 @@ class InfoData:
         methods = InfoPoint.mapSetMethods()
 
         methods['<Data Methods>'] = {'dataMethod' : self.nullMethod
+                                    ,'visible'    :True
                                     ,'pointMethod':None
                                     ,'params'     :{}
-                                    ,'visible'    :True
                                     ,'paramAsk'   :True
                                     ,'outData'    :None
                                     ,'outKey'     :None
                                     }
         methods['Move data'     ] = {'dataMethod': self.moveData
+                                    ,'visible'    :True
                                     ,'pointMethod':None
                                     ,'params'     :{'startIdx':0, 'deltaIdx':1}
-                                    ,'visible'    :True
                                     ,'paramAsk'   :True
                                     ,'outData'    :None
                                     ,'outKey'     :None
@@ -604,7 +601,7 @@ class InfoData:
     #==========================================================================
     # Dynamic Methods application
     #--------------------------------------------------------------------------
-    def applyDataMethod(self, methodKey:str, inKey:str, outKey:str, params:dict, outData:'InfoData|None'=None) -> int|None:
+    def applyDataMethod(self, methodKey:str, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
         """Dynamic data method for applying to data.
 
              1. methodKey: Name of the method to apply.
@@ -615,12 +612,12 @@ class InfoData:
              2. inKey   : Key of the value to be read by the method
              3. outKey  : Key of the value to be set in the outData
              4. params  : Parameters for the method as dict
-             5. outData : Optional InfoData to store output data, if None, output is stored in self
+             5. outData : InfoData to store output data
 
            Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.warning(f"{self.name}.applyDataMethod: methodKey='{methodKey}', inKey='{inKey}', outKey='{outKey}', params={params}")
+        logger.warning(f"{self.name}.applyDataMethod: methodKey='{methodKey}', inKey='{inKey}', outKey='{outKey}', params={params}, outData='{outData.name}'")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -653,7 +650,7 @@ class InfoData:
             dataMethod = method['dataMethod']
             logger.debug(f"{self.name}.applyDataMethod: {dataMethod.__name__}({params}) for value key='{outKey}' in outData='{outData.name}'")
 
-            pts = self._applyDataMethod(dataMethod=dataMethod, outData=outData, outKey=outKey, params=params)   # self uz bolo predane pri priradeni do premennej dataMethod
+            pts = self._applyDataMethod(dataMethod=dataMethod, inKey=inKey, outKey=outKey, params=params, outData=outData)   # self uz bolo predane pri priradeni do premennej dataMethod
 
         #----------------------------------------------------------------------
         # Nie je definovana ziadna metoda
@@ -680,7 +677,7 @@ class InfoData:
             Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.debug(f"{self.name}._applyPointMethod: {pointMethod.__name__}({inKey}, {params}) for value key='{outKey}'")
+        logger.info(f"{self.name}._applyPointMethod: {pointMethod.__name__}({inKey}, {params}) for value key='{outKey}'")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -703,7 +700,7 @@ class InfoData:
         return pts
 
     #--------------------------------------------------------------------------
-    def _applyDataMethod(self, dataMethod, inKey:str, outKey:str, params:dict, outData=None) -> int|None:
+    def _applyDataMethod(self, dataMethod, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
         """Dynamic data method for applying to list of Points.
 
                1. dataMethod  : Name of the Data method to apply
@@ -716,18 +713,7 @@ class InfoData:
             Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.debug(f"{self.name}._applyDataMethod: {dataMethod.__name__}({inKey}, {params}) for value key='{outKey}'")
-
-        #----------------------------------------------------------------------
-        # Ak je zadany typ pre OutData, vytvorim novy InfoData s tymto typom
-        #----------------------------------------------------------------------
-        if outData is not None:
-
-            outData = self.newData(name=f"{dataMethod.__name__}({self.name})", iDataType=outData)
-
-            if outData is None:
-                logger.error(f"{self.name}._applyDataMethod: outData='{outData}' was not created, command denied")
-                return None
+        logger.info(f"{self.name}._applyDataMethod: {dataMethod.__name__}({inKey}, {params}) for value key='{outKey}'")
 
         #----------------------------------------------------------------------
         # Vykonam dataMethod s outData, outKey a params
@@ -922,7 +908,7 @@ class InfoData:
 
     #--------------------------------------------------------------------------
     def pointByPos(self, pos:int=None) -> InfoPoint|None:
-        """Returns InfoPoint in list of points for respective position.
+        """Returns InfoPoint on respective position in list of points.
            Stores given pos into self._lastPos for faster access in future calls of lastPosIdxs.
            If pos is out of range or does not exist, logs error and returns None.
         """

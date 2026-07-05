@@ -630,7 +630,7 @@ class InfoPoint:
         return self
 
     #--------------------------------------------------------------------------
-    def set(self, *, pos=None, vals=None):
+    def set(self, *, pos:'dict|list|tuple|None'=None, vals:'dict|list|tuple|None'=None):
         """Set position and values of this InfoPoint.
 
            pos    : is position of this InfoPoint defined as dict {axeKey: axeValue_float} or list/tuple of values mapped to axes in the order defined in the schema for this ipType.

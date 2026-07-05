@@ -392,8 +392,17 @@ class InfoDataGui(ttk.Frame):
     def updateDisplayBar(self):
         "Update display bar according to current display options. This method is called in self.viewChanged()"
 
+        #----------------------------------------------------------------------
+        # Update axis to show in the chart
+        #----------------------------------------------------------------------
         self.lblX['text'] = self.data.axeNameByKey(self.display['keyX']) if self.display['keyX'] != 'None' else 'None'
         self.lblY['text'] = self.data.axeNameByKey(self.display['keyY']) if self.display['keyY'] != 'None' else 'None'
+
+        #----------------------------------------------------------------------
+        # Update values list and value to show in the chart
+        #----------------------------------------------------------------------
+        self.cbValName['values'] = list(self.data.getSchemaVals().values())
+        self.cbValName.set(self.display['valName'])
 
     #--------------------------------------------------------------------------
     def updateChildFrame(self):
@@ -877,6 +886,8 @@ class InfoDataGui(ttk.Frame):
             showinfo(title="Warning", message="No value selected, nothing to apply to")
             return
 
+        inKey = self.display['valKey']
+
         #----------------------------------------------------------------------
         # Kontrola poctu cyklov
         #----------------------------------------------------------------------
@@ -892,6 +903,8 @@ class InfoDataGui(ttk.Frame):
         #----------------------------------------------------------------------
         metDef = self.data.mapSetMethods()[metKey]
         params = metDef['params']
+
+        logger.info(f'{self.name}.onMethodPlay: Play {metKey}({inKey}) params={params} for {cycles} cycles')
 
         #----------------------------------------------------------------------
         # Ak je typ parametrov 'ask', ziskaj hodnoty parametrov od usera
@@ -924,25 +937,22 @@ class InfoDataGui(ttk.Frame):
         if 'all' in params.keys() and params['all'] == True: self.data.actSubData()
 
         #----------------------------------------------------------------------
-        # Urcim vstupny valKey
-        #----------------------------------------------------------------------
-        inKey = self.display['valKey']
-
-        #----------------------------------------------------------------------
         # Ziskam vystupny IData objekt outData
         #----------------------------------------------------------------------
         if 'outData' in metDef and metDef['outData']:
 
             #------------------------------------------------------------------
-            # Vystup smerovany do ineho IData objektu
+            # Vystup smerovany do noveho IData objektu typu outData a noveho GUI okna
             #------------------------------------------------------------------
-            outData = self.data    # zatial....
+            outData = self.data.new(name=f"{metDef['outData']}({self.data.name})", iDataType=metDef['outData'])
+            outGui  = InfoDataGui(container=self.container, data=outData)
 
         else:
             #------------------------------------------------------------------
-            # Vystup smerovany do tohto IData objektu
+            # Vystup smerovany do tohto IData objektu a tohoto GUI okna
             #------------------------------------------------------------------
             outData = self.data
+            outGui  = self
 
         #----------------------------------------------------------------------
         # Urcim vystupny valKey a zabezpecim, ze bude v scheme vystupneho IData objektu
@@ -978,13 +988,14 @@ class InfoDataGui(ttk.Frame):
             logger.debug(f"{self.name}.methodApply: {outData.name} = {metKey}({inKey}), par={usrPar})")
 
             self.data.applyDataMethod(methodKey=metKey, inKey=inKey, outKey=outKey, params=usrPar, outData=outData)
-            self.viewChanged(force=True)
+            outGui.updateDisplayBar()
+            outGui.viewChanged(force=True)
 
             #--------------------------------------------------------------
             # Process GUI events to keep the interface responsive
             #--------------------------------------------------------------
-            self.update_idletasks()
-            self.update()
+            outGui.update_idletasks()
+            outGui.update()
 
             #--------------------------------------------------------------
             # Decrease the counter

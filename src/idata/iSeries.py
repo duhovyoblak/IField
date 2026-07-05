@@ -79,20 +79,20 @@ class ISeries(InfoData):
         #---------------------------------------------------------------------
         # Add ISeries specific methods
         #----------------------------------------------------------------------
-        methods['ISeries deltas'      ] = {'dataMethod' : self.deltas
+        methods['ISeries deltas'      ] = {'dataMethod' :self.deltas
+                                          ,'visible'    :True
                                           ,'pointMethod':None
                                           ,'params'     :{}
-                                          ,'visible'    :True
                                           ,'paramAsk'   :True
                                           ,'outData'    :None
                                           ,'outKey'     :'d'
                                           }
-        methods['ISeries autocorr'    ] = {'dataMethod' : self.autoCorr
-                                          ,'pointMethod':None
-                                          ,'params'     :{}
+        methods['ISeries autocorr'    ] = {'dataMethod' :self.autoCorr
                                           ,'visible'    :True
+                                          ,'pointMethod':None
+                                          ,'params'     :{'maxTau': 32}
                                           ,'paramAsk'   :True
-                                          ,'outData'    :'ICurve'
+                                          ,'outData'    :'IFtion'
                                           ,'outKey'     :'ac'
                                           }
 
@@ -115,12 +115,17 @@ class ISeries(InfoData):
         pts = 0
 
         #----------------------------------------------------------------------
+        # Pripravim vystupny objekt outData
+        #----------------------------------------------------------------------
+        outData.setSchemaVal( key=outKey, name=f'Delta({self.valNameByKey(inKey)})' )
+
+        #----------------------------------------------------------------------
         # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
         #----------------------------------------------------------------------
         points = self.actList
 
         prevS = 0
-        points[0].set( vals = {outKey: prevS} )
+        outData.pointByPos(0).set( vals={outKey: prevS} )
 
         #----------------------------------------------------------------------
         # Prejdem vsetky body v subdata a pre kazdy bod nastavim hodnotu ako rozdiel medzi hodnotou bodu a predosleho bodu
@@ -128,13 +133,13 @@ class ISeries(InfoData):
         for i in range(1, len(points)):
 
             point = points[i]
-            currS = point.val(valKey='s')
+            currS = point.val(valKey=inKey)
 
             #------------------------------------------------------------------
             # Vypocet a nastavenie delty
             #------------------------------------------------------------------
             delta = currS - prevS
-            point.set( vals = {outKey: delta})
+            outData.pointByPos(i).set( vals={outKey: delta} )
 
             #------------------------------------------------------------------
             # Posun na nasledujuci bod
@@ -158,15 +163,24 @@ class ISeries(InfoData):
         logger.info(f"{self.name}.autoCorr: {outData.name}[{outKey}] = <AutoCorr>({inKey}) with params {params}")
 
         #----------------------------------------------------------------------
+        # Pripravim vystupny objekt outData
+        #----------------------------------------------------------------------
+        maxTau = params.get('maxTau', 32)
+
+        outData.setSchemaAxe( key='x' , name='Tau time')
+        outData.setSchemaVal( key='ac', name=f'AC({self.valNameByKey(inKey)})' )
+        outData.init( cnts=(maxTau+1,) )
+
+        #----------------------------------------------------------------------
         # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
         #----------------------------------------------------------------------
-        points = self.actList
-        n = len(points)
+        inPoints = self.actList
+        n = len(inPoints)
 
         #----------------------------------------------------------------------
         # Prejdem tau od 0 po N-1, kde N je pocet bodov v subdata
         #----------------------------------------------------------------------
-        for tau in range(n-1):
+        for tau in range(maxTau+1):
 
             suma = 0
             prod = 0
@@ -181,8 +195,8 @@ class ISeries(InfoData):
                 iPos =  i        % n
                 jPos = (i + tau) % n
 
-                iVal = points[iPos].val(valKey='s')
-                jVal = points[jPos].val(valKey='s')
+                iVal = inPoints[iPos].val(valKey='s')
+                jVal = inPoints[jPos].val(valKey='s')
 
                 prod = iVal * jVal
                 if prod > maxP: maxP = prod
@@ -192,13 +206,13 @@ class ISeries(InfoData):
             #------------------------------------------------------------------
             # Normujem sumu podla poctu bodov a nastavim hodnotu auto-korelacie pre tau
             #------------------------------------------------------------------
-            points[tau].set(vals={outKey: (suma/n) })
+            outData.pointByPos(tau).set(pos={'x': tau * self.dTime}, vals={'ac': (suma/n) })
+            inPoints[tau].set(vals={outKey: (suma/n) })
 
         #----------------------------------------------------------------------
         # Posledny bod nastavim na 0
         #----------------------------------------------------------------------
-        points[n-1].set(vals={outKey: 0})
-
+ 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.autoCorr: Done")
 
@@ -223,7 +237,8 @@ class ISeries(InfoData):
         #----------------------------------------------------------------------
         # Prejdem tau od 0 po N-1, kde N je pocet bodov v subdata
         #----------------------------------------------------------------------
-        for tau in range(n-1):
+        maxTau = params.get('maxTau', 32)
+        for tau in range(maxTau+1):
 
             suma = 0
             prod = 0
