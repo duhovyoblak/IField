@@ -21,7 +21,7 @@ from   idata.idata_display_gui           import InfoDataDisplayGui
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER            = '2.1.0'
+_VER            = '2.2.0'
 _WIN            = '1300x740'
 _DPI            = 100
 
@@ -989,7 +989,8 @@ class InfoDataGui(ttk.Frame):
             #------------------------------------------------------------------
             # Vystup smerovany do noveho IData objektu typu outData a noveho GUI okna
             #------------------------------------------------------------------
-            outData = self.data.new(name=f"{metDef['outData']}({self.data.name})", iDataType=metDef['outData'])
+            outName = f"{metDef['outData']}({self.data.name}.{inKey})"
+            outData = self.data.new(name=outName, iDataType=metDef['outData'])
             outGui  = self.new(outData)
 
         else:

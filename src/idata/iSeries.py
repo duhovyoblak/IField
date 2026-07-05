@@ -96,6 +96,15 @@ class ISeries(InfoData):
                                           ,'outKey'     :'ac'
                                           }
 
+        methods['AutoPhaseCorrelation'] = {'dataMethod' :self.APC
+                                          ,'visible'    :True
+                                          ,'pointMethod':None
+                                          ,'params'     :{'maxTau': 32}
+                                          ,'paramAsk'   :True
+                                          ,'outData'    :'IFtion'
+                                          ,'outKey'     :'apc'
+                                          }
+
         #---------------------------------------------------------------------
         return methods
 
@@ -184,24 +193,25 @@ class ISeries(InfoData):
 
             suma = 0
             prod = 0
-            maxP = 0
 
             #------------------------------------------------------------------
             # Prejdem dvojice bodov (i, i+tau) a pre kazdu dvojicu bodov vypocitam produkt ich hodnot a pripoctem k sume
             #------------------------------------------------------------------
             for i in range(n):
 
-                # Pouzijem modularnu algebru, aby som pre lub
+                #--------------------------------------------------------------
+                # Pouzijem modularnu algebru
+                #--------------------------------------------------------------
                 iPos =  i        % n
                 jPos = (i + tau) % n
 
-                iVal = inPoints[iPos].val(valKey='s')
-                jVal = inPoints[jPos].val(valKey='s')
+                iVal = inPoints[iPos].val(valKey=inKey)
+                jVal = inPoints[jPos].val(valKey=inKey)
 
-                prod = iVal * jVal
-                if prod > maxP: maxP = prod
-
-                suma += prod
+                #--------------------------------------------------------------
+                # Akumulujem produkt hodnot bodov do sumy
+                #--------------------------------------------------------------
+                suma += (iVal * jVal)
 
             #------------------------------------------------------------------
             # Normujem sumu podla poctu bodov a nastavim hodnotu auto-korelacie pre tau
@@ -212,13 +222,13 @@ class ISeries(InfoData):
         #----------------------------------------------------------------------
         # Posledny bod nastavim na 0
         #----------------------------------------------------------------------
- 
+
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.autoCorr: Done")
 
     #--------------------------------------------------------------------------
-    def autoPhaseCorr(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
-        """Compute auto-correlation of states for each phase.
+    def APC(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
+        """Compute auto-phase-correlation of states for each phase.
         - inKey  : Key of the value to be read by the method
         - outKey : Key of the value to be set by the method
         - params : Parameters for the method as dict
@@ -229,47 +239,77 @@ class ISeries(InfoData):
         logger.info(f"{self.name}.autoPhaseCorr: {outData.name}[{outKey}] = <AutoPhaseCorr>({inKey}) with params {params}")
 
         #----------------------------------------------------------------------
-        # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
-        #----------------------------------------------------------------------
-        points = self.actList
-        n = len(points)
-
-        #----------------------------------------------------------------------
-        # Prejdem tau od 0 po N-1, kde N je pocet bodov v subdata
+        # Pripravim vystupny objekt outData
         #----------------------------------------------------------------------
         maxTau = params.get('maxTau', 32)
+        maxPhs = maxTau - 1
+
+        outData.setSchemaAxe( key='x'  , name='Tau time'  )
+        outData.setSchemaAxe( key='y'  , name='Phase time')
+        outData.setSchemaVal( key='apc', name=f'APC({self.valNameByKey(inKey)})' )
+
+        outData.init( cnts=(maxTau+1, maxPhs+1) )
+
+        #----------------------------------------------------------------------
+        # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
+        #----------------------------------------------------------------------
+        inPoints = self.actList
+        n = len(inPoints)
+
+        #----------------------------------------------------------------------
+        # Prejdem tau od 0 po maxTau
+        #----------------------------------------------------------------------
         for tau in range(maxTau+1):
 
-            suma = 0
-            prod = 0
-            maxP = 0
+            #------------------------------------------------------------------
+            # Mozne fazy su od 0 po tau-1, avsak minimalne existuje jedna faza = 0
+            #------------------------------------------------------------------
+            phases = max(1, tau-1)
 
             #------------------------------------------------------------------
-            # Prejdem dvojice bodov (i, i+tau) a pre kazdu dvojicu bodov vypocitam produkt ich hodnot a pripoctem k sume
+            # Prejdem vsetky mozne fazy
             #------------------------------------------------------------------
-            for i in range(n):
+            for phs in range(phases):
 
-                # Pouzijem modularnu algebru, aby som pre lub
-                iPos =  i        % n
-                jPos = (i + tau) % n
+                suma = 0
+                prod = 0
 
-                iVal = points[iPos].val(valKey='s')
-                jVal = points[jPos].val(valKey='s')
+                #--------------------------------------------------------------
+                # Pre kazdu dvojicu bodov vypocitam produkt ich hodnot a pripoctem k sume
+                #--------------------------------------------------------------
+                for i in range(n):
 
-                prod = iVal * jVal
-                if prod > maxP: maxP = prod
+                    #----------------------------------------------------------
+                    # Urcim pozicie dvojice bodov (i, i+tau) s fazou phs
+                    #----------------------------------------------------------
+                    iPos = phs + (i * tau)
+                    jPos = iPos + tau
 
-                suma += prod
+                    #----------------------------------------------------------
+                    # Pouzijem modularnu algebru
+                    #----------------------------------------------------------
+                    iPos = iPos % n
+                    jPos = jPos % n
+
+                    #----------------------------------------------------------
+                    # Ziskam hodnoty bodov
+                    #----------------------------------------------------------
+                    iVal = inPoints[iPos].val(valKey=inKey)
+                    jVal = inPoints[jPos].val(valKey=inKey)
+
+                    #----------------------------------------------------------
+                    # Akumulujem produkt hodnot bodov do sumy
+                    #----------------------------------------------------------
+                    suma += (iVal * jVal)
 
             #------------------------------------------------------------------
             # Normujem sumu podla poctu bodov a nastavim hodnotu auto-korelacie pre tau
             #------------------------------------------------------------------
-            points[tau].set(vals={outKey: (suma/n) })
+            outData.pointByIdxs((tau, phs)).set(vals={outKey: (suma/n) })
 
         #----------------------------------------------------------------------
         # Posledny bod nastavim na 0
         #----------------------------------------------------------------------
-        points[n-1].set(vals={outKey: 0})
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.autoPhaseCorr: Done")

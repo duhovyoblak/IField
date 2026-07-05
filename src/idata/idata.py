@@ -169,7 +169,7 @@ class InfoData:
         """
 
         if name in InfoData.datas: return InfoData.datas[name]
-        else              : return None
+        else                     : return None
 
     #--------------------------------------------------------------------------
     def setIpType(self, ipType:str, force:bool=False):
@@ -346,7 +346,7 @@ class InfoData:
         #----------------------------------------------------------------------
         if self.getData(name) is not None:
             logger.warning(f"{self.name}.new: InfoData with name '{name}' already exists, command denied")
-            return None
+            return self.getData(name)
 
         #----------------------------------------------------------------------
         # Vytvorenie noveho InfoData podla zadaneho typu
@@ -864,7 +864,7 @@ class InfoData:
     #--------------------------------------------------------------------------
     # One Point position tools
     #--------------------------------------------------------------------------
-    def _posByIdxs(self, idxs:list) -> int|None:
+    def _posByIdxs(self, idxs:tuple) -> int|None:
         """Returns position of the InfoPoint in the list of points for respective indices.
            If idxs has more or less indices than number of axes, logs error and returns None. FIX IN THE FUTURE
         """
@@ -944,7 +944,7 @@ class InfoData:
         return toRet
 
     #--------------------------------------------------------------------------
-    def pointByIdxs(self, idxs:list) -> InfoPoint|None:
+    def pointByIdxs(self, idxs:tuple) -> InfoPoint|None:
         """Returns InfoPoint at respective indexes.
            If such points do not exist, logs error and returns None.
         """
