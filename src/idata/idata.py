@@ -95,8 +95,9 @@ class InfoData:
         #----------------------------------------------------------------------
         self.name         = name     # Name of the InfoData
         self.ipType       = None     # Type of the InfoPoint in this InfoData
-        self.staticEdge   = False    # Static edge means value of the edge points is fixed in some methods
         self.points       = []       # List of InfoPoints
+        self.gui          = None     # InfoDataGui instance for this InfoData
+        self.staticEdge   = False    # Static edge means value of the edge points is fixed in some methods
 
         self.actVal       = None     # Key of the current InfoPoint's dat value
         self.actSubIdxs   = {}       # Current active subdata definition as dict of freezed axesKeys with values
@@ -115,7 +116,7 @@ class InfoData:
         self._lastPos     = None     # Last position used in pointByPos for faster access
 
         #----------------------------------------------------------------------
-        # Inicializacia
+        # Zapis do zoznamu instancii InfoData Inicializacia
         #----------------------------------------------------------------------
         InfoData.datas[self.name] = self
 
@@ -160,6 +161,15 @@ class InfoData:
 
         if noSelf: return {name: data for name, data in InfoData.datas.items() if data != self}
         else     : return InfoData.datas.copy()
+
+    #--------------------------------------------------------------------------
+    def getData(self, name) -> 'InfoData|None':
+        """Returns InfoData instance form list of all instances.
+           If such name does not exists, returns None.
+        """
+
+        if name in InfoData.datas: return InfoData.datas[name]
+        else              : return None
 
     #--------------------------------------------------------------------------
     def setIpType(self, ipType:str, force:bool=False):
@@ -330,6 +340,13 @@ class InfoData:
 
         logger.info(f"{self.name}.new: name='{name}', iDataType='{iDataType}'")
         toRet = None
+
+        #----------------------------------------------------------------------
+        # Kontrola existencie InfoData s s rovnakym menom
+        #----------------------------------------------------------------------
+        if self.getData(name) is not None:
+            logger.warning(f"{self.name}.new: InfoData with name '{name}' already exists, command denied")
+            return None
 
         #----------------------------------------------------------------------
         # Vytvorenie noveho InfoData podla zadaneho typu

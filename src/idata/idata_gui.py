@@ -53,7 +53,6 @@ class InfoDataGui(ttk.Frame):
     #==========================================================================
     # Static variables & methods
     #--------------------------------------------------------------------------
-    guis = {}  # Static dict of all InfoDataGui instances as {name: {'container': container, 'gui': InfoDataGui}}
 
     #==========================================================================
     # Constructor & utilities
@@ -67,16 +66,12 @@ class InfoDataGui(ttk.Frame):
 
         self.name      = name               # Name of this GUI
         self.data      = data               # InfoData base data
+        self.data.gui  = self               # Register this InfoDataGui instance in the InfoData instance
         self.container = container          # Parent container (tk.Tk or tk.Frame)
         self.sub2D     = {}                 # Subset of InfoData data defined as frozen axes with desired values e.g. {'x':4, 't':17}
         self.display   = {}                 # Display options
 
         self.resetDisplay()                 # Display options
-
-        #----------------------------------------------------------------------
-        # Register this GUI instance
-        #----------------------------------------------------------------------
-        InfoDataGui.guis[self.name] = {'container': self.container, 'gui': self}
 
         #----------------------------------------------------------------------
         # Internal objects
@@ -99,6 +94,47 @@ class InfoDataGui(ttk.Frame):
         # Show the InfoDataGui
         #----------------------------------------------------------------------
         self.show()
+
+    #--------------------------------------------------------------------------
+    def new(self, dataObj:InfoData) -> 'InfoDataGui|None':
+        "Create new GUI for respective InfoData (non-modal window) and show it with offset position"
+
+        logger.info(f'{self.name}.new: For InfoData {dataObj.name} of type {dataObj.ipType}')
+
+        #----------------------------------------------------------------------
+        # Kontrola, ci uz existuje GUI pre dany IData objekt
+        #----------------------------------------------------------------------
+        if dataObj.gui is not None:
+            logger.warning(f'{self.name}.new: GUI for InfoData {dataObj.name} already exists')
+            return dataObj.gui
+
+        #----------------------------------------------------------------------
+        # Get parent window position and calculate offset for child window
+        #----------------------------------------------------------------------
+        try:
+            parent_x = self.container.winfo_x()
+            parent_y = self.container.winfo_y()
+        except tk.TclError:
+            # If winfo fails (e.g., window not yet displayed), use defaults
+            parent_x = 0
+            parent_y = 0
+
+        new_x = parent_x + 50
+        new_y = parent_y + 50
+
+        #----------------------------------------------------------------------
+        # Create a new independent window (non-modal) with offset position
+        #----------------------------------------------------------------------
+        newWindow = tk.Toplevel(self.container)
+        newWindow.title(f"Data: {dataObj.name}")
+        newWindow.geometry(f"1300x740+{new_x}+{new_y}")
+
+        dataObjGui = InfoDataGui(container=newWindow, data=dataObj)
+        dataObjGui.pack(fill=tk.BOTH, expand=True)
+
+        #----------------------------------------------------------------------
+        logger.debug(f'{self.name}.new: Nemodale GUI {dataObjGui.name} at position [{new_x}, {new_y}]')
+        return dataObjGui
 
     #--------------------------------------------------------------------------
     def resetDisplay(self):
@@ -241,6 +277,12 @@ class InfoDataGui(ttk.Frame):
         NavigationToolbar2Tk(self.canvas, self)
 
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        #----------------------------------------------------------------------
+        # Bind close event to cleanup stale references when window is closed
+        #----------------------------------------------------------------------
+        if hasattr(self.container, 'protocol'):
+            self.container.protocol("WM_DELETE_WINDOW", self.onCloseWindow)
 
         #----------------------------------------------------------------------
         # Initialisation
@@ -743,14 +785,17 @@ class InfoDataGui(ttk.Frame):
             return
 
         #----------------------------------------------------------------------
+        # Kontrola ci uz existuje okno pre dataObj.name
+        #----------------------------------------------------------------------
+        if dataObj.name in self.data.getDatas(noSelf=True):
+
+            # Zobrazenie existujuceho okna
+            return
+
+        #----------------------------------------------------------------------
         # Vytvorenie noveho samostatneho okna (ne-modalne)
         #----------------------------------------------------------------------
-        newWindow = tk.Toplevel(self.container)
-        newWindow.title(f"Data: {dataObj.name}")
-        newWindow.geometry("1300x740")
-
-        dataObjGui = InfoDataGui(container=newWindow, data=dataObj)
-        dataObjGui.pack(fill=tk.BOTH, expand=True)
+        self.new(dataObj=dataObj)
 
         #----------------------------------------------------------------------
         logger.debug(f'{self.name}.onDataShow: Nemodale okno otvorene pre {dataObj.name}')
@@ -945,7 +990,7 @@ class InfoDataGui(ttk.Frame):
             # Vystup smerovany do noveho IData objektu typu outData a noveho GUI okna
             #------------------------------------------------------------------
             outData = self.data.new(name=f"{metDef['outData']}({self.data.name})", iDataType=metDef['outData'])
-            outGui  = InfoDataGui(container=self.container, data=outData)
+            outGui  = self.new(outData)
 
         else:
             #------------------------------------------------------------------
@@ -1022,6 +1067,22 @@ class InfoDataGui(ttk.Frame):
         self.btnPlay.configure(style="Default.TButton")
         self.btnPlay['text'      ] = "▶ Play"
         self.btnPlay['state'     ] = tk.NORMAL
+
+    #--------------------------------------------------------------------------
+    def onCloseWindow(self):
+        "Handle window close and cleanup stale GUI references"
+
+        logger.info(f'{self.name}.onCloseWindow: Closing GUI window')
+
+        # Remove back-reference from InfoData to GUI instance.
+        if self.data.gui is self:
+            self.data.gui = None
+
+        # Destroy the top-level container.
+        try:
+            self.container.destroy()
+        except Exception as err:
+            logger.warning(f'{self.name}.onCloseWindow: Failed to destroy container: {err}')
 
     #==========================================================================
     # Internal methods
@@ -1111,6 +1172,7 @@ if __name__ == '__main__':
     # Test of the InfoDataGui class
     #--------------------------------------------------------------------------
     win = tk.Tk()
+    win.geometry("1300x740+100+100")  # Set initial window position for testing offsets
     win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
     win.title('Test of InfoModelGui class')
     #win.maxsize(width=1200, height=800)
@@ -1140,7 +1202,7 @@ if __name__ == '__main__':
     print(data.info(full=False)['msg'])
 
 
-    matrixGui = InfoDataGui(container=win, data=data)
+    matrixGui = InfoDataGui(container=win, data=data, offsetX=30, offsetY=30)
     matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
     matrixGui.logger.setLevel('DEBUG')
