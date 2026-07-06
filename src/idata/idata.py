@@ -93,27 +93,27 @@ class InfoData:
         #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
-        self.name         = name     # Name of the InfoData
-        self.ipType       = None     # Type of the InfoPoint in this InfoData
-        self.points       = []       # List of InfoPoints
-        self.gui          = None     # InfoDataGui instance for this InfoData
-        self.staticEdge   = False    # Static edge means value of the edge points is fixed in some methods
+        self.name         = name        # Name of the InfoData
+        self.ipType       = None        # Type of the InfoPoint in this InfoData
+        self.points       = [InfoPoint] # List of InfoPoints
+        self.gui          = None        # InfoDataGui instance for this InfoData
+        self.staticEdge   = False       # Static edge means value of the edge points is fixed in some methods
 
-        self.actVal       = None     # Key of the current InfoPoint's dat value
-        self.actSubIdxs   = {}       # Current active subdata definition as dict of freezed axesKeys with values
-        self.actList      = []       # Current active list of points in subdata
-        self.actChanged   = True     # Current sub settings was changed and actSubData needs refresh
+        self.actVal       = None        # Key of the current InfoPoint's dat value
+        self.actSubIdxs   = {}          # Current active subdata definition as dict of freezed axesKeys with values
+        self.actList      = []          # Current active list of points in subdata
+        self.actChanged   = True        # Current sub settings was changed and actSubData needs refresh
 
         #----------------------------------------------------------------------
         # Private datove polozky triedy, menia sa v metode init()
         #----------------------------------------------------------------------
-        self._cnts        = {}       # Number of InfoPoints in respective axes
-        self._origs       = {}       # Origin's coordinates of the InfoData for respective axes in lambda units
-        self._rects       = {}       # Lenghts of the InfoData for respective axes in lambda units
-        self._diffs       = {}       # Distance between two points in respective axes in lambda units
+        self._cnts        = {}          # Number of InfoPoints in respective axes
+        self._origs       = {}          # Origin's coordinates of the InfoData for respective axes in lambda units
+        self._rects       = {}          # Lenghts of the InfoData for respective axes in lambda units
+        self._diffs       = {}          # Distance between two points in respective axes in lambda units
 
-        self._subProducts = []       # List of subproducts of _cnts [1, A, AB, ABC, ...]
-        self._lastPos     = None     # Last position used in pointByPos for faster access
+        self._subProducts = []          # List of subproducts of _cnts [1, A, AB, ABC, ...]
+        self._lastPos     = None        # Last position used in pointByPos for faster access
 
         #----------------------------------------------------------------------
         # Zapis do zoznamu instancii InfoData Inicializacia
@@ -174,11 +174,12 @@ class InfoData:
     #--------------------------------------------------------------------------
     def setIpType(self, ipType:str, force:bool=False):
         """Set ipType of this InfoData and reset all data.
-           If not force, ipType is set only if it is different from the current one,
+        - If not force, ipType is set only if it is different from the current one,
            otherwise warning is logged and ipType is not changed nor points are destroyed.
-           If force or ipType is different than actual self.ipType, set self.ipType to ipType
+        - If force or ipType is different than actual self.ipType, set self.ipType to ipType
            and set structures _cnts, _origs, _rects and _diffs to empty dict {}.
-           Destroy all points in this InfoData.
+        - Destroy all points in this InfoData.
+        - If self.gui is not None, call self.gui.resetDisplay() to reset display options to default values based on new ipType.
         """
 
         logger.info(f"{self.name}.setIpType: ipType='{ipType}', force={force}")
@@ -191,7 +192,7 @@ class InfoData:
             return
 
         #----------------------------------------------------------------------
-        # Reset all InfoData's data
+        # Clear all InfoData's data and reset internal properties
         #----------------------------------------------------------------------
         self.points.clear()        # List of rows of lists of InfoPoints
         self.ipType     = ipType
@@ -206,6 +207,12 @@ class InfoData:
         self._origs     = {}       # Origin's coordinates of the InfoData for respective axes in lambda units
         self._rects     = {}       # Lenghts of the InfoData for respective axes in lambda units
         self._diffs     = {}       # Distance between two points in respective axes in lambda units
+
+        #----------------------------------------------------------------------
+        # Reset GUI display options to default values based on new ipType
+        #----------------------------------------------------------------------
+        if self.gui is not None:
+            self.gui.resetDisplay()
 
         #----------------------------------------------------------------------
         logger.warning(f"{self.name}.setIpType: ipType was set to '{ipType}' and InfoData was reset")
@@ -421,18 +428,20 @@ class InfoData:
     #--------------------------------------------------------------------------
     def setSchema(self, schema:dict):
         """Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}
-           This method has no impact on InfoPoints of other ipTypes.
+        Clear all points in this InfoData and reset internal structures _cnts, _origs, _rects and _diffs to empty dict {}.
+        This method has no impact on InfoPoints of other ipTypes.
         """
 
         logger.warning(f"{self.name}.setSchema: schema={schema}")
-        return InfoPoint.setSchema(self.ipType, schema)
+        InfoPoint.setSchema(self.ipType, schema)
+        self.setIpType(self.ipType, force=True)
 
     #--------------------------------------------------------------------------
     # Schema axes methods
     #--------------------------------------------------------------------------
     def getSchemaAxes(self) -> dict:
         """Returns axes keys and theirnames as dict {key: name} for respective ipType.
-           If ipType is not defined in the schema yet, first create empty schema for this ipType.
+        If ipType is not defined in the schema yet, first create empty schema for this ipType.
         """
 
         return InfoPoint.getSchemaAxes(self.ipType)
@@ -440,9 +449,10 @@ class InfoData:
     #--------------------------------------------------------------------------
     def setSchemaAxe(self, key, name):
         """Sets axe's key and name for respective ipType.
-           If ipType is not defined in the schema yet, first create empty schema for this ipType.
-           If axe exists in the schema already, redefine name.
-           This method has no impact on InfoPoints of other ipTypes.
+        - If ipType is not defined in the schema yet, first create empty schema for this ipType.
+        - If axe exists in the schema already, redefine name.
+        - Clear all points in this InfoData and reset internal structures _cnts, _origs, _rects and _diffs to empty dict {}.
+        - This method has no impact on InfoPoints of other ipTypes.
         """
 
         InfoPoint.setSchemaAxe(self.ipType, key, name)
@@ -505,12 +515,17 @@ class InfoData:
     #--------------------------------------------------------------------------
     def setSchemaVal(self, key, name):
         """Sets value key and name for respective ipType.
-           If ipType is not defined in the schema, first create empty schema for this ipType.
-           If value exists already, redefine name.
-           This method has no impact on InfoPoints of other ipTypes.
+        - If ipType is not defined in the schema, first create empty schema for this ipType.
+        - If value exists already, redefine name.
+        - Do NOT clear points in this InfoData nor reset internal structures _cnts, _origs, _rects and _diffs.
+        - If self.gui is not None, call self.gui.resetDisplay() to reset display options to default values based on new value.
+        - This method has no impact on InfoPoints of other ipTypes.
         """
 
-        return InfoPoint.setSchemaVal(self.ipType, key, name)
+        InfoPoint.setSchemaVal(self.ipType, key, name)
+
+        if self.gui is not None:
+            self.gui.resetDisplay()
 
     #--------------------------------------------------------------------------
     def valIdxByKey(self, key) -> int|None:

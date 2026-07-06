@@ -97,7 +97,10 @@ class InfoDataGui(ttk.Frame):
 
     #--------------------------------------------------------------------------
     def new(self, dataObj:InfoData) -> 'InfoDataGui|None':
-        "Create new GUI for respective InfoData (non-modal window) and show it with offset position"
+        """Create new GUI for respective InfoData (non-modal window)
+        and show it with offset position from parent window.
+        If GUI for respective InfoData already exists, logs warning and returns existing GUI.
+        """
 
         logger.info(f'{self.name}.new: For InfoData {dataObj.name} of type {dataObj.ipType}')
 
@@ -129,6 +132,12 @@ class InfoDataGui(ttk.Frame):
         newWindow.title(f"Data: {dataObj.name}")
         newWindow.geometry(f"1300x740+{new_x}+{new_y}")
 
+        #----------------------------------------------------------------------
+        # Remove transient relationship so this window is independent
+        # This prevents grab_set() in child dialogs from affecting parent
+        #----------------------------------------------------------------------
+        newWindow.transient('')
+
         dataObjGui = InfoDataGui(container=newWindow, data=dataObj)
         dataObjGui.pack(fill=tk.BOTH, expand=True)
 
@@ -138,7 +147,10 @@ class InfoDataGui(ttk.Frame):
 
     #--------------------------------------------------------------------------
     def resetDisplay(self):
-        "Reset display options to default values based on data"
+        """Reset display options to default values based on self.data properties.
+        This method is called in the constructor of InfoDataGui and
+        from self.data.gui when data schema is changed (e.g., axes or values are added/removed).
+        """
 
         axeKeys  = list(self.data.getSchemaAxes().keys())
         axeNames = list(self.data.getSchemaAxes().values())
@@ -385,7 +397,8 @@ class InfoDataGui(ttk.Frame):
     # Update display
     #--------------------------------------------------------------------------
     def viewChanged(self, event=None, force=False):
-        "Resolve changes in display options and update the chart accordingly if needed"
+        """Resolve changes in self.display options and update the chart accordingly if needed
+        """
 
         logger.audit(f"{self.name}.viewChanged: force={force}")
 
@@ -432,7 +445,9 @@ class InfoDataGui(ttk.Frame):
 
     #--------------------------------------------------------------------------
     def updateDisplayBar(self):
-        "Update display bar according to current display options. This method is called in self.viewChanged()"
+        """Update display bar according to current display self.options.
+        This method is called in self.viewChanged()
+        """
 
         #----------------------------------------------------------------------
         # Update axis to show in the chart
@@ -558,7 +573,7 @@ class InfoDataGui(ttk.Frame):
         elif self.display['type'] == 'SCATTER':
             logger.debug(f'{self.name}.updateChart: Chart type SCATTER selected')
 
-            chrtObj = chart.scatter( x=npX, y=npY, c=npC, marker="s", cmap=_CMAP) # , lw=0, s=(72./self.figure.dpi)**2
+            chrtObj = chart.scatter( x=npX, y=npY, c=npC, marker="s", cmap='coolwarm') # , lw=0, s=(72./self.figure.dpi)**2
 
             #------------------------------------------------------------------
             # Colorbar

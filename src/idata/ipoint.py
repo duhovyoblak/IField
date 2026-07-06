@@ -215,11 +215,9 @@ class InfoPoint:
 
             InfoPoint._schema[ipType]['axes'][key] = name
             logger.debug(f"InfoPoint.setSchemaAxe: set key '{key}' for axe '{name}'")
-            return True
 
         else:
             logger.debug(f"InfoPoint.setSchemaAxe: axe '{name}' for key '{key}' is already defined, no change")
-            return False
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -373,11 +371,9 @@ class InfoPoint:
 
             InfoPoint._schema[ipType]['vals'][key] = name
             logger.debug(f"InfoPoint.setSchemaVal: set key '{key}' for value '{name}'")
-            return True
 
         else:
             logger.debug(f"InfoPoint.setSchemaVal: value '{name}' for key '{key}' is already defined, no change")
-            return False
 
     #--------------------------------------------------------------------------
     @staticmethod

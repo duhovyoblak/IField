@@ -272,7 +272,7 @@ class ISeries(InfoData):
             for phs in range(phases):
 
                 suma = 0
-                prod = 0
+                cnt  = 0
 
                 #--------------------------------------------------------------
                 # Pre kazdu dvojicu bodov vypocitam produkt ich hodnot a pripoctem k sume
@@ -301,11 +301,12 @@ class ISeries(InfoData):
                     # Akumulujem produkt hodnot bodov do sumy
                     #----------------------------------------------------------
                     suma += (iVal * jVal)
+                    cnt  += 1
 
-            #------------------------------------------------------------------
-            # Normujem sumu podla poctu bodov a nastavim hodnotu auto-korelacie pre tau
-            #------------------------------------------------------------------
-            outData.pointByIdxs((tau, phs)).set(vals={outKey: (suma/n) })
+                #--------------------------------------------------------------
+                # Normujem sumu podla poctu produktov
+                #--------------------------------------------------------------
+                outData.pointByIdxs((tau, phs)).set(vals={outKey: (suma/cnt) })
 
         #----------------------------------------------------------------------
         # Posledny bod nastavim na 0
