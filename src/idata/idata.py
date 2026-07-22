@@ -409,6 +409,8 @@ class InfoData:
            Returns count of created InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
+        logger.audit(f"{self.name}.init: {cnts}, {origs}, {rects}")
+
         #----------------------------------------------------------------------
         # Kontrola definicie ipType
         #----------------------------------------------------------------------
@@ -467,7 +469,6 @@ class InfoData:
         #----------------------------------------------------------------------
         # Priprava na init()
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.init: {cnts}, {origs}, {rects}")
         self.points.clear()    # Clear all points in the InfoData
 
         #----------------------------------------------------------------------
@@ -480,7 +481,7 @@ class InfoData:
         for key, cnt in self._cnts.items():
 
             if key not in self._origs.keys(): self._origs[key] = 0
-            if key not in self._rects.keys(): self._rects[key] = cnt-1
+            if key not in self._rects.keys(): self._rects[key] = max(cnt-1, 0)
 
         logger.debug(f"{self.name}.init: {self._cnts} points of type '{self.ipType}' on rect {self._rects} from origins {self._origs}")
 

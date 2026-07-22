@@ -13,7 +13,7 @@ _VER    = '1.1.0'
 
 _AXES  = {'x'  : 'Value'}          # Axes for Markov process analysis
 _VALS  = {'obs': 'Observations'    # Number of observations of the value X
-         ,'mrk': None              # Markov object for next dimension
+         ,'mrk': 'Markov analyser' # Markov object for next dimension
          }
 
 #==============================================================================
@@ -43,7 +43,8 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
-        self.tObs = 0  # Total number of observations
+        self.totObs = 0     # Total number of observations in this Markov object
+        self.actVal = None  # Actual value of the Markov process
 
         #----------------------------------------------------------------------
         # Inicializujem schemu a ipType podla dimenzie ftion
@@ -52,15 +53,90 @@ class IMarkov(InfoData):
         self.setSchema({'axes': _AXES, 'vals': _VALS})
 
         #----------------------------------------------------------------------
-        # Inicializujem InfoPoints s poctom bodov podla cnts
+        # Inicializujem histogram, na zaciatku neobsahuje zidne body, preto cnts=(0,)
         #----------------------------------------------------------------------
-        self.init( cnts=cnts )
+        self.init( cnts=(0,) )
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.constructor: done")
 
+    #==========================================================================
+    # IMarkov methods
     #--------------------------------------------------------------------------
-    # Dynamics methods for IFtion
+    def next(self, val:int|float|None=None):
+        """Add new observation to the Markov analyser and/or generate next value.
+
+        1. If val is provided, it is added as a new observation to the Markov analyser.
+
+           - call _moveFwd() to update actVal of all Markov analysers with the new observation.
+           - dive
+
+        """
+
+        logger.info(f"{self.name}.next: val={val}")
+
+        #----------------------------------------------------------------------
+        # If val is provided, add it as a new observation to the Markov analyser
+        #----------------------------------------------------------------------
+        if val is not None:
+
+            #------------------------------------------------------------------
+            # Move forward in the Markov process with the new observation
+            #------------------------------------------------------------------
+            self.actVal = self._moveFwd(val=val)
+            self.totObs += 1
+
+
+    #--------------------------------------------------------------------------
+    # Internal methods for IMarkov
+    #--------------------------------------------------------------------------
+    def _getHistogramRecord(self, axeVal:int|float) -> int|float:
+        """Returns _VALS dict of InfoPoint in this Markov analyser with actVal = axeVal.
+        If such axe value does not exist, it is created and added to the Markov analyser.
+        """
+
+        logger.info(f"{self.name}._getHistogramRecord: axeVal={axeVal}")
+
+        #----------------------------------------------------------------------
+        # If axeVal is provided, add it as a new observation to the Markov analyser
+        #----------------------------------------------------------------------
+        if axeVal is not None:
+            self.next(val=axeVal)
+
+        return self.actVal
+
+    #--------------------------------------------------------------------------
+    def _moveFwd(self, val:int|float) -> int|float:
+        """Recursively dive into the Markov analysers till the last dimension and
+        there update the actual value of the Markov process based on the new observation.
+        Returns old value of the Markov process for updating actVal in parent dimension.
+        """
+
+        logger.info(f"{self.name}._moveFwd: val={val}")
+
+        toRet = self.actVal  # Store old value to return to parent dimension
+
+        #----------------------------------------------------------------------
+        # Last dimension reached, update actVal based on the new observation
+        #----------------------------------------------------------------------
+        if self.dim == 1:
+
+            self.actVal = val    # Update actVal with the new observation
+            return toRet
+
+        else:
+
+            self.actVal =
+
+        #----------------------------------------------------------------------
+        # Not the last dimension, update actVal based on the new observation
+        #----------------------------------------------------------------------
+        self.actVal = val  # For simplicity, just set actVal to val; in a real implementation, this would involve more complex logic.
+
+        return self.actVal
+
+    #==========================================================================
+    # Dynamics methods for IMarkov
     #--------------------------------------------------------------------------
     def mapSetMethods(self) -> dict:
         "Returns map of methods setting keyed value to function value for respective parameters"
@@ -79,7 +155,7 @@ class IMarkov(InfoData):
         return methods
 
     #==========================================================================
-    # Curve methods to apply in Dynamics methods
+    # IMarkov methods to apply in Dynamics methods
     #--------------------------------------------------------------------------
     def deltas(self, inKey:str, outKey:str, params:dict, outData:'InfoData'):
         """Compute auto-correlation of states for each phase.
@@ -135,11 +211,11 @@ class IMarkov(InfoData):
 #==============================================================================
 # Inicializacia modulu
 #------------------------------------------------------------------------------
-print(f"IFtion ver {_VER}")
+print(f"IMarkov ver {_VER}")
 
 if __name__ == '__main__':
 
-    logger.info("Testing IFtion class")
+    logger.info("Testing IMarkov class")
 
     #--------------------------------------------------------------------------
     # Test of the IMarkov class
