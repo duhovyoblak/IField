@@ -13,7 +13,7 @@ from   .ipoint                import InfoPoint
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '3.4.1'
+_VER    = '3.4.2'
 _IND    = '|  '       # Info indentation
 _UPP    = 10          # distance units per period
 
@@ -217,7 +217,7 @@ class InfoData:
         #----------------------------------------------------------------------
         logger.warning(f"{self.name}.setIpType: ipType was set to '{ipType}' and InfoData was reset")
 
-   #--------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     def info(self, indent=0, full=False) -> dict:
         """Creates info about this InfoData.
            Identation is defined by indent as number of _IND for each line.
@@ -391,6 +391,262 @@ class InfoData:
         #----------------------------------------------------------------------
         return toRet
 
+    #==========================================================================
+    # Structure/Value modification
+    #--------------------------------------------------------------------------
+    def init(self, *, cnts:dict|tuple={}, origs:dict|tuple={}, rects:dict|tuple={} ) -> int|None:
+        """Initialise InfoData structure with already set parameters
+           or You can provide new data structure parameters.
+
+           1. cnts  is dict of {axeKey: cnt} where cnt is count of points in respective axe.
+           2. origs is dict of {axeKey: orig} where orig is origin coordinate in lambda units for respective axe.
+              If origs is not provided, origin for respective axe will be set to 0.
+
+           3. rects is dict of {axeKey: rect} where rect is rectangle in lambda units for respective axe.
+              If rects is not provided, rectangle for respective axe will be set to (cnt-1)*diff where diff
+              is distance between two points in respective axe.
+
+           Returns count of created InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
+        """
+
+        #----------------------------------------------------------------------
+        # Kontrola definicie ipType
+        #----------------------------------------------------------------------
+        if self.ipType is None:
+            logger.error(f"{self.name}.init: InfoPoint type is not defined, cannot initialise InfoData")
+            return None
+
+        #----------------------------------------------------------------------
+        # Ak je cnts tuple, prevediem ho na dict s default keys
+        #----------------------------------------------------------------------
+        if isinstance(cnts, tuple):
+
+            schAxes = InfoPoint.getSchemaAxes(self.ipType)
+
+            if len(cnts) != len(schAxes):
+                logger.error(f"{self.name}.init: tuple cnts has {len(cnts)} elements, expected {len(schAxes)} for InfoPoint type '{self.ipType}'")
+                return None
+
+            cnts = {key: cnt for key, cnt in zip(schAxes.keys(), cnts)}
+
+        #----------------------------------------------------------------------
+        # Ak je origs tuple, prevediem ho na dict s default keys
+        #----------------------------------------------------------------------
+        if isinstance(origs, tuple):
+
+            schAxes = InfoPoint.getSchemaAxes(self.ipType)
+
+            if len(origs) != len(schAxes):
+                logger.error(f"{self.name}.init: tuple origs has {len(origs)} elements, expected {len(schAxes)} for InfoPoint type '{self.ipType}'")
+                return None
+
+            origs = {key: orig for key, orig in zip(schAxes.keys(), origs)}
+
+        #----------------------------------------------------------------------
+        # Ak je rects tuple, prevediem ho na dict s default keys
+        #----------------------------------------------------------------------
+        if isinstance(rects, tuple):
+
+            schAxes = InfoPoint.getSchemaAxes(self.ipType)
+
+            if len(rects) != len(schAxes):
+                logger.error(f"{self.name}.init: tuple rects has {len(rects)} elements, expected {len(schAxes)} for InfoPoint type '{self.ipType}'")
+                return None
+
+            rects = {key: rect for key, rect in zip(schAxes.keys(), rects)}
+
+        #----------------------------------------------------------------------
+        # Kontrola kompatibility definicie ipType a cnts
+        #----------------------------------------------------------------------
+        schAxes = InfoPoint.getSchemaAxes(self.ipType)
+
+        if cnts.keys() != schAxes.keys():
+            logger.error(f"{self.name}.init: InfoPoint type '{self.ipType}' axes {list(schAxes.keys())} are not compatible with cnts axes {list(cnts.keys())}, cannot initialise InfoData")
+            return None
+
+        #----------------------------------------------------------------------
+        # Priprava na init()
+        #----------------------------------------------------------------------
+        logger.info(f"{self.name}.init: {cnts}, {origs}, {rects}")
+        self.points.clear()    # Clear all points in the InfoData
+
+        #----------------------------------------------------------------------
+        # Set new data structure parameters
+        #----------------------------------------------------------------------
+        if cnts : self._cnts  = cnts
+        if origs: self._origs = origs
+        if rects: self._rects = rects
+
+        for key, cnt in self._cnts.items():
+
+            if key not in self._origs.keys(): self._origs[key] = 0
+            if key not in self._rects.keys(): self._rects[key] = cnt-1
+
+        logger.debug(f"{self.name}.init: {self._cnts} points of type '{self.ipType}' on rect {self._rects} from origins {self._origs}")
+
+        #----------------------------------------------------------------------
+        # Vypocet subProducts
+        #----------------------------------------------------------------------
+        self._subProducts = [1]
+
+        for cnt in self._cnts.values():
+            self._subProducts.append( cnt * self._subProducts[-1] )
+
+        self._subProducts.pop()  # Remove last element which is the product of all dimensions
+
+        #----------------------------------------------------------------------
+        # Vypocet diffs
+        #----------------------------------------------------------------------
+        for key, cnt in self._cnts.items():
+
+            if cnt > 1: self._diffs[key] = self._rects[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
+            else      : self._diffs[key] = 0                         # If only one point, distance is zero
+
+        #----------------------------------------------------------------------
+        # Generate InfoPoints at respective positions
+        #----------------------------------------------------------------------
+        point = None
+        for pos in range(self.count(check=False)):
+
+            #------------------------------------------------------------------
+            # Compute coordinates of the InfoPoint for respective position and indices
+            #------------------------------------------------------------------
+            idxs = self._idxsByPos(pos)          # Get indices of the InfoPoint for respective position
+            coos = {}                            # Coordinates of the InfoPoint in lambda units
+
+            for i, key in enumerate(self._cnts.keys()):
+                coos[key] = self._origs[key] + (idxs[i] * self._diffs[key])
+
+            #------------------------------------------------------------------
+            # Create new InfoPoint at respective coordinates
+            #------------------------------------------------------------------
+            point = InfoPoint(self.ipType, pos=coos)
+            self.points.append(point)
+
+        #----------------------------------------------------------------------
+        # Active subset je full data
+        #----------------------------------------------------------------------
+        self.actSubData(actSubIdxs={}, force=True)
+
+        #----------------------------------------------------------------------
+        pts = len(self.points)
+        logger.warning(f"{self.name}.init: Created {pts} InfoPoints")
+        return pts
+
+    #--------------------------------------------------------------------------
+    def initAdd(self, axeVal) -> bool:
+        """
+        Add one new InfoPoint into existing InfoData strictly for axes with one axe only.
+        If axes has more than one axe, this method is not applicable and returns False.
+
+        1. If axeVal is already present in the existing InfoData, this method does not add new point and returns False.
+        2. Creates new InfoPoint with the same ipType as this InfoData and with axe value axeVal.
+        3. Created InfoPoint is added at the end of the existing self.points.
+        4. After addition, list self.points is sorted by axe value.
+        5. Structure parameters self._cnts, self._origs and self._rects are updated accordingly.
+        6. self._subProducts and self._diffs are recalculated.
+        7. Active subset is reset to full data.
+        8. Returns True if addition was successful, False if not applicable or failed.
+        """
+
+        logger.info(f"{self.name}.initAdd: axeVal={axeVal}")
+
+        #----------------------------------------------------------------------
+        # Kontrola, ci je ipType definovany
+        #----------------------------------------------------------------------
+        if self.ipType is None:
+            logger.error(f"{self.name}.initAdd: InfoPoint type is not defined, cannot add point")
+            return False
+
+        #----------------------------------------------------------------------
+        # Kontrola, ci je pocet osi presne 1
+        #----------------------------------------------------------------------
+        if len(self._cnts) != 1:
+            logger.error(f"{self.name}.initAdd: InfoData has {len(self._cnts)} axes, but initAdd requires exactly 1 axe")
+            return False
+
+        #----------------------------------------------------------------------
+        # Get the axe key
+        #----------------------------------------------------------------------
+        axeKey = list(self._cnts.keys())[0]
+
+        #----------------------------------------------------------------------
+        # Check if axeVal already exists in the existing data
+        #----------------------------------------------------------------------
+        for point in self.points:
+            if point.pos(axeKey) == axeVal:
+                logger.error(f"{self.name}.initAdd: axeVal={axeVal} already exists in {axeKey} axe, cannot add duplicate")
+                return False
+
+        #----------------------------------------------------------------------
+        # Create new InfoPoint with the given axe value
+        #----------------------------------------------------------------------
+        newPoint = InfoPoint(self.ipType, pos={axeKey: axeVal})
+        self.points.append(newPoint)
+
+        #----------------------------------------------------------------------
+        # Sort points by axe value
+        #----------------------------------------------------------------------
+        self.points.sort(key=lambda p: p.pos(axeKey))
+
+        #----------------------------------------------------------------------
+        # Update _cnts (increment count)
+        #----------------------------------------------------------------------
+        self._cnts[axeKey] += 1
+
+        #----------------------------------------------------------------------
+        # Update _origs and _rects - find min and max positions
+        #----------------------------------------------------------------------
+        positions = [p.pos(axeKey) for p in self.points]
+        self._origs[axeKey] = min(positions)
+        self._rects[axeKey] = max(positions) - min(positions)
+
+        #----------------------------------------------------------------------
+        # Recalculate _diffs for axeKey
+        #----------------------------------------------------------------------
+        cnt = self._cnts[axeKey]
+
+        if cnt > 1: self._diffs[axeKey] = self._rects[axeKey] / (cnt-1) # Distance between two points in respective axes in lambda units
+        else      : self._diffs[axeKey] = 0                             # If only one point, distance is zero
+
+        #----------------------------------------------------------------------
+        # Recalculate _subProducts
+        #----------------------------------------------------------------------
+        self._subProducts = [1]
+
+        for cnt in self._cnts.values():
+            self._subProducts.append(cnt * self._subProducts[-1])
+
+        self._subProducts.pop()   # Remove last element which is the product of all dimensions
+
+        #----------------------------------------------------------------------
+        # Reset active subset to full data
+        #----------------------------------------------------------------------
+        self.actSubData(actSubIdxs={}, force=True)
+
+        #----------------------------------------------------------------------
+        pts = len(self.points)
+        logger.warning(f"{self.name}.initAdd: Added new InfoPoint, total {pts} points in {axeKey} axe")
+        return True
+
+    #==========================================================================
+    # All values modification
+    #--------------------------------------------------------------------------
+    def clearPoints(self, *, defs:dict={}):
+        """Set all InfoPoint's values to 0. No change of structure.
+           If defs is provided, set values to these provided in defs dict {valKey: valDef}.
+        """
+
+        logger.debug(f"{self.name}.clearPoints: defs={defs}")
+        pts = 0
+
+        for point in self.points:
+            point.clear(vals=defs)
+            pts += 1
+
+        logger.warning(f"{self.name}.clearPoints: {pts} InfoPoints was set to defs={defs}")
+
+    #--------------------------------------------------------------------------
     #==========================================================================
     # Proxy tools for InfoPoint schema
     #--------------------------------------------------------------------------
@@ -1135,164 +1391,6 @@ class InfoData:
         logger.info(f"{self.name}.actSubData: Found {len(self.actList)} positions in active subdata for actSubIdxs={self.actSubIdxs}")
         return self.actList
 
-    #==========================================================================
-    # Structure/Value modification
-    #--------------------------------------------------------------------------
-    def clearPoints(self, *, defs:dict={}):
-        """Set all InfoPoint's values to 0. No change of structure.
-           If defs is provided, set values to these provided in defs dict {valKey: valDef}.
-        """
-
-        logger.debug(f"{self.name}.clearPoints: defs={defs}")
-        pts = 0
-
-        for point in self.points:
-            point.clear(vals=defs)
-            pts += 1
-
-        logger.warning(f"{self.name}.clearPoints: {pts} InfoPoints was set to defs={defs}")
-
-    #--------------------------------------------------------------------------
-    def init(self, *, cnts:dict|tuple={}, origs:dict|tuple={}, rects:dict|tuple={} ) -> int|None:
-        """Initialise InfoData structure with already set parameters
-           or You can provide new data structure parameters.
-
-           1. cnts  is dict of {axeKey: cnt} where cnt is count of points in respective axe.
-           2. origs is dict of {axeKey: orig} where orig is origin coordinate in lambda units for respective axe.
-              If origs is not provided, origin for respective axe will be set to 0.
-
-           3. rects is dict of {axeKey: rect} where rect is rectangle in lambda units for respective axe.
-              If rects is not provided, rectangle for respective axe will be set to (cnt-1)*diff where diff
-              is distance between two points in respective axe.
-
-           Returns count of created InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
-        """
-
-        #----------------------------------------------------------------------
-        # Kontrola definicie ipType
-        #----------------------------------------------------------------------
-        if self.ipType is None:
-            logger.error(f"{self.name}.init: InfoPoint type is not defined, cannot initialise InfoData")
-            return None
-
-        #----------------------------------------------------------------------
-        # Ak je cnts tuple, prevediem ho na dict s default keys
-        #----------------------------------------------------------------------
-        if isinstance(cnts, tuple):
-
-            schAxes = InfoPoint.getSchemaAxes(self.ipType)
-
-            if len(cnts) != len(schAxes):
-                logger.error(f"{self.name}.init: tuple cnts has {len(cnts)} elements, expected {len(schAxes)} for InfoPoint type '{self.ipType}'")
-                return None
-
-            cnts = {key: cnt for key, cnt in zip(schAxes.keys(), cnts)}
-
-        #----------------------------------------------------------------------
-        # Ak je origs tuple, prevediem ho na dict s default keys
-        #----------------------------------------------------------------------
-        if isinstance(origs, tuple):
-
-            schAxes = InfoPoint.getSchemaAxes(self.ipType)
-
-            if len(origs) != len(schAxes):
-                logger.error(f"{self.name}.init: tuple origs has {len(origs)} elements, expected {len(schAxes)} for InfoPoint type '{self.ipType}'")
-                return None
-
-            origs = {key: orig for key, orig in zip(schAxes.keys(), origs)}
-
-        #----------------------------------------------------------------------
-        # Ak je rects tuple, prevediem ho na dict s default keys
-        #----------------------------------------------------------------------
-        if isinstance(rects, tuple):
-
-            schAxes = InfoPoint.getSchemaAxes(self.ipType)
-
-            if len(rects) != len(schAxes):
-                logger.error(f"{self.name}.init: tuple rects has {len(rects)} elements, expected {len(schAxes)} for InfoPoint type '{self.ipType}'")
-                return None
-
-            rects = {key: rect for key, rect in zip(schAxes.keys(), rects)}
-
-        #----------------------------------------------------------------------
-        # Kontrola kompatibility definicie ipType a cnts
-        #----------------------------------------------------------------------
-        schAxes = InfoPoint.getSchemaAxes(self.ipType)
-
-        if cnts.keys() != schAxes.keys():
-            logger.error(f"{self.name}.init: InfoPoint type '{self.ipType}' axes {list(schAxes.keys())} are not compatible with cnts axes {list(cnts.keys())}, cannot initialise InfoData")
-            return None
-
-        #----------------------------------------------------------------------
-        # Priprava na init()
-        #----------------------------------------------------------------------
-        logger.info(f"{self.name}.init: {cnts}, {origs}, {rects}")
-        self.points.clear()    # Clear all points in the InfoData
-
-        #----------------------------------------------------------------------
-        # Set new data structure parameters
-        #----------------------------------------------------------------------
-        if cnts : self._cnts  = cnts
-        if origs: self._origs = origs
-        if rects: self._rects = rects
-
-        for key, cnt in self._cnts.items():
-
-            if key not in self._origs.keys(): self._origs[key] = 0
-            if key not in self._rects.keys(): self._rects[key] = cnt-1
-
-        logger.debug(f"{self.name}.init: {self._cnts} points of type '{self.ipType}' on rect {self._rects} from origins {self._origs}")
-
-        #----------------------------------------------------------------------
-        # Vypocet subProducts
-        #----------------------------------------------------------------------
-        self._subProducts = [1]
-
-        for cnt in self._cnts.values():
-            self._subProducts.append( cnt * self._subProducts[-1] )
-
-        self._subProducts.pop()  # Remove last element which is the product of all dimensions
-
-        #----------------------------------------------------------------------
-        # Vypocet diffs
-        #----------------------------------------------------------------------
-        for key, cnt in self._cnts.items():
-
-            if cnt > 1: self._diffs[key] = self._rects[key]/(cnt-1)  # Distance between two points in respective axes in lambda units
-            else      : self._diffs[key] = 0                         # If only one point, distance is zero
-
-        #----------------------------------------------------------------------
-        # Generate InfoPoints at respective positions
-        #----------------------------------------------------------------------
-        point = None
-        for pos in range(self.count(check=False)):
-
-            #------------------------------------------------------------------
-            # Compute coordinates of the InfoPoint for respective position and indices
-            #------------------------------------------------------------------
-            idxs = self._idxsByPos(pos)          # Get indices of the InfoPoint for respective position
-            coos = {}                            # Coordinates of the InfoPoint in lambda units
-
-            for i, key in enumerate(self._cnts.keys()):
-                coos[key] = self._origs[key] + (idxs[i] * self._diffs[key])
-
-            #------------------------------------------------------------------
-            # Create new InfoPoint at respective coordinates
-            #------------------------------------------------------------------
-            point = InfoPoint(self.ipType, pos=coos)
-            self.points.append(point)
-
-        #----------------------------------------------------------------------
-        # Active subset je full data
-        #----------------------------------------------------------------------
-        self.actSubData(actSubIdxs={}, force=True)
-
-        #----------------------------------------------------------------------
-        pts = len(self.points)
-        logger.warning(f"{self.name}.init: Created {pts} InfoPoints")
-        return pts
-
-    #--------------------------------------------------------------------------
 
     #==========================================================================
     # Data methods
@@ -1516,61 +1614,6 @@ print(f"InfoData ver {_VER}")
 if __name__ == '__main__':
 
     logger.info("Testing InfoData class")
-
-    #--------------------------------------------------------------------------
-    # Test of the InfoData class
-    #--------------------------------------------------------------------------
-
-    #--------------------------------------------------------------------------
-    # Vytvorenie, generovanie osi
-    #--------------------------------------------------------------------------
-    im = InfoData('Test data')
-    im.logger.setLevel('DEBUG')
-
-    print(im)
-    print(80*'-')
-    input('Press Enter to continue...')
-
-
-    im.init()
-    print(im)
-    print(80*'-')
-    input('Press Enter to continue...')
-
-    im.setIpType('ipTest')
-    im.init(cnts={'a':5, 'b':4})
-    print(im)
-    print(80*'-')
-    input('Press Enter to continue...')
-
-
-    im.setSchemaAxe('a', 'Os A')
-    im.setSchemaAxe('a', 'Os A')
-    im.setSchemaAxe('b', 'Os B')
-    print(im.info(full=True)['msg'])
-    input('Press Enter to continue...')
-
-    im.init(cnts={'a':5, 'b':4})
-    print(im.info(full=True)['msg'])
-    input('Press Enter to continue...')
-
-    im.setSchemaVal('m', 'Hodnota M')
-    print(im.info(full=True)['msg'])
-
-
-    #--------------------------------------------------------------------------
-    # generovanie hodnot
-    #--------------------------------------------------------------------------
-    im.logger.setLevel('DEBUG')
-    im.applyDataMethod(methodKey='Bandom Bniform', valueKey='m', params={'min':0, 'max':5})
-    im.applyDataMethod(methodKey='Random uniform', valueKey='m', params={'min':0, 'max':5})
-    print(im.info(full=True)['msg'])
-    input('Press Enter to continue...')
-
-    #--------------------------------------------------------------------------
-    # Subdata
-    #--------------------------------------------------------------------------
-
 
 
 #==============================================================================
