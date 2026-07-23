@@ -63,7 +63,7 @@ class IMarkov(InfoData):
     #==========================================================================
     # IMarkov methods
     #--------------------------------------------------------------------------
-    def next(self, val:int|float|None=None):
+    def next(self, val:int|None=None):
         """Add new observation to the Markov analyser and/or generate next value.
 
         1. If val is provided, it is added as a new observation to the Markov analyser.
@@ -90,7 +90,41 @@ class IMarkov(InfoData):
     #--------------------------------------------------------------------------
     # Internal methods for IMarkov
     #--------------------------------------------------------------------------
-    def _getHistogramRecord(self, axeVal:int|float) -> int|float:
+    def _idxByAxeVal(self, axeKey:str, axeVal:float) -> int|None:
+        """Returns index in axe for respective coordinate.
+           If axeKey is not in the schema, returns None.
+           If coordinate is out of boundaries, return respective first or last axe value
+           This is overloaded method from InfoData, because in Markov analyser uses
+           non-equidistant axes, so the index can not be calculated by (axeVal-axeOrig)/diff
+        """
+
+        #----------------------------------------------------------------------
+        # Kontrola existencie osi
+        #----------------------------------------------------------------------
+        if axeKey not in self._cnts.keys():
+            logger.error(f"{self.name}._idxByAxeVal: Axe '{axeKey}' is not in InfoData axes {list(self._cnts.keys())}")
+            return None
+
+        #----------------------------------------------------------------------
+        # Odstrihnem extremy pred a po min/max hodnatach
+        #----------------------------------------------------------------------
+        if   axeVal <= self._origs[axeKey]                      : toRet = 0
+        elif axeVal >= self._origs[axeKey] + self._rects[axeKey]: toRet = self._cnts[axeKey]-1
+        else:
+            #------------------------------------------------------------------
+            # Prechdzam vsetky InfoPoints az po _pos[axeKey] >= axeVal
+            #------------------------------------------------------------------
+            for idx, point in enumerate(self.points):
+                if point._pos(axeKey) >= axeVal: break
+
+            toRet = idx
+
+        #----------------------------------------------------------------------
+        logger.debug(f"{self.name}._idxByAxeVal: axeKey={axeKey}, axeVal={axeVal} -> idx={toRet}")
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def _getHistogramRecord(self, axeVal:int) -> dict:
         """Returns _VALS dict of InfoPoint in this Markov analyser with actVal = axeVal.
         If such axe value does not exist, it is created and added to the Markov analyser.
         """
@@ -106,7 +140,7 @@ class IMarkov(InfoData):
         return self.actVal
 
     #--------------------------------------------------------------------------
-    def _moveFwd(self, val:int|float) -> int|float:
+    def _moveFwd(self, val:int) -> int|float:
         """Recursively dive into the Markov analysers till the last dimension and
         there update the actual value of the Markov process based on the new observation.
         Returns old value of the Markov process for updating actVal in parent dimension.
@@ -126,7 +160,7 @@ class IMarkov(InfoData):
 
         else:
 
-            self.actVal =
+            self.actVal = self._moveFwd(val=val)
 
         #----------------------------------------------------------------------
         # Not the last dimension, update actVal based on the new observation
