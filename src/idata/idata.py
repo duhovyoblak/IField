@@ -535,7 +535,7 @@ class InfoData:
         return pts
 
     #--------------------------------------------------------------------------
-    def initAdd(self, axeVal) -> bool:
+    def initAdd(self, axeVal) -> InfoPoint|None:
         """
         Add one new InfoPoint into existing InfoData strictly for axes with one axe only.
         If axes has more than one axe, this method is not applicable and returns False.
@@ -547,7 +547,7 @@ class InfoData:
         5. Structure parameters self._cnts, self._origs and self._rects are updated accordingly.
         6. self._subProducts and self._diffs are recalculated.
         7. Active subset is reset to full data.
-        8. Returns True if addition was successful, False if not applicable or failed.
+        8. Returns created InfoPoint if addition was successful, None if not applicable or failed.
         """
 
         logger.info(f"{self.name}.initAdd: axeVal={axeVal}")
@@ -557,14 +557,14 @@ class InfoData:
         #----------------------------------------------------------------------
         if self.ipType is None:
             logger.error(f"{self.name}.initAdd: InfoPoint type is not defined, cannot add point")
-            return False
+            return None
 
         #----------------------------------------------------------------------
         # Kontrola, ci je pocet osi presne 1
         #----------------------------------------------------------------------
         if len(self._cnts) != 1:
             logger.error(f"{self.name}.initAdd: InfoData has {len(self._cnts)} axes, but initAdd requires exactly 1 axe")
-            return False
+            return None
 
         #----------------------------------------------------------------------
         # Get the axe key
@@ -577,7 +577,7 @@ class InfoData:
         for point in self.points:
             if point.pos(axeKey) == axeVal:
                 logger.error(f"{self.name}.initAdd: axeVal={axeVal} already exists in {axeKey} axe, cannot add duplicate")
-                return False
+                return None
 
         #----------------------------------------------------------------------
         # Create new InfoPoint with the given axe value
@@ -628,7 +628,7 @@ class InfoData:
         #----------------------------------------------------------------------
         pts = len(self.points)
         logger.warning(f"{self.name}.initAdd: Added new InfoPoint, total {pts} points in {axeKey} axe")
-        return True
+        return newPoint
 
     #==========================================================================
     # All values modification
