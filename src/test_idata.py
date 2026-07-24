@@ -24,36 +24,48 @@ if __name__ =='__main__':
     #--------------------------------------------------------------------------
     # Vytvorenie, generovanie osi
     #--------------------------------------------------------------------------
-    im = InfoData('Test data')
+    im = InfoData.new(name='Markov', iDataType='IMarkov')
     logger.setLevel('DEBUG')
-
-    im.setIpType('ipTest')
-    im.setSchemaAxe('x', 'Os X')
-
-    im.init(cnts=(0,))
     print()
     print(im.info(full=True)['msg'])
     print(80*'-')
     input('Press Enter to continue...')
+    print()
 
-    im.initAdd(axeVal=2.5)
+    im.setDim(dim=3)
     print()
     print(im.info(full=True)['msg'])
     print(80*'-')
     input('Press Enter to continue...')
+    print()
 
-    im.initAdd(axeVal=3)
+    im.observe(val=3)
     print()
     print(im.info(full=True)['msg'])
     print(80*'-')
     input('Press Enter to continue...')
+    print()
 
-    im.initAdd(axeVal=1)
+    im.observe(val=-1)
     print()
     print(im.info(full=True)['msg'])
     print(80*'-')
     input('Press Enter to continue...')
+    print()
 
+    im.observe(val=10)
+    print()
+    print(im.info(full=True)['msg'])
+    print(80*'-')
+    input('Press Enter to continue...')
+    print()
+
+    im.observe(val=3)
+    print()
+    print(im.info(full=True)['msg'])
+    print(80*'-')
+    input('Press Enter to continue...')
+    print()
 
 
 #==============================================================================

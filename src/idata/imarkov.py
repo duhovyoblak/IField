@@ -10,6 +10,7 @@ from   .idata                 import InfoData
 # Module's constants
 #------------------------------------------------------------------------------
 _VER    = '1.1.0'
+_IND    = '|  '                    # Info indentation
 
 _VALS  = {'obs': 'Observations'    # Number of observations of the value X
          ,'mrk': 'Markov analyser' # Markov object for next dimension
@@ -42,8 +43,8 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
+        self.dim      = dim   # Dimension, e.g. number of previous states to consider in the Markov process
         self.totObs   = 0     # Total number of observations in this Markov object
-        self.actVal   = None  # Actual value of the Markov process
         self.actPoint = None  # Actual InfoPoint in this Markov object
 
         #----------------------------------------------------------------------
@@ -60,44 +61,149 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.constructor: done")
 
-    #==========================================================================
-    # IMarkov methods
     #--------------------------------------------------------------------------
-    def next(self, val:int|None=None):
-        """Add new observation to the Markov analyser and/or generate next value.
+    def __str__(self):
+        """Returns string representation of the IMarkov object.
         """
 
-        logger.info(f"{self.name}.next: val={val}")
+        return self.info(full=False)['msg']
+
+    #--------------------------------------------------------------------------
+    def info(self, indent=0, full=False) -> dict:
+        """Returns information about the Markov analyser as a dictionary.
+           If full is True, returns detailed information about the Markov analyser.
+        """
+
+        logger.debug(f"{self.name}.info: full={full}")
+        dat = {}
+        msg = ''
 
         #----------------------------------------------------------------------
-        # If val is provided, add it as a new observation to the Markov analyser
+        # Info o strukture
         #----------------------------------------------------------------------
-        if val is not None:
+        dat['name'          ] = self.name
+        dat['ipType'        ] = self.ipType
+        dat['dim'           ] = self.dim
+        dat['schema_axes'   ] = self.getSchemaAxes()
+        dat['schema_vals'   ] = self.getSchemaVals()
+        dat['address'       ] = self.actAddress()
+        dat['totObs'        ] = self.totObs
 
-            #------------------------------------------------------------------
-            # Move forward in the Markov process with the new observation
-            # Set sctVal and totObs accordingly
-            #------------------------------------------------------------------
-            self.actVal = self._moveFwd(val=val)
+        #----------------------------------------------------------------------
+        # Ak full, pridam info o vsetkych InfoPoints
+        #----------------------------------------------------------------------
+        if full:
 
+            for idx, point in enumerate(self.points):
+                dat[f'point[{idx}]'] = point.info(indent=indent+1, full=full)['dat']
 
+        #----------------------------------------------------------------------
+        # Konverzia do msg listu
+        #----------------------------------------------------------------------
+        if indent == 0: msg = f"{indent*_IND}{60*'='}\n"
+
+        for key, val in dat.items():
+            msg += f"{indent*_IND}{key:<15}: {val}\n"
+
+        #----------------------------------------------------------------------
+        logger.info(f"{self.name}.info: Created info dictionary with {len(dat)} items, full={full}")
+        return {'res': 'OK', 'dat': dat, 'msg': msg}
+
+    #--------------------------------------------------------------------------
+    def reset(self):
+        """Resets the Markov analyser to its initial state.
+        """
+
+        logger.debug(f"{self.name}.reset: Resetting Markov analyser")
+
+        #----------------------------------------------------------------------
+        # Reset total observations and active point
+        #----------------------------------------------------------------------
+        self.init( cnts=(0,) )
+        self.totObs   = 0
+        self.actPoint = None
+
+        #----------------------------------------------------------------------
+        logger.audit(f"{self.name}.reset: Markov analyser reset complete")
+
+    #--------------------------------------------------------------------------
+    def setDim(self, dim:int):
+        """Sets the dimension of the Markov analyser.
+        """
+
+        logger.debug(f"{self.name}.setDim: dim={dim}")
+
+        #----------------------------------------------------------------------
+        # Check if the dimension is valid
+        #----------------------------------------------------------------------
+        if dim < 1:
+            logger.error(f"{self.name}.setDim: Invalid dimension {dim}, must be >= 1")
+            return
+
+        #----------------------------------------------------------------------
+        # Reset analyser and set the dimension
+        #----------------------------------------------------------------------
+        self.reset()
+        self.dim = dim
+
+        #----------------------------------------------------------------------
+        logger.audit(f"{self.name}.setDim: Markov analyser dimension set to {self.dim}")
+
+    #--------------------------------------------------------------------------
+    def actAddress(self) -> str:
+        """Returns string representation of the actual address in the Markov process.
+        """
+
+        logger.info(f"{self.name}.actAddress: actPoint={self.actPoint}")
+
+        #---------------------------------------------------------------------
+        # If there is no active point, return a message indicating that
+        #---------------------------------------------------------------------
+        if self.actPoint is None:
+            return f"{self.name}:[No active point]"
+
+        #---------------------------------------------------------------------
+        # If there is an active point, build its address
+        #---------------------------------------------------------------------
+        addr = f"{self.name}:[{self.actPoint._pos['x']}]"
+
+        #---------------------------------------------------------------------
+        # If there is a Markov analyser for the next dimension, dive into it
+        #---------------------------------------------------------------------
+        mrk = self.actPoint._vals['mrk']
+
+        if mrk is not None and isinstance(mrk, IMarkov):  # Default hodnota po InitAdd je 0
+            addr += f" <- {mrk.actAddress()}"
+
+        #---------------------------------------------------------------------
+        return addr
+
+    #==========================================================================
+    # IMarkov methods
     #--------------------------------------------------------------------------
     def observe(self, val:int):
         """Add new observation to the Markov analyser.
         """
 
-        logger.info(f"{self.name}.observe: obs={val}")
+        logger.info(f"{self.name}.observe: val={val}")
+
+        res = self._moveFwd(val=val)
+
+
+    #--------------------------------------------------------------------------
+    def generate(self, observe=False)->int|None:
+        """Generate new observation from the Markov analyser.
+        """
+
+        logger.info(f"{self.name}.generate: observe={observe}")
+        toRet = None
 
         #----------------------------------------------------------------------
         # Find InfoPoint with pos == val
         #----------------------------------------------------------------------
-        point = self._getPoint(val=val)
 
         #----------------------------------------------------------------------
-        # Increase the count of observations for this InfoPoint
-        #----------------------------------------------------------------------
-        point._vals['obs'] += 1
-        self.totObs += 1
+        return toRet
 
     #--------------------------------------------------------------------------
     # Internal methods for IMarkov
@@ -125,7 +231,7 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         for idx, point in enumerate(self.points):
 
-            if point._pos(axeKey) == axeVal:
+            if point._pos[axeKey] == axeVal:
                 toRet = idx
                 break
 
@@ -217,8 +323,8 @@ class IMarkov(InfoData):
                 #--------------------------------------------------------------
                 # Create Markov analyser for the next dimension
                 #--------------------------------------------------------------
-                nextMark = IMarkov(name=f"{self.name}_dim{self.dim-1}", dim=self.dim-1, axeName=self.axeName)
-                self.actPoint['mrk'] = nextMark
+                nextMark = IMarkov(name=f"{self.name}/({val})", dim=self.dim-1, axeName=self.axeNameByKey('x'))
+                self.actPoint.set(vals={'mrk': nextMark})
 
                 #--------------------------------------------------------------
                 # Observe the value val in the Markov analyser
@@ -251,8 +357,8 @@ class IMarkov(InfoData):
                     #----------------------------------------------------------
                     if self.actPoint._vals['mrk'] is None:
 
-                        nextMark = IMarkov(name=f"{self.name}_dim{self.dim-1}", dim=self.dim-1, axeName=self.axeName)
-                        self.actPoint._vals['mrk'] = nextMark
+                        nextMark = IMarkov(name=f"{self.name}/({val})", dim=self.dim-1, axeName=self.axeNameByKey('x'))
+                        self.actPoint.set(vals={'mrk': nextMark})
 
                     #----------------------------------------------------------
                     # Observe the value val in the Markov analyser
@@ -268,7 +374,7 @@ class IMarkov(InfoData):
                     return None
 
         #----------------------------------------------------------------------
-        return lastVal  # Return old value to parent dimension
+        return lastVal  # Return last value to parent dimension
 
     #==========================================================================
     # Dynamics methods for IMarkov

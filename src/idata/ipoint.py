@@ -34,6 +34,7 @@ _CLOSE_ZERO  = 1e-12                   # Close to zero threshold
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
+_InfoDataClass = None  # Cache for InfoData class (lazy import to avoid circular dependency)
 
 #==============================================================================
 # InfoPoint
@@ -568,11 +569,13 @@ class InfoPoint:
         """Creates string representation of the value for respective format settings
         """
 
-        if   val is None         : toRet = 'None'.ljust(_F_TOTAL)
-        elif type(val) == int    : toRet = f"{val:#{_F_TOTAL}}"
-        elif type(val) == float  : toRet = f"{val:#{_F_TOTAL}.{_F_DECIM}f}"
-        elif type(val) == complex: toRet = f"({val.real:#{_F_TOTAL}.{_F_DECIM}f} {val.imag:#{_F_TOTAL}.{_F_DECIM}f}j)"
-        else                     : toRet = f"{val:{_F_TOTAL}}"
+        if   val is None          : toRet = 'None'.ljust(_F_TOTAL)
+        elif type(val) == int     : toRet = f"{val:#{_F_TOTAL}}"
+        elif type(val) == float   : toRet = f"{val:#{_F_TOTAL}.{_F_DECIM}f}"
+        elif type(val) == complex : toRet = f"({val.real:#{_F_TOTAL}.{_F_DECIM}f} {val.imag:#{_F_TOTAL}.{_F_DECIM}f}j)"
+        elif type(val) == str     : toRet = f"{val}"
+        elif self._isInfoData(val): toRet = f"{val.name}"
+        else                      : toRet = f"{val}"
 
         return toRet
 
@@ -607,6 +610,22 @@ class InfoPoint:
 
         toRet += ']'
         return toRet
+
+    #--------------------------------------------------------------------------
+    def _isInfoData(self, val) -> bool:
+        """Check if value is instance of InfoData class.
+           Uses lazy import with caching to avoid circular imports and performance overhead.
+           Safe to call multiple times in succession.
+           Returns True if val is InfoData instance, False otherwise.
+        """
+
+        global _InfoDataClass
+
+        if _InfoDataClass is None:
+            from .idata import InfoData
+            _InfoDataClass = InfoData
+
+        return isinstance(val, _InfoDataClass)
 
     #==========================================================================
     # InfoPoint Value's modification

@@ -78,6 +78,75 @@ class InfoData:
     #--------------------------------------------------------------------------
     datas = {}  # Static dict of all InfoData instances as {name: InfoData}
 
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def getData(name) -> 'InfoData|None':
+        """Returns InfoData instance form list of all instances.
+           If such name does not exists, returns None.
+        """
+
+        if name in InfoData.datas: return InfoData.datas[name]
+        else                     : return None
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def new(name, iDataType:str) -> 'InfoData|None':
+        """Creates new InfoData of type iDataType with name.
+           Returns new InfoData instance or None if iDataType is not defined.
+        """
+
+        logger.info(f"InfoData.new: name='{name}', iDataType='{iDataType}'")
+        toRet = None
+
+        #----------------------------------------------------------------------
+        # Kontrola existencie InfoData s s rovnakym menom
+        #----------------------------------------------------------------------
+        if InfoData.getData(name) is not None:
+            logger.warning(f"InfoData.new: InfoData with name '{name}' already exists, command denied")
+            return InfoData.getData(name)
+
+        #----------------------------------------------------------------------
+        # Vytvorenie noveho InfoData podla zadaneho typu
+        #----------------------------------------------------------------------
+        if   iDataType == 'InfoData':
+
+            toRet = InfoData(name=name)
+            logger.info(f"InfoData.new: Created new InfoData '{toRet.name}' with ipType='{toRet.ipType}'")
+
+        elif iDataType == 'ISeries':
+
+            from .iseries import ISeries
+            toRet = ISeries(name=name)
+            logger.info(f"InfoData.new: Created new ISeries '{toRet.name}' with ipType='{toRet.ipType}'")
+
+        elif iDataType == 'IFtion':
+
+            from .iftion import IFtion
+            toRet = IFtion(name=name)
+            logger.info(f"InfoData.new: Created new IFtion '{toRet.name}' with ipType='{toRet.ipType}'")
+
+        elif iDataType == 'IVector':
+
+            from .ivector import IVector
+            toRet = IVector(name=name)
+            logger.info(f"InfoData.new: Created new IVector '{toRet.name}' with ipType='{toRet.ipType}'")
+
+        elif iDataType == 'IMarkov':
+
+            from .imarkov import IMarkov
+            toRet = IMarkov(name=name)
+            logger.info(f"InfoData.new: Created new IMarkov '{toRet.name}' with ipType='{toRet.ipType}'")
+
+        else:
+            #------------------------------------------------------------------
+            # iDataType je neznamy, logujem chybu a vratim None
+            #------------------------------------------------------------------
+            logger.error(f"InfoData.new: iDataType '{iDataType}' is not defined, command denied")
+            toRet = None
+
+        #----------------------------------------------------------------------
+        return toRet
+
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
@@ -163,15 +232,6 @@ class InfoData:
         else     : return InfoData.datas.copy()
 
     #--------------------------------------------------------------------------
-    def getData(self, name) -> 'InfoData|None':
-        """Returns InfoData instance form list of all instances.
-           If such name does not exists, returns None.
-        """
-
-        if name in InfoData.datas: return InfoData.datas[name]
-        else                     : return None
-
-    #--------------------------------------------------------------------------
     def setIpType(self, ipType:str, force:bool=False):
         """Set ipType of this InfoData and reset all data.
         - If not force, ipType is set only if it is different from the current one,
@@ -237,8 +297,8 @@ class InfoData:
         #----------------------------------------------------------------------
         dat['name'          ] = self.name
         dat['ipType'        ] = self.ipType
-        dat['schema_axes'   ] = InfoPoint.getSchema(self.ipType)['axes']
-        dat['schema_vals'   ] = InfoPoint.getSchema(self.ipType)['vals']
+        dat['schema_axes'   ] = self.getSchemaAxes()
+        dat['schema_vals'   ] = self.getSchemaVals()
         dat['cnt of points' ] = self.count()
         dat['len(points)'   ] = len(self.points)
         dat['staticEdge'    ] = self.staticEdge
@@ -335,58 +395,6 @@ class InfoData:
         #----------------------------------------------------------------------
         for point in self.points:
             toRet.points.append(point.copy())
-
-        #----------------------------------------------------------------------
-        return toRet
-
-    #--------------------------------------------------------------------------
-    def new(self, name, iDataType:str) -> 'InfoData|None':
-        """Creates new InfoData of type iDataType with name.
-           Returns new InfoData instance or None if iDataType is not defined.
-        """
-
-        logger.info(f"{self.name}.new: name='{name}', iDataType='{iDataType}'")
-        toRet = None
-
-        #----------------------------------------------------------------------
-        # Kontrola existencie InfoData s s rovnakym menom
-        #----------------------------------------------------------------------
-        if self.getData(name) is not None:
-            logger.warning(f"{self.name}.new: InfoData with name '{name}' already exists, command denied")
-            return self.getData(name)
-
-        #----------------------------------------------------------------------
-        # Vytvorenie noveho InfoData podla zadaneho typu
-        #----------------------------------------------------------------------
-        if   iDataType == 'InfoData':
-
-            toRet = InfoData(name=name)
-            logger.info(f"{self.name}.new: Created new InfoData '{toRet.name}' with ipType='{toRet.ipType}'")
-
-        elif iDataType == 'ISeries':
-
-            from .iseries import ISeries
-            toRet = ISeries(name=name)
-            logger.info(f"{self.name}.new: Created new ISeries '{toRet.name}' with ipType='{toRet.ipType}'")
-
-        elif iDataType == 'IFtion':
-
-            from .iftion import IFtion
-            toRet = IFtion(name=name)
-            logger.info(f"{self.name}.new: Created new IFtion '{toRet.name}' with ipType='{toRet.ipType}'")
-
-        elif iDataType == 'IVector':
-
-            from .ivector import IVector
-            toRet = IVector(name=name)
-            logger.info(f"{self.name}.new: Created new IVector '{toRet.name}' with ipType='{toRet.ipType}'")
-
-        else:
-            #------------------------------------------------------------------
-            # iDataType je neznamy, logujem chybu a vratim None
-            #------------------------------------------------------------------
-            logger.error(f"{self.name}.new: iDataType '{iDataType}' is not defined, command denied")
-            toRet = None
 
         #----------------------------------------------------------------------
         return toRet
@@ -541,7 +549,7 @@ class InfoData:
         If axes has more than one axe, this method is not applicable and returns False.
 
         1. If axeVal is already present in the existing InfoData, this method does not add new point and returns False.
-        2. Creates new InfoPoint with the same ipType as this InfoData and with axe value axeVal.
+        2. Creates new InfoPoint with the same ipType as this InfoData and with axe value axeVal and default vals.
         3. Created InfoPoint is added at the end of the existing self.points.
         4. After addition, list self.points is sorted by axe value.
         5. Structure parameters self._cnts, self._origs and self._rects are updated accordingly.
@@ -583,20 +591,21 @@ class InfoData:
         # Create new InfoPoint with the given axe value
         #----------------------------------------------------------------------
         newPoint = InfoPoint(self.ipType, pos={axeKey: axeVal})
-        self.points.append(newPoint)
+        newPoint.clear()                 # Clear all values to default
 
         #----------------------------------------------------------------------
-        # Sort points by axe value
+        # Append new Point to list of points and sort points by axe value
         #----------------------------------------------------------------------
+        self.points.append(newPoint)
         self.points.sort(key=lambda p: p.pos(axeKey))
 
         #----------------------------------------------------------------------
-        # Update _cnts (increment count)
+        # Update _cnts in axeKey (increment count)
         #----------------------------------------------------------------------
         self._cnts[axeKey] += 1
 
         #----------------------------------------------------------------------
-        # Update _origs and _rects - find min and max positions
+        # Update _origs and _rects in axeKey - find min and max positions
         #----------------------------------------------------------------------
         positions = [p.pos(axeKey) for p in self.points]
         self._origs[axeKey] = min(positions)
@@ -627,7 +636,7 @@ class InfoData:
 
         #----------------------------------------------------------------------
         pts = len(self.points)
-        logger.warning(f"{self.name}.initAdd: Added new InfoPoint, total {pts} points in {axeKey} axe")
+        logger.warning(f"{self.name}.initAdd: Added InfoPoint of type {newPoint._ipType}, total {pts} points in {axeKey} axe")
         return newPoint
 
     #==========================================================================
