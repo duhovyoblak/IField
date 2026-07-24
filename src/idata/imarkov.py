@@ -35,6 +35,8 @@ class IMarkov(InfoData):
     def __init__(self, name, dim:int=1, axeName:str='Value'):
         "Calls constructor of IMarkov process analyser/generator"
 
+        logger.debug(f"{name}.constructor: Creating IMarkov object with dim={dim} and axeName='{axeName}'")
+
         #----------------------------------------------------------------------
         # Super constructor
         #----------------------------------------------------------------------
@@ -46,6 +48,7 @@ class IMarkov(InfoData):
         self.dim      = dim   # Dimension, e.g. number of previous states to consider in the Markov process
         self.totObs   = 0     # Total number of observations in this Markov object
         self.actPoint = None  # Actual InfoPoint in this Markov object
+        self.actVals  = []    # List of actual values in the Markov process, length = dim
 
         #----------------------------------------------------------------------
         # Inicializujem schemu a ipType podla dimenzie ftion
@@ -86,8 +89,9 @@ class IMarkov(InfoData):
         dat['dim'           ] = self.dim
         dat['schema_axes'   ] = self.getSchemaAxes()
         dat['schema_vals'   ] = self.getSchemaVals()
-        dat['address'       ] = self.actAddress()
         dat['totObs'        ] = self.totObs
+        dat['actPoint'      ] = self.actPoint.pos('x') if self.actPoint is not None else None
+        dat['actVals'       ] = self.actVals
 
         #----------------------------------------------------------------------
         # Ak full, pridam info o vsetkych InfoPoints
@@ -122,6 +126,7 @@ class IMarkov(InfoData):
         self.init( cnts=(0,) )
         self.totObs   = 0
         self.actPoint = None
+        self.actVals  = []
 
         #----------------------------------------------------------------------
         logger.audit(f"{self.name}.reset: Markov analyser reset complete")
@@ -150,22 +155,24 @@ class IMarkov(InfoData):
         logger.audit(f"{self.name}.setDim: Markov analyser dimension set to {self.dim}")
 
     #--------------------------------------------------------------------------
-    def actAddress(self) -> str:
-        """Returns string representation of the actual address in the Markov process.
+    def actPoints(self) -> list:
+        """Returns list of the active Points in the Markov process.
         """
 
-        logger.info(f"{self.name}.actAddress: actPoint={self.actPoint}")
+        logger.debug(f"{self.name}.actPoints:")
+        toRet = []
 
         #---------------------------------------------------------------------
-        # If there is no active point, return a message indicating that
+        # If there is no active point, return an empty list
         #---------------------------------------------------------------------
         if self.actPoint is None:
-            return f"{self.name}:[No active point]"
+            logger.info(f"{self.name}.actPoints: [No active point]")
+            return toRet
 
         #---------------------------------------------------------------------
-        # If there is an active point, build its address
+        # If there is an active point, initialise list
         #---------------------------------------------------------------------
-        addr = f"{self.name}:[{self.actPoint._pos['x']}]"
+        toRet = [self.actPoint]
 
         #---------------------------------------------------------------------
         # If there is a Markov analyser for the next dimension, dive into it
@@ -173,22 +180,77 @@ class IMarkov(InfoData):
         mrk = self.actPoint._vals['mrk']
 
         if mrk is not None and isinstance(mrk, IMarkov):  # Default hodnota po InitAdd je 0
-            addr += f" <- {mrk.actAddress()}"
+            toRet.extend(mrk.actPoints())
 
         #---------------------------------------------------------------------
-        return addr
+        logger.info(f"{self.name}.actPoints: Found {len(toRet)} active Points")
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def actAddress(self) -> str:
+        """Returns string representation of the active Points in the Markov process.
+        """
+
+        logger.debug(f"{self.name}.actAddress:")
+        toRet = ''
+
+        #---------------------------------------------------------------------
+        # Ziskam list of active Points in the Markov process
+        #---------------------------------------------------------------------
+        actPts = self.actPoints()
+
+        #---------------------------------------------------------------------
+        # Konvertujem list of active Points to string representation
+        #---------------------------------------------------------------------
+        for i, point in enumerate(actPts):
+
+            if i == 0: toRet = f"{point.pos('x')}"
+            else     : toRet += f" -> {point.pos('x')}"
+
+        #---------------------------------------------------------------------
+        logger.info(f"{self.name}.actAddress: '{toRet}'")
+        return toRet
 
     #==========================================================================
     # IMarkov methods
     #--------------------------------------------------------------------------
     def observe(self, val:int):
         """Add new observation to the Markov analyser.
-        """
+
+        1. Move window of the observed values forward one step and acquire list of active Points
+        2. Increment the observation count for each active Point and increment the total observation count for each dimension.
+    """
 
         logger.info(f"{self.name}.observe: val={val}")
 
-        res = self._moveFwd(val=val)
+        #----------------------------------------------------------------------
+        # Move one step forward and acquire list of active Points
+        #----------------------------------------------------------------------
+        actPts = self.moveFwd(val=val)
 
+        #----------------------------------------------------------------------
+        # Increment the observation count of Point in all dimenesions
+        #----------------------------------------------------------------------
+        for actPt in actPts:
+            actPt._vals['obs'] += 1
+
+        #----------------------------------------------------------------------
+        # Increment the total observation in this dimension
+        #----------------------------------------------------------------------
+        self.totObs += 1
+
+        #----------------------------------------------------------------------
+        # Increment the total observation count for each dimension > 1
+        #----------------------------------------------------------------------
+        for actPt in actPts[:-1]:  # Exclude the last dimension, there is no Markov analyser to dive in
+
+            mrk = actPt._vals['mrk']
+
+            if mrk is not None and isinstance(mrk, IMarkov):  # Default hodnota po InitAdd je 0
+                mrk.totObs += 1
+
+        #----------------------------------------------------------------------
+        logger.info(f"{self.name}.observe: Observation of value {val} added, total observations = {self.totObs}")
 
     #--------------------------------------------------------------------------
     def generate(self, observe=False)->int|None:
@@ -206,7 +268,125 @@ class IMarkov(InfoData):
         return toRet
 
     #--------------------------------------------------------------------------
+    def moveFwd(self, val:int) -> list:
+        """Move values of the chain of Markov analysers forward with the new observation value.
+
+        1. Move window of the Markov process forward one step
+           M(dim).val <- M(dim-1).val <- M(dim-2).val <- ... <- M(1).val
+
+        2. Activate the InfoPoints in each dimension > 1 according to the shifted values,
+           activate the InfoPoint with pos == val in the last dimension of the Markov process.
+
+        3. Return list of activated InfoPoints in the Markov process.
+        """
+
+        logger.debug(f"{self.name}._moveFwd: val={val}")
+
+        #----------------------------------------------------------------------
+        # Move one step forward = last (dim-1) values from actVals plus new value val
+        #----------------------------------------------------------------------
+        self.actVals = self.actVals[-(self.dim-1):] + [val]
+
+        #----------------------------------------------------------------------
+        # Activate internal state of the Markov analyser according to the shifted values in actVals
+        #----------------------------------------------------------------------
+        actPts = self._activate(actVals=self.actVals.copy())
+        return actPts
+
+    #--------------------------------------------------------------------------
     # Internal methods for IMarkov
+    #--------------------------------------------------------------------------
+    def _activate(self, actVals:list) -> list:
+        """Activate the Markov analyser according to the list of values in actVals.
+
+        1. For each dimension of the Markov process, find or create InfoPoint with val == actVals[dim].
+        2. If this is not the last dimension, create Markov analyser for the next dimension and dive into it.
+        3. Return list of activated InfoPoints in the Markov process.
+        4. If actVals is empty, return empty list.
+        """
+
+        logger.info(f"{self.name}._activate: actVals={actVals}")
+        toRet = []
+
+        #----------------------------------------------------------------------
+        # Check length of the actVals list
+        #----------------------------------------------------------------------
+        if len(actVals) == 0:
+            logger.error(f"{self.name}._activate: actVals list is empty, cannot activate dim={self.dim}")
+            return toRet
+
+        #----------------------------------------------------------------------
+        # Pop the leftmost value from actVals and use it as the new observation value for this dimension
+        #----------------------------------------------------------------------
+        val = actVals.pop(0)
+        logger.info(f"{self.name}._activate: val={val}")
+
+        #----------------------------------------------------------------------
+        # Find/create InfoPoint with pos == val in this dimension of the Markov process
+        #----------------------------------------------------------------------
+        self.actPoint = self._getPoint(val=val, create=True)
+
+        if self.actPoint is None:
+            logger.error(f"{self.name}._activate: Failed to find or add InfoPoint with pos={val} to the Markov analyser")
+            return toRet
+
+        toRet.append(self.actPoint)
+
+        #----------------------------------------------------------------------
+        # If this is not the last dimension (=1), dive into the next dimension
+        #----------------------------------------------------------------------
+        if self.dim > 1:
+
+            #------------------------------------------------------------------
+            # Create Markov analyser for the next dimension
+            #------------------------------------------------------------------
+            nextMark = IMarkov(name=f"{self.name}/({val})", dim=self.dim-1, axeName=self.axeNameByKey('x'))
+            self.actPoint.set(vals={'mrk': nextMark})
+
+            #------------------------------------------------------------------
+            # Dive into the next dimension
+            #------------------------------------------------------------------
+            toRet.extend(nextMark._activate(actVals=actVals))
+
+        else:
+            #------------------------------------------------------------------
+            # Last dimension reached, check if there are still values in actPos, which should not happen
+            #------------------------------------------------------------------
+            if len(actVals) > 0:
+                logger.error(f"{self.name}._activate: actVals list is not empty in the last dimension, remaining values: {actVals}")
+
+        #----------------------------------------------------------------------
+        logger.info(f"{self.name}._activate: Activated {len(toRet)} InfoPoints in the Markov process")
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def _getPoint(self, val:int, create=False):
+        """Returns InfoPoint in this Markov analyser with pos = val.
+        If create is True, creates new InfoPoint with pos = val if it does not exist.
+        If create is False, returns None if InfoPoint with pos = val does not exist.
+        """
+
+        logger.debug(f"{self.name}._getPoint: val={val} with create={create}")
+
+        #----------------------------------------------------------------------
+        # Find InfoPoint with pos == val
+        #----------------------------------------------------------------------
+        pointIdx = self._idxByAxeVal(axeKey='x', axeVal=val)
+
+        #----------------------------------------------------------------------
+        # InfoPoint with pos == val does not exists
+        #----------------------------------------------------------------------
+        if pointIdx is None:
+
+            if create: return self.initAdd(axeVal=val)
+            else     : return None
+
+        else:
+            #------------------------------------------------------------------
+            # InfoPoint with pos == val exists
+            #------------------------------------------------------------------
+            return self.points[pointIdx]
+
     #--------------------------------------------------------------------------
     def _idxByAxeVal(self, axeKey:str, axeVal:float) -> int|None:
         """Returns index in axe for respective coordinate.
@@ -239,142 +419,6 @@ class IMarkov(InfoData):
         logger.debug(f"{self.name}._idxByAxeVal: axeKey={axeKey}, axeVal={axeVal} -> idx={toRet}")
         return toRet
 
-    #--------------------------------------------------------------------------
-    def _getPoint(self, val:int, create=False):
-        """Returns InfoPoint in this Markov analyser with pos = val.
-        If create is True, creates new InfoPoint with pos = val if it does not exist.
-        If create is False, returns None if InfoPoint with pos = val does not exist.
-        """
-
-        logger.info(f"{self.name}._getPoint: val={val} with create={create}")
-
-        #----------------------------------------------------------------------
-        # Find InfoPoint with pos == val
-        #----------------------------------------------------------------------
-        pointIdx = self._idxByAxeVal(axeKey='x', axeVal=val)
-
-        #----------------------------------------------------------------------
-        # InfoPoint with pos == val does not exists
-        #----------------------------------------------------------------------
-        if pointIdx is None:
-
-            if create: return self.initAdd(axeVal=val)
-            else     : return None
-
-        else:
-            #------------------------------------------------------------------
-            # InfoPoint with pos == val exists
-            #------------------------------------------------------------------
-            return self.points[pointIdx]
-
-    #--------------------------------------------------------------------------
-    def _moveFwd(self, val:int) -> int|None:
-        """Move values of the chain of Markov analysers forward with the new observation value.
-
-        M(dim).val <- M(dim-1).val <- M(dim-2).val <- ... <- M(1).val
-        Observe the value val in the last dimension of the Markov process and update the chain of Markov analysers accordingly.
-
-        Returns last observed value of the Markov process for updating actPoint in parent dimension or None.
-        """
-
-        logger.info(f"{self.name}._moveFwd: val={val}")
-
-        #----------------------------------------------------------------------
-        # Save last value of the Markov process to return to parent dimension
-        #----------------------------------------------------------------------
-        if self.actPoint is not None: lastVal = self.actPoint._pos['x']
-        else                        : lastVal = None
-
-        #----------------------------------------------------------------------
-        # Check if this is the last dimension of the Markov process
-        #----------------------------------------------------------------------
-        if self.dim == 1:
-
-            #------------------------------------------------------------------
-            # Last dimension reached. Find/create InfoPoint with pos == val
-            #------------------------------------------------------------------
-            self.actPoint = self._getPoint(val=val, create=True)
-
-            if self.actPoint is None:
-                logger.error(f"{self.name}._moveFwd: Failed to find or add InfoPoint with pos={val} to the Markov analyser")
-                return None
-
-            #------------------------------------------------------------------
-            # Observe the value val in the Markov analyser
-            #------------------------------------------------------------------
-            self.actPoint._vals['obs'] += 1
-            self.totObs += 1
-
-        else:
-            #------------------------------------------------------------------
-            # Not last dimension, dive into next dimension or initialise it
-            #------------------------------------------------------------------
-            if self.actPoint is None:
-
-                #--------------------------------------------------------------
-                # Analyser is not initialised yet, create new InfoPoint with pos = val and initialise next dimension Markov analyser
-                #--------------------------------------------------------------
-                self.actPoint = self.initAdd(axeVal=val)
-
-                if self.actPoint is None:
-                    logger.error(f"{self.name}._moveFwd: Failed to add new InfoPoint with pos={val} to the Markov analyser")
-                    return None
-
-                #--------------------------------------------------------------
-                # Create Markov analyser for the next dimension
-                #--------------------------------------------------------------
-                nextMark = IMarkov(name=f"{self.name}/({val})", dim=self.dim-1, axeName=self.axeNameByKey('x'))
-                self.actPoint.set(vals={'mrk': nextMark})
-
-                #--------------------------------------------------------------
-                # Observe the value val in the Markov analyser
-                #--------------------------------------------------------------
-                self.actPoint._vals['obs'] += 1
-                self.totObs += 1
-
-            else:
-                #--------------------------------------------------------------
-                # Analyser is initialised, dive into the next dimension of the Markov process
-                #--------------------------------------------------------------
-                lastVal = self.actPoint._vals['mrk']._moveFwd(val=val)
-
-                #--------------------------------------------------------------
-                # If lastVal is not None, move self.actPoint to the InfoPoint with pos == lastVal in the current dimension
-                #--------------------------------------------------------------
-                if lastVal is not None:
-
-                    #----------------------------------------------------------
-                    # Find/create InfoPoint with pos == lastVal
-                    #----------------------------------------------------------
-                    self.actPoint = self._getPoint(val=lastVal, create=True)
-
-                    if self.actPoint is None:
-                        logger.error(f"{self.name}._moveFwd: Failed to add new InfoPoint with pos={lastVal} to the Markov analyser")
-                        return None
-
-                    #----------------------------------------------------------
-                    # Create Markov analyser for the next dimension if it does not exist
-                    #----------------------------------------------------------
-                    if self.actPoint._vals['mrk'] is None:
-
-                        nextMark = IMarkov(name=f"{self.name}/({val})", dim=self.dim-1, axeName=self.axeNameByKey('x'))
-                        self.actPoint.set(vals={'mrk': nextMark})
-
-                    #----------------------------------------------------------
-                    # Observe the value val in the Markov analyser
-                    #----------------------------------------------------------
-                    self.actPoint._vals['obs'] += 1
-                    self.totObs += 1
-
-                else:
-                    #----------------------------------------------------------
-                    # lastVal is None, do not move forward in the Markov process
-                    #----------------------------------------------------------
-                    logger.debug(f"{self.name}._moveFwd: Cannot move forward in the Markov process, lastVal is None")
-                    return None
-
-        #----------------------------------------------------------------------
-        return lastVal  # Return last value to parent dimension
 
     #==========================================================================
     # Dynamics methods for IMarkov

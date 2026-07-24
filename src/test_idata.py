@@ -25,46 +25,48 @@ if __name__ =='__main__':
     # Vytvorenie, generovanie osi
     #--------------------------------------------------------------------------
     im = InfoData.new(name='Markov', iDataType='IMarkov')
-    logger.setLevel('DEBUG')
+    logger.setLevel('INFO')
+
+
     print()
     print(im.info(full=True)['msg'])
     print(80*'-')
-    input('Press Enter to continue...')
+    input('IMarkov created, Press Enter to continue...')
     print()
 
     im.setDim(dim=3)
     print()
     print(im.info(full=True)['msg'])
     print(80*'-')
-    input('Press Enter to continue...')
+    input('Dim set, Press Enter to continue...')
     print()
 
     im.observe(val=3)
     print()
     print(im.info(full=True)['msg'])
     print(80*'-')
-    input('Press Enter to continue...')
+    input('3 observed, Press Enter to continue...')
     print()
 
     im.observe(val=-1)
     print()
     print(im.info(full=True)['msg'])
     print(80*'-')
-    input('Press Enter to continue...')
+    input('3, -1 observed, Press Enter to continue...')
     print()
 
     im.observe(val=10)
     print()
     print(im.info(full=True)['msg'])
     print(80*'-')
-    input('Press Enter to continue...')
+    input('3, -1, 10 observed, Press Enter to continue...')
     print()
 
     im.observe(val=3)
     print()
     print(im.info(full=True)['msg'])
     print(80*'-')
-    input('Press Enter to continue...')
+    input('3, -1, 10, 3 observed again, Press Enter to continue...')
     print()
 
 

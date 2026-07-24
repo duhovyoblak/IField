@@ -242,7 +242,7 @@ class InfoData:
         - If self.gui is not None, call self.gui.resetDisplay() to reset display options to default values based on new ipType.
         """
 
-        logger.info(f"{self.name}.setIpType: ipType='{ipType}', force={force}")
+        logger.debug(f"{self.name}.setIpType: ipType='{ipType}', force={force}")
 
         #----------------------------------------------------------------------
         # Kontrola zmeny ipType
@@ -558,7 +558,7 @@ class InfoData:
         8. Returns created InfoPoint if addition was successful, None if not applicable or failed.
         """
 
-        logger.info(f"{self.name}.initAdd: axeVal={axeVal}")
+        logger.debug(f"{self.name}.initAdd: axeVal={axeVal}")
 
         #----------------------------------------------------------------------
         # Kontrola, ci je ipType definovany
@@ -636,7 +636,7 @@ class InfoData:
 
         #----------------------------------------------------------------------
         pts = len(self.points)
-        logger.warning(f"{self.name}.initAdd: Added InfoPoint of type {newPoint._ipType}, total {pts} points in {axeKey} axe")
+        logger.info(f"{self.name}.initAdd: '{newPoint._ipType}' with axeVal={axeVal}, total {pts} points in '{axeKey}' axe")
         return newPoint
 
     #==========================================================================
@@ -1398,9 +1398,8 @@ class InfoData:
             self.actList.append(self.pointByPos(pos))
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.actSubData: Found {len(self.actList)} positions in active subdata for actSubIdxs={self.actSubIdxs}")
+        logger.debug(f"{self.name}.actSubData: Found {len(self.actList)} positions in active subdata for actSubIdxs={self.actSubIdxs}")
         return self.actList
-
 
     #==========================================================================
     # Data methods
