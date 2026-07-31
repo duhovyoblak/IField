@@ -636,7 +636,7 @@ class InfoData:
 
         #----------------------------------------------------------------------
         pts = len(self.points)
-        logger.info(f"{self.name}.initAdd: '{newPoint._ipType}' with axeVal={axeVal}, total {pts} points in '{axeKey}' axe")
+        logger.debug(f"{self.name}.initAdd: '{newPoint._ipType}' with axeVal={axeVal}, total {pts} points in '{axeKey}' axe")
         return newPoint
 
     #==========================================================================

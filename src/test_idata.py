@@ -2,6 +2,7 @@
 #  IData: test file
 #------------------------------------------------------------------------------
 from   siqolib.logger           import SiqoLogger
+import random                   as rnd
 from   idata.idata              import InfoData
 
 #==============================================================================
@@ -29,45 +30,26 @@ if __name__ =='__main__':
 
 
     print()
-    print(im.info(full=True)['msg'])
+    print()
     print(80*'-')
-    input('IMarkov created, Press Enter to continue...')
+#    input('IMarkov created, Press Enter to continue...')
     print()
 
     im.setDim(dim=3)
     print()
-    print(im.info(full=True)['msg'])
+    print()
     print(80*'-')
-    input('Dim set, Press Enter to continue...')
+#    input('Dim set, Press Enter to continue...')
     print()
 
-    im.observe(val=3)
-    print()
-    print(im.info(full=True)['msg'])
-    print(80*'-')
-    input('3 observed, Press Enter to continue...')
-    print()
+    for i in range(100):
 
-    im.observe(val=-1)
-    print()
-    print(im.info(full=True)['msg'])
-    print(80*'-')
-    input('3, -1 observed, Press Enter to continue...')
-    print()
+        val = rnd.randint(0, 5)
+        im.observe(val=val)
 
-    im.observe(val=10)
     print()
-    print(im.info(full=True)['msg'])
+    print(im)
     print(80*'-')
-    input('3, -1, 10 observed, Press Enter to continue...')
-    print()
-
-    im.observe(val=3)
-    print()
-    print(im.info(full=True)['msg'])
-    print(80*'-')
-    input('3, -1, 10, 3 observed again, Press Enter to continue...')
-    print()
 
 
 #==============================================================================

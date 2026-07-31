@@ -68,49 +68,75 @@ class IMarkov(InfoData):
     def __str__(self):
         """Returns string representation of the IMarkov object.
         """
+        toRet = ''
 
-        return self.info(full=False)['msg']
+        for msg in self.info(struct=True, histogram=True)['msg']:
+            toRet += msg
+
+        return toRet
 
     #--------------------------------------------------------------------------
-    def info(self, indent=0, full=False) -> dict:
+    def info(self, indent=0, struct=True, histogram=True) -> dict:
         """Returns information about the Markov analyser as a dictionary.
-           If full is True, returns detailed information about the Markov analyser.
+           If struct is True, returns structural information about the Markov analyser.
+           If histogram is True, returns histogram information about the Markov analyser.
         """
 
-        logger.debug(f"{self.name}.info: full={full}")
+        logger.debug(f"{self.name}.info: struct={struct}, histogram={histogram}")
         dat = {}
-        msg = ''
+        msg = []
+        if indent == 0: msg = [f"{indent*_IND}{60*'='}\n"]
 
         #----------------------------------------------------------------------
         # Info o strukture
         #----------------------------------------------------------------------
-        dat['name'          ] = self.name
-        dat['ipType'        ] = self.ipType
-        dat['dim'           ] = self.dim
-        dat['schema_axes'   ] = self.getSchemaAxes()
-        dat['schema_vals'   ] = self.getSchemaVals()
-        dat['totObs'        ] = self.totObs
-        dat['actPoint'      ] = self.actPoint.pos('x') if self.actPoint is not None else None
-        dat['actVals'       ] = self.actVals
+        if struct:
+            dat['ver'           ] = _VER
+            dat['dim'           ] = self.dim
+            dat['axeName'       ] = self.axeNameByKey('x')
+            dat['ipType'        ] = self.ipType
+            dat['totObs'        ] = self.totObs
+            dat['actPoint'      ] = self.actPoint.pos('x') if self.actPoint is not None else None
+            dat['actVals'       ] = self.actVals
+
+            #------------------------------------------------------------------
+            # Konverzia do msg listu
+            #------------------------------------------------------------------
+            for key, val in dat.items():
+                msg.append(f"{indent*_IND}{key:<15}: {val}\n")
 
         #----------------------------------------------------------------------
-        # Ak full, pridam info o vsetkych InfoPoints
+        # Ak dat, pridam info o vsetkych InfoPoints a ich Markov objektoch
         #----------------------------------------------------------------------
-        if full:
+        if histogram:
 
-            for idx, point in enumerate(self.points):
-                dat[f'point[{idx}]'] = point.info(indent=indent+1, full=full)['dat']
+            msg.append(f"{indent*_IND}{60*'-'}\n")
+
+            for point in self.points:
+
+                posStr = point._posStr()
+                valStr = point._valsStr()
+
+                dat[f'point[{posStr}]'] = valStr
+                msg.append(f"{indent*_IND}point {posStr}: {valStr}\n")
+
+                #--------------------------------------------------------------
+                # Info o vnorenom Markov objekte, ak existuje
+                #--------------------------------------------------------------
+                mrk = point._vals['mrk']
+
+                if mrk is not None and isinstance(mrk, IMarkov):
+
+                    res = mrk.info(indent=indent+1, struct=False, histogram=True)
+
+                    dat[f'point[{posStr}].mrk'] = res['dat']
+                    msg.extend(res['msg'])
+
+                #--------------------------------------------------------------
+                msg.append(f"{indent*_IND} \n")
 
         #----------------------------------------------------------------------
-        # Konverzia do msg listu
-        #----------------------------------------------------------------------
-        if indent == 0: msg = f"{indent*_IND}{60*'='}\n"
-
-        for key, val in dat.items():
-            msg += f"{indent*_IND}{key:<15}: {val}\n"
-
-        #----------------------------------------------------------------------
-        logger.info(f"{self.name}.info: Created info dictionary with {len(dat)} items, full={full}")
+        logger.info(f"{self.name}.info: Created info")
         return {'res': 'OK', 'dat': dat, 'msg': msg}
 
     #--------------------------------------------------------------------------
@@ -221,7 +247,7 @@ class IMarkov(InfoData):
         2. Increment the observation count for each active Point and increment the total observation count for each dimension.
     """
 
-        logger.info(f"{self.name}.observe: val={val}")
+        logger.debug(f"{self.name}.observe: val={val}")
 
         #----------------------------------------------------------------------
         # Move one step forward and acquire list of active Points
@@ -232,22 +258,24 @@ class IMarkov(InfoData):
         # Increment the observation count of Point in all dimenesions
         #----------------------------------------------------------------------
         for actPt in actPts:
+
+            #------------------------------------------------------------------
+            # Increment the observation count of the active Point
+            #------------------------------------------------------------------
             actPt._vals['obs'] += 1
+
+            #------------------------------------------------------------------
+            # Increment the total observation count for next dimension if it exists
+            #------------------------------------------------------------------
+            mrk = actPt._vals['mrk']
+
+            if mrk is not None and isinstance(mrk, IMarkov):  # Default hodnota po InitAdd je 0
+                mrk.totObs += 1
 
         #----------------------------------------------------------------------
         # Increment the total observation in this dimension
         #----------------------------------------------------------------------
         self.totObs += 1
-
-        #----------------------------------------------------------------------
-        # Increment the total observation count for each dimension > 1
-        #----------------------------------------------------------------------
-        for actPt in actPts[:-1]:  # Exclude the last dimension, there is no Markov analyser to dive in
-
-            mrk = actPt._vals['mrk']
-
-            if mrk is not None and isinstance(mrk, IMarkov):  # Default hodnota po InitAdd je 0
-                mrk.totObs += 1
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.observe: Observation of value {val} added, total observations = {self.totObs}")
@@ -305,7 +333,7 @@ class IMarkov(InfoData):
         4. If actVals is empty, return empty list.
         """
 
-        logger.info(f"{self.name}._activate: actVals={actVals}")
+        logger.debug(f"{self.name}._activate: actVals={actVals}")
         toRet = []
 
         #----------------------------------------------------------------------
@@ -319,7 +347,7 @@ class IMarkov(InfoData):
         # Pop the leftmost value from actVals and use it as the new observation value for this dimension
         #----------------------------------------------------------------------
         val = actVals.pop(0)
-        logger.info(f"{self.name}._activate: val={val}")
+        logger.debug(f"{self.name}._activate: val={val}")
 
         #----------------------------------------------------------------------
         # Find/create InfoPoint with pos == val in this dimension of the Markov process
@@ -338,10 +366,13 @@ class IMarkov(InfoData):
         if self.dim > 1:
 
             #------------------------------------------------------------------
-            # Create Markov analyser for the next dimension
+            # Get or create Markov analyser for the next dimension
             #------------------------------------------------------------------
-            nextMark = IMarkov(name=f"{self.name}/({val})", dim=self.dim-1, axeName=self.axeNameByKey('x'))
-            self.actPoint.set(vals={'mrk': nextMark})
+            nextMark = self.actPoint._vals.get('mrk', None)
+
+            if nextMark is None or not isinstance(nextMark, IMarkov):
+                nextMark = IMarkov(name=f"{self.name}/({val})", dim=self.dim-1, axeName=self.axeNameByKey('x'))
+                self.actPoint.set(vals={'mrk': nextMark})
 
             #------------------------------------------------------------------
             # Dive into the next dimension
@@ -356,7 +387,7 @@ class IMarkov(InfoData):
                 logger.error(f"{self.name}._activate: actVals list is not empty in the last dimension, remaining values: {actVals}")
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}._activate: Activated {len(toRet)} InfoPoints in the Markov process")
+        logger.debug(f"{self.name}._activate: Activated {len(toRet)} InfoPoints in the Markov process")
         return toRet
 
     #--------------------------------------------------------------------------
