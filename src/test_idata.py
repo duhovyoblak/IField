@@ -26,7 +26,7 @@ if __name__ =='__main__':
     # Vytvorenie, generovanie osi
     #--------------------------------------------------------------------------
     im = InfoData.new(name='Markov', iDataType='IMarkov')
-    logger.setLevel('INFO')
+    logger.setLevel('WARNING')
 
 
     print()
@@ -42,7 +42,7 @@ if __name__ =='__main__':
 #    input('Dim set, Press Enter to continue...')
     print()
 
-    for i in range(1000):
+    for i in range(10_000):
 
         val = rnd.randint(0, 7)
         im.observe(val=val)
@@ -50,6 +50,21 @@ if __name__ =='__main__':
     print()
     print(im)
     print(80*'-')
+
+    im._INFO_HISTOGRAM = False
+
+    while True:
+        val = input('Enter value to observe (or <Enter> to quit): ')
+
+        if val.lower() == '': break
+
+        try:
+            val_int = int(val)
+            im.observe(val=val_int)
+            print(im)
+
+        except ValueError:
+            print('Invalid input. Please enter an integer or "exit".')
 
 
 #==============================================================================

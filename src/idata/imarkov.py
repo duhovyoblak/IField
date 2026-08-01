@@ -30,6 +30,8 @@ class IMarkov(InfoData):
     #==========================================================================
     # Static variables & methods
     #--------------------------------------------------------------------------
+    _INFO_STRUCT    = True
+    _INFO_HISTOGRAM = True
 
     #==========================================================================
     # Constructor & utilities
@@ -77,13 +79,13 @@ class IMarkov(InfoData):
         """
         toRet = ''
 
-        for msg in self.info(struct=True, histogram=True)['msg']:
+        for msg in self.info(struct=self._INFO_STRUCT, histogram=self._INFO_HISTOGRAM)['msg']:
             toRet += msg
 
         return toRet
 
     #--------------------------------------------------------------------------
-    def info(self, indent=0, struct=True, histogram=True) -> dict:
+    def info(self, indent=0, struct=_INFO_STRUCT, histogram=_INFO_HISTOGRAM) -> dict:
         """Returns information about the Markov analyser as a dictionary.
            If struct is True, returns structural information about the Markov analyser.
            If histogram is True, returns histogram information about the Markov analyser.
@@ -104,7 +106,6 @@ class IMarkov(InfoData):
             dat['ipType'        ] = self.ipType
             dat['totObs'        ] = self.totObs
             dat['bits'          ] = self.bits
-            dat['actPoint'      ] = self.actPoint.pos('x') if self.actPoint is not None else None
             dat['actVals'       ] = self.actVals
 
             #------------------------------------------------------------------
@@ -112,6 +113,22 @@ class IMarkov(InfoData):
             #------------------------------------------------------------------
             for key, val in dat.items():
                 msg.append(f"{indent*_IND}{key:<15}: {val}\n")
+
+            #------------------------------------------------------------------
+            # Active Points
+            #------------------------------------------------------------------
+            msg.append(f"{indent*_IND}\n")
+            msg.append(f"{indent*_IND}Active Points\n")
+
+            for actPt in self.actPoints():
+
+                posStr = actPt._posStr()
+                valStr = actPt._valsStr()
+
+                dat[f'actPoint[{posStr}]'] = valStr
+                msg.append(f"{indent*_IND}actPoint {posStr}: {valStr}\n")
+
+            msg.append(f"{indent*_IND}\n")
 
         #----------------------------------------------------------------------
         # Ak dat, pridam info o vsetkych InfoPoints a ich Markov objektoch
@@ -295,17 +312,12 @@ class IMarkov(InfoData):
                     point._vals['obs'] += 1
 
                 #--------------------------------------------------------------
-                # Recalculate probability for this point (may have changed due to new totObs)
+                # Recalculate conditional probability for ALL points in this dimension
+                # Conditional probability: P(X_i | X_{i-1}, ..., X_1) = obs[X_i] / totObs[parent]
+                # All points, active or not, depend on previous dimensions through this calculation
+                # Joint probability: P(X_1, X_2, ..., X_i) = P(X_1, ..., X_{i-1}) * P(X_i | ...)
                 #--------------------------------------------------------------
-                condPro = point._vals['obs'] / parentMrk.totObs # Conditional probability: P(X_i | X_{i-1}, ..., X_1) = obs[X_i] / totObs[parent]
-
-                # Note: For the active point, cumPro is accumulated from previous dimensions
-                # For other points, we use their own condPro directly as joint probability
-                if point == actPt:
-                    cumPro *= condPro  # Joint probability accumulation
-                    point._vals['pro'] = cumPro
-                else:
-                    point._vals['pro'] = condPro
+                point._vals['pro'] = cumPro * point._vals['obs'] / parentMrk.totObs
 
                 # Self-information: number of bits needed to encode this probability
                 point._vals['bit'] = -point._vals['pro'] * math.log2(point._vals['pro']) if point._vals['pro'] > 0 else 0
@@ -317,8 +329,10 @@ class IMarkov(InfoData):
                 parentMrk.bits += (newBit - oldBit)
 
             #------------------------------------------------------------------
-            # Preparing for the next dimension, if any
+            # After updating all points, accumulate joint probability for the active point
+            # became basic probability for the next dimension, if any
             #------------------------------------------------------------------
+            cumPro    = actPt._vals['pro']
             parentMrk = actPt._vals['mrk']
 
         #----------------------------------------------------------------------
@@ -361,10 +375,8 @@ class IMarkov(InfoData):
         # For dim=2, we keep the last 1 value plus new value (sliding window size = 2)
         # etc.
         #----------------------------------------------------------------------
-        if self.dim > 1:
-            self.actVals = self.actVals[-(self.dim-1):] + [val]
-        else:
-            self.actVals = [val]
+        if self.dim > 1: self.actVals = self.actVals[-(self.dim-1):] + [val]
+        else           : self.actVals = [val]
 
         #----------------------------------------------------------------------
         # Activate internal state of the Markov analyser according to the shifted values in actVals
