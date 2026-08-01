@@ -17,8 +17,8 @@ class TestIPointInit:
 
         positions = [0, 1, -5, 100.5]
         for pos in positions:
-            point = InfoPoint(pos={"x": pos})
-            assert point.pos("x") == pos
+            point = InfoPoint(ipType='ipReal', pos={'x': pos})
+            assert point.pos('x') == pos
 
     def test_ipoint_string_representation(self, ipoint_instance):
         """Test string representation of InfoPoint."""
@@ -58,18 +58,18 @@ class TestIPointComparison:
         """Test point equality comparison."""
         from idata.ipoint import InfoPoint
 
-        p1 = InfoPoint(pos={"x": 1})
-        p2 = InfoPoint(pos={"x": 1})
+        p1 = InfoPoint(ipType='ipReal', pos={'x': 1})
+        p2 = InfoPoint(ipType='ipReal', pos={'x': 1})
         # Points with same position should be comparable
-        assert p1.pos("x") == p2.pos("x")
+        assert p1.pos('x') == p2.pos('x')
 
     def test_point_inequality(self):
         """Test point inequality."""
         from idata.ipoint import InfoPoint
 
-        p1 = InfoPoint(pos={"x": 1})
-        p2 = InfoPoint(pos={"x": 2})
-        assert p1.pos("x") != p2.pos("x")
+        p1 = InfoPoint(ipType='ipReal', pos={'x': 1})
+        p2 = InfoPoint(ipType='ipReal', pos={'x': 2})
+        assert p1.pos('x') != p2.pos('x')
 
 
 class TestIPointEdgeCases:
@@ -79,19 +79,19 @@ class TestIPointEdgeCases:
         """Test point at zero position."""
         from idata.ipoint import InfoPoint
 
-        point = InfoPoint(pos={"x": 0})
-        assert point.pos("x") == 0
+        point = InfoPoint(ipType='ipReal', pos={'x': 0})
+        assert point.pos('x') == 0
 
     def test_negative_position(self):
         """Test point at negative position."""
         from idata.ipoint import InfoPoint
 
-        point = InfoPoint(pos={"x": -100})
-        assert point.pos("x") == -100
+        point = InfoPoint(ipType='ipReal', pos={'x': -100})
+        assert point.pos('x') == -100
 
     def test_float_position(self):
         """Test point at float position."""
         from idata.ipoint import InfoPoint
 
-        point = InfoPoint(pos={"x": 3.14159})
-        assert abs(point.pos("x") - 3.14159) < 0.001
+        point = InfoPoint(ipType='ipReal', pos={'x': 3.14159})
+        assert abs(point.pos('x') - 3.14159) < 0.001

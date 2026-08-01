@@ -29,7 +29,8 @@ def imarkov_instance():
 def ipoint_instance():
     """Create a fresh InfoPoint instance for testing."""
     from idata.ipoint import InfoPoint
-    return InfoPoint(pos={'x': 0})
+    # InfoPoint requires ipType (defined in schema) as first parameter
+    return InfoPoint(ipType='ipReal', pos={'x': 0})
 
 
 @pytest.fixture
