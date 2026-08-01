@@ -596,7 +596,7 @@ class InfoPoint:
         return toRet
 
     #--------------------------------------------------------------------------
-    def _valsStr(self) -> str:
+    def _valsStr(self, valKeys=None) -> str:
         """Creates string representation of the values of this InfoPoint.
         """
 
@@ -604,10 +604,21 @@ class InfoPoint:
 
         i = 0
         for val, valName in InfoPoint._schema[self._ipType]['vals'].items():
+
+            #------------------------------------------------------------------
+            # Ak je definovany valKeys, tak len pre tieto kluce
+            #------------------------------------------------------------------
+            if valKeys is not None and val not in valKeys:
+                continue
+
+            #------------------------------------------------------------------
+            # Pridam hodnotu do vystupu
+            #------------------------------------------------------------------
             if i>0: toRet += ', '
             toRet += f"{valName}={self._format(self._vals.get(val, None))}"
             i += 1
 
+        #----------------------------------------------------------------------
         toRet += ']'
         return toRet
 

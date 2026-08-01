@@ -42,9 +42,9 @@ if __name__ =='__main__':
 #    input('Dim set, Press Enter to continue...')
     print()
 
-    for i in range(100):
+    for i in range(1000):
 
-        val = rnd.randint(0, 5)
+        val = rnd.randint(0, 7)
         im.observe(val=val)
 
     print()

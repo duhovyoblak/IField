@@ -1,7 +1,7 @@
 #==============================================================================
 # Siqo class IMarkov
 #------------------------------------------------------------------------------
-import cmath
+import math
 
 from   .                      import logger
 from   .idata                 import InfoData
@@ -13,6 +13,8 @@ _VER    = '1.1.0'
 _IND    = '|  '                    # Info indentation
 
 _VALS  = {'obs': 'Observations'    # Number of observations of the value X
+         ,'pro': 'Probability'     # Probability of the value X, pro = obs / totObs
+         ,'bit': 'Bits'            # Number of bits carried by this Point, bit = Sum by all dims [mrk.bits * obs / mrk.totObs]
          ,'mrk': 'Markov analyser' # Markov object for next dimension
          }
 
@@ -47,6 +49,11 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         self.dim      = dim   # Dimension, e.g. number of previous states to consider in the Markov process
         self.totObs   = 0     # Total number of observations in this Markov object
+        self.bits     = 0     # Number of bits carried by this Markov object, bits = log2(len(self.points))
+
+        #----------------------------------------------------------------------
+        # Dynamic variables of the Markov process, used to store the last dim observed values
+        #----------------------------------------------------------------------
         self.actPoint = None  # Actual InfoPoint in this Markov object
         self.actVals  = []    # List of actual values in the Markov process, length = dim
 
@@ -96,6 +103,7 @@ class IMarkov(InfoData):
             dat['axeName'       ] = self.axeNameByKey('x')
             dat['ipType'        ] = self.ipType
             dat['totObs'        ] = self.totObs
+            dat['bits'          ] = self.bits
             dat['actPoint'      ] = self.actPoint.pos('x') if self.actPoint is not None else None
             dat['actVals'       ] = self.actVals
 
@@ -133,8 +141,7 @@ class IMarkov(InfoData):
                     msg.extend(res['msg'])
 
                 #--------------------------------------------------------------
-                msg.append(f"{indent*_IND} \n")
-
+ 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.info: Created info")
         return {'res': 'OK', 'dat': dat, 'msg': msg}
@@ -151,6 +158,7 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         self.init( cnts=(0,) )
         self.totObs   = 0
+        self.bits     = 0
         self.actPoint = None
         self.actVals  = []
 
@@ -245,6 +253,7 @@ class IMarkov(InfoData):
 
         1. Move window of the observed values forward one step and acquire list of active Points
         2. Increment the observation count for each active Point and increment the total observation count for each dimension.
+        3. Compute probability and bits for each active Point in the Markov process.
     """
 
         logger.debug(f"{self.name}.observe: val={val}")
@@ -255,9 +264,23 @@ class IMarkov(InfoData):
         actPts = self.moveFwd(val=val)
 
         #----------------------------------------------------------------------
-        # Increment the observation count of Point in all dimenesions
+        # Compute characteristics of Point down to last dimension
         #----------------------------------------------------------------------
+        cumPro    = 1.0   # Joint probability: P(X_1, X_2, ..., X_n)
+        parentMrk = self
+
         for actPt in actPts:
+
+            #------------------------------------------------------------------
+            # Increment the total observation count for the parent Markov analyser
+            #------------------------------------------------------------------
+            parentMrk.totObs += 1
+
+            #------------------------------------------------------------------
+            # Save old probability contribution to entropy for incremental update
+            #------------------------------------------------------------------
+            oldPro = actPt._vals['pro']
+            oldBit = -oldPro * math.log2(oldPro) if oldPro > 0 else 0
 
             #------------------------------------------------------------------
             # Increment the observation count of the active Point
@@ -265,17 +288,28 @@ class IMarkov(InfoData):
             actPt._vals['obs'] += 1
 
             #------------------------------------------------------------------
-            # Increment the total observation count for next dimension if it exists
+            # Recalculate characteristics of the Point
             #------------------------------------------------------------------
-            mrk = actPt._vals['mrk']
 
-            if mrk is not None and isinstance(mrk, IMarkov):  # Default hodnota po InitAdd je 0
-                mrk.totObs += 1
+            condPro = actPt._vals['obs'] / parentMrk.totObs # Conditional probability: P(X_i | X_{i-1}, ..., X_1) = obs[X_i] / totObs[parent]
+            cumPro *= condPro                               # Joint probability: P(X_1, X_2, ..., X_i) = P(X_1) * P(X_2|X_1) * ... * P(X_i|...)
 
-        #----------------------------------------------------------------------
-        # Increment the total observation in this dimension
-        #----------------------------------------------------------------------
-        self.totObs += 1
+            actPt._vals['pro']  = cumPro
+
+            # Self-information: number of bits needed to encode this probability
+            actPt._vals['bit']  = -cumPro * math.log2(cumPro) if cumPro > 0 else 0
+
+            #------------------------------------------------------------------
+            # Incrementally update Shannon entropy of parent Markov object
+            # Instead of recalculating all points, just add the difference
+            #------------------------------------------------------------------
+            newBit = actPt._vals['bit']
+            parentMrk.bits += (newBit - oldBit)
+
+            #------------------------------------------------------------------
+            # Preparing for the next dimension, if any
+            #------------------------------------------------------------------
+            parentMrk = actPt._vals['mrk']
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.observe: Observation of value {val} added, total observations = {self.totObs}")
@@ -409,8 +443,17 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         if pointIdx is None:
 
-            if create: return self.initAdd(axeVal=val)
-            else     : return None
+            if create:
+                #--------------------------------------------------------------
+                # Create new InfoPoint with pos == val
+                #--------------------------------------------------------------
+                point = self.initAdd(axeVal=val)
+
+                #--------------------------------------------------------------
+                return point
+
+            else:
+                return None
 
         else:
             #------------------------------------------------------------------
