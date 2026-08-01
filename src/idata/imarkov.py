@@ -141,7 +141,7 @@ class IMarkov(InfoData):
                     msg.extend(res['msg'])
 
                 #--------------------------------------------------------------
- 
+
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.info: Created info")
         return {'res': 'OK', 'dat': dat, 'msg': msg}
@@ -277,34 +277,44 @@ class IMarkov(InfoData):
             parentMrk.totObs += 1
 
             #------------------------------------------------------------------
-            # Save old probability contribution to entropy for incremental update
+            # Update ALL points in this parent Markov analyser (not just the active one)
+            # because changing totObs affects all probabilities
             #------------------------------------------------------------------
-            oldPro = actPt._vals['pro']
-            oldBit = -oldPro * math.log2(oldPro) if oldPro > 0 else 0
+            for point in parentMrk.points:
 
-            #------------------------------------------------------------------
-            # Increment the observation count of the active Point
-            #------------------------------------------------------------------
-            actPt._vals['obs'] += 1
+                #--------------------------------------------------------------
+                # Save old probability contribution to entropy for incremental update
+                #--------------------------------------------------------------
+                oldPro = point._vals['pro']
+                oldBit = -oldPro * math.log2(oldPro) if oldPro > 0 else 0
 
-            #------------------------------------------------------------------
-            # Recalculate characteristics of the Point
-            #------------------------------------------------------------------
+                #--------------------------------------------------------------
+                # Increment the observation count only for the active Point
+                #--------------------------------------------------------------
+                if point == actPt:
+                    point._vals['obs'] += 1
 
-            condPro = actPt._vals['obs'] / parentMrk.totObs # Conditional probability: P(X_i | X_{i-1}, ..., X_1) = obs[X_i] / totObs[parent]
-            cumPro *= condPro                               # Joint probability: P(X_1, X_2, ..., X_i) = P(X_1) * P(X_2|X_1) * ... * P(X_i|...)
+                #--------------------------------------------------------------
+                # Recalculate probability for this point (may have changed due to new totObs)
+                #--------------------------------------------------------------
+                condPro = point._vals['obs'] / parentMrk.totObs # Conditional probability: P(X_i | X_{i-1}, ..., X_1) = obs[X_i] / totObs[parent]
 
-            actPt._vals['pro']  = cumPro
+                # Note: For the active point, cumPro is accumulated from previous dimensions
+                # For other points, we use their own condPro directly as joint probability
+                if point == actPt:
+                    cumPro *= condPro  # Joint probability accumulation
+                    point._vals['pro'] = cumPro
+                else:
+                    point._vals['pro'] = condPro
 
-            # Self-information: number of bits needed to encode this probability
-            actPt._vals['bit']  = -cumPro * math.log2(cumPro) if cumPro > 0 else 0
+                # Self-information: number of bits needed to encode this probability
+                point._vals['bit'] = -point._vals['pro'] * math.log2(point._vals['pro']) if point._vals['pro'] > 0 else 0
 
-            #------------------------------------------------------------------
-            # Incrementally update Shannon entropy of parent Markov object
-            # Instead of recalculating all points, just add the difference
-            #------------------------------------------------------------------
-            newBit = actPt._vals['bit']
-            parentMrk.bits += (newBit - oldBit)
+                #--------------------------------------------------------------
+                # Incrementally update Shannon entropy of parent Markov object
+                #--------------------------------------------------------------
+                newBit = point._vals['bit']
+                parentMrk.bits += (newBit - oldBit)
 
             #------------------------------------------------------------------
             # Preparing for the next dimension, if any
@@ -313,6 +323,7 @@ class IMarkov(InfoData):
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.observe: Observation of value {val} added, total observations = {self.totObs}")
+
 
     #--------------------------------------------------------------------------
     def generate(self, observe=False)->int|None:
@@ -346,8 +357,14 @@ class IMarkov(InfoData):
 
         #----------------------------------------------------------------------
         # Move one step forward = last (dim-1) values from actVals plus new value val
+        # Note: For dim=1, we keep only the current value (sliding window size = 1)
+        # For dim=2, we keep the last 1 value plus new value (sliding window size = 2)
+        # etc.
         #----------------------------------------------------------------------
-        self.actVals = self.actVals[-(self.dim-1):] + [val]
+        if self.dim > 1:
+            self.actVals = self.actVals[-(self.dim-1):] + [val]
+        else:
+            self.actVals = [val]
 
         #----------------------------------------------------------------------
         # Activate internal state of the Markov analyser according to the shifted values in actVals
