@@ -12,7 +12,6 @@ class TestIMarkovInit:
         assert imarkov_instance.name == "test_markov"
         assert imarkov_instance.dim == 1
         assert imarkov_instance.totObs == 0
-        assert imarkov_instance.bits == 0
         assert imarkov_instance.actVals == []
         assert imarkov_instance.actPoint is None
 
@@ -75,6 +74,9 @@ class TestIMarkovObserve:
         imarkov_instance.observe(1)
         imarkov_instance.observe(2)
 
+        # Actualize all probabilities after observations
+        imarkov_instance._probActualise()
+
         # Find points by their position
         point_1 = None
         point_2 = None
@@ -136,27 +138,35 @@ class TestIMarkovObserve:
         assert len(child_mrk.points) == 1
         assert abs(child_mrk.points[0]._vals["pro"] - 1.0) < 0.001
 
-    def test_entropy_update_incremental(self, imarkov_instance):
-        """Test that entropy is updated incrementally."""
+    def test_probability_update_incremental(self, imarkov_instance):
+        """Test that probabilities are updated incrementally."""
         imarkov_instance.observe(1)
-        bits_after_1 = imarkov_instance.bits
+        # After first observation, active point should have pro = 1.0
+        point_1 = imarkov_instance._getPoint(1, create=False)
+        assert point_1 is not None
+        assert abs(point_1._vals['pro'] - 1.0) < 0.001
 
         imarkov_instance.observe(1)
-        bits_after_2 = imarkov_instance.bits
+        # After second identical observation, probability should still be 1.0
+        assert abs(point_1._vals['pro'] - 1.0) < 0.001
 
-        # After two identical observations, entropy should change
-        # because probability changes from 1.0 to 0.5 for example
-        assert isinstance(bits_after_1, (int, float))
-        assert isinstance(bits_after_2, (int, float))
+        imarkov_instance.observe(2)
+        # Actualize to update inactive point probability
+        imarkov_instance._probActualise()
+        # After observing different value, first point probability should decrease
+        assert point_1._vals['pro'] < 1.0
+        assert isinstance(point_1._vals['pro'], (int, float))
 
-    def test_entropy_non_negative(self):
-        """Test that entropy is always non-negative."""
+    def test_probability_non_negative(self):
+        """Test that probabilities are always non-negative."""
         from idata.imarkov import IMarkov
 
         mrk = IMarkov(name="test", dim=1)
         for val in [1, 2, 3, 1, 2, 1]:
             mrk.observe(val)
-            assert mrk.bits >= 0
+            for point in mrk.points:
+                assert point._vals['pro'] >= 0
+                assert point._vals['pgn'] >= 0
 
 
 class TestIMarkovReset:
@@ -170,7 +180,6 @@ class TestIMarkovReset:
 
         imarkov_instance.reset()
         assert imarkov_instance.totObs == 0
-        assert imarkov_instance.bits == 0
         assert len(imarkov_instance.points) == 0
         assert imarkov_instance.actVals == []
 
@@ -197,7 +206,7 @@ class TestIMarkovInfo:
         assert "msg" in info
         assert "dim" in info["dat"]
         assert "totObs" in info["dat"]
-        assert "bits" in info["dat"]
+        assert "eqProb" in info["dat"]
 
     def test_str_representation(self, imarkov_instance):
         """Test string representation."""
@@ -228,8 +237,10 @@ class TestIMarkovEdgeCases:
         """Test that zero probabilities are handled safely."""
         # log(0) should not cause errors
         imarkov_instance.observe(1)
-        # Check that no exception is raised
-        assert imarkov_instance.bits >= 0
+        # Check that probabilities are valid and no exception is raised
+        for point in imarkov_instance.points:
+            assert isinstance(point._vals['pro'], (int, float))
+            assert isinstance(point._vals['pgn'], (int, float))
 
     def test_very_small_probabilities(self):
         """Test handling of very small probabilities."""

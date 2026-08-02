@@ -12,10 +12,10 @@ from   .idata                 import InfoData
 _VER    = '1.1.0'
 _IND    = '|  '                    # Info indentation
 
-_VALS  = {'obs': 'Observations'    # Number of observations of the value X
-         ,'pro': 'Probability'     # Probability of the value X, pro = obs / totObs
-         ,'bit': 'Bits'            # Number of bits carried by this Point, bit = Sum by all dims [mrk.bits * obs / mrk.totObs]
-         ,'mrk': 'Markov analyser' # Markov object for next dimension
+_VALS  = {'obs' : 'Observations'       # Number of observations of the value X
+         ,'pro' : 'Probability'        # Probability of the value X, pro = obs / totObs
+         ,'pgn' : 'Prob gain'          # Ratio between observed and theoretical probability of the value X for equal distribution
+         ,'mrk' : 'Markov analyser'    # Markov object for next dimension
          }
 
 #==============================================================================
@@ -51,7 +51,7 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         self.dim      = dim   # Dimension, e.g. number of previous states to consider in the Markov process
         self.totObs   = 0     # Total number of observations in this Markov object
-        self.bits     = 0     # Number of bits carried by this Markov object, bits = log2(len(self.points))
+        self.eqProb   = 1     # Equal probability for all points, eqProb = 1 / len(self.points) if len(self.points) > 0 else 0
 
         #----------------------------------------------------------------------
         # Dynamic variables of the Markov process, used to store the last dim observed values
@@ -105,7 +105,7 @@ class IMarkov(InfoData):
             dat['axeName'       ] = self.axeNameByKey('x')
             dat['ipType'        ] = self.ipType
             dat['totObs'        ] = self.totObs
-            dat['bits'          ] = self.bits
+            dat['eqProb'        ] = self.eqProb
             dat['actVals'       ] = self.actVals
 
             #------------------------------------------------------------------
@@ -175,7 +175,7 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         self.init( cnts=(0,) )
         self.totObs   = 0
-        self.bits     = 0
+        self.eqProb   = 1
         self.actPoint = None
         self.actVals  = []
 
@@ -270,7 +270,7 @@ class IMarkov(InfoData):
 
         1. Move window of the observed values forward one step and acquire list of active Points
         2. Increment the observation count for each active Point and increment the total observation count for each dimension.
-        3. Compute probability and bits for each active Point in the Markov process.
+        3. Compute probability and gain for each active Point in the Markov process.
     """
 
         logger.debug(f"{self.name}.observe: val={val}")
@@ -283,61 +283,35 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Compute characteristics of Point down to last dimension
         #----------------------------------------------------------------------
-        cumPro    = 1.0   # Joint probability: P(X_1, X_2, ..., X_n)
         parentMrk = self
+        cumPro    = 1.0           # Joint probability: P(X_1, X_2, ..., X_n)
+        cumEqPro  = self.eqProb   # Joint equal probability: P_eq(X_1, X_2, ..., X_n)
 
         for actPt in actPts:
 
             #------------------------------------------------------------------
-            # Increment the total observation count for the parent Markov analyser
+            # Increment the total and point observation count
             #------------------------------------------------------------------
-            parentMrk.totObs += 1
+            parentMrk.totObs   += 1
+            actPt._vals['obs'] += 1
 
             #------------------------------------------------------------------
-            # Update ALL points in this parent Markov analyser (not just the active one)
-            # because changing totObs affects all probabilities
+            # Recalculate Joint probability: P(X_1, X_2, ..., X_i) = P(X_1, ..., X_{i-1}) * P(X_i | ...)
+            # Calculate gain: P(X_i | ...) / P_eq(X_i | ...) = P(X_1, ..., X_i) / P_eq(X_1, ..., X_i)
             #------------------------------------------------------------------
-            for point in parentMrk.points:
-
-                #--------------------------------------------------------------
-                # Save old probability contribution to entropy for incremental update
-                #--------------------------------------------------------------
-                oldPro = point._vals['pro']
-                oldBit = -oldPro * math.log2(oldPro) if oldPro > 0 else 0
-
-                #--------------------------------------------------------------
-                # Increment the observation count only for the active Point
-                #--------------------------------------------------------------
-                if point == actPt:
-                    point._vals['obs'] += 1
-
-                #--------------------------------------------------------------
-                # Recalculate conditional probability for ALL points in this dimension
-                # Conditional probability: P(X_i | X_{i-1}, ..., X_1) = obs[X_i] / totObs[parent]
-                # All points, active or not, depend on previous dimensions through this calculation
-                # Joint probability: P(X_1, X_2, ..., X_i) = P(X_1, ..., X_{i-1}) * P(X_i | ...)
-                #--------------------------------------------------------------
-                point._vals['pro'] = cumPro * point._vals['obs'] / parentMrk.totObs
-
-                # Self-information: number of bits needed to encode this probability
-                point._vals['bit'] = -point._vals['pro'] * math.log2(point._vals['pro']) if point._vals['pro'] > 0 else 0
-
-                #--------------------------------------------------------------
-                # Incrementally update Shannon entropy of parent Markov object
-                #--------------------------------------------------------------
-                newBit = point._vals['bit']
-                parentMrk.bits += (newBit - oldBit)
+            actPt._vals['pro'] = cumPro * actPt._vals['obs'] / parentMrk.totObs
+            actPt._vals['pgn'] = actPt._vals['pro'] / cumEqPro
 
             #------------------------------------------------------------------
             # After updating all points, accumulate joint probability for the active point
             # became basic probability for the next dimension, if any
             #------------------------------------------------------------------
-            cumPro    = actPt._vals['pro']
             parentMrk = actPt._vals['mrk']
+            cumPro    = actPt._vals['pro']
+            cumEqPro  = cumEqPro * parentMrk.eqProb if isinstance(parentMrk, IMarkov) else 1.0
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.observe: Observation of value {val} added, total observations = {self.totObs}")
-
 
     #--------------------------------------------------------------------------
     def generate(self, observe=False)->int|None:
@@ -386,6 +360,42 @@ class IMarkov(InfoData):
 
     #--------------------------------------------------------------------------
     # Internal methods for IMarkov
+    #--------------------------------------------------------------------------
+    def _probActualise(self, cumPro=1.0, cumEqPro=1.0):
+        """Recalculate all probabilities and gains for all points in this Markov layer.
+
+        This method propagates joint probability (cumPro) and equal probability (cumEqPro)
+        from parent dimension through all points and their nested Markov objects.
+
+        Args:
+            cumPro (float): Joint probability from parent dimension (default: 1.0)
+            cumEqPro (float): Equal probability from parent dimension (default: 1.0)
+        """
+
+        logger.debug(f"{self.name}._probActualise: cumPro={cumPro}, cumEqPro={cumEqPro}")
+
+        #----------------------------------------------------------------------
+        # Recalculate probability and gain for all points in this layer
+        #----------------------------------------------------------------------
+        for point in self.points:
+
+            # Joint probability: P(X_1, ..., X_i) = cumPro * P(X_i | ...)
+            point._vals['pro'] = cumPro * point._vals['obs'] / self.totObs if self.totObs > 0 else 0.0
+
+            # Gain: P(X_i | ...) / P_eq(X_i | ...)
+            point._vals['pgn'] = point._vals['pro'] / cumEqPro if cumEqPro > 0 else 0.0
+
+            #------------------------------------------------------------------
+            # Recursively actualize nested Markov object with propagated probabilities
+            #------------------------------------------------------------------
+            mrk = point._vals['mrk']
+
+            if mrk is not None and isinstance(mrk, IMarkov):
+
+                newCumPro   = point._vals['pro']
+                newCumEqPro = cumEqPro * mrk.eqProb
+                mrk._probActualise(cumPro=newCumPro, cumEqPro=newCumEqPro)
+
     #--------------------------------------------------------------------------
     def _activate(self, actVals:list) -> list:
         """Activate the Markov analyser according to the list of values in actVals.
@@ -479,6 +489,12 @@ class IMarkov(InfoData):
                 point = self.initAdd(axeVal=val)
 
                 #--------------------------------------------------------------
+                # Compute equal probability for all points in this Markov analyser
+                #--------------------------------------------------------------
+                if point is not None:
+                    self.eqProb = 1 / len(self.points) if len(self.points) > 0 else 1
+
+                #--------------------------------------------------------------
                 return point
 
             else:
@@ -521,7 +537,6 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         logger.debug(f"{self.name}._idxByAxeVal: axeKey={axeKey}, axeVal={axeVal} -> idx={toRet}")
         return toRet
-
 
     #==========================================================================
     # Dynamics methods for IMarkov
