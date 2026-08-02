@@ -271,6 +271,7 @@ class IMarkov(InfoData):
         1. Move window of the observed values forward one step and acquire list of active Points
         2. Increment the observation count for each active Point and increment the total observation count for each dimension.
         3. Compute probability and gain for each active Point in the Markov process.
+        4. Returns probability and gain for the active Point in the last dimension.
     """
 
         logger.debug(f"{self.name}.observe: val={val}")
@@ -311,7 +312,12 @@ class IMarkov(InfoData):
             cumEqPro  = cumEqPro * parentMrk.eqProb if isinstance(parentMrk, IMarkov) else 1.0
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.observe: Observation of value {val} added, total observations = {self.totObs}")
+        prob = actPts[-1]._vals['pro'] if len(actPts) > 0 else 0.0
+        gain = actPts[-1]._vals['pgn'] if len(actPts) > 0 else 1
+
+        #----------------------------------------------------------------------
+        logger.info(f"{self.name}.observe: '{val}' added, prob={prob:.5f}, gain={gain:.5f}, total obs = {self.totObs}")
+        return prob, gain
 
     #--------------------------------------------------------------------------
     def generate(self, observe=False)->int|None:
@@ -361,7 +367,7 @@ class IMarkov(InfoData):
     #--------------------------------------------------------------------------
     # Internal methods for IMarkov
     #--------------------------------------------------------------------------
-    def _probActualise(self, cumPro=1.0, cumEqPro=1.0):
+    def _probActualise(self, cumPro=1.0, cumEqPro=None):
         """Recalculate all probabilities and gains for all points in this Markov layer.
 
         This method propagates joint probability (cumPro) and equal probability (cumEqPro)
@@ -369,8 +375,14 @@ class IMarkov(InfoData):
 
         Args:
             cumPro (float): Joint probability from parent dimension (default: 1.0)
-            cumEqPro (float): Equal probability from parent dimension (default: 1.0)
+            cumEqPro (float): Equal probability from parent dimension (default: self.eqProb at root level)
         """
+
+        #----------------------------------------------------------------------
+        # If called at root level without cumEqPro, use this Markov's eqProb
+        #----------------------------------------------------------------------
+        if cumEqPro is None:
+            cumEqPro = self.eqProb
 
         logger.debug(f"{self.name}._probActualise: cumPro={cumPro}, cumEqPro={cumEqPro}")
 

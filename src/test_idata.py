@@ -60,12 +60,21 @@ if __name__ =='__main__':
 
         try:
             val_int = int(val)
-            im.observe(val=val_int)
+            prob, gain = im.observe(val=val_int)
             print(im)
+            print()
+            print(f"Observed value: {val_int}, Probability: {prob:.5f}, Gain: {gain:.5f}")
 
         except ValueError:
             print('Invalid input. Please enter an integer or "exit".')
 
+    input('Done, Press Enter to continue...')
+    print(80*'=')
+    print()
+
+    im._probActualise()
+    print(im)
+    input('Prob actualised, Press Enter to continue...')
 
 #==============================================================================
 #                              END OF FILE
