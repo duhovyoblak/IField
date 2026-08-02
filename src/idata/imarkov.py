@@ -9,7 +9,7 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.0'
+_VER    = '1.1.1'
 _IND    = '|  '                    # Info indentation
 
 _VALS  = {'obs' : 'Observations'       # Number of observations of the value X
@@ -180,7 +180,7 @@ class IMarkov(InfoData):
         self.actVals  = []
 
         #----------------------------------------------------------------------
-        logger.audit(f"{self.name}.reset: Markov analyser reset complete")
+        logger.info(f"{self.name}.reset: Markov analyser reset complete")
 
     #--------------------------------------------------------------------------
     def setDim(self, dim:int):
@@ -203,7 +203,7 @@ class IMarkov(InfoData):
         self.dim = dim
 
         #----------------------------------------------------------------------
-        logger.audit(f"{self.name}.setDim: Markov analyser dimension set to {self.dim}")
+        logger.info(f"{self.name}.setDim: Markov analyser dimension set to {self.dim}")
 
     #--------------------------------------------------------------------------
     def actPoints(self) -> list:
@@ -272,7 +272,7 @@ class IMarkov(InfoData):
         2. Increment the observation count for each active Point and increment the total observation count for each dimension.
         3. Compute probability and gain for each active Point in the Markov process.
         4. Returns probability and gain for the active Point in the last dimension.
-    """
+        """
 
         logger.debug(f"{self.name}.observe: val={val}")
 
@@ -335,6 +335,41 @@ class IMarkov(InfoData):
         return toRet
 
     #--------------------------------------------------------------------------
+    def maxGain(self, minGain=1.0, minObs=10, maxPatterns=0) -> dict:
+        """Returns dict of patterns with maximum gain in the Markov analyser.
+
+        Crawls through all patterns in the Markov analyser and returns those with gain >= minGain and observations >= minObs.
+        Pattern is represented as a tuple of values in the Markov process, e.g. (val1, val2, ..., valN),
+        it can be length 1 to dim
+
+        Returns toRet[pattern] = {'gain': gain, 'obs': obs, 'pro': pro}
+        Returned dict is sorted by gain in descending order.
+        If maxPatterns > 0, returns only the first maxPatterns entries.
+        """
+
+        logger.info(f"{self.name}.maxGain: minGain={minGain}, minObs={minObs}, maxPatterns={maxPatterns}")
+
+        #----------------------------------------------------------------------
+        # Collect all patterns recursively
+        #----------------------------------------------------------------------
+        toRet = self._maxGainRecursive(minGain=minGain, minObs=minObs, pattern=())
+
+        #----------------------------------------------------------------------
+        # Sort by gain in descending order
+        #----------------------------------------------------------------------
+        sorted_toRet = dict(sorted(toRet.items(), key=lambda x: x[1]['gain'], reverse=True))
+
+        #----------------------------------------------------------------------
+        # Limit to maxPatterns if specified
+        #----------------------------------------------------------------------
+        if maxPatterns > 0:
+            sorted_toRet = dict(list(sorted_toRet.items())[:maxPatterns])
+
+        #----------------------------------------------------------------------
+        logger.info(f"{self.name}.maxGain: Found {len(sorted_toRet)} patterns with gain >= {minGain}")
+        return sorted_toRet
+
+    #--------------------------------------------------------------------------
     def moveFwd(self, val:int) -> list:
         """Move values of the chain of Markov analysers forward with the new observation value.
 
@@ -366,6 +401,51 @@ class IMarkov(InfoData):
 
     #--------------------------------------------------------------------------
     # Internal methods for IMarkov
+    #--------------------------------------------------------------------------
+    def _maxGainRecursive(self, minGain=1.0, minObs=10, pattern=()):
+        """Helper method to recursively crawl through all Markov patterns.
+
+        Args:
+            minGain (float): Minimum gain threshold
+            minObs  (int)  : Minimum observations threshold
+            pattern (tuple): Current pattern being built
+
+        Returns:
+            dict: Patterns found at this level and nested levels
+        """
+
+        logger.debug(f"{self.name}._maxGainRecursive: minGain={minGain}, minObs={minObs}, pattern={pattern}")
+        toRet = {}
+
+        #----------------------------------------------------------------------
+        # Process all points in this level
+        #----------------------------------------------------------------------
+        for point in self.points:
+
+            val = point.pos('x')
+            new_pattern = pattern + (val,)
+
+            gain = point._vals['pgn']
+            obs = point._vals['obs']
+            pro = point._vals['pro']
+
+            #------------------------------------------------------------------
+            # Add this pattern if it meets minGain threshold
+            if gain >= minGain and obs >= minObs:
+                toRet[new_pattern] = {'gain': gain, 'obs': obs, 'pro': pro}
+
+            #------------------------------------------------------------------
+            # Recursively process nested Markov if it exists
+            #------------------------------------------------------------------
+            mrk = point._vals['mrk']
+
+            if mrk is not None and isinstance(mrk, IMarkov):
+                nested = mrk._maxGainRecursive(minGain=minGain, minObs=minObs, pattern=new_pattern)
+                toRet.update(nested)
+
+        #----------------------------------------------------------------------
+        return toRet
+
     #--------------------------------------------------------------------------
     def _probActualise(self, cumPro=1.0, cumEqPro=None):
         """Recalculate all probabilities and gains for all points in this Markov layer.

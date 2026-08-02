@@ -1,6 +1,8 @@
 #==============================================================================
 #  IData: test file
 #------------------------------------------------------------------------------
+import math
+
 from   siqolib.logger           import SiqoLogger
 import random                   as rnd
 from   idata.idata              import InfoData
@@ -35,17 +37,20 @@ if __name__ =='__main__':
 #    input('IMarkov created, Press Enter to continue...')
     print()
 
-    im.setDim(dim=3)
+    im.setDim(dim=6)
     print()
     print()
     print(80*'-')
-#    input('Dim set, Press Enter to continue...')
+    input('Dim set, Press Enter to continue...')
     print()
 
-    for i in range(10_000):
+    for i in range(500_000):
 
         val = rnd.randint(0, 7)
         im.observe(val=val)
+
+        if i % 10_000 == 0:
+            print(f'Observed {i:>6} values...')
 
     print()
     print(im)
@@ -75,6 +80,13 @@ if __name__ =='__main__':
     im._probActualise()
     print(im)
     input('Prob actualised, Press Enter to continue...')
+
+    gains = im.maxGain(minGain=1.2, minObs=10, maxPatterns=50)
+    print(f"Max gain:")
+
+    for pattern, rec in gains.items():
+        patStr = ', '.join(str(x) for x in pattern)
+        print(f"  Pattern: ({patStr:<16}), Gain: {rec['gain']:.5f}, Observations: {rec['obs']:5}, Probability: {rec['pro']:.5f}, log2(gain): {math.log2(rec['gain']):+7.5f}")
 
 #==============================================================================
 #                              END OF FILE

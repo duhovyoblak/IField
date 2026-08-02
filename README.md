@@ -103,9 +103,11 @@ pytest test/idata/ --cov=src/idata --cov-report=html
 
 #### IMarkov (20/20 passar ✅)
 - Inicializácia a konfigurácia n-rozmerného Markovovho analyzátora
-- Výpočet podmienených pravdepodobností
-- Inkrementálna aktualizácia Shannon entropie
+- Výpočet podmienených a joint pravdepodobností
+- Inkrementálna aktualizácia pravdepodobnosti a gains
 - Spracovanie pozorovania pre jednotlivé a množné dimenzie
+- Prepočítanie všetkých pravdepodobností cez všetky dimenzie (`_probActualise`)
+- Hľadanie vzoriek s maximálnym gain (`maxGain`) - filtruje podľa minGain, minObs, maxPatterns
 - Hraničné prípady (nulové pravdepodobnosti, veľké dimenzie)
 
 #### IPoint (11/11 passar ✅)
@@ -150,9 +152,14 @@ Základné triedy bez špecifickej aplikačnej logiky:
 
 - **IMarkov** (`imarkov.py`) - N-rozmerný Markovov analyzátor
   - Analýza sekvenčných dát s pravdepodobnostným modelom
-  - Výpočet podmienených a joint pravdepodobností
-  - Inkrementálna Shannon entropie (O(dim) miesto O(dim × points))
+  - Výpočet podmienených a joint pravdepodobností (O(dim) komplexnosť)
   - Vyhrnutá historická pamäť posledných `dim` pozorovaní
+  - Metódy:
+    - `observe(val)`: Spracovanie pozorovania s aktualizáciou aktívnych bodov
+    - `_probActualise()`: Prepočítanie všetkých pravdepodobností a gains rekurzívne cez dimenzie
+    - `maxGain(minGain, minObs, maxPatterns)`: Hľadanie vzoriek s maximálnym gain
+    - `moveFwd(val)`: Posun okna posledných `dim` hodnôt
+    - `_activate(actVals)`: Aktivácia bodov podľa hodnôt cez dimenzie
 
 - **ISeries** (`iseries.py`) - Časový rad
   - Sekvencia dát s časovým rozmerom
@@ -193,10 +200,16 @@ Hlavný vstupný bod aplikácie. Inicializuje:
 - **Balkóny**: Projekt používa `siqolib` knižnicu - pozri `d:\GitHub\siqolib`
 - **Importy**: Všetky importy sú typu `from idata.xxx import YYY` alebo `from .yyy import ZZZ` (relatívne v balíčkoch)
 - **Staré súbory**: Pôvodné súbory boli migrované do balíčkov. Staré verzie sú v adresári `Old/`
-- **Kľúčové opravy**:
+- **Kľúčové opravy a optimizácie**:
   - IMarkov sliding window bug (dim=1 support)
-  - IMarkov all-points probability update pre správnu entropiu
+  - IMarkov all-points probability update pre správnosť pravdepodobností
+  - Inicializácia `cumEqPro` v `_probActualise()` na `self.eqProb`
   - InfoPoint fixture s povinným `ipType` parametrom
+  - Oddialenie výpočtu pravdepodobnosti neaktívnych bodov (explicitné volanie `_probActualise()`)
+- **Nové metódy (v1.1.0)**:
+  - `_probActualise(cumPro, cumEqPro)`: Rekurzívny prepočet všetkých bodov a vnorených Markov objektov
+  - `maxGain(minGain, minObs, maxPatterns)`: Hľadanie najviac ziskových vzoriek so sortením descending
+  - `_maxGainRecursive()`: Helper pre rekurzívne prehľadávanie vzoriek
 - **VS Code integrácia**: Testing panel, debug konfigurácie, formátor Black, linter flake8
 
 ## 👤 Vlastník

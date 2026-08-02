@@ -275,7 +275,7 @@ class InfoData:
             self.gui.resetDisplay()
 
         #----------------------------------------------------------------------
-        logger.warning(f"{self.name}.setIpType: ipType was set to '{ipType}' and InfoData was reset")
+        logger.info(f"{self.name}.setIpType: ipType was set to '{ipType}' and InfoData was reset")
 
     #--------------------------------------------------------------------------
     def info(self, indent=0, full=False) -> dict:
@@ -417,7 +417,7 @@ class InfoData:
            Returns count of created InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.audit(f"{self.name}.init: {cnts}, {origs}, {rects}")
+        logger.info(f"{self.name}.init: {cnts}, {origs}, {rects}")
 
         #----------------------------------------------------------------------
         # Kontrola definicie ipType
@@ -539,7 +539,7 @@ class InfoData:
 
         #----------------------------------------------------------------------
         pts = len(self.points)
-        logger.warning(f"{self.name}.init: Created {pts} InfoPoints")
+        logger.info(f"{self.name}.init: Created {pts} InfoPoints")
         return pts
 
     #--------------------------------------------------------------------------
@@ -698,7 +698,7 @@ class InfoData:
         This method has no impact on InfoPoints of other ipTypes.
         """
 
-        logger.warning(f"{self.name}.setSchema: schema={schema}")
+        logger.info(f"{self.name}.setSchema: schema={schema}")
         InfoPoint.setSchema(self.ipType, schema)
         self.setIpType(self.ipType, force=True)
 
