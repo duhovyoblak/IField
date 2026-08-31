@@ -125,36 +125,37 @@ class TestIMarkovObserve:
 
         mrk = IMarkov(name="test", dim=2)
         mrk.observe(1)
-        mrk.observe(2)
+        mrk.observe(2)  # Need two observations for dim=2 to have child points
+        mrk._probActualise()  # Calculate probabilities after observations
 
-        # First point should have pro = 1.0 (only one value)
+        # First point should have pro = 1.0 (only value 1 observed)
         point_1 = mrk.points[0]
         assert abs(point_1._vals["pro"] - 1.0) < 0.001
 
-        # After second observation, dim=2 should exist
+        # After observations, dim=2 should have child Markov
         child_mrk = point_1._vals["mrk"]
         assert child_mrk is not None
-        # Child should have one point with pro = 1.0
+        # Child should have one point with pro = 1.0 (only value 2 observed in second dim)
         assert len(child_mrk.points) == 1
         assert abs(child_mrk.points[0]._vals["pro"] - 1.0) < 0.001
 
     def test_probability_update_incremental(self, imarkov_instance):
         """Test that probabilities are updated incrementally."""
         imarkov_instance.observe(1)
-        # After first observation, active point should have pro = 1.0
+        imarkov_instance._probActualise()  # Calculate probabilities after observation
         point_1 = imarkov_instance._getPoint(1, create=False)
         assert point_1 is not None
         assert abs(point_1._vals['pro'] - 1.0) < 0.001
 
         imarkov_instance.observe(1)
-        # After second identical observation, probability should still be 1.0
+        # After identical observation, pro stays 1.0 (2/2 observations)
+        imarkov_instance._probActualise()
         assert abs(point_1._vals['pro'] - 1.0) < 0.001
 
         imarkov_instance.observe(2)
-        # Actualize to update inactive point probability
-        imarkov_instance._probActualise()
-        # After observing different value, first point probability should decrease
-        assert point_1._vals['pro'] < 1.0
+        imarkov_instance._probActualise()  # Update inactive point
+        # After observing different value, first point pro = 2/3
+        assert abs(point_1._vals['pro'] - 2.0/3.0) < 0.001
         assert isinstance(point_1._vals['pro'], (int, float))
 
     def test_probability_non_negative(self):
@@ -250,6 +251,9 @@ class TestIMarkovEdgeCases:
         # Observe many different values
         for i in range(1000):
             mrk.observe(i)
+
+        # Actualize probabilities after observations
+        mrk._probActualise()
 
         # All probabilities should be 1/1000
         for point in mrk.points:

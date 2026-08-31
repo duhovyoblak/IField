@@ -314,7 +314,7 @@ class IMarkov(InfoData):
 
     #--------------------------------------------------------------------------
     def generate(self, observe=False)->int|None:
-        """Generate new observation from the Markov analyser.
+        """Generate value of the next observation from the Markov analyser.
         """
 
         logger.info(f"{self.name}.generate: observe={observe}")
@@ -395,99 +395,6 @@ class IMarkov(InfoData):
     #--------------------------------------------------------------------------
     # Internal methods for IMarkov
     #--------------------------------------------------------------------------
-    def _maxGainRecursive(self, minGain=1.0, minObs=10, pattern=()):
-        """Helper method to recursively crawl through all Markov patterns.
-
-        Args:
-            minGain (float): Minimum gain threshold
-            minObs  (int)  : Minimum observations threshold
-            pattern (tuple): Current pattern being built
-
-        Returns:
-            dict: Patterns found at this level and nested levels
-        """
-
-        logger.debug(f"{self.name}._maxGainRecursive: minGain={minGain}, minObs={minObs}, pattern={pattern}")
-        toRet = {}
-
-        #----------------------------------------------------------------------
-        # Process all points in this level
-        #----------------------------------------------------------------------
-        for point in self.points:
-
-            val = point.pos('x')
-            new_pattern = pattern + (val,)
-
-            gain = point._vals['pgn']
-            obs = point._vals['obs']
-            pro = point._vals['pro']
-
-            #------------------------------------------------------------------
-            # Add this pattern if it meets minGain threshold
-            if gain >= minGain and obs >= minObs:
-                toRet[new_pattern] = {'gain': gain, 'obs': obs, 'pro': pro}
-
-            #------------------------------------------------------------------
-            # Recursively process nested Markov if it exists
-            #------------------------------------------------------------------
-            mrk = point._vals['mrk']
-
-            if mrk is not None and isinstance(mrk, IMarkov):
-                nested = mrk._maxGainRecursive(minGain=minGain, minObs=minObs, pattern=new_pattern)
-                toRet.update(nested)
-
-        #----------------------------------------------------------------------
-        return toRet
-
-    #--------------------------------------------------------------------------
-    def _probActualise(self, cumPro=1.0, cumEqPro=None):
-        """Recalculate all probabilities and gains for all points in this Markov layer.
-
-        This method propagates joint probability (cumPro) and equal probability (cumEqPro)
-        from parent dimension through all points and their nested Markov objects.
-
-        Args:
-            cumPro (float): Joint probability from parent dimension (default: 1.0)
-            cumEqPro (float): Equal probability from parent dimension (default: self.eqProb at root level)
-        """
-
-        #----------------------------------------------------------------------
-        # If called at root level without cumEqPro, use this Markov's eqProb
-        #----------------------------------------------------------------------
-        if cumEqPro is None:
-            cumEqPro = self.eqProb
-
-        logger.debug(f"{self.name}._probActualise: cumPro={cumPro}, cumEqPro={cumEqPro}")
-
-        #----------------------------------------------------------------------
-        # Recalculate probability and gain for all points in this layer
-        #----------------------------------------------------------------------
-        for point in self.points:
-
-            # Joint probability: P(X_1, ..., X_i) = cumPro * P(X_i | ...)
-            point._vals['pro'] = cumPro * point._vals['obs'] / self.totObs if self.totObs > 0 else 0.0
-
-            # Gain: P(X_i | ...) / P_eq(X_i | ...)
-            point._vals['pgn'] = point._vals['pro'] / cumEqPro if cumEqPro > 0 else 0.0
-
-            #------------------------------------------------------------------
-            # Recursively actualize nested Markov object with propagated probabilities
-            #------------------------------------------------------------------
-            mrk = point._vals['mrk']
-
-            if mrk is not None and isinstance(mrk, IMarkov):
-
-                newCumPro   = point._vals['pro']
-                newCumEqPro = cumEqPro * mrk.eqProb
-                mrk._probActualise(cumPro=newCumPro, cumEqPro=newCumEqPro)
-
-        #----------------------------------------------------------------------
-        # Recalculate probability and gain for all points in this layer
-        #----------------------------------------------------------------------
-        self.needCompute = False
-        logger.info(f"{self.name}._probActualise: Probabilities and gains recalculated for {len(self.points)} points")
-
-    #--------------------------------------------------------------------------
     def _activate(self, actVals:list) -> list:
         """Activate the Markov analyser according to the list of values in actVals.
 
@@ -552,6 +459,99 @@ class IMarkov(InfoData):
 
         #----------------------------------------------------------------------
         logger.debug(f"{self.name}._activate: Activated {len(toRet)} InfoPoints in the Markov process")
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def _probActualise(self, cumPro=1.0, cumEqPro=None):
+        """Recalculate all probabilities and gains for all points in this Markov layer.
+
+        This method propagates joint probability (cumPro) and equal probability (cumEqPro)
+        from parent dimension through all points and their nested Markov objects.
+
+        Args:
+            cumPro (float): Joint probability from parent dimension (default: 1.0)
+            cumEqPro (float): Equal probability from parent dimension (default: self.eqProb at root level)
+        """
+
+        #----------------------------------------------------------------------
+        # If called at root level without cumEqPro, use this Markov's eqProb
+        #----------------------------------------------------------------------
+        if cumEqPro is None:
+            cumEqPro = self.eqProb
+
+        logger.debug(f"{self.name}._probActualise: cumPro={cumPro}, cumEqPro={cumEqPro}")
+
+        #----------------------------------------------------------------------
+        # Recalculate probability and gain for all points in this layer
+        #----------------------------------------------------------------------
+        for point in self.points:
+
+            # Joint probability: P(X_1, ..., X_i) = cumPro * P(X_i | ...)
+            point._vals['pro'] = cumPro * point._vals['obs'] / self.totObs if self.totObs > 0 else 0.0
+
+            # Gain: P(X_i | ...) / P_eq(X_i | ...)
+            point._vals['pgn'] = point._vals['pro'] / cumEqPro if cumEqPro > 0 else 0.0
+
+            #------------------------------------------------------------------
+            # Recursively actualize nested Markov object with propagated probabilities
+            #------------------------------------------------------------------
+            mrk = point._vals['mrk']
+
+            if mrk is not None and isinstance(mrk, IMarkov):
+
+                newCumPro   = point._vals['pro']
+                newCumEqPro = cumEqPro * mrk.eqProb
+                mrk._probActualise(cumPro=newCumPro, cumEqPro=newCumEqPro)
+
+        #----------------------------------------------------------------------
+        # Recalculate probability and gain for all points in this layer
+        #----------------------------------------------------------------------
+        self.needCompute = False
+        logger.info(f"{self.name}._probActualise: Probabilities and gains recalculated for {len(self.points)} points")
+
+    #--------------------------------------------------------------------------
+    def _maxGainRecursive(self, minGain=1.0, minObs=10, pattern=()):
+        """Helper method to recursively crawl through all Markov patterns.
+
+        Args:
+            minGain (float): Minimum gain threshold
+            minObs  (int)  : Minimum observations threshold
+            pattern (tuple): Current pattern being built
+
+        Returns:
+            dict: Patterns found at this level and nested levels
+        """
+
+        logger.debug(f"{self.name}._maxGainRecursive: minGain={minGain}, minObs={minObs}, pattern={pattern}")
+        toRet = {}
+
+        #----------------------------------------------------------------------
+        # Process all points in this level
+        #----------------------------------------------------------------------
+        for point in self.points:
+
+            val = point.pos('x')
+            new_pattern = pattern + (val,)
+
+            gain = point._vals['pgn']
+            obs = point._vals['obs']
+            pro = point._vals['pro']
+
+            #------------------------------------------------------------------
+            # Add this pattern if it meets minGain threshold
+            if gain >= minGain and obs >= minObs:
+                toRet[new_pattern] = {'gain': gain, 'obs': obs, 'pro': pro}
+
+            #------------------------------------------------------------------
+            # Recursively process nested Markov if it exists
+            #------------------------------------------------------------------
+            mrk = point._vals['mrk']
+
+            if mrk is not None and isinstance(mrk, IMarkov):
+                nested = mrk._maxGainRecursive(minGain=minGain, minObs=minObs, pattern=new_pattern)
+                toRet.update(nested)
+
+        #----------------------------------------------------------------------
         return toRet
 
     #--------------------------------------------------------------------------
