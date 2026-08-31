@@ -56,8 +56,9 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Dynamic variables of the Markov process, used to store the last dim observed values
         #----------------------------------------------------------------------
-        self.actPoint = None  # Actual InfoPoint in this Markov object
-        self.actVals  = []    # List of actual values in the Markov process, length = dim
+        self.actPoint    = None   # Actual InfoPoint in this Markov object
+        self.actVals     = []     # List of actual values in the Markov process, length = dim
+        self.needCompute = False  # Flag if probabilities and gains need to be recomputed
 
         #----------------------------------------------------------------------
         # Inicializujem schemu a ipType podla dimenzie ftion
@@ -95,6 +96,12 @@ class IMarkov(InfoData):
         dat = {}
         msg = []
         if indent == 0: msg = [f"{indent*_IND}{60*'='}\n"]
+
+        #----------------------------------------------------------------------
+        # Recompute probabilities and gains if needed
+        #----------------------------------------------------------------------
+        if self.needCompute:
+            self._probActualise()
 
         #----------------------------------------------------------------------
         # Info o strukture
@@ -174,10 +181,12 @@ class IMarkov(InfoData):
         # Reset total observations and active point
         #----------------------------------------------------------------------
         self.init( cnts=(0,) )
-        self.totObs   = 0
-        self.eqProb   = 1
-        self.actPoint = None
-        self.actVals  = []
+        self.totObs      = 0
+        self.eqProb      = 1
+
+        self.actPoint    = None
+        self.actVals     = []
+        self.needCompute = False
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.reset: Markov analyser reset complete")
@@ -271,7 +280,7 @@ class IMarkov(InfoData):
         1. Move window of the observed values forward one step and acquire list of active Points
         2. Increment the observation count for each active Point and increment the total observation count for each dimension.
         3. Compute probability and gain for each active Point in the Markov process.
-        4. Returns probability and gain for the active Point in the last dimension.
+        4. Returns active Point in the last dimension.
         """
 
         logger.debug(f"{self.name}.observe: val={val}")
@@ -279,15 +288,13 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Move one step forward and acquire list of active Points
         #----------------------------------------------------------------------
-        actPts = self.moveFwd(val=val)
-
-        #----------------------------------------------------------------------
-        # Compute characteristics of Point down to last dimension
-        #----------------------------------------------------------------------
         parentMrk = self
-        cumPro    = 1.0           # Joint probability: P(X_1, X_2, ..., X_n)
-        cumEqPro  = self.eqProb   # Joint equal probability: P_eq(X_1, X_2, ..., X_n)
+        actPts = self.moveFwd(val=val)
+        self.needCompute = True
 
+        #----------------------------------------------------------------------
+        #  Prejdem postupne vsetky aktivne body a pre kazdy z nich aktualizujem pocet pozorovani a celkovy pocet pozorovani
+        #----------------------------------------------------------------------
         for actPt in actPts:
 
             #------------------------------------------------------------------
@@ -297,27 +304,13 @@ class IMarkov(InfoData):
             actPt._vals['obs'] += 1
 
             #------------------------------------------------------------------
-            # Recalculate Joint probability: P(X_1, X_2, ..., X_i) = P(X_1, ..., X_{i-1}) * P(X_i | ...)
-            # Calculate gain: P(X_i | ...) / P_eq(X_i | ...) = P(X_1, ..., X_i) / P_eq(X_1, ..., X_i)
-            #------------------------------------------------------------------
-            actPt._vals['pro'] = cumPro * actPt._vals['obs'] / parentMrk.totObs
-            actPt._vals['pgn'] = actPt._vals['pro'] / cumEqPro
-
-            #------------------------------------------------------------------
-            # After updating all points, accumulate joint probability for the active point
-            # became basic probability for the next dimension, if any
+            # Dive into the next dimension if it exists
             #------------------------------------------------------------------
             parentMrk = actPt._vals['mrk']
-            cumPro    = actPt._vals['pro']
-            cumEqPro  = cumEqPro * parentMrk.eqProb if isinstance(parentMrk, IMarkov) else 1.0
 
         #----------------------------------------------------------------------
-        prob = actPts[-1]._vals['pro'] if len(actPts) > 0 else 0.0
-        gain = actPts[-1]._vals['pgn'] if len(actPts) > 0 else 1
-
-        #----------------------------------------------------------------------
-        logger.info(f"{self.name}.observe: '{val}' added, prob={prob:.5f}, gain={gain:.5f}, total obs = {self.totObs}")
-        return prob, gain
+        logger.info(f"{self.name}.observe: '{val}' added")
+        return actPts[-1] if len(actPts) > 0 else None
 
     #--------------------------------------------------------------------------
     def generate(self, observe=False)->int|None:
@@ -487,6 +480,12 @@ class IMarkov(InfoData):
                 newCumPro   = point._vals['pro']
                 newCumEqPro = cumEqPro * mrk.eqProb
                 mrk._probActualise(cumPro=newCumPro, cumEqPro=newCumEqPro)
+
+        #----------------------------------------------------------------------
+        # Recalculate probability and gain for all points in this layer
+        #----------------------------------------------------------------------
+        self.needCompute = False
+        logger.info(f"{self.name}._probActualise: Probabilities and gains recalculated for {len(self.points)} points")
 
     #--------------------------------------------------------------------------
     def _activate(self, actVals:list) -> list:

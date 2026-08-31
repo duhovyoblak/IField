@@ -37,14 +37,14 @@ if __name__ =='__main__':
 #    input('IMarkov created, Press Enter to continue...')
     print()
 
-    im.setDim(dim=6)
+    im.setDim(dim=3)
     print()
     print()
     print(80*'-')
     input('Dim set, Press Enter to continue...')
     print()
 
-    for i in range(500_000):
+    for i in range(10_000):
 
         val = rnd.randint(0, 7)
         im.observe(val=val)
@@ -65,10 +65,9 @@ if __name__ =='__main__':
 
         try:
             val_int = int(val)
-            prob, gain = im.observe(val=val_int)
+            im.observe(val=val_int)
             print(im)
             print()
-            print(f"Observed value: {val_int}, Probability: {prob:.5f}, Gain: {gain:.5f}")
 
         except ValueError:
             print('Invalid input. Please enter an integer or "exit".')
@@ -76,10 +75,6 @@ if __name__ =='__main__':
     input('Done, Press Enter to continue...')
     print(80*'=')
     print()
-
-    im._probActualise()
-    print(im)
-    input('Prob actualised, Press Enter to continue...')
 
     gains = im.maxGain(minGain=1.2, minObs=10, maxPatterns=50)
     print(f"Max gain:")
