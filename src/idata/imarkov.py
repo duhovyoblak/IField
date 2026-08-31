@@ -100,8 +100,7 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Recompute probabilities and gains if needed
         #----------------------------------------------------------------------
-        if self.needCompute:
-            self._probActualise()
+        if self.needCompute: self._compute()
 
         #----------------------------------------------------------------------
         # Info o strukture
@@ -279,18 +278,17 @@ class IMarkov(InfoData):
 
         1. Move window of the observed values forward one step and acquire list of active Points
         2. Increment the observation count for each active Point and increment the total observation count for each dimension.
-        3. Compute probability and gain for each active Point in the Markov process.
-        4. Returns active Point in the last dimension.
+        3. Returns active Point in the last dimension.
         """
 
         logger.debug(f"{self.name}.observe: val={val}")
+        self.needCompute = True
 
         #----------------------------------------------------------------------
         # Move one step forward and acquire list of active Points
         #----------------------------------------------------------------------
         parentMrk = self
         actPts = self.moveFwd(val=val)
-        self.needCompute = True
 
         #----------------------------------------------------------------------
         #  Prejdem postupne vsetky aktivne body a pre kazdy z nich aktualizujem pocet pozorovani a celkovy pocet pozorovani
@@ -313,12 +311,49 @@ class IMarkov(InfoData):
         return actPts[-1] if len(actPts) > 0 else None
 
     #--------------------------------------------------------------------------
+    def amend(self, val:int)->int|None:
+        """Observe next value and return expected values for all actPoints.
+
+        1. Move window of the observed values forward one step and acquire list of active Points
+        2.
+        3. Returns list of forces for each active Point.
+        """
+
+        logger.info(f"{self.name}.amend: val={val}")
+        toRet = None
+
+        #----------------------------------------------------------------------
+        # Recompute probabilities and gains if needed
+        #----------------------------------------------------------------------
+        if self.needCompute: self._compute()
+
+        #----------------------------------------------------------------------
+        # Move one step forward and acquire list of active Points
+        #----------------------------------------------------------------------
+        parentMrk = self
+        actPts = self.moveFwd(val=val)
+
+        #----------------------------------------------------------------------
+        #  Prejdem postupne vsetky aktivne body a pre kazdy z nich aktualizujem pocet pozorovani a celkovy pocet pozorovani
+        #----------------------------------------------------------------------
+        for actPt in actPts:
+            pass
+
+        #----------------------------------------------------------------------
+        return toRet
+
+    #--------------------------------------------------------------------------
     def generate(self, observe=False)->int|None:
         """Generate value of the next observation from the Markov analyser.
         """
 
         logger.info(f"{self.name}.generate: observe={observe}")
         toRet = None
+
+        #----------------------------------------------------------------------
+        # Recompute probabilities and gains if needed
+        #----------------------------------------------------------------------
+        if self.needCompute: self._compute()
 
         #----------------------------------------------------------------------
         # Find InfoPoint with pos == val
@@ -462,7 +497,7 @@ class IMarkov(InfoData):
         return toRet
 
     #--------------------------------------------------------------------------
-    def _probActualise(self, cumPro=1.0, cumEqPro=None):
+    def _compute(self, cumPro=1.0, cumEqPro=None):
         """Recalculate all probabilities and gains for all points in this Markov layer.
 
         This method propagates joint probability (cumPro) and equal probability (cumEqPro)
@@ -479,7 +514,7 @@ class IMarkov(InfoData):
         if cumEqPro is None:
             cumEqPro = self.eqProb
 
-        logger.debug(f"{self.name}._probActualise: cumPro={cumPro}, cumEqPro={cumEqPro}")
+        logger.debug(f"{self.name}._compute: cumPro={cumPro}, cumEqPro={cumEqPro}")
 
         #----------------------------------------------------------------------
         # Recalculate probability and gain for all points in this layer
@@ -501,13 +536,13 @@ class IMarkov(InfoData):
 
                 newCumPro   = point._vals['pro']
                 newCumEqPro = cumEqPro * mrk.eqProb
-                mrk._probActualise(cumPro=newCumPro, cumEqPro=newCumEqPro)
+                mrk._compute(cumPro=newCumPro, cumEqPro=newCumEqPro)
 
         #----------------------------------------------------------------------
         # Recalculate probability and gain for all points in this layer
         #----------------------------------------------------------------------
         self.needCompute = False
-        logger.info(f"{self.name}._probActualise: Probabilities and gains recalculated for {len(self.points)} points")
+        logger.info(f"{self.name}._compute: Probabilities and gains recalculated for {len(self.points)} points")
 
     #--------------------------------------------------------------------------
     def _maxGainRecursive(self, minGain=1.0, minObs=10, pattern=()):

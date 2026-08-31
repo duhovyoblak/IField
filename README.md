@@ -106,7 +106,7 @@ pytest test/idata/ --cov=src/idata --cov-report=html
 - Výpočet podmienených a joint pravdepodobností
 - Inkrementálna aktualizácia pravdepodobnosti a gains
 - Spracovanie pozorovania pre jednotlivé a množné dimenzie
-- Prepočítanie všetkých pravdepodobností cez všetky dimenzie (`_probActualise`)
+- Prepočítanie všetkých pravdepodobností cez všetky dimenzie (`_compute`)
 - Hľadanie vzoriek s maximálnym gain (`maxGain`) - filtruje podľa minGain, minObs, maxPatterns
 - Hraničné prípady (nulové pravdepodobnosti, veľké dimenzie)
 
@@ -156,7 +156,7 @@ Základné triedy bez špecifickej aplikačnej logiky:
   - Vyhrnutá historická pamäť posledných `dim` pozorovaní
   - Metódy:
     - `observe(val)`: Spracovanie pozorovania s aktualizáciou aktívnych bodov
-    - `_probActualise()`: Prepočítanie všetkých pravdepodobností a gains rekurzívne cez dimenzie
+    - `_compute()`: Prepočítanie všetkých pravdepodobností a gains rekurzívne cez dimenzie
     - `maxGain(minGain, minObs, maxPatterns)`: Hľadanie vzoriek s maximálnym gain
     - `moveFwd(val)`: Posun okna posledných `dim` hodnôt
     - `_activate(actVals)`: Aktivácia bodov podľa hodnôt cez dimenzie
@@ -203,11 +203,11 @@ Hlavný vstupný bod aplikácie. Inicializuje:
 - **Kľúčové opravy a optimizácie**:
   - IMarkov sliding window bug (dim=1 support)
   - IMarkov all-points probability update pre správnosť pravdepodobností
-  - Inicializácia `cumEqPro` v `_probActualise()` na `self.eqProb`
+  - Inicializácia `cumEqPro` v `_compute()` na `self.eqProb`
   - InfoPoint fixture s povinným `ipType` parametrom
-  - Oddialenie výpočtu pravdepodobnosti neaktívnych bodov (explicitné volanie `_probActualise()`)
+  - Oddialenie výpočtu pravdepodobnosti neaktívnych bodov (explicitné volanie `_compute()`)
 - **Nové metódy (v1.1.0)**:
-  - `_probActualise(cumPro, cumEqPro)`: Rekurzívny prepočet všetkých bodov a vnorených Markov objektov
+  - `_compute(cumPro, cumEqPro)`: Rekurzívny prepočet všetkých bodov a vnorených Markov objektov
   - `maxGain(minGain, minObs, maxPatterns)`: Hľadanie najviac ziskových vzoriek so sortením descending
   - `_maxGainRecursive()`: Helper pre rekurzívne prehľadávanie vzoriek
 - **VS Code integrácia**: Testing panel, debug konfigurácie, formátor Black, linter flake8

@@ -75,7 +75,7 @@ class TestIMarkovObserve:
         imarkov_instance.observe(2)
 
         # Actualize all probabilities after observations
-        imarkov_instance._probActualise()
+        imarkov_instance._compute()
 
         # Find points by their position
         point_1 = None
@@ -126,7 +126,7 @@ class TestIMarkovObserve:
         mrk = IMarkov(name="test", dim=2)
         mrk.observe(1)
         mrk.observe(2)  # Need two observations for dim=2 to have child points
-        mrk._probActualise()  # Calculate probabilities after observations
+        mrk._compute()  # Calculate probabilities after observations
 
         # First point should have pro = 1.0 (only value 1 observed)
         point_1 = mrk.points[0]
@@ -142,18 +142,18 @@ class TestIMarkovObserve:
     def test_probability_update_incremental(self, imarkov_instance):
         """Test that probabilities are updated incrementally."""
         imarkov_instance.observe(1)
-        imarkov_instance._probActualise()  # Calculate probabilities after observation
+        imarkov_instance._compute()  # Calculate probabilities after observation
         point_1 = imarkov_instance._getPoint(1, create=False)
         assert point_1 is not None
         assert abs(point_1._vals['pro'] - 1.0) < 0.001
 
         imarkov_instance.observe(1)
         # After identical observation, pro stays 1.0 (2/2 observations)
-        imarkov_instance._probActualise()
+        imarkov_instance._compute()
         assert abs(point_1._vals['pro'] - 1.0) < 0.001
 
         imarkov_instance.observe(2)
-        imarkov_instance._probActualise()  # Update inactive point
+        imarkov_instance._compute()  # Update inactive point
         # After observing different value, first point pro = 2/3
         assert abs(point_1._vals['pro'] - 2.0/3.0) < 0.001
         assert isinstance(point_1._vals['pro'], (int, float))
@@ -253,7 +253,7 @@ class TestIMarkovEdgeCases:
             mrk.observe(i)
 
         # Actualize probabilities after observations
-        mrk._probActualise()
+        mrk._compute()
 
         # All probabilities should be 1/1000
         for point in mrk.points:
