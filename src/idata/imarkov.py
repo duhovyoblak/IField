@@ -9,7 +9,7 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.1'
+_VER    = '1.1.2'
 _IND    = '|  '                    # Info indentation
 
 _VALS  = {'obs' : 'Observations'       # Number of observations of the value X
@@ -51,6 +51,7 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         self.dim      = dim   # Dimension, e.g. number of previous states to consider in the Markov process
         self.totObs   = 0     # Total number of observations in this Markov object
+        self.mrkPro   = 1     # Probability associated with this Markov analyser, updated during computation
         self.eqProb   = 1     # Equal probability for all points, eqProb = 1 / len(self.points) if len(self.points) > 0 else 0
 
         #----------------------------------------------------------------------
@@ -73,6 +74,22 @@ class IMarkov(InfoData):
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.constructor: done")
+
+    #--------------------------------------------------------------------------
+    def setNamePro(self, mrkPro):
+        """Name of Markov analyser has format 'Markov/(7)/(3){mrkPro}.
+        This method sets the probability associated with this Markov analyser.
+        """
+        #----------------------------------------------------------------------
+        # Odstranim z name {mrkPro} ak existuje
+        #----------------------------------------------------------------------
+        if '{' in self.name and '}' in self.name:
+            self.name = self.name[:self.name.rfind('{')]
+
+        #----------------------------------------------------------------------
+        # Doplnim do name aktualnu hodnotu {mrkPro}
+        #----------------------------------------------------------------------
+        self.name += f"{{{mrkPro:6.4f}}}"
 
     #--------------------------------------------------------------------------
     def __str__(self):
@@ -111,6 +128,7 @@ class IMarkov(InfoData):
             dat['axeName'       ] = self.axeNameByKey('x')
             dat['ipType'        ] = self.ipType
             dat['totObs'        ] = self.totObs
+            dat['mrkPro'        ] = self.mrkPro
             dat['eqProb'        ] = self.eqProb
             dat['actVals'       ] = self.actVals
 
@@ -497,14 +515,14 @@ class IMarkov(InfoData):
         return toRet
 
     #--------------------------------------------------------------------------
-    def _compute(self, cumPro=1.0, cumEqPro=None):
+    def _compute(self, mrkPro=1.0, cumEqPro=None):
         """Recalculate all probabilities and gains for all points in this Markov layer.
 
-        This method propagates joint probability (cumPro) and equal probability (cumEqPro)
+        This method propagates joint probability (mrkPro) and equal probability (cumEqPro)
         from parent dimension through all points and their nested Markov objects.
 
         Args:
-            cumPro (float): Joint probability from parent dimension (default: 1.0)
+            mrkPro   (float): Probability asociated with this Markov analyser (default: 1.0)
             cumEqPro (float): Equal probability from parent dimension (default: self.eqProb at root level)
         """
 
@@ -514,15 +532,15 @@ class IMarkov(InfoData):
         if cumEqPro is None:
             cumEqPro = self.eqProb
 
-        logger.debug(f"{self.name}._compute: cumPro={cumPro}, cumEqPro={cumEqPro}")
+        logger.debug(f"{self.name}._compute: mrkPro={mrkPro}, cumEqPro={cumEqPro}")
 
         #----------------------------------------------------------------------
         # Recalculate probability and gain for all points in this layer
         #----------------------------------------------------------------------
         for point in self.points:
 
-            # Joint probability: P(X_1, ..., X_i) = cumPro * P(X_i | ...)
-            point._vals['pro'] = cumPro * point._vals['obs'] / self.totObs if self.totObs > 0 else 0.0
+            # Joint probability: P(X_1, ..., X_i) = mrkPro * P(X_i | ...)
+            point._vals['pro'] = mrkPro * point._vals['obs'] / self.totObs if self.totObs > 0 else 0.0
 
             # Gain: P(X_i | ...) / P_eq(X_i | ...)
             point._vals['pgn'] = point._vals['pro'] / cumEqPro if cumEqPro > 0 else 0.0
@@ -534,9 +552,12 @@ class IMarkov(InfoData):
 
             if mrk is not None and isinstance(mrk, IMarkov):
 
-                newCumPro   = point._vals['pro']
+                newMrkPro   = point._vals['pro']
                 newCumEqPro = cumEqPro * mrk.eqProb
-                mrk._compute(cumPro=newCumPro, cumEqPro=newCumEqPro)
+
+                mrk.mrkPro = newMrkPro
+                mrk.setNamePro(newMrkPro)
+                mrk._compute(mrkPro=newMrkPro, cumEqPro=newCumEqPro)
 
         #----------------------------------------------------------------------
         # Recalculate probability and gain for all points in this layer

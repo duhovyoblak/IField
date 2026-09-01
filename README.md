@@ -207,7 +207,7 @@ Hlavný vstupný bod aplikácie. Inicializuje:
   - InfoPoint fixture s povinným `ipType` parametrom
   - Oddialenie výpočtu pravdepodobnosti neaktívnych bodov (explicitné volanie `_compute()`)
 - **Nové metódy (v1.1.0)**:
-  - `_compute(cumPro, cumEqPro)`: Rekurzívny prepočet všetkých bodov a vnorených Markov objektov
+  - `_compute(mrkPro, cumEqPro)`: Rekurzívny prepočet všetkých bodov a vnorených Markov objektov
   - `maxGain(minGain, minObs, maxPatterns)`: Hľadanie najviac ziskových vzoriek so sortením descending
   - `_maxGainRecursive()`: Helper pre rekurzívne prehľadávanie vzoriek
 - **VS Code integrácia**: Testing panel, debug konfigurácie, formátor Black, linter flake8
