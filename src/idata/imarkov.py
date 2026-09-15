@@ -9,7 +9,7 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.2'
+_VER    = '1.1.3'
 _IND    = '|  '                    # Info indentation
 
 _VALS  = {'obs' : 'Observations'       # Number of observations of the value X
@@ -57,8 +57,8 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Dynamic variables of the Markov process, used to store the last dim observed values
         #----------------------------------------------------------------------
-        self.actPoint    = None   # Actual InfoPoint in this Markov object
-        self.actVals     = []     # List of actual values in the Markov process, length = dim
+        self.actVals     = []     # List of actual values for this Markov process, length = dim
+        self.actPoint    = None   # Active InfoPoint in this Markov object
         self.needCompute = False  # Flag if probabilities and gains need to be recomputed
 
         #----------------------------------------------------------------------
@@ -124,11 +124,11 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         if struct:
             dat['ver'           ] = _VER
-            dat['dim'           ] = self.dim
             dat['axeName'       ] = self.axeNameByKey('x')
             dat['ipType'        ] = self.ipType
-            dat['totObs'        ] = self.totObs
+            dat['dim'           ] = self.dim
             dat['mrkPro'        ] = self.mrkPro
+            dat['totObs'        ] = self.totObs
             dat['eqProb'        ] = self.eqProb
             dat['actVals'       ] = self.actVals
 
@@ -198,11 +198,12 @@ class IMarkov(InfoData):
         # Reset total observations and active point
         #----------------------------------------------------------------------
         self.init( cnts=(0,) )
+        self.mrkPro      = 1
         self.totObs      = 0
         self.eqProb      = 1
 
-        self.actPoint    = None
         self.actVals     = []
+        self.actPoint    = None
         self.needCompute = False
 
         #----------------------------------------------------------------------
@@ -291,50 +292,33 @@ class IMarkov(InfoData):
     #==========================================================================
     # IMarkov methods
     #--------------------------------------------------------------------------
-    def observe(self, val:int):
+    def observe(self, val:int) -> bool:
         """Add new observation to the Markov analyser.
 
-        1. Move window of the observed values forward one step and acquire list of active Points
-        2. Increment the observation count for each active Point and increment the total observation count for each dimension.
-        3. Returns active Point in the last dimension.
+        1. Move the observation window forward one step.
+        2. Activate the corresponding points and update their observation counts.
+        3. Return True if the observation was successful, False otherwise.
         """
 
         logger.debug(f"{self.name}.observe: val={val}")
         self.needCompute = True
 
         #----------------------------------------------------------------------
-        # Move one step forward and acquire list of active Points
+        # Move one step forward and observe the new value
         #----------------------------------------------------------------------
-        parentMrk = self
-        actPts = self.moveFwd(val=val)
-
-        #----------------------------------------------------------------------
-        #  Prejdem postupne vsetky aktivne body a pre kazdy z nich aktualizujem pocet pozorovani a celkovy pocet pozorovani
-        #----------------------------------------------------------------------
-        for actPt in actPts:
-
-            #------------------------------------------------------------------
-            # Increment the total and point observation count
-            #------------------------------------------------------------------
-            parentMrk.totObs   += 1
-            actPt._vals['obs'] += 1
-
-            #------------------------------------------------------------------
-            # Dive into the next dimension if it exists
-            #------------------------------------------------------------------
-            parentMrk = actPt._vals['mrk']
+        toRet = self.moveFwd(val=val, observe=True)
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.observe: '{val}' added")
-        return actPts[-1] if len(actPts) > 0 else None
+        return toRet
 
     #--------------------------------------------------------------------------
     def amend(self, val:int)->int|None:
-        """Observe next value and return expected values for all actPoints.
+        """Advance the Markov analyser without recording a new observation.
 
-        1. Move window of the observed values forward one step and acquire list of active Points
-        2.
-        3. Returns list of forces for each active Point.
+        Probabilities are recomputed when necessary and the active Markov path
+        is moved forward. The expected-value calculation is not implemented yet,
+        so this method currently returns None.
         """
 
         logger.info(f"{self.name}.amend: val={val}")
@@ -346,16 +330,11 @@ class IMarkov(InfoData):
         if self.needCompute: self._compute()
 
         #----------------------------------------------------------------------
-        # Move one step forward and acquire list of active Points
+        # Move the active Markov path one step forward
         #----------------------------------------------------------------------
-        parentMrk = self
-        actPts = self.moveFwd(val=val)
+        success = self.moveFwd(val=val)
 
-        #----------------------------------------------------------------------
-        #  Prejdem postupne vsetky aktivne body a pre kazdy z nich aktualizujem pocet pozorovani a celkovy pocet pozorovani
-        #----------------------------------------------------------------------
-        for actPt in actPts:
-            pass
+        if not success: return None
 
         #----------------------------------------------------------------------
         return toRet
@@ -416,7 +395,7 @@ class IMarkov(InfoData):
         return sorted_toRet
 
     #--------------------------------------------------------------------------
-    def moveFwd(self, val:int) -> list:
+    def moveFwd(self, val:int, *, observe:bool=False) -> bool:
         """Move values of the chain of Markov analysers forward with the new observation value.
 
         1. Move window of the Markov process forward one step
@@ -425,7 +404,7 @@ class IMarkov(InfoData):
         2. Activate the InfoPoints in each dimension > 1 according to the shifted values,
            activate the InfoPoint with pos == val in the last dimension of the Markov process.
 
-        3. Return list of activated InfoPoints in the Markov process.
+        3. Return True if activation was successful, False otherwise.
         """
 
         logger.debug(f"{self.name}._moveFwd: val={val}")
@@ -442,23 +421,22 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Activate internal state of the Markov analyser according to the shifted values in actVals
         #----------------------------------------------------------------------
-        actPts = self._activate(actVals=self.actVals.copy())
-        return actPts
+        return self._activate(actVals=self.actVals.copy(), observe=observe)
 
     #--------------------------------------------------------------------------
     # Internal methods for IMarkov
     #--------------------------------------------------------------------------
-    def _activate(self, actVals:list) -> list:
+    def _activate(self, actVals:list, *, observe:bool=False) -> bool:
         """Activate the Markov analyser according to the list of values in actVals.
 
         1. For each dimension of the Markov process, find or create InfoPoint with val == actVals[dim].
         2. If this is not the last dimension, create Markov analyser for the next dimension and dive into it.
-        3. Return list of activated InfoPoints in the Markov process.
-        4. If actVals is empty, return empty list.
+        3. If observe==True, update the observation count for the activated InfoPoint and total observation count for this dimension.
+        4. Return True if activation was successful, False otherwise.
         """
 
         logger.debug(f"{self.name}._activate: actVals={actVals}")
-        toRet = []
+        toRet = False
 
         #----------------------------------------------------------------------
         # Check length of the actVals list
@@ -482,11 +460,18 @@ class IMarkov(InfoData):
             logger.error(f"{self.name}._activate: Failed to find or add InfoPoint with pos={val} to the Markov analyser")
             return toRet
 
-        toRet.append(self.actPoint)
+        #----------------------------------------------------------------------
+        # If observe is True, update the observation count for the activated InfoPoint and total observation count for this dimension
+        #----------------------------------------------------------------------
+        if observe:
+            self.totObs                += 1
+            self.actPoint._vals['obs'] += 1
 
         #----------------------------------------------------------------------
         # If this is not the last dimension (=1), dive into the next dimension
         #----------------------------------------------------------------------
+        toRet = True
+
         if self.dim > 1:
 
             #------------------------------------------------------------------
@@ -499,9 +484,9 @@ class IMarkov(InfoData):
                 self.actPoint.set(vals={'mrk': nextMark})
 
             #------------------------------------------------------------------
-            # Dive into the next dimension
+            # Dive into the next dimension and activate it
             #------------------------------------------------------------------
-            toRet.extend(nextMark._activate(actVals=actVals))
+            toRet = toRet and nextMark._activate(actVals=actVals, observe=observe)
 
         else:
             #------------------------------------------------------------------
@@ -509,9 +494,10 @@ class IMarkov(InfoData):
             #------------------------------------------------------------------
             if len(actVals) > 0:
                 logger.error(f"{self.name}._activate: actVals list is not empty in the last dimension, remaining values: {actVals}")
+                toRet = False
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}._activate: Activated {len(toRet)} InfoPoints in the Markov process")
+        logger.debug(f"{self.name}._activate: Activation status: {toRet}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -660,6 +646,7 @@ class IMarkov(InfoData):
            Return only exact match of pos == axeVal, otherwise returns None.
            This is overloaded method from InfoData, because in Markov analyser uses
            non-equidistant axes, so the index can not be calculated by (axeVal-axeOrig)/diff
+           and must be found by iterating through the points.
         """
 
         logger.debug(f"{self.name}._idxByAxeVal: axeKey={axeKey}, axeVal={axeVal}")
