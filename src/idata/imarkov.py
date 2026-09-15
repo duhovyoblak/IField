@@ -9,11 +9,12 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.3'
+_VER    = '1.1.5'
 _IND    = '|  '                    # Info indentation
 
 _VALS  = {'obs' : 'Observations'       # Number of observations of the value X
-         ,'pro' : 'Probability'        # Probability of the value X, pro = obs / totObs
+         ,'loc' : 'Local prob'         # Local probability of the value X, loc = obs / totObs
+         ,'pro' : 'Joint prob'         # Joint probability of the value X, pro = mrkProb * loc
          ,'pgn' : 'Prob gain'          # Ratio between observed and theoretical probability of the value X for equal distribution
          ,'mrk' : 'Markov analyser'    # Markov object for next dimension
          }
@@ -430,7 +431,8 @@ class IMarkov(InfoData):
         """Activate the Markov analyser according to the list of values in actVals.
 
         1. For each dimension of the Markov process, find or create InfoPoint with val == actVals[dim].
-        2. If this is not the last dimension, create Markov analyser for the next dimension and dive into it.
+          2. If values remain and this is not the last dimension, create the next
+              Markov analyser and dive into it.
         3. If observe==True, update the observation count for the activated InfoPoint and total observation count for this dimension.
         4. Return True if activation was successful, False otherwise.
         """
@@ -475,18 +477,24 @@ class IMarkov(InfoData):
         if self.dim > 1:
 
             #------------------------------------------------------------------
-            # Get or create Markov analyser for the next dimension
+            # Check if the sliding window has more values to activate
+            # An incomplete initial window is a valid observation
             #------------------------------------------------------------------
-            nextMark = self.actPoint._vals.get('mrk', None)
+            if len(actVals) > 0:
 
-            if nextMark is None or not isinstance(nextMark, IMarkov):
-                nextMark = IMarkov(name=f"{self.name}/({val})", dim=self.dim-1, axeName=self.axeNameByKey('x'))
-                self.actPoint.set(vals={'mrk': nextMark})
+                #--------------------------------------------------------------
+                # Get or create Markov analyser for the next dimension
+                #--------------------------------------------------------------
+                nextMark = self.actPoint._vals.get('mrk', None)
 
-            #------------------------------------------------------------------
-            # Dive into the next dimension and activate it
-            #------------------------------------------------------------------
-            toRet = toRet and nextMark._activate(actVals=actVals, observe=observe)
+                if nextMark is None or not isinstance(nextMark, IMarkov):
+                    nextMark = IMarkov(name=f"{self.name}/({val})", dim=self.dim-1, axeName=self.axeNameByKey('x'))
+                    self.actPoint.set(vals={'mrk': nextMark})
+
+                #--------------------------------------------------------------
+                # Activate the next dimension
+                #--------------------------------------------------------------
+                toRet = toRet and nextMark._activate(actVals=actVals, observe=observe)
 
         else:
             #------------------------------------------------------------------
@@ -508,7 +516,7 @@ class IMarkov(InfoData):
         from parent dimension through all points and their nested Markov objects.
 
         Args:
-            mrkPro   (float): Probability asociated with this Markov analyser (default: 1.0)
+            mrkPro   (float): Probability asociated with this Markov analyser (default: 1.0 at root level)
             cumEqPro (float): Equal probability from parent dimension (default: self.eqProb at root level)
         """
 
@@ -525,8 +533,11 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         for point in self.points:
 
+            # Local probability: P(X_i | ...) = obs / totObs
+            point._vals['loc'] = point._vals['obs'] / self.totObs if self.totObs > 0 else 0.0
+
             # Joint probability: P(X_1, ..., X_i) = mrkPro * P(X_i | ...)
-            point._vals['pro'] = mrkPro * point._vals['obs'] / self.totObs if self.totObs > 0 else 0.0
+            point._vals['pro'] = mrkPro * point._vals['loc']
 
             # Gain: P(X_i | ...) / P_eq(X_i | ...)
             point._vals['pgn'] = point._vals['pro'] / cumEqPro if cumEqPro > 0 else 0.0
