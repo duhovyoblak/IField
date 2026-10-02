@@ -46,6 +46,7 @@ if __name__ =='__main__':
 
     for i in range(10_000):
 
+
         val = rnd.randint(0, 7)
         im.observe(val=val)
 

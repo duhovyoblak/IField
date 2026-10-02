@@ -10,18 +10,28 @@ from   .idata                 import InfoData
 # Module's constants
 #------------------------------------------------------------------------------
 _VER    = '1.1.5'
-_IND    = '|  '                    # Info indentation
+_IND    = '|  '                        # Info indentation
+
+_IPTYPE_MARKOV = 'ipMarkovGen'
+
+_AXES  = {'x'   : 'Value'              # Observed value
+         }
 
 _VALS  = {'obs' : 'Observations'       # Number of observations of the value X
          ,'loc' : 'Local prob'         # Local probability of the value X, loc = obs / totObs
          ,'pro' : 'Joint prob'         # Joint probability of the value X, pro = mrkProb * loc
-         ,'pgn' : 'Prob gain'          # Ratio between observed and theoretical probability of the value X for equal distribution
+         ,'for' : 'Force'              # Virtual force caused by discrepancy between observed and expected value
          ,'mrk' : 'Markov analyser'    # Markov object for next dimension
          }
 
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Vlozim do katalogu schem schemu pre ipType = ipMarkovGen
+#------------------------------------------------------------------------------
+InfoData.setSchema(_IPTYPE_MARKOV, {'axes': _AXES, 'vals': _VALS})
 
 #==============================================================================
 # IMarkov
@@ -37,10 +47,10 @@ class IMarkov(InfoData):
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, name, dim:int=1, axeName:str='Value'):
+    def __init__(self, name, dim:int=1):
         "Calls constructor of IMarkov process analyser/generator"
 
-        logger.debug(f"{name}.constructor: Creating IMarkov object with dim={dim} and axeName='{axeName}'")
+        logger.debug(f"{name}.constructor: Creating IMarkov object with dim={dim}")
 
         #----------------------------------------------------------------------
         # Super constructor
@@ -65,8 +75,7 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Inicializujem schemu a ipType podla dimenzie ftion
         #----------------------------------------------------------------------
-        self.setIpType('ipMarkovGen')
-        self.setSchema({'axes': {'x':axeName}, 'vals': _VALS})
+        self.setIpType(_IPTYPE_MARKOV)
 
         #----------------------------------------------------------------------
         # Inicializujem histogram, na zaciatku neobsahuje zidne body, preto cnts=(0,)
@@ -431,9 +440,10 @@ class IMarkov(InfoData):
         """Activate the Markov analyser according to the list of values in actVals.
 
         1. For each dimension of the Markov process, find or create InfoPoint with val == actVals[dim].
-          2. If values remain and this is not the last dimension, create the next
-              Markov analyser and dive into it.
-        3. If observe==True, update the observation count for the activated InfoPoint and total observation count for this dimension.
+        2. If values remain and this is not the last dimension, create the next
+           Markov analyser and dive into it.
+        3. If observe==True, update the observation count for the activated InfoPoint
+           and total observation count for this dimension.
         4. Return True if activation was successful, False otherwise.
         """
 
@@ -509,27 +519,25 @@ class IMarkov(InfoData):
         return toRet
 
     #--------------------------------------------------------------------------
-    def _compute(self, mrkPro=1.0, cumEqPro=None):
-        """Recalculate all probabilities and gains for all points in this Markov layer.
+    def _compute(self, mrkPro=1.0):
+        """Recalculate all probabilities and forces for all points in this Markov layer.
 
-        This method propagates joint probability (mrkPro) and equal probability (cumEqPro)
+        This method propagates probability (mrkPro) associated with this Markov analyser
         from parent dimension through all points and their nested Markov objects.
 
         Args:
             mrkPro   (float): Probability asociated with this Markov analyser (default: 1.0 at root level)
-            cumEqPro (float): Equal probability from parent dimension (default: self.eqProb at root level)
         """
 
-        #----------------------------------------------------------------------
-        # If called at root level without cumEqPro, use this Markov's eqProb
-        #----------------------------------------------------------------------
-        if cumEqPro is None:
-            cumEqPro = self.eqProb
-
-        logger.debug(f"{self.name}._compute: mrkPro={mrkPro}, cumEqPro={cumEqPro}")
+        logger.debug(f"{self.name}._compute: mrkPro={mrkPro}")
 
         #----------------------------------------------------------------------
-        # Recalculate probability and gain for all points in this layer
+        # Set local probability (mrkPro) associated with this Markov analyser
+        #----------------------------------------------------------------------
+        self.mrkPro = mrkPro
+
+        #----------------------------------------------------------------------
+        # Recalculate probability for all points in this markov analyser
         #----------------------------------------------------------------------
         for point in self.points:
 
@@ -539,28 +547,56 @@ class IMarkov(InfoData):
             # Joint probability: P(X_1, ..., X_i) = mrkPro * P(X_i | ...)
             point._vals['pro'] = mrkPro * point._vals['loc']
 
-            # Gain: P(X_i | ...) / P_eq(X_i | ...)
-            point._vals['pgn'] = point._vals['pro'] / cumEqPro if cumEqPro > 0 else 0.0
+        #----------------------------------------------------------------------
+        # Recalculate forces for all points in this markov analyser
+        #----------------------------------------------------------------------
+        for point in self.points:
 
             #------------------------------------------------------------------
-            # Recursively actualize nested Markov object with propagated probabilities
+            # Initialise force for this point
+            #------------------------------------------------------------------
+            force = 0
+
+            #------------------------------------------------------------------
+            # Sum all contributions to the force for this point
+            #------------------------------------------------------------------
+            for othPoint in self.points:
+
+                if othPoint is not point:
+
+                    dLoc = othPoint._vals['loc'] - point._vals['loc']  # Rozdiel lokálnych pravdepodobností
+                    dVal = othPoint._pos ['x']   - point._pos['x']     # Rozdiel pozícií bodov v osi x
+
+                    force += dLoc / dVal   # val pre rozne points v tom istom mrk nemozu byt rovnake
+
+            #------------------------------------------------------------------
+            # Set this point's force
+            #------------------------------------------------------------------
+            point._vals['for'] = force
+
+        #----------------------------------------------------------------------
+        # Recursively actualize nested Markov object for each point
+        #----------------------------------------------------------------------
+        for point in self.points:
+
+            #------------------------------------------------------------------
+            # Retrieve the nested Markov object for this point
             #------------------------------------------------------------------
             mrk = point._vals['mrk']
 
             if mrk is not None and isinstance(mrk, IMarkov):
 
-                newMrkPro   = point._vals['pro']
-                newCumEqPro = cumEqPro * mrk.eqProb
+                #--------------------------------------------------------------
+                # Retrieve joint probability of this point as the probability for the nested Markov object
+                #--------------------------------------------------------------
+                newMrkPro = point._vals['pro']
 
-                mrk.mrkPro = newMrkPro
                 mrk.setNamePro(newMrkPro)
-                mrk._compute(mrkPro=newMrkPro, cumEqPro=newCumEqPro)
+                mrk._compute(mrkPro=newMrkPro)
 
-        #----------------------------------------------------------------------
-        # Recalculate probability and gain for all points in this layer
         #----------------------------------------------------------------------
         self.needCompute = False
-        logger.info(f"{self.name}._compute: Probabilities and gains recalculated for {len(self.points)} points")
+        logger.info(f"{self.name}._compute: Probabilities and forces recalculated for {len(self.points)} points")
 
     #--------------------------------------------------------------------------
     def _maxGainRecursive(self, minGain=1.0, minObs=10, pattern=()):

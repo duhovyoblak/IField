@@ -167,7 +167,6 @@ class TestIMarkovObserve:
             mrk.observe(val)
             for point in mrk.points:
                 assert point._vals['pro'] >= 0
-                assert point._vals['pgn'] >= 0
 
 
 class TestIMarkovReset:
@@ -235,13 +234,11 @@ class TestIMarkovEdgeCases:
     """Test edge cases and error handling."""
 
     def test_zero_probability_handling(self, imarkov_instance):
-        """Test that zero probabilities are handled safely."""
-        # log(0) should not cause errors
+        """Test that probability values are initialized and remain numeric."""
         imarkov_instance.observe(1)
-        # Check that probabilities are valid and no exception is raised
+        # Check that probabilities are numeric and no exception is raised.
         for point in imarkov_instance.points:
             assert isinstance(point._vals['pro'], (int, float))
-            assert isinstance(point._vals['pgn'], (int, float))
 
     def test_very_small_probabilities(self):
         """Test handling of very small probabilities."""

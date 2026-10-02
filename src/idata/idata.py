@@ -80,6 +80,14 @@ class InfoData:
 
     #--------------------------------------------------------------------------
     @staticmethod
+    def setSchema(ipType, schema) -> 'InfoData|None':
+        """Inserts or updates schema in catalogue of schemas.
+        """
+
+        InfoPoint.setSchema(ipType, schema)
+
+    #--------------------------------------------------------------------------
+    @staticmethod
     def getData(name) -> 'InfoData|None':
         """Returns InfoData instance form list of all instances.
            If such name does not exists, returns None.
@@ -692,7 +700,7 @@ class InfoData:
         return InfoPoint.getSchema(self.ipType)
 
     #--------------------------------------------------------------------------
-    def setSchema(self, schema:dict):
+    def setSchemaXXX(self, schema:dict):
         """Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}
         Clear all points in this InfoData and reset internal structures _cnts, _origs, _rects and _diffs to empty dict {}.
         This method has no impact on InfoPoints of other ipTypes.
