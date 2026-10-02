@@ -14,24 +14,10 @@ _IND    = '|  '                        # Info indentation
 
 _IPTYPE_MARKOV = 'ipMarkovGen'
 
-_AXES  = {'x'   : 'Value'              # Observed value
-         }
-
-_VALS  = {'obs' : 'Observations'       # Number of observations of the value X
-         ,'loc' : 'Local prob'         # Local probability of the value X, loc = obs / totObs
-         ,'pro' : 'Joint prob'         # Joint probability of the value X, pro = mrkProb * loc
-         ,'for' : 'Force'              # Virtual force caused by discrepancy between observed and expected value
-         ,'mrk' : 'Markov analyser'    # Markov object for next dimension
-         }
-
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
 
-#------------------------------------------------------------------------------
-# Vlozim do katalogu schem schemu pre ipType = ipMarkovGen
-#------------------------------------------------------------------------------
-InfoData.setSchema(_IPTYPE_MARKOV, {'axes': _AXES, 'vals': _VALS})
 
 #==============================================================================
 # IMarkov
@@ -173,6 +159,15 @@ class IMarkov(InfoData):
 
             for point in self.points:
 
+                #--------------------------------------------------------------
+                # Prazdny riadok pred zmenou 1. urovne
+                #--------------------------------------------------------------
+                if indent == 0:
+                    msg.append("|\n")
+
+                #--------------------------------------------------------------
+                # Riadok s informaciami o bode
+                #--------------------------------------------------------------
                 posStr = point._posStr()
                 valStr = point._valsStr()
 
@@ -370,29 +365,29 @@ class IMarkov(InfoData):
         return toRet
 
     #--------------------------------------------------------------------------
-    def maxGain(self, minGain=1.0, minObs=10, maxPatterns=0) -> dict:
-        """Returns dict of patterns with maximum gain in the Markov analyser.
+    def maxForce(self, minForce=0.1, minObs=10, maxPatterns=0) -> dict:
+        """Returns dict of patterns with maximum force in the Markov analyser.
 
-        Crawls through all patterns in the Markov analyser and returns those with gain >= minGain and observations >= minObs.
+        Crawls through all patterns in the Markov analyser and returns those with force >= minForce and observations >= minObs.
         Pattern is represented as a tuple of values in the Markov process, e.g. (val1, val2, ..., valN),
         it can be length 1 to dim
 
-        Returns toRet[pattern] = {'gain': gain, 'obs': obs, 'pro': pro}
-        Returned dict is sorted by gain in descending order.
+        Returns toRet[pattern] = {'frc': force, 'obs': obs, 'pro': pro}
+        Returned dict is sorted by force in descending order.
         If maxPatterns > 0, returns only the first maxPatterns entries.
         """
 
-        logger.info(f"{self.name}.maxGain: minGain={minGain}, minObs={minObs}, maxPatterns={maxPatterns}")
+        logger.info(f"{self.name}.maxForce: minForce={minForce}, minObs={minObs}, maxPatterns={maxPatterns}")
 
         #----------------------------------------------------------------------
         # Collect all patterns recursively
         #----------------------------------------------------------------------
-        toRet = self._maxGainRecursive(minGain=minGain, minObs=minObs, pattern=())
+        toRet = self._maxForceRecursive(minForce=minForce, minObs=minObs, pattern=())
 
         #----------------------------------------------------------------------
-        # Sort by gain in descending order
+        # Sort by force in descending order
         #----------------------------------------------------------------------
-        sorted_toRet = dict(sorted(toRet.items(), key=lambda x: x[1]['gain'], reverse=True))
+        sorted_toRet = dict(sorted(toRet.items(), key=lambda x: x[1]['frc'], reverse=True))
 
         #----------------------------------------------------------------------
         # Limit to maxPatterns if specified
@@ -401,7 +396,7 @@ class IMarkov(InfoData):
             sorted_toRet = dict(list(sorted_toRet.items())[:maxPatterns])
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.maxGain: Found {len(sorted_toRet)} patterns with gain >= {minGain}")
+        logger.info(f"{self.name}.maxForce: Found {len(sorted_toRet)} patterns with force >= {minForce}")
         return sorted_toRet
 
     #--------------------------------------------------------------------------
@@ -498,7 +493,7 @@ class IMarkov(InfoData):
                 nextMark = self.actPoint._vals.get('mrk', None)
 
                 if nextMark is None or not isinstance(nextMark, IMarkov):
-                    nextMark = IMarkov(name=f"{self.name}/({val})", dim=self.dim-1, axeName=self.axeNameByKey('x'))
+                    nextMark = IMarkov(name=f"{self.name}/({val})", dim=self.dim-1)
                     self.actPoint.set(vals={'mrk': nextMark})
 
                 #--------------------------------------------------------------
@@ -599,19 +594,19 @@ class IMarkov(InfoData):
         logger.info(f"{self.name}._compute: Probabilities and forces recalculated for {len(self.points)} points")
 
     #--------------------------------------------------------------------------
-    def _maxGainRecursive(self, minGain=1.0, minObs=10, pattern=()):
+    def _maxForceRecursive(self, minForce=0.1, minObs=10, pattern=()):
         """Helper method to recursively crawl through all Markov patterns.
 
         Args:
-            minGain (float): Minimum gain threshold
-            minObs  (int)  : Minimum observations threshold
-            pattern (tuple): Current pattern being built
+            minForce (float): Minimum absolute value of the force threshold
+            minObs     (int): Minimum observations threshold
+            pattern  (tuple): Current pattern being built
 
         Returns:
             dict: Patterns found at this level and nested levels
         """
 
-        logger.debug(f"{self.name}._maxGainRecursive: minGain={minGain}, minObs={minObs}, pattern={pattern}")
+        logger.debug(f"{self.name}._maxForceRecursive: minForce={minForce}, minObs={minObs}, pattern={pattern}")
         toRet = {}
 
         #----------------------------------------------------------------------
@@ -622,14 +617,14 @@ class IMarkov(InfoData):
             val = point.pos('x')
             new_pattern = pattern + (val,)
 
-            gain = point._vals['pgn']
+            frc = point._vals['for']
             obs = point._vals['obs']
             pro = point._vals['pro']
 
             #------------------------------------------------------------------
-            # Add this pattern if it meets minGain threshold
-            if gain >= minGain and obs >= minObs:
-                toRet[new_pattern] = {'gain': gain, 'obs': obs, 'pro': pro}
+            # Add this pattern if it meets minForce threshold
+            if abs(frc) >= minForce and obs >= minObs:
+                toRet[new_pattern] = {'frc': frc, 'obs': obs, 'pro': pro}
 
             #------------------------------------------------------------------
             # Recursively process nested Markov if it exists
@@ -637,7 +632,7 @@ class IMarkov(InfoData):
             mrk = point._vals['mrk']
 
             if mrk is not None and isinstance(mrk, IMarkov):
-                nested = mrk._maxGainRecursive(minGain=minGain, minObs=minObs, pattern=new_pattern)
+                nested = mrk._maxForceRecursive(minForce=minForce, minObs=minObs, pattern=new_pattern)
                 toRet.update(nested)
 
         #----------------------------------------------------------------------

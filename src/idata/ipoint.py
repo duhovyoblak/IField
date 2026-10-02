@@ -22,8 +22,9 @@ _F_POS    = 4                          # Number of digits for position coordinat
 _SCH_AXES = {}                         # Default axes for InfoPoint schema
 _SCH_VALS = {}                         # Default values for InfoPoint schema
 
-_SCHEMA   = {'ipReal'   :{'axes':_SCH_AXES.copy()
-                         ,'vals':_SCH_VALS.copy()
+_SCHEMA   = {'ipReal'   :{'axes'  :_SCH_AXES.copy()
+                         ,'vals'  :_SCH_VALS.copy()
+                         ,'module':''
                          }
             }                          # Default built-in Schema for InfoPoint
 
@@ -155,6 +156,14 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
+    def getIpTypes() -> list:
+        """Returns list of all defined InfoPoint types in the schema.
+        """
+
+        return list(InfoPoint._schema.keys())
+
+    #--------------------------------------------------------------------------
+    @staticmethod
     def getSchema(ipType) -> dict:
         """Returns copy of schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}
            If ipType is not defined in the schema yet, first create empty schema for this ipType.
@@ -166,13 +175,16 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def setSchema(ipType, schema):
-        """Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}
+        """Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}, 'module': '__module__name__'}
            If ipType is not defined in the schema yet, first create empty schema for this ipType.
            This method has no impact on InfoPoints of other ipTypes.
+           Returns name of the module to import to work with this schema.
         """
 
         InfoPoint.checkSchema(ipType)
         InfoPoint._schema[ipType] = copy.deepcopy(schema)
+
+        logger.info(f"InfoPoint.setSchema: schema for ipType '{ipType}' was set")
 
     #--------------------------------------------------------------------------
     # Axes methods

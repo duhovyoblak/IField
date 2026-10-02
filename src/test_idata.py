@@ -47,7 +47,7 @@ if __name__ =='__main__':
     for i in range(10_000):
 
 
-        val = rnd.randint(0, 7)
+        val = rnd.randint(0, 3)
         im.observe(val=val)
 
         if i % 10_000 == 0:
@@ -77,12 +77,12 @@ if __name__ =='__main__':
     print(80*'=')
     print()
 
-    gains = im.maxGain(minGain=1.2, minObs=10, maxPatterns=50)
-    print(f"Max gain:")
+    gains = im.maxForce(minForce=0.01, minObs=5, maxPatterns=50)
+    print(f"Max force:")
 
     for pattern, rec in gains.items():
         patStr = ', '.join(str(x) for x in pattern)
-        print(f"  Pattern: ({patStr:<16}), Gain: {rec['gain']:.5f}, Observations: {rec['obs']:5}, Probability: {rec['pro']:.5f}, log2(gain): {math.log2(rec['gain']):+7.5f}")
+        print(f"  Pattern: ({patStr:<16}), Force: {rec['frc']:.5f}, Observations: {rec['obs']:5}, Probability: {rec['pro']:.5f}")
 
 #==============================================================================
 #                              END OF FILE

@@ -22,12 +22,12 @@ _VALS_MAX  = 100000
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
 
-    logger = SiqoLogger(name='IMatrix', level='INFO')
+    logger = SiqoLogger(name='IData', level='INFO')
     logger.frameDepth = 2
     print(f'logger.frameDepth = {logger.frameDepth}')
 
     #--------------------------------------------------------------------------
-    # Test of the IFieldMatrixGui class
+    # Test of the InfoDataGui class
     #--------------------------------------------------------------------------
     win = tk.Tk()
     win.configure(bg='silver', highlightthickness=2, highlightcolor='green')
@@ -39,15 +39,15 @@ if __name__ =='__main__':
     #--------------------------------------------------------------------------
     # Zaciatok testu
     #--------------------------------------------------------------------------
-    matrix = InfoData('IMatrixGuiTest')
+    data = InfoData('IDataGuiTest')
 
     logger.setLevel('INFO')
     logger.info('Test of InfoDataGui class')
 
-    print(matrix.info(full=False)['msg'])
+    print(data.info(full=False)['msg'])
 
-    matrixGui = InfoDataGui(container=win, data=matrix)
-    matrixGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
+    dataGui = InfoDataGui(container=win, data=data)
+    dataGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
     logger.setLevel('INFO')
     win.mainloop()

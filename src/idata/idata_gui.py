@@ -21,7 +21,7 @@ from   idata.idata_display_gui           import InfoDataDisplayGui
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER            = '2.2.0'
+_VER            = '2.2.1'
 _WIN            = '1300x740'
 _DPI            = 100
 
@@ -230,16 +230,16 @@ class InfoDataGui(ttk.Frame):
         fileMenu.add_command(label="Save",                  command=self.onSave)
         fileMenu.add_separator()
 
-        # Pridanie Data menu
-        self.dataMenu = tk.Menu(mainMenu, tearoff=0)
-        mainMenu.add_cascade(label="Data", menu=self.dataMenu)
-        self.refreshDataMenu()
-
         # Pridanie Schema menu
         schmMenu = tk.Menu(mainMenu, tearoff=0)
         mainMenu.add_cascade(label="Schema", menu=schmMenu)
         schmMenu.add_command(label="Point Schema",          command=self.onSchemaSchema )
+
+        # Pridanie Data menu
+        self.dataMenu = tk.Menu(mainMenu, tearoff=0)
+        mainMenu.add_cascade(label="Data", menu=self.dataMenu)
         schmMenu.add_command(label="Data properties",       command=self.onSchemaData   )
+        self.refreshDataMenu()
 
         # Pridanie Display menu
         dispMenu = tk.Menu(mainMenu, tearoff=0)
