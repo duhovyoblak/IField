@@ -14,10 +14,19 @@ _IND    = '|  '                        # Info indentation
 
 _IPTYPE_MARKOV = 'ipMarkovGen'
 
+_AXES = {"x"   : "Value"}
+
+_VALS = {"obs" : "Observations"
+        ,"loc" : "Local prob"
+        ,"pro" : "Joint prob"
+        ,"for" : "Force"
+        ,"mrk" : "Markov analyser"
+        }
+
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
-
+InfoData.setSchema(_IPTYPE_MARKOV, {"axes": _AXES, "vals": _VALS})
 
 #==============================================================================
 # IMarkov

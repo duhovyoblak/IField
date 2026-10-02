@@ -18,19 +18,15 @@ logger = SiqoLogger(name='IDataPackage')   # Logger for IDataPackage
 logger.setLevel('INFO')
 
 #------------------------------------------------------------------------------
-# Konfiguracia schem
+# Nacitanie InfoData typov
 #------------------------------------------------------------------------------
-from .ipoint import InfoPoint
+iDataTypes = {}
+iDataTypeFName = Path(__file__).with_name('iDataTypeConfig.json')
 
-ipTypeFName = Path(__file__).with_name('ipTypeConfig.json')
+with iDataTypeFName.open(encoding='utf-8') as config_file:
+    iDataTypes = json.load(config_file)
 
-with ipTypeFName.open(encoding='utf-8') as config_file:
-    _ipTypeConfig = json.load(config_file)
-
-for _ipType, _schema in _ipTypeConfig.items():
-    InfoPoint.setSchema(_ipType, _schema)
-
-logger.info(f"Loaded {len(_ipTypeConfig)} InfoPoint type schemas from '{ipTypeFName.name}'")
+logger.info(f"Loaded {len(iDataTypes)} InfoData types from '{iDataTypeFName.name}'")
 
 #==============================================================================
 # Inicializacia modulu

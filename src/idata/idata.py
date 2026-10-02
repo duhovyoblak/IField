@@ -2,18 +2,19 @@
 # Siqo class InfoData
 #------------------------------------------------------------------------------
 import functools
+import importlib
 import math
 import cmath
 import numpy                  as np
 import random                 as rnd
 
-from   .                      import logger
+from   .                      import iDataTypes, logger
 from   .ipoint                import InfoPoint
 
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '3.4.2'
+_VER    = '3.4.3'
 _IND    = '|  '       # Info indentation
 _UPP    = 10          # distance units per period
 
@@ -114,45 +115,36 @@ class InfoData:
             return InfoData.getData(name)
 
         #----------------------------------------------------------------------
+        # Kontrola existencie definicie iDataType
+        #----------------------------------------------------------------------
+        if iDataType not in iDataTypes:
+            logger.error(f"InfoData.new: iDataType '{iDataType}' is not defined in iDataTypeConfig.json, command denied")
+            return toRet
+
+        #----------------------------------------------------------------------
         # Vytvorenie noveho InfoData podla zadaneho typu
         #----------------------------------------------------------------------
-        if   iDataType == 'InfoData':
-
-            toRet = InfoData(name=name)
-            logger.info(f"InfoData.new: Created new InfoData '{toRet.name}' with ipType='{toRet.ipType}'")
-
-        elif iDataType == 'ISeries':
-
-            from .iseries import ISeries
-            toRet = ISeries(name=name)
-            logger.info(f"InfoData.new: Created new ISeries '{toRet.name}' with ipType='{toRet.ipType}'")
-
-        elif iDataType == 'IFtion':
-
-            from .iftion import IFtion
-            toRet = IFtion(name=name)
-            logger.info(f"InfoData.new: Created new IFtion '{toRet.name}' with ipType='{toRet.ipType}'")
-
-        elif iDataType == 'IVector':
-
-            from .ivector import IVector
-            toRet = IVector(name=name)
-            logger.info(f"InfoData.new: Created new IVector '{toRet.name}' with ipType='{toRet.ipType}'")
-
-        elif iDataType == 'IMarkov':
-
-            from .imarkov import IMarkov
-            toRet = IMarkov(name=name)
-            logger.info(f"InfoData.new: Created new IMarkov '{toRet.name}' with ipType='{toRet.ipType}'")
-
-        else:
-            #------------------------------------------------------------------
-            # iDataType je neznamy, logujem chybu a vratim None
-            #------------------------------------------------------------------
-            logger.error(f"InfoData.new: iDataType '{iDataType}' is not defined, command denied")
-            toRet = None
+        fileName  = iDataTypes[iDataType].get('fileName',  '')
+        className = iDataTypes[iDataType].get('className', '')
 
         #----------------------------------------------------------------------
+        # Vytvaram class zdedeny z InfoData
+        #----------------------------------------------------------------------
+        if fileName:
+
+            module = __import__(f".{fileName}", globals=globals(), locals=locals(), fromlist=[className])
+            klass  = getattr(module, className)
+
+            toRet = klass(name=name)
+
+        #----------------------------------------------------------------------
+        # Vytvaram class InfoData
+        #----------------------------------------------------------------------
+        else:
+            toRet = InfoData(name=name)
+
+        #----------------------------------------------------------------------
+        logger.info(f"InfoData.new: Created new {className} '{toRet.name}' with ipType='{toRet.ipType}'")
         return toRet
 
     #==========================================================================
