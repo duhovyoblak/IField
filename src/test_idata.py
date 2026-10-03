@@ -7,6 +7,8 @@ from   siqolib.logger           import SiqoLogger
 import random                   as rnd
 from   idata.idata              import InfoData
 
+
+
 #==============================================================================
 # package's constants
 #------------------------------------------------------------------------------
@@ -25,64 +27,96 @@ if __name__ =='__main__':
     print(f'logger.frameDepth = {logger.frameDepth}')
 
     #--------------------------------------------------------------------------
-    # Vytvorenie, generovanie osi
+    # Vyber iDataType
     #--------------------------------------------------------------------------
-    im = InfoData.new(name='Markov', iDataType='IMarkov')
+    idTypes = InfoData.iDataTypes()
+    print(f"Available iDataTypes: {idTypes}")
+
+    print()
+    for idType in idTypes:
+        print(f"  {idType}")
+    print()
+
+    idType = '_xxx_'
+    while idType not in idTypes:
+
+        if idType != '_xxx_': print(f"Invalid iDataType '{idType}', please select from available iDataTypes.")
+        idType = input('Select iDataType or Enter to quit: ')
+
+        if idType == '': exit()
+
+    print()
+
+    #--------------------------------------------------------------------------
+    # Vytvorenie InfoData
+    #--------------------------------------------------------------------------
+    iData = InfoData.new(name='Test', iDataType=idType)
     logger.setLevel('WARNING')
 
-
-    print()
     print()
     print(80*'-')
-#    input('IMarkov created, Press Enter to continue...')
-    print()
 
-    im.setDim(dim=3)
-    print()
-    print()
-    print(80*'-')
-    input('Dim set, Press Enter to continue...')
-    print()
+    #--------------------------------------------------------------------------
+    # Test IMarkov
+    #--------------------------------------------------------------------------
+    if idType == 'IMarkov':
 
-    for i in range(10_000):
+        #----------------------------------------------------------------------
+        # Nastavenie dim a pozorovacích hodnôt
+        #----------------------------------------------------------------------
+        iData.setDim(dim=3)
 
+        print()
+        print(80*'-')
+        input('Dim set, Press Enter to continue...')
 
-        val = rnd.randint(0, 3)
-        im.observe(val=val)
+        for i in range(10_000):
 
-        if i % 10_000 == 0:
-            print(f'Observed {i:>6} values...')
+            val = rnd.randint(0, 3)
+            iData.observe(val=val)
 
-    print()
-    print(im)
-    print(80*'-')
+            if i % 10_000 == 0: print(f'Observed {i:>6} values...')
 
-    im._INFO_HISTOGRAM = False
+        print()
+        print(iData)
+        print(80*'-')
 
-    while True:
-        val = input('Enter value to observe (or <Enter> to quit): ')
+        iData._INFO_HISTOGRAM = False
 
-        if val.lower() == '': break
+        #----------------------------------------------------------------------
+        # Manualne pozorovanie hodnôt
+        #----------------------------------------------------------------------
+        while True:
+            val = input('Enter value to observe (or <Enter> to quit): ')
 
-        try:
-            val_int = int(val)
-            im.observe(val=val_int)
-            print(im)
-            print()
+            if val.lower() == '': break
 
-        except ValueError:
-            print('Invalid input. Please enter an integer or "exit".')
+            try:
+                val_int = int(val)
+                iData.observe(val=val_int)
+                print(iData)
+                print()
+            except ValueError:
+                print('Invalid input. Please enter an integer or "exit".')
 
-    input('Done, Press Enter to continue...')
-    print(80*'=')
-    print()
+        input('Done, Press Enter to continue...')
+        print(80*'=')
+        print()
 
-    gains = im.maxForce(minForce=0.01, minObs=5, maxPatterns=50)
-    print(f"Max force:")
+        #----------------------------------------------------------------------
+        # Vypis max forces
+        #----------------------------------------------------------------------
+        forces = iData.maxForce(minForce=0.01, minObs=5, maxPatterns=50)
+        print(f"Max force:")
 
-    for pattern, rec in gains.items():
-        patStr = ', '.join(str(x) for x in pattern)
-        print(f"  Pattern: ({patStr:<16}), Force: {rec['frc']:.5f}, Observations: {rec['obs']:5}, Probability: {rec['pro']:.5f}")
+        for pattern, rec in forces.items():
+            patStr = ', '.join(str(x) for x in pattern)
+            print(f"  Pattern: ({patStr:<16}), Force: {rec['frc']:.5f}, Observations: {rec['obs']:5}, Probability: {rec['pro']:.5f}")
+
+    #--------------------------------------------------------------------------
+    # Test I
+    #--------------------------------------------------------------------------
+
 
 #==============================================================================
 #                              END OF FILE

@@ -81,6 +81,14 @@ class InfoData:
 
     #--------------------------------------------------------------------------
     @staticmethod
+    def iDataTypes() -> list:
+        """Returns list of all available iDataTypes.
+        """
+
+        return list(iDataTypes.keys())
+
+    #--------------------------------------------------------------------------
+    @staticmethod
     def setSchema(ipType, schema) -> 'InfoData|None':
         """Inserts or updates schema in catalogue of schemas.
         """
@@ -126,14 +134,16 @@ class InfoData:
         #----------------------------------------------------------------------
         fileName  = iDataTypes[iDataType].get('fileName',  '')
         className = iDataTypes[iDataType].get('className', '')
+        logger.debug(f"InfoData.new: Importing '{className}' from file '{fileName}'")
 
         #----------------------------------------------------------------------
         # Vytvaram class zdedeny z InfoData
         #----------------------------------------------------------------------
         if fileName:
 
-            module = __import__(f".{fileName}", globals=globals(), locals=locals(), fromlist=[className])
-            klass  = getattr(module, className)
+            moduleName = f"{__package__}.{fileName}"
+            module     = importlib.import_module(moduleName)
+            klass      = getattr(module, className)
 
             toRet = klass(name=name)
 
