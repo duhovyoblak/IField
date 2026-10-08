@@ -20,6 +20,17 @@ _UPP    = 10          # distance units per period
 
 _F_POS  =  8          # Format for position
 
+_IPTYPE_REAL1D = 'ipReal1D'
+
+_AXES = {"x"   : "Value"}
+_VALS = {"y"   : "Real value"
+        }
+
+#==============================================================================
+# Module's variables
+#------------------------------------------------------------------------------
+
+
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
@@ -170,7 +181,7 @@ class InfoData:
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, name):
+    def __init__(self, name, ipType=_IPTYPE_REAL1D):
         """Calls constructor of InfoData of respective name.
            Constructor initializes all public and private data structures of InfoData.
            Constructor does not initialize points in InfoData nor set ipType,
@@ -203,6 +214,11 @@ class InfoData:
 
         self._subProducts = []          # List of subproducts of _cnts [1, A, AB, ABC, ...]
         self._lastPos     = None        # Last position used in pointByPos for faster access
+
+        #----------------------------------------------------------------------
+        # Inicializacia InfoPoint type
+        #----------------------------------------------------------------------
+        self.setIpType(ipType)
 
         #----------------------------------------------------------------------
         # Zapis do zoznamu instancii InfoData Inicializacia
@@ -1629,6 +1645,9 @@ class InfoData:
 #==============================================================================
 # Inicializacia modulu
 #------------------------------------------------------------------------------
+InfoData.setSchema(_IPTYPE_REAL1D, {"axes": _AXES, "vals": _VALS})
+
+
 print(f"InfoData ver {_VER}")
 
 if __name__ == '__main__':

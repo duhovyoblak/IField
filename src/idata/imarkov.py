@@ -50,7 +50,7 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Super constructor
         #----------------------------------------------------------------------
-        super().__init__(name)
+        super().__init__(name, ipType=_IPTYPE_MARKOV)
 
         #----------------------------------------------------------------------
         # Private datove polozky triedy
@@ -66,11 +66,6 @@ class IMarkov(InfoData):
         self.actVals     = []     # List of actual values for this Markov process, length = dim
         self.actPoint    = None   # Active InfoPoint in this Markov object
         self.needCompute = False  # Flag if probabilities and gains need to be recomputed
-
-        #----------------------------------------------------------------------
-        # Inicializujem schemu a ipType podla dimenzie ftion
-        #----------------------------------------------------------------------
-        self.setIpType(_IPTYPE_MARKOV)
 
         #----------------------------------------------------------------------
         # Inicializujem histogram, na zaciatku neobsahuje zidne body, preto cnts=(0,)
