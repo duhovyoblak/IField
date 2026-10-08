@@ -46,7 +46,7 @@ if __name__ =='__main__':
 
     print(data.info(full=False)['msg'])
 
-    dataGui = InfoDataGui(container=win, data=data)
+    dataGui = InfoDataGui(container=win)
     dataGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
     logger.setLevel('INFO')

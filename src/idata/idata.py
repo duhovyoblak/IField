@@ -81,6 +81,16 @@ class InfoData:
 
     #--------------------------------------------------------------------------
     @staticmethod
+    def getDatas(mySelf=None) -> dict:
+        """Returns dict of all InfoData instances as {name: InfoData}.
+           If mySelf is provided, this InfoData is not included in the returned dict.
+        """
+
+        if mySelf is not None: return {name: data for name, data in InfoData.datas.items() if data != mySelf}
+        else                 : return InfoData.datas.copy()
+
+    #--------------------------------------------------------------------------
+    @staticmethod
     def iDataTypes() -> list:
         """Returns list of all available iDataTypes.
         """
@@ -231,15 +241,6 @@ class InfoData:
         # Vratim skonvertovane do np.array
         #----------------------------------------------------------------------
         return np.array(mtrx)
-
-    #--------------------------------------------------------------------------
-    def getDatas(self, noSelf=False) -> dict:
-        """Returns dict of all InfoData instances as {name: InfoData}.
-           If noSelf is True, this InfoData is not included in the returned dict.
-        """
-
-        if noSelf: return {name: data for name, data in InfoData.datas.items() if data != self}
-        else     : return InfoData.datas.copy()
 
     #--------------------------------------------------------------------------
     def setIpType(self, ipType:str, force:bool=False):

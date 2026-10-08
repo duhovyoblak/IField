@@ -113,6 +113,7 @@ class InfoDataGui(ttk.Frame):
         logger.audit('InfoDataGui.init:')
 
         self.name      = 'No Data'          # Name of this GUI
+        self.data      = None               # InfoData instance associated with this GUI
 
         if data is not None:
             self.registerData(data)         # Assign self.name, self.data and register this GUI in data.gui
@@ -205,6 +206,7 @@ class InfoDataGui(ttk.Frame):
         return dataObjGui
 
     #--------------------------------------------------------------------------
+ #   @hasDataQuiet
     def resetDisplay(self):
         """Reset display options to default values based on self.data properties.
         This method is called in the constructor of InfoDataGui and
@@ -246,7 +248,6 @@ class InfoDataGui(ttk.Frame):
         return toRet
 
     #--------------------------------------------------------------------------
-    @hasDataQuiet
     def setSub2D(self, axeFreezeIdxs: dict):
         "Add frozen axes for the chart, e.g. {'x':4, 't':17}"
 
@@ -457,7 +458,6 @@ class InfoDataGui(ttk.Frame):
     #==========================================================================
     # Update display
     #--------------------------------------------------------------------------
-    @hasDataQuiet
     def viewChanged(self, event=None, force=False):
         """Resolve changes in self.display options and update the chart accordingly if needed
         """
@@ -533,7 +533,6 @@ class InfoDataGui(ttk.Frame):
     #==========================================================================
     # Update the chart
     #--------------------------------------------------------------------------
-    @hasDataQuiet
     def updateChart(self, event=None):
         """Update the chart based on the current actList
         """
@@ -684,7 +683,6 @@ class InfoDataGui(ttk.Frame):
         logger.info(f'{self.name}.updateChart: Done')
 
     #--------------------------------------------------------------------------
-    @hasDataQuiet
     def prepareChartData(self):
         """Prepare data for the chart based on current actList and display options.
            Returns npArrays: npX (x-axis), npY (y-axis)
@@ -747,7 +745,6 @@ class InfoDataGui(ttk.Frame):
     #==========================================================================
     # Menus events
     #--------------------------------------------------------------------------
-    @hasData
     def onClick(self, event):
         "Print information about mouse-given position"
 
@@ -830,7 +827,6 @@ class InfoDataGui(ttk.Frame):
     #==========================================================================
     # Window menu
     #--------------------------------------------------------------------------
-    @hasDataQuiet
     def refreshWindowMenu(self):
         "Refresh Data menu with current dict of IData.datas"
 
@@ -845,16 +841,16 @@ class InfoDataGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Vytvorenie poloziek pre vsetky IData.datas
         #----------------------------------------------------------------------
-        for dataName, dataObj in self.data.getDatas(noSelf=True).items():
+        for dataName, dataObj in InfoData.getDatas(mySelf=self.data).items():
 
-            self.windowMenu.add_command(label=dataName, command=lambda dataObj=dataObj: self.onDataWindowShow(dataObj))
+            logger.debug(f'{self.name}.refreshWindowMenu: Adding window menu item for {dataName}')
+            self.windowMenu.add_command(label=dataName, command=lambda dataObj=dataObj: self.onDataWindowShow(dataObj=dataObj))
             toRet += 1
 
         #----------------------------------------------------------------------
         logger.debug(f'{self.name}.refreshWindowMenu: {toRet} commands created in Data menu')
 
     #--------------------------------------------------------------------------
-    @hasData
     def onDataWindowShow(self, event=None, dataObj=None):
         "Show GUI window for respective IData (ne-modalne okno)"
 
@@ -868,11 +864,16 @@ class InfoDataGui(ttk.Frame):
             return
 
         #----------------------------------------------------------------------
-        # Kontrola ci uz existuje okno pre dataObj.name
+        # Kontrola ci uz existuje okno pre dataObj
         #----------------------------------------------------------------------
-        if dataObj.name in self.data.getDatas(noSelf=True):
+        if dataObj.gui is not None:
 
             # Zobrazenie existujuceho okna
+            try:
+                dataObj.gui.container.lift()
+                dataObj.gui.container.focus_force()
+            except tk.TclError:
+                logger.warning(f'{self.name}.onDataWindowShow: Window of {dataObj.name} no longer exists')
             return
 
         #----------------------------------------------------------------------
@@ -1148,6 +1149,7 @@ class InfoDataGui(ttk.Frame):
         return
 
     #--------------------------------------------------------------------------
+    @hasData
     def onMethodStop(self, event=None):
         "Stop applying method in loop"
 
@@ -1164,11 +1166,15 @@ class InfoDataGui(ttk.Frame):
 
         logger.info(f'{self.name}.onCloseWindow: Closing GUI window')
 
+        #----------------------------------------------------------------------
         # Remove back-reference from InfoData to GUI instance.
+        #----------------------------------------------------------------------
         if self.data is not None and self.data.gui is self:
             self.data.gui = None
 
+        #----------------------------------------------------------------------
         # Destroy the top-level container.
+        #----------------------------------------------------------------------
         try:
             self.container.destroy()
         except Exception as err:
