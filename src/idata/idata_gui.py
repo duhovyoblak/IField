@@ -18,6 +18,7 @@ from   idata.idata                       import InfoData
 from   idata.ipoint_gui                  import InfoPointGui, InfoPointValsGui
 from   idata.idata_data_gui              import InfoDataDataGui
 from   idata.idata_display_gui           import InfoDataDisplayGui
+from   idata.idata_size_gui              import InfoDataSizeGui
 
 #==============================================================================
 # Module's constants
@@ -288,9 +289,10 @@ class InfoDataGui(ttk.Frame):
         # Pridanie File menu
         fileMenu = tk.Menu(mainMenu, tearoff=0)
         mainMenu.add_cascade(label="File", menu=fileMenu)
-        fileMenu.add_command(label="Open",                  command=self.onOpen)
-        fileMenu.add_command(label="Save",                  command=self.onSave)
+        fileMenu.add_command(label="Open Data",             command=self.onOpen)
+        fileMenu.add_command(label="Save Data",             command=self.onSave)
         fileMenu.add_separator()
+        fileMenu.add_command(label="Set Data size",         command=self.onDataSize)
 
         # Pridanie Schema menu
         schmMenu = tk.Menu(mainMenu, tearoff=0)
@@ -883,6 +885,26 @@ class InfoDataGui(ttk.Frame):
 
         #----------------------------------------------------------------------
         logger.debug(f'{self.name}.onDataWindowShow: Nemodale okno otvorene pre {dataObj.name}')
+
+    #==========================================================================
+    # File menu
+    #--------------------------------------------------------------------------
+    @hasData
+    def onDataSize(self, event=None):
+        "Set the size of the data object"
+
+        logger.info(f'{self.name}.onDataSize:')
+        gui = InfoDataSizeGui(name=f'Data Size {self.data.name}', container=self, data=self.data)
+        gui.grab_set()
+        self.wait_window(gui)
+
+        if gui.changed:
+
+            self.data.init(cnts=gui.cnts)
+            self.display['needShow'] = True
+            self.viewChanged(force=True)
+
+        logger.debug(f'{self.name}.onDataSize: InfoDataSizeGui window closed')
 
     #==========================================================================
     # Schema menu

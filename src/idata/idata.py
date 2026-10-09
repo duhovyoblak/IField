@@ -22,7 +22,7 @@ _F_POS  =  8          # Format for position
 
 _IPTYPE_REAL1D = 'ipReal1D'
 
-_AXES = {"x"   : "Value"}
+_AXES = {"x"   : "Position X"}
 _VALS = {"y"   : "Real value"
         }
 
