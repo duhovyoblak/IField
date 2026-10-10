@@ -11,3 +11,4 @@ build/
 *.pyc
 *.egg-info/
 *.journal
+.venv/

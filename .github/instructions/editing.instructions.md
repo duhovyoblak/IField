@@ -2,6 +2,7 @@
 owner: P. Horanský
 language: sk
 scope: global
+applyTo: "**"
 ---
 
 # Copilot Inštrukcie - Editovanie zdrojového kódu
