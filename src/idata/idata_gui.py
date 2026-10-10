@@ -18,7 +18,7 @@ from   idata.idata                       import InfoData
 from   idata.ipoint_gui                  import InfoPointGui, InfoPointValsGui
 from   idata.idata_data_gui              import InfoDataDataGui
 from   idata.idata_display_gui           import InfoDataDisplayGui
-from   idata.idata_size_gui              import InfoDataSizeGui
+from   idata.idata_create_gui            import InfoDataCreateGui
 
 #==============================================================================
 # Module's constants
@@ -218,6 +218,8 @@ class InfoDataGui(ttk.Frame):
         axeKeys  = list(axes.keys())
         axeNames = list(axes.values())
 
+        vals = self.data.getSchemaVals() if self.data is not None else {}
+
         self.display  = {'type'       : 'SCATTER' if len(axeKeys)>1 else 'LINE'  # Actual type of the chart
                         ,'needShow'   : False                                    # Flag to show the chart, True means data changed and need to be shown
                         ,'axeKeys'    : axeKeys                                  # List of axes keys
@@ -227,9 +229,11 @@ class InfoDataGui(ttk.Frame):
                         ,'keyY'       : axeKeys[1] if len(axeKeys)>1 else ''     # key for Axis Y to show
                         ,'keyZ'       : axeKeys[2] if len(axeKeys)>2 else ''     # key for Axis Z to show
                         ,'showMethod' : ''                                       # key for methods for value to show
-                        ,'valName'    : ''                                       # Value name to show
-                        ,'valKey'     : ''                                       # Value key to show
+                        ,'valName'    : next(iter(vals.values()), '')            # Value name to show (first of vals)
+                        ,'valKey'     : next(iter(vals.keys()  ), '')            # Value key to show (first of vals)
                         }
+
+        if hasattr(self, 'varValName'): self.varValName.set(self.display['valName'])
 
         self.display['axeKeys' ].append('None')
         self.display['axeNames'].append('None')
@@ -291,8 +295,8 @@ class InfoDataGui(ttk.Frame):
         mainMenu.add_cascade(label="File", menu=fileMenu)
         fileMenu.add_command(label="Open Data",             command=self.onOpen)
         fileMenu.add_command(label="Save Data",             command=self.onSave)
+        fileMenu.add_command(label="Create Data",           command=self.onDataCreate)
         fileMenu.add_separator()
-        fileMenu.add_command(label="Set Data size",         command=self.onDataSize)
 
         # Pridanie Schema menu
         schmMenu = tk.Menu(mainMenu, tearoff=0)
@@ -402,7 +406,7 @@ class InfoDataGui(ttk.Frame):
         # Value to show selector
         #----------------------------------------------------------------------
         self.varValMet  = tk.StringVar(value='Float value') # Name of the method for value to show in the chart
-        self.varValName = tk.StringVar()                    # Name of the value to show in the chart
+        self.varValName = tk.StringVar(value=self.display.get('valName', ''))  # Name of the value to show in the chart
 
         lblVal = ttk.Label(container, text="Value to show:")
         lblVal.grid(column=2, row=0, sticky=tk.E, padx=_PADX, pady=_PADY)
@@ -889,23 +893,33 @@ class InfoDataGui(ttk.Frame):
     #==========================================================================
     # File menu
     #--------------------------------------------------------------------------
-    @hasData
-    def onDataSize(self, event=None):
-        "Set the size of the data object"
+    def onDataCreate(self, event=None):
+        "Create a new data object and assign it to this GUI"
 
-        logger.info(f'{self.name}.onDataSize:')
-        gui = InfoDataSizeGui(name=f'Data Size {self.data.name}', container=self, data=self.data)
+        logger.info(f'{self.name}.onDataCreate:')
+        gui = InfoDataCreateGui(name=self.name, container=self)
         gui.grab_set()
         self.wait_window(gui)
 
         if gui.changed:
 
-            self.data.init(cnts=gui.cnts)
-            self.display['needShow'] = True
-            self.viewChanged(force=True)
+            if self.data is not None and self.data.gui is self:
+                self.data.gui = None
 
-        logger.debug(f'{self.name}.onDataSize: InfoDataSizeGui window closed')
+            self.registerData(gui.data)
 
+            self.resetDisplay()
+            self.cbValMet['values'] = list(self.data.mapShowMethods().keys())
+            self.cbSetMet['values'] = self.data.visibleMethodKeys()
+            self.updateDisplayBar()
+            self.refreshWindowMenu()
+
+            try   : self.container.title(f'Data: {self.data.name}')
+            except tk.TclError: pass
+
+        logger.debug(f'{self.name}.onDataCreate: InfoDataCreateGui window closed')
+
+    #--------------------------------------------------------------------------
     #==========================================================================
     # Schema menu
     #--------------------------------------------------------------------------

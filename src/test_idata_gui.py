@@ -6,7 +6,7 @@ import tkinter                  as tk
 from   siqolib.logger           import SiqoLogger
 
 from   idata.idata              import InfoData
-from   idata.idata_gui                import InfoDataGui
+from   idata.idata_gui          import InfoDataGui
 
 #==============================================================================
 # package's constants

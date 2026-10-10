@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------------
 import tkinter                as tk
 from   tkinter                import (ttk, font, PanedWindow)
-from   tkinter.messagebox     import showinfo
+from   tkinter.messagebox     import showinfo, askyesnocancel
 
 from   siqolib.message        import SiqoMessage, askInt, askReal
 
@@ -16,6 +16,10 @@ from   idata.ipoint           import InfoPoint
 _VER            = '1.1.0'
 _WIN            = '800x540'
 _DPI            = 100
+_MIN_W          = 420
+_MIN_H          = 300
+_OFFSET_X       =  80
+_OFFSET_Y       = 120
 
 _COMBO_WIDTH    = 12
 _PADX           =  5
@@ -44,9 +48,10 @@ class InfoDataDataGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self._cnts  = self.data._cnts.copy()      # _cnts  pre prikaz Apply
-        self._rects = self.data._rects.copy()     # _rects pre prikaz Apply
-        self._origs = self.data._origs.copy()     # _origs pre prikaz Apply
+        axes = self.data.getSchemaAxes()          # Osi zo schemy, aj ked data nie su inicializovane
+        self._cnts  = {k: self.data._cnts .get(k, 0  ) for k in axes}   # _cnts  pre prikaz Apply
+        self._rects = {k: self.data._rects.get(k, 0.0) for k in axes}   # _rects pre prikaz Apply
+        self._origs = {k: self.data._origs.get(k, 0.0) for k in axes}   # _origs pre prikaz Apply
 
         self.origCnts  = self.data._cnts.copy()   # Original _cnts  pre prikaz Cancel
         self.origRects = self.data._rects.copy()  # Original _rects pre prikaz Cancel
@@ -57,6 +62,8 @@ class InfoDataDataGui(tk.Toplevel):
         #----------------------------------------------------------------------
         super().__init__(container)
         self.title(self.name)
+        self.minsize(_MIN_W, _MIN_H)
+        self.geometry(f'{_MIN_W}x{_MIN_H}+{container.winfo_rootx() + _OFFSET_X}+{container.winfo_rooty() + _OFFSET_Y}')
         self.focus_set()
 
         #----------------------------------------------------------------------
@@ -208,6 +215,21 @@ class InfoDataDataGui(tk.Toplevel):
     #--------------------------------------------------------------------------
     def apply(self):
         "Apply inputs and initialise the data"
+
+        for key, rect in self._rects.items():
+
+            cnt = self._cnts.get(key, 0)
+            if rect != 0 or cnt < 2: continue
+
+            suggested = cnt - 1
+            answer = askyesnocancel(
+                title   = self.data.name,
+                message = f"Axe '{key}' has zero length.\n\nUse suggested length {suggested} (points count - 1)?\n\n"
+                          f"Yes = use {suggested}, No = keep zero length, Cancel = back to dialog",
+                parent  = self)
+
+            if answer is None: return                  # Cancel: dialog stays open
+            if answer        : self._rects[key] = float(suggested)
 
         self.data.init( cnts=self._cnts, rects=self._rects, origs=self._origs )
 
