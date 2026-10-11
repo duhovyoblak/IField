@@ -12,8 +12,8 @@ scope: IField
 
 ## 📁 Štruktúra projektov
 - Projekt `IField` je repozitár v GitHub-e
-- Všetky repozitáre sa nachádzajú v nadradenom adresári: `d:\GitHub\`
-- Tento projekt: `d:\GitHub\IField\`
+- Všetky repozitáre sa nachádzajú v nadradenom adresári: `/mnt/data/gitHub/` (Windows: `d:\GitHub\`)
+- Tento projekt: `/mnt/data/gitHub/IField/` (Windows: `d:\GitHub\IField\`)
 - Hlavný kód: `src/`
 - Staré verzie: `Old/`
 - Testy: `test/`
@@ -21,10 +21,8 @@ scope: IField
 ## 🔍 Vyhľadávanie súborov
 Keď nebudeš vedieť nájsť hľadané súbory:
 1. Skús najskôr preskúmať lokálny projekt v `src/`, `test/` a `Old/`
-2. Potom skús nadradený adresár `d:\GitHub\`
+2. Potom skús nadradený adresár `/mnt/data/gitHub/` (Windows: `d:\GitHub\`)
 3. V prípade pochybností hľadaj aj v nadradenej štruktúre GitHub
 
-## 📋 Načítavanie konfiguračných súborov
-Teraz načítaj:
-- Všetky `.copilot-*` súbory v aktuálnom projekte (`d:\GitHub\IField\`)
-- Všetky `.copilot-*` súbory v nadradenom adresári (`d:\GitHub\`)
+## 📋 Ďalšie inštrukcie
+Inštrukcie pre editovanie kódu a ďalšie sú v `.github/instructions/*.instructions.md` a načítavajú sa automaticky podľa `applyTo`.
