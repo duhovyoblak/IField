@@ -183,7 +183,7 @@ class IMarkov(InfoData):
                 #--------------------------------------------------------------
                 # Info o vnorenom Markov objekte, ak existuje
                 #--------------------------------------------------------------
-                mrk = point._vals['mrk']
+                mrk = point._vals['mrk'] if 'mrk' in point._vals else None
 
                 if mrk is not None and isinstance(mrk, IMarkov):
 

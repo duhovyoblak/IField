@@ -79,6 +79,7 @@ if __name__ =='__main__':
 
         print()
         print(iData)
+        print()
         print(80*'-')
 
         iData._INFO_HISTOGRAM = False

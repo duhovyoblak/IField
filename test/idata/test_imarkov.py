@@ -32,12 +32,12 @@ class TestIMarkovInit:
         mrk.setDim(0)  # Should not change
         assert mrk.dim == 1  # Still dim=1 after reset
 
-    def test_imarkov_custom_axis_name(self):
-        """Test creating IMarkov with custom axis name."""
+    def test_imarkov_default_axis_name(self):
+        """Test the axis name provided by IMarkov's schema."""
         from idata.imarkov import IMarkov
 
-        mrk = IMarkov(name="test", dim=1, axeName="CustomAxis")
-        assert mrk.axeNameByKey("x") == "CustomAxis"
+        mrk = IMarkov(name="test", dim=1)
+        assert mrk.axeNameByKey("x") == "Value"
 
 
 class TestIMarkovObserve:
