@@ -14,7 +14,7 @@ from   .ipoint                import InfoPoint
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '3.4.3'
+_VER    = '3.4.5'
 _IND    = '|  '       # Info indentation
 _UPP    = 10          # distance units per period
 
@@ -230,10 +230,10 @@ class InfoData:
 
     #--------------------------------------------------------------------------
     def __str__(self):
-        """Returns string representation of this InfoData.
+        """Return all info message lines joined with a newline after each line.
         """
 
-        return self.info()['msg']
+        return ''.join(f'{msg}\n' for msg in self.info()['msg'])
 
     #--------------------------------------------------------------------------
     def __array__(self) -> np.array:
@@ -306,21 +306,19 @@ class InfoData:
 
     #--------------------------------------------------------------------------
     def info(self, indent=0, full=False) -> dict:
-        """Creates info about this InfoData.
-           Identation is defined by indent as number of _IND for each line.
-           If full is False, info contains only general info about this InfoData.
-           If full is True, info contains also info about all points in this InfoData.
-           Returns dict with keys 'res', 'dat' and 'msg' where
-           'res' is 'OK' if info was created successfully,
-           'dat' is dict of info data
-           'msg' is string representation of info for printing.
+        """Create information about this InfoData.
+
+           `indent` controls the indentation of each line. If `full` is True,
+           include information about all points. Return a dictionary with 'res',
+           'dat', and 'msg' keys; 'msg' is a list of individual message lines
+           without trailing newline characters.
         """
 
         dat = {}
-        msg = ''
+        msg = []
 
         #----------------------------------------------------------------------
-        # info o celej strukture
+        # Build the summary lines for the full data structure.
         #----------------------------------------------------------------------
         dat['name'          ] = self.name
         dat['ipType'        ] = self.ipType
@@ -341,23 +339,25 @@ class InfoData:
         dat['diffs'         ] = self._diffs
         dat['subProducts'   ] = self._subProducts
 
-        if indent == 0: msg = f"{indent*_IND}{60*'='}\n"
+        if indent == 0: msg = [f"{indent*_IND}{60*'='}"]
 
         for key, val in dat.items():
-            msg += f"{indent*_IND}{key:<15}: {val}\n"
+            msg.append(f"{indent*_IND}{key:<15}: {val}")
 
         #----------------------------------------------------------------------
-        # info o vsetkych bodoch
+        # Append point details when a full report is requested.
         #----------------------------------------------------------------------
         if full:
 
-            if indent == 0: msg += f"{indent*_IND}{60*'+'}\n"
+            if indent == 0: msg.append(f"{indent*_IND}{60*'+'}")
 
             for pos, point in enumerate(self.points):
                 idxs = self._idxsByPos(pos)
-                msg += f"{pos:{_F_POS}} {idxs} {str(point)}\n"
+                pointLines = str(point).splitlines()
+                msg.append(f"{pos:{_F_POS}} {idxs} {pointLines[0]}")
+                msg.extend(pointLines[1:])
 
-            if indent == 0: msg += f"{indent*_IND}{60*'-'}\n"
+            if indent == 0: msg.append(f"{indent*_IND}{60*'-'}")
 
         #----------------------------------------------------------------------
         return {'res':'OK', 'dat':dat, 'msg':msg}

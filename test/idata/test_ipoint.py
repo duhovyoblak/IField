@@ -95,3 +95,22 @@ class TestIPointEdgeCases:
 
         point = InfoPoint(ipType='ipReal', pos={'x': 3.14159})
         assert abs(point.pos('x') - 3.14159) < 0.001
+
+
+class TestIPointInfo:
+    """Test InfoPoint info output contract."""
+
+    def test_info_message_is_list_of_lines(self, ipoint_instance):
+        """Each msg item is a separate line without newline characters."""
+        msg = ipoint_instance.info()['msg']
+
+        assert isinstance(msg, list)
+        assert len(msg) == 4
+        assert all(isinstance(line, str) for line in msg)
+        assert all('\n' not in line and '\r' not in line for line in msg)
+
+    def test_string_representation_joins_info_lines(self, ipoint_instance):
+        """__str__ appends exactly one newline after every info line."""
+        msg = ipoint_instance.info()['msg']
+
+        assert str(ipoint_instance) == ''.join(f'{line}\n' for line in msg)

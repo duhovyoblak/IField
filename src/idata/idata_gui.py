@@ -1024,8 +1024,6 @@ class InfoDataGui(ttk.Frame):
         elif mode=='full' : text = self.data.info(full=True )['msg']
         else: text = [f'Unknown mode {mode}']
 
-        text = text.split('\n')
-
         msgWin = SiqoMessage(name=self.data.name, text=text, wpix=800)
 
         logger.debug(f'{self.name}.onInfo: Show info about {self.data.name}')

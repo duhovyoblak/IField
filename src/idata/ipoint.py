@@ -11,7 +11,7 @@ from   .                      import logger
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER      = '3.3.0'
+_VER      = '3.3.2'
 
 _IND      = '|  '                      # Info indentation
 _F_SCHEMA = 1                          # Format for ipType
@@ -571,10 +571,10 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     def __str__(self) -> str:
-        """Returns string representation of this InfoPoint object instance.
+        """Return all info message lines joined with a newline after each line.
         """
 
-        return self.info()['msg']
+        return ''.join(f'{msg}\n' for msg in self.info()['msg'])
 
     #--------------------------------------------------------------------------
     def _format(self, val) -> str:
@@ -765,13 +765,10 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     def info(self, indent=0, full=False) -> dict:
-        """Creates info about this InfoPoint.
-           indent : is number of indents for the info message, each indent is defined as 4 spaces.
-           full   : if True, creates full info message with all details, if False, creates short info message.
-           Returns dict with keys 'res', 'dat' and 'msg' where
-             'res' is 'OK' if info was created successfully, otherwise 'ERROR',
-             'dat' is dict with info data and
-             'msg' is string with info message.
+        """Create information about this InfoPoint.
+
+             Return a dictionary with 'res', 'dat', and 'msg' keys. 'msg' is a list
+             of individual message lines without trailing newline characters.
 
              This method is vulnerable to wrong input data, e.g. if indent is negative,
              it will create info message with negative number of indents without warning.
@@ -779,7 +776,7 @@ class InfoPoint:
         """
 
         dat = {}
-        msg = ''
+        msg = []
 
         #----------------------------------------------------------------------
         # info o cele strukture
@@ -788,10 +785,10 @@ class InfoPoint:
         dat['pos'   ] = self._posStr()
         dat['vals'  ] = self._valsStr()
 
-        if indent == 0: msg = f"{indent*_IND}{60*'='}\n"
+        if indent == 0: msg.append(f"{indent*_IND}{60*'='}")
 
         for key, val in dat.items():
-            msg += f"{indent*_IND}{key:<15}: {val}\n"
+            msg.append(f"{indent*_IND}{key:<15}: {val}")
 
         return {'res':'OK', 'dat':dat, 'msg':msg}
 

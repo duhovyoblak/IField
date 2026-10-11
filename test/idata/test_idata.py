@@ -90,6 +90,31 @@ class TestInfoDataInfo:
             # May fail if dependent methods not fully implemented
             pass
 
+    def test_info_message_has_no_embedded_newlines(self, idata_instance):
+        """InfoData msg contains separate lines without newline characters."""
+        msg = idata_instance.info()['msg']
+
+        assert isinstance(msg, list)
+        assert msg
+        assert all(isinstance(line, str) for line in msg)
+        assert all('\n' not in line and '\r' not in line for line in msg)
+
+    def test_full_info_formats_point_details_as_lines(self, idata_instance):
+        """Full info includes points without embedding their newlines in msg items."""
+        assert idata_instance.init(cnts=(1,)) == 1
+
+        msg = idata_instance.info(full=True)['msg']
+
+        assert any('+' * 60 in line for line in msg)
+        assert any('type           :' in line for line in msg)
+        assert all('\n' not in line and '\r' not in line for line in msg)
+
+    def test_string_representation_joins_info_lines(self, idata_instance):
+        """__str__ appends exactly one newline after every info line."""
+        msg = idata_instance.info()['msg']
+
+        assert str(idata_instance) == ''.join(f'{line}\n' for line in msg)
+
 
 class TestInfoDataReset:
     """Test InfoData reset functionality."""

@@ -13,7 +13,7 @@ from   idata.ipoint           import InfoPoint
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER            = '1.1.2'
+_VER            = '1.1.4'
 _WIN            = '800x540'
 _DPI            = 100
 
@@ -303,7 +303,8 @@ class InfoPointValsGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # List of value's keys and values
         #----------------------------------------------------------------------
-        lblVal = ttk.Label(frmVals, text=f"Point Values for {info['msg']}:")
+        info_msg = '\n'.join(info['msg'])
+        lblVal = ttk.Label(frmVals, text=f"Point Values for {info_msg}:")
         lblVal.grid(column=0, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         lblVal = ttk.Label(frmVals, text="Key:")

@@ -9,7 +9,7 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.5'
+_VER    = '1.1.7'
 _IND    = '|  '                        # Info indentation
 
 _IPTYPE_MARKOV = 'ipMarkovGen'
@@ -93,26 +93,24 @@ class IMarkov(InfoData):
 
     #--------------------------------------------------------------------------
     def __str__(self):
-        """Returns string representation of the IMarkov object.
+        """Return all info message lines joined with a newline after each line.
         """
-        toRet = ''
-
-        for msg in self.info(struct=self._INFO_STRUCT, histogram=self._INFO_HISTOGRAM)['msg']:
-            toRet += msg
-
-        return toRet
+        return ''.join(f'{msg}\n' for msg in self.info()['msg'])
 
     #--------------------------------------------------------------------------
     def info(self, indent=0, full=False) -> dict:
-        """Returns information about the Markov analyser as a dictionary.
-           If struct is True, returns structural information about the Markov analyser.
-           If histogram is True, returns histogram information about the Markov analyser.
+        """Create information about this Markov analyser.
+
+           If `full` is True, include information about all points and nested
+           Markov analysers. Return a dictionary with 'res', 'dat', and 'msg'
+           keys; 'msg' is a list of individual message lines without trailing
+           newline characters.
         """
 
         logger.debug(f"{self.name}.info: full={full}")
         dat = {}
         msg = []
-        if indent == 0: msg = [f"{indent*_IND}{60*'='}\n"]
+        if indent == 0: msg = [f"{indent*_IND}{60*'='}"]
 
 
         struct    = self._INFO_STRUCT
@@ -137,16 +135,16 @@ class IMarkov(InfoData):
             dat['actVals'       ] = self.actVals
 
             #------------------------------------------------------------------
-            # Konverzia do msg listu
+            # Add each structural field as a separate message line.
             #------------------------------------------------------------------
             for key, val in dat.items():
-                msg.append(f"{indent*_IND}{key:<15}: {val}\n")
+                msg.append(f"{indent*_IND}{key:<15}: {val}")
 
             #------------------------------------------------------------------
             # Active Points
             #------------------------------------------------------------------
-            msg.append(f"{indent*_IND}\n")
-            msg.append(f"{indent*_IND}Active Points\n")
+            msg.append(f"{indent*_IND}")
+            msg.append(f"{indent*_IND}Active Points")
 
             for actPt in self.actPoints():
 
@@ -154,16 +152,16 @@ class IMarkov(InfoData):
                 valStr = actPt._valsStr()
 
                 dat[f'actPoint[{posStr}]'] = valStr
-                msg.append(f"{indent*_IND}actPoint {posStr}: {valStr}\n")
+                msg.append(f"{indent*_IND}actPoint {posStr}: {valStr}")
 
-            msg.append(f"{indent*_IND}\n")
+            msg.append(f"{indent*_IND}")
 
         #----------------------------------------------------------------------
-        # Ak dat, pridam info o vsetkych InfoPoints a ich Markov objektoch
+        # Include point and nested Markov details in full reports.
         #----------------------------------------------------------------------
         if histogram:
 
-            msg.append(f"{indent*_IND}{60*'-'}\n")
+            msg.append(f"{indent*_IND}{60*'-'}")
 
             for point in self.points:
 
@@ -171,7 +169,7 @@ class IMarkov(InfoData):
                 # Prazdny riadok pred zmenou 1. urovne
                 #--------------------------------------------------------------
                 if indent == 0:
-                    msg.append("|\n")
+                    msg.append("|")
 
                 #--------------------------------------------------------------
                 # Riadok s informaciami o bode
@@ -180,7 +178,7 @@ class IMarkov(InfoData):
                 valStr = point._valsStr()
 
                 dat[f'point[{posStr}]'] = valStr
-                msg.append(f"{indent*_IND}point {posStr}: {valStr}\n")
+                msg.append(f"{indent*_IND}point {posStr}: {valStr}")
 
                 #--------------------------------------------------------------
                 # Info o vnorenom Markov objekte, ak existuje
@@ -189,7 +187,7 @@ class IMarkov(InfoData):
 
                 if mrk is not None and isinstance(mrk, IMarkov):
 
-                    res = mrk.info(indent=indent+1, struct=False, histogram=True)
+                    res = mrk.info(indent=indent+1, full=True)
 
                     dat[f'point[{posStr}].mrk'] = res['dat']
                     msg.extend(res['msg'])

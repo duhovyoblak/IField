@@ -199,7 +199,7 @@ class TestIMarkovInfo:
     def test_info_structure(self, imarkov_instance):
         """Test info() method returns valid structure."""
         imarkov_instance.observe(1)
-        info = imarkov_instance.info(struct=True, histogram=False)
+        info = imarkov_instance.info(full=False)
 
         assert info["res"] == "OK"
         assert "dat" in info
@@ -207,6 +207,8 @@ class TestIMarkovInfo:
         assert "dim" in info["dat"]
         assert "totObs" in info["dat"]
         assert "eqProb" in info["dat"]
+        assert all(isinstance(line, str) for line in info["msg"])
+        assert all('\n' not in line and '\r' not in line for line in info["msg"])
 
     def test_str_representation(self, imarkov_instance):
         """Test string representation."""
@@ -216,6 +218,22 @@ class TestIMarkovInfo:
 
         assert isinstance(str_repr, str)
         assert len(str_repr) > 0
+        assert str_repr == ''.join(f'{line}\n' for line in imarkov_instance.info()['msg'])
+
+    def test_full_info_includes_nested_markov_lines(self):
+        """Full info includes nested Markov data as newline-free message lines."""
+        from idata.imarkov import IMarkov
+
+        markov = IMarkov(name="test_nested_info", dim=2)
+        markov.observe(1)
+        markov.observe(2)
+
+        info = markov.info(full=True)
+        nested_keys = [key for key in info['dat'] if key.endswith('.mrk')]
+
+        assert nested_keys
+        assert all('\n' not in line and '\r' not in line for line in info['msg'])
+        assert str(markov) == ''.join(f'{line}\n' for line in markov.info()['msg'])
 
     def test_act_address(self):
         """Test actAddress() method."""
