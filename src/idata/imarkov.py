@@ -37,7 +37,7 @@ class IMarkov(InfoData):
     # Static variables & methods
     #--------------------------------------------------------------------------
     _INFO_STRUCT    = True
-    _INFO_HISTOGRAM = True
+    _INFO_HISTOGRAM = False
 
     #==========================================================================
     # Constructor & utilities
@@ -103,16 +103,20 @@ class IMarkov(InfoData):
         return toRet
 
     #--------------------------------------------------------------------------
-    def info(self, indent=0, struct=_INFO_STRUCT, histogram=_INFO_HISTOGRAM) -> dict:
+    def info(self, indent=0, full=False) -> dict:
         """Returns information about the Markov analyser as a dictionary.
            If struct is True, returns structural information about the Markov analyser.
            If histogram is True, returns histogram information about the Markov analyser.
         """
 
-        logger.debug(f"{self.name}.info: struct={struct}, histogram={histogram}")
+        logger.debug(f"{self.name}.info: full={full}")
         dat = {}
         msg = []
         if indent == 0: msg = [f"{indent*_IND}{60*'='}\n"]
+
+
+        struct    = self._INFO_STRUCT
+        histogram = True if full else False
 
         #----------------------------------------------------------------------
         # Recompute probabilities and gains if needed
