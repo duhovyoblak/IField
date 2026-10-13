@@ -9,7 +9,7 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.0'
+_VER    = '1.1.1'
 
 _CNT   = 1200                             # Default number of points
 _AXES  = {'x': 'Os X', 'y': 'Os Y'}       # Default axes
@@ -52,7 +52,7 @@ class ICurve(InfoData):
         self.init( cnts=(cnt,) )
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.constructor: done")
+        logger.info(f"{self.param['name']['value']}.constructor: done")
 
     #--------------------------------------------------------------------------
     # Dynamics methods for ICurve
@@ -85,7 +85,7 @@ class ICurve(InfoData):
         Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.name}.deltas: {outData.name}[{outKey}] = <Deltas>({inKey}) with params {params}")
+        logger.info(f"{self.param['name']['value']}.deltas: {outData.param['name']['value']}[{outKey}] = <Deltas>({inKey}) with params {params}")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -117,7 +117,7 @@ class ICurve(InfoData):
             pts += 1
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
+        logger.info(f"{self.param['name']['value']}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
 
     #==========================================================================
     # Internal tools

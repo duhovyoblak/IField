@@ -14,7 +14,7 @@ from   .ipoint                import InfoPoint
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '3.4.6'
+_VER    = '3.5.0'
 _IND    = '|  '       # Info indentation
 _UPP    = 10          # distance units per period
 
@@ -53,14 +53,14 @@ def noEmptyData(function):
         # Before decorated function
         #----------------------------------------------------------------------
         self = args[0]
-        logger.debug(f"{self.name}.noEmptyData: {function.__name__}")
+        logger.debug(f"{self.param['name']['value']}.noEmptyData: {function.__name__}")
         resp = None
 
         #----------------------------------------------------------------------
         # Kontrola existencie bodov v InfoData
         #----------------------------------------------------------------------
         if self.count() > 0: resp = function(*args, **kwargs)
-        else               : logger.warning(f"{self.name}.noEmptyData: Data is empty, function {function.__name__} denied")
+        else               : logger.warning(f"{self.param['name']['value']}.noEmptyData: Data is empty, function {function.__name__} denied")
 
         #----------------------------------------------------------------------
         # After decorated function
@@ -175,26 +175,31 @@ class InfoData:
             toRet = InfoData(name=name)
 
         #----------------------------------------------------------------------
-        logger.info(f"InfoData.new: Created new {className} '{toRet.name}' with ipType='{toRet.ipType}'")
+        logger.info(f"InfoData.new: Created new {className} '{toRet.param['name']['value']}' with ipType='{toRet.param['ipType']['value']}'")
         return toRet
 
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
     def __init__(self, name, ipType=_IPTYPE_REAL1D):
-        """Calls constructor of InfoData of respective name.
-           Constructor initializes all public and private data structures of InfoData.
-           Constructor does not initialize points in InfoData nor set ipType,
-           it is expected that they will be added later.
+        """Initialize an InfoData instance and its initial InfoPoint type.
+
+        The point structure remains empty until it is initialized separately.
         """
 
         logger.debug(f"InfoData.constructor: {name}")
 
         #----------------------------------------------------------------------
+        # Parametre triedy
+        #----------------------------------------------------------------------
+        self.param = {}  # Dictionary to store class parameters
+
+        self.param['name'  ] = {'value': name, 'type': 'str'}                                     # Name of the InfoData
+        self.param['ipType'] = {'value': None, 'type': 'ComboBox', 'options': self.iDataTypes()}  # Type of the InfoPoint in this InfoData
+
+        #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
-        self.name         = name        # Name of the InfoData
-        self.ipType       = None        # Type of the InfoPoint in this InfoData
         self.points       = [InfoPoint] # List of InfoPoints
         self.gui          = None        # InfoDataGui instance for this InfoData
 
@@ -222,10 +227,10 @@ class InfoData:
         #----------------------------------------------------------------------
         # Zapis do zoznamu instancii InfoData Inicializacia
         #----------------------------------------------------------------------
-        InfoData.datas[self.name] = self
+        InfoData.datas[self.param['name']['value']] = self
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.constructor: done")
+        logger.info(f"{self.param['name']['value']}.constructor: done")
 
     #--------------------------------------------------------------------------
     def __str__(self):
@@ -249,7 +254,7 @@ class InfoData:
         # Kontrola existencie vybranej 2D matice
         #----------------------------------------------------------------------
         if mtrx is None:
-            logger.error(f"{self.name}.__array__: actData is None")
+            logger.error(f"{self.param['name']['value']}.__array__: actData is None")
             return None
 
         #----------------------------------------------------------------------
@@ -262,26 +267,26 @@ class InfoData:
         """Set ipType of this InfoData and reset all data.
         - If not force, ipType is set only if it is different from the current one,
            otherwise warning is logged and ipType is not changed nor points are destroyed.
-        - If force or ipType is different than actual self.ipType, set self.ipType to ipType
+        - If force or ipType is different than actual self.param['ipType']['value'], set self.param['ipType']['value'] to ipType
            and set structures _cnts, _origs, _rects and _diffs to empty dict {}.
         - Destroy all points in this InfoData.
         - If self.gui is not None, call self.gui.resetDisplay() to reset display options to default values based on new ipType.
         """
 
-        logger.debug(f"{self.name}.setIpType: ipType='{ipType}', force={force}")
+        logger.debug(f"{self.param['name']['value']}.setIpType: ipType='{ipType}', force={force}")
 
         #----------------------------------------------------------------------
         # Kontrola zmeny ipType
         #----------------------------------------------------------------------
-        if (self.ipType == ipType) and (not force):
-            logger.warning(f"{self.name}.setIpType: ipType was not changed, no need to reset")
+        if (self.param['ipType']['value'] == ipType) and (not force):
+            logger.warning(f"{self.param['name']['value']}.setIpType: ipType was not changed, no need to reset")
             return
 
         #----------------------------------------------------------------------
         # Clear all InfoData's data and reset internal properties
         #----------------------------------------------------------------------
         self.points.clear()        # List of rows of lists of InfoPoints
-        self.ipType     = ipType
+        self.param['ipType']['value']     = ipType
 
         self.actVal     = None     # Key of the InfoPoint's current dat value
         self.actSubIdxs = {}       # Current active subdata defined as dict of freezed axesKeys with values
@@ -300,7 +305,7 @@ class InfoData:
             self.gui.resetDisplay()
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.setIpType: ipType was set to '{ipType}' and InfoData was reset")
+        logger.info(f"{self.param['name']['value']}.setIpType: ipType was set to '{ipType}' and InfoData was reset")
 
     #--------------------------------------------------------------------------
     def info(self, indent=0, full=False) -> dict:
@@ -318,8 +323,8 @@ class InfoData:
         #----------------------------------------------------------------------
         # Build the summary lines for the full data structure.
         #----------------------------------------------------------------------
-        dat['name'          ] = self.name
-        dat['ipType'        ] = self.ipType
+        dat['name'          ] = self.param['name']['value']
+        dat['ipType'        ] = self.param['ipType']['value']
         dat['schema_axes'   ] = self.getSchemaAxes()
         dat['schema_vals'   ] = self.getSchemaVals()
         dat['cnt of points' ] = self.count()
@@ -381,11 +386,11 @@ class InfoData:
         # Kontrola, ci sa pocet bodov zhoduje s dlzkou zoznamu points
         #----------------------------------------------------------------------
         if check and (toRet != len(self.points)):
-            logger.warning(f"{self.name}.count: Count of points {toRet} is not equal to len(points) {len(self.points)}, initialisation needed")
+            logger.warning(f"{self.param['name']['value']}.count: Count of points {toRet} is not equal to len(points) {len(self.points)}, initialisation needed")
             self.init()
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}.count: Count of points is {toRet} with check={check}")
+        logger.debug(f"{self.param['name']['value']}.count: Count of points is {toRet} with check={check}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -393,16 +398,14 @@ class InfoData:
         """Creates full copy of this InfoData with new name.
         """
 
-        logger.debug(f"{self.name}.copy: to {name}")
+        logger.debug(f"{self.param['name']['value']}.copy: to {name}")
 
         #----------------------------------------------------------------------
         # Create new InfoData with the same dimensions
         #----------------------------------------------------------------------
-        toRet = InfoData(name, self.ipType)
+        toRet = InfoData(name, self.param['ipType']['value'])
 
         toRet.points     = []                  # List of InfoPoints
-        toRet.ipType     = self.ipType         # Type of the InfoPoint in this InfoData
-
         toRet.actVal     = self.actVal         # Key of the InfoPoint's dat value
         toRet.actSubIdxs = self.actSubIdxs.copy()  # Current active subdata defined as dict of freezed axesKeys with values
         toRet.actList    = []                  # Current active subdata/subvector
@@ -453,13 +456,13 @@ class InfoData:
            Returns count of created InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.name}.init: {cnts}, {origs}, {rects}")
+        logger.info(f"{self.param['name']['value']}.init: {cnts}, {origs}, {rects}")
 
         #----------------------------------------------------------------------
         # Kontrola definicie ipType
         #----------------------------------------------------------------------
-        if self.ipType is None:
-            logger.error(f"{self.name}.init: InfoPoint type is not defined, cannot initialise InfoData")
+        if self.param['ipType']['value'] is None:
+            logger.error(f"{self.param['name']['value']}.init: InfoPoint type is not defined, cannot initialise InfoData")
             return None
 
         #----------------------------------------------------------------------
@@ -467,10 +470,10 @@ class InfoData:
         #----------------------------------------------------------------------
         if isinstance(cnts, tuple):
 
-            schAxes = InfoPoint.getSchemaAxes(self.ipType)
+            schAxes = InfoPoint.getSchemaAxes(self.param['ipType']['value'])
 
             if len(cnts) != len(schAxes):
-                logger.error(f"{self.name}.init: tuple cnts has {len(cnts)} elements, expected {len(schAxes)} for InfoPoint type '{self.ipType}'")
+                logger.error(f"{self.param['name']['value']}.init: tuple cnts has {len(cnts)} elements, expected {len(schAxes)} for InfoPoint type '{self.param['ipType']['value']}'")
                 return None
 
             cnts = {key: cnt for key, cnt in zip(schAxes.keys(), cnts)}
@@ -480,10 +483,10 @@ class InfoData:
         #----------------------------------------------------------------------
         if isinstance(origs, tuple):
 
-            schAxes = InfoPoint.getSchemaAxes(self.ipType)
+            schAxes = InfoPoint.getSchemaAxes(self.param['ipType']['value'])
 
             if len(origs) != len(schAxes):
-                logger.error(f"{self.name}.init: tuple origs has {len(origs)} elements, expected {len(schAxes)} for InfoPoint type '{self.ipType}'")
+                logger.error(f"{self.param['name']['value']}.init: tuple origs has {len(origs)} elements, expected {len(schAxes)} for InfoPoint type '{self.param['ipType']['value']}'")
                 return None
 
             origs = {key: orig for key, orig in zip(schAxes.keys(), origs)}
@@ -493,10 +496,10 @@ class InfoData:
         #----------------------------------------------------------------------
         if isinstance(rects, tuple):
 
-            schAxes = InfoPoint.getSchemaAxes(self.ipType)
+            schAxes = InfoPoint.getSchemaAxes(self.param['ipType']['value'])
 
             if len(rects) != len(schAxes):
-                logger.error(f"{self.name}.init: tuple rects has {len(rects)} elements, expected {len(schAxes)} for InfoPoint type '{self.ipType}'")
+                logger.error(f"{self.param['name']['value']}.init: tuple rects has {len(rects)} elements, expected {len(schAxes)} for InfoPoint type '{self.param['ipType']['value']}'")
                 return None
 
             rects = {key: rect for key, rect in zip(schAxes.keys(), rects)}
@@ -504,10 +507,10 @@ class InfoData:
         #----------------------------------------------------------------------
         # Kontrola kompatibility definicie ipType a cnts
         #----------------------------------------------------------------------
-        schAxes = InfoPoint.getSchemaAxes(self.ipType)
+        schAxes = InfoPoint.getSchemaAxes(self.param['ipType']['value'])
 
         if cnts.keys() != schAxes.keys():
-            logger.error(f"{self.name}.init: InfoPoint type '{self.ipType}' axes {list(schAxes.keys())} are not compatible with cnts axes {list(cnts.keys())}, cannot initialise InfoData")
+            logger.error(f"{self.param['name']['value']}.init: InfoPoint type '{self.param['ipType']['value']}' axes {list(schAxes.keys())} are not compatible with cnts axes {list(cnts.keys())}, cannot initialise InfoData")
             return None
 
         #----------------------------------------------------------------------
@@ -527,7 +530,7 @@ class InfoData:
             if key not in self._origs.keys(): self._origs[key] = 0
             if key not in self._rects.keys(): self._rects[key] = max(cnt-1, 0)
 
-        logger.debug(f"{self.name}.init: {self._cnts} points of type '{self.ipType}' on rect {self._rects} from origins {self._origs}")
+        logger.debug(f"{self.param['name']['value']}.init: {self._cnts} points of type '{self.param['ipType']['value']}' on rect {self._rects} from origins {self._origs}")
 
         #----------------------------------------------------------------------
         # Vypocet subProducts
@@ -565,7 +568,7 @@ class InfoData:
             #------------------------------------------------------------------
             # Create new InfoPoint at respective coordinates
             #------------------------------------------------------------------
-            point = InfoPoint(self.ipType, pos=coos)
+            point = InfoPoint(self.param['ipType']['value'], pos=coos)
             self.points.append(point)
 
         #----------------------------------------------------------------------
@@ -575,7 +578,7 @@ class InfoData:
 
         #----------------------------------------------------------------------
         pts = len(self.points)
-        logger.info(f"{self.name}.init: Created {pts} InfoPoints")
+        logger.info(f"{self.param['name']['value']}.init: Created {pts} InfoPoints")
         return pts
 
     #--------------------------------------------------------------------------
@@ -594,20 +597,20 @@ class InfoData:
         8. Returns created InfoPoint if addition was successful, None if not applicable or failed.
         """
 
-        logger.debug(f"{self.name}.initAdd: axeVal={axeVal}")
+        logger.debug(f"{self.param['name']['value']}.initAdd: axeVal={axeVal}")
 
         #----------------------------------------------------------------------
         # Kontrola, ci je ipType definovany
         #----------------------------------------------------------------------
-        if self.ipType is None:
-            logger.error(f"{self.name}.initAdd: InfoPoint type is not defined, cannot add point")
+        if self.param['ipType']['value'] is None:
+            logger.error(f"{self.param['name']['value']}.initAdd: InfoPoint type is not defined, cannot add point")
             return None
 
         #----------------------------------------------------------------------
         # Kontrola, ci je pocet osi presne 1
         #----------------------------------------------------------------------
         if len(self._cnts) != 1:
-            logger.error(f"{self.name}.initAdd: InfoData has {len(self._cnts)} axes, but initAdd requires exactly 1 axe")
+            logger.error(f"{self.param['name']['value']}.initAdd: InfoData has {len(self._cnts)} axes, but initAdd requires exactly 1 axe")
             return None
 
         #----------------------------------------------------------------------
@@ -620,13 +623,13 @@ class InfoData:
         #----------------------------------------------------------------------
         for point in self.points:
             if point.pos(axeKey) == axeVal:
-                logger.error(f"{self.name}.initAdd: axeVal={axeVal} already exists in {axeKey} axe, cannot add duplicate")
+                logger.error(f"{self.param['name']['value']}.initAdd: axeVal={axeVal} already exists in {axeKey} axe, cannot add duplicate")
                 return None
 
         #----------------------------------------------------------------------
         # Create new InfoPoint with the given axe value
         #----------------------------------------------------------------------
-        newPoint = InfoPoint(self.ipType, pos={axeKey: axeVal})
+        newPoint = InfoPoint(self.param['ipType']['value'], pos={axeKey: axeVal})
         newPoint.clear()                 # Clear all values to default
 
         #----------------------------------------------------------------------
@@ -672,7 +675,7 @@ class InfoData:
 
         #----------------------------------------------------------------------
         pts = len(self.points)
-        logger.debug(f"{self.name}.initAdd: '{newPoint._ipType}' with axeVal={axeVal}, total {pts} points in '{axeKey}' axe")
+        logger.debug(f"{self.param['name']['value']}.initAdd: '{newPoint._ipType}' with axeVal={axeVal}, total {pts} points in '{axeKey}' axe")
         return newPoint
 
     #==========================================================================
@@ -683,14 +686,14 @@ class InfoData:
            If defs is provided, set values to these provided in defs dict {valKey: valDef}.
         """
 
-        logger.debug(f"{self.name}.clearPoints: defs={defs}")
+        logger.debug(f"{self.param['name']['value']}.clearPoints: defs={defs}")
         pts = 0
 
         for point in self.points:
             point.clear(vals=defs)
             pts += 1
 
-        logger.warning(f"{self.name}.clearPoints: {pts} InfoPoints was set to defs={defs}")
+        logger.warning(f"{self.param['name']['value']}.clearPoints: {pts} InfoPoints was set to defs={defs}")
 
     #--------------------------------------------------------------------------
     #==========================================================================
@@ -701,8 +704,8 @@ class InfoData:
            Destroys all points in this InfoData.
         """
 
-        InfoPoint.clearSchema(self.ipType)
-        self.setIpType(self.ipType, force=True)
+        InfoPoint.clearSchema(self.param['ipType']['value'])
+        self.setIpType(self.param['ipType']['value'], force=True)
 
     #--------------------------------------------------------------------------
     def equalSchema(self, schema) -> dict:
@@ -710,14 +713,14 @@ class InfoData:
            Returns dict with keys 'exists', 'equalAxes', 'equalVals' and boolean values for respective checks.
         """
 
-        return InfoPoint.equalSchema(self.ipType, schema)
+        return InfoPoint.equalSchema(self.param['ipType']['value'], schema)
 
     #--------------------------------------------------------------------------
     def isInSchema(self, *, axeKeys:list=None, valKeys:list=None) -> bool:
         """Returns True if schema has defined all provided axe keys and val keys in respective lists otherwise returns False
         """
 
-        return InfoPoint.isInSchema(self.ipType, axeKeys=axeKeys, valKeys=valKeys)
+        return InfoPoint.isInSchema(self.param['ipType']['value'], axeKeys=axeKeys, valKeys=valKeys)
 
     #--------------------------------------------------------------------------
     def getSchema(self) -> dict:
@@ -725,7 +728,7 @@ class InfoData:
            If ipType is not defined in the schema yet, first create empty schema for this ipType.
         """
 
-        return InfoPoint.getSchema(self.ipType)
+        return InfoPoint.getSchema(self.param['ipType']['value'])
 
     #--------------------------------------------------------------------------
     def setSchemaXXX(self, schema:dict):
@@ -734,9 +737,9 @@ class InfoData:
         This method has no impact on InfoPoints of other ipTypes.
         """
 
-        logger.info(f"{self.name}.setSchema: schema={schema}")
-        InfoPoint.setSchema(self.ipType, schema)
-        self.setIpType(self.ipType, force=True)
+        logger.info(f"{self.param['name']['value']}.setSchema: schema={schema}")
+        InfoPoint.setSchema(self.param['ipType']['value'], schema)
+        self.setIpType(self.param['ipType']['value'], force=True)
 
     #--------------------------------------------------------------------------
     # Schema axes methods
@@ -746,7 +749,7 @@ class InfoData:
         If ipType is not defined in the schema yet, first create empty schema for this ipType.
         """
 
-        return InfoPoint.getSchemaAxes(self.ipType)
+        return InfoPoint.getSchemaAxes(self.param['ipType']['value'])
 
     #--------------------------------------------------------------------------
     def setSchemaAxe(self, key, name):
@@ -757,8 +760,8 @@ class InfoData:
         - This method has no impact on InfoPoints of other ipTypes.
         """
 
-        InfoPoint.setSchemaAxe(self.ipType, key, name)
-        self.setIpType(self.ipType, force=True)
+        InfoPoint.setSchemaAxe(self.param['ipType']['value'], key, name)
+        self.setIpType(self.param['ipType']['value'], force=True)
 
     #--------------------------------------------------------------------------
     def axeIdxByKey(self, key) -> int|None:
@@ -767,7 +770,7 @@ class InfoData:
            If key is not defined in the schema for this ipType, return None.
         """
 
-        return InfoPoint.axeIdxByKey(self.ipType, key)
+        return InfoPoint.axeIdxByKey(self.param['ipType']['value'], key)
 
     #--------------------------------------------------------------------------
     def axeKeyByIdx(self, idx) -> str|None:
@@ -776,7 +779,7 @@ class InfoData:
            If idx is out of the range of axes for this ipType, return None.
         """
 
-        return InfoPoint.axeKeyByIdx(self.ipType, idx)
+        return InfoPoint.axeKeyByIdx(self.param['ipType']['value'], idx)
 
     #--------------------------------------------------------------------------
     def axeNameByKey(self, key) -> str|None:
@@ -785,7 +788,7 @@ class InfoData:
            If key is not defined in the schema for this ipType, return None.
         """
 
-        return InfoPoint.axeNameByKey(self.ipType, key)
+        return InfoPoint.axeNameByKey(self.param['ipType']['value'], key)
 
      #--------------------------------------------------------------------------
     def axeKeyByName(self, name) -> str|None:
@@ -794,7 +797,7 @@ class InfoData:
            If name is not defined in the schema for this ipType, return None.
         """
 
-        return InfoPoint.axeKeyByName(self.ipType, name)
+        return InfoPoint.axeKeyByName(self.param['ipType']['value'], name)
 
     #--------------------------------------------------------------------------
     def axeCntByKey(self, key) -> int|None:
@@ -812,7 +815,7 @@ class InfoData:
            If ipType is not defined in the schema yet, first create empty schema for this ipType.
         """
 
-        return InfoPoint.getSchemaVals(self.ipType)
+        return InfoPoint.getSchemaVals(self.param['ipType']['value'])
 
     #--------------------------------------------------------------------------
     def setSchemaVal(self, key, name):
@@ -824,7 +827,7 @@ class InfoData:
         - This method has no impact on InfoPoints of other ipTypes.
         """
 
-        InfoPoint.setSchemaVal(self.ipType, key, name)
+        InfoPoint.setSchemaVal(self.param['ipType']['value'], key, name)
 
         if self.gui is not None:
             self.gui.resetDisplay()
@@ -836,7 +839,7 @@ class InfoData:
            If key is not defined in the schema for this ipType, return None.
         """
 
-        return InfoPoint.valIdxByKey(self.ipType, key)
+        return InfoPoint.valIdxByKey(self.param['ipType']['value'], key)
 
     #--------------------------------------------------------------------------
     def valKeyByIdx(self, idx) -> str|None:
@@ -845,7 +848,7 @@ class InfoData:
            If idx is not in the range, return None.
         """
 
-        return InfoPoint.valKeyByIdx(self.ipType, idx)
+        return InfoPoint.valKeyByIdx(self.param['ipType']['value'], idx)
 
     #--------------------------------------------------------------------------
     def valNameByKey(self, key) -> str|None:
@@ -854,7 +857,7 @@ class InfoData:
            If key is not defined in the schema for this ipType, return None.
         """
 
-        return InfoPoint.valNameByKey(self.ipType, key)
+        return InfoPoint.valNameByKey(self.param['ipType']['value'], key)
 
     #--------------------------------------------------------------------------
     def valKeyByName(self, name) -> str|None:
@@ -863,7 +866,7 @@ class InfoData:
            If name is not defined in the schema for this ipType, return None.
         """
 
-        return InfoPoint.valKeyByName(self.ipType, name)
+        return InfoPoint.valKeyByName(self.param['ipType']['value'], name)
 
     #==========================================================================
     # Method's for dynamic methods
@@ -951,7 +954,7 @@ class InfoData:
            Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.warning(f"{self.name}.applyDataMethod: methodKey='{methodKey}', inKey='{inKey}', outKey='{outKey}', params={params}, outData='{outData.name}'")
+        logger.warning(f"{self.param['name']['value']}.applyDataMethod: methodKey='{methodKey}', inKey='{inKey}', outKey='{outKey}', params={params}, outData='{outData.param['name']['value']}'")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -960,7 +963,7 @@ class InfoData:
         methods = self.mapSetMethods()
 
         if methodKey not in methods.keys():
-            logger.error(f"{self.name}.applyDataMethod: '{methodKey}' is not in defined functions, command denied")
+            logger.error(f"{self.param['name']['value']}.applyDataMethod: '{methodKey}' is not in defined functions, command denied")
             return None
 
         else:
@@ -972,7 +975,7 @@ class InfoData:
         if 'pointMethod' in method.keys() and method['pointMethod'] is not None:
 
             pointMethod = method['pointMethod']
-            logger.debug(f"{self.name}.applyDataMethod: {pointMethod.__name__}({params}) for value key='{outKey}' in outData='{outData.name}'")
+            logger.debug(f"{self.param['name']['value']}.applyDataMethod: {pointMethod.__name__}({params}) for value key='{outKey}' in outData='{outData.param['name']['value']}'")
 
             pts = self._applyPointMethod(pointMethod=pointMethod, inKey=inKey, outKey=outKey, params=params)
 
@@ -982,7 +985,7 @@ class InfoData:
         elif 'dataMethod' in method.keys() and method['dataMethod'] is not None:
 
             dataMethod = method['dataMethod']
-            logger.debug(f"{self.name}.applyDataMethod: {dataMethod.__name__}({params}) for value key='{outKey}' in outData='{outData.name}'")
+            logger.debug(f"{self.param['name']['value']}.applyDataMethod: {dataMethod.__name__}({params}) for value key='{outKey}' in outData='{outData.param['name']['value']}'")
 
             pts = self._applyDataMethod(dataMethod=dataMethod, inKey=inKey, outKey=outKey, params=params, outData=outData)   # self uz bolo predane pri priradeni do premennej dataMethod
 
@@ -990,11 +993,11 @@ class InfoData:
         # Nie je definovana ziadna metoda
         #----------------------------------------------------------------------
         else:
-            logger.error(f"{self.name}.applyDataMethod: '{methodKey}' has neither pointMethod nor dataMethod defined")
+            logger.error(f"{self.param['name']['value']}.applyDataMethod: '{methodKey}' has neither pointMethod nor dataMethod defined")
             return None
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.applyDataMethod: {pts} InfoPoints was updated for '{outKey}'<-{methodKey}({params})")
+        logger.info(f"{self.param['name']['value']}.applyDataMethod: {pts} InfoPoints was updated for '{outKey}'<-{methodKey}({params})")
         return pts
 
     #--------------------------------------------------------------------------
@@ -1011,7 +1014,7 @@ class InfoData:
             Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.name}._applyPointMethod: {pointMethod.__name__}({inKey}, {params}) for value key='{outKey}'")
+        logger.info(f"{self.param['name']['value']}._applyPointMethod: {pointMethod.__name__}({inKey}, {params}) for value key='{outKey}'")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -1030,7 +1033,7 @@ class InfoData:
             pts += 1
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}._applyPointMethod: {pts} InfoPoints was updated for '{outKey}'<-{pointMethod.__name__}({inKey}, {params})")
+        logger.info(f"{self.param['name']['value']}._applyPointMethod: {pts} InfoPoints was updated for '{outKey}'<-{pointMethod.__name__}({inKey}, {params})")
         return pts
 
     #--------------------------------------------------------------------------
@@ -1047,7 +1050,7 @@ class InfoData:
             Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.name}._applyDataMethod: {dataMethod.__name__}({inKey}, {params}) for value key='{outKey}'")
+        logger.info(f"{self.param['name']['value']}._applyDataMethod: {dataMethod.__name__}({inKey}, {params}) for value key='{outKey}'")
 
         #----------------------------------------------------------------------
         # Vykonam dataMethod s outData, outKey a params
@@ -1055,7 +1058,7 @@ class InfoData:
         pts = dataMethod(inKey=inKey, outKey=outKey, params=params, outData=outData)   # self uz bolo predane pri priradeni do premennej dataMethod
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}._applyDataMethod: {pts} InfoPoints was updated for '{outKey}'<-{dataMethod.__name__}({inKey}, {params})")
+        logger.info(f"{self.param['name']['value']}._applyDataMethod: {pts} InfoPoints was updated for '{outKey}'<-{dataMethod.__name__}({inKey}, {params})")
         return pts
 
     #==========================================================================
@@ -1064,7 +1067,7 @@ class InfoData:
     def _subPeriods(self, axeKey:str) -> tuple:
         """Returns period,serie & groups for respective axe"""
 
-        logger.debug(f"{self.name}._subPeriods: axeKey={axeKey}")
+        logger.debug(f"{self.param['name']['value']}._subPeriods: axeKey={axeKey}")
 
         subs   = self._subProducts
         axePos = self.axeIdxByKey(axeKey)
@@ -1074,20 +1077,20 @@ class InfoData:
         # Pocet Points v jednej grupe
         #----------------------------------------------------------------------
         serie  = subs[axePos  ]                            # Pocet Points v jednej grupe
-        logger.debug(f"{self.name}._subPeriods: serie={serie} for axeKey={axeKey}")
+        logger.debug(f"{self.param['name']['value']}._subPeriods: serie={serie} for axeKey={axeKey}")
 
         #----------------------------------------------------------------------
         # Perioda v akej sa opakuju grupy
         #----------------------------------------------------------------------
         if axePos+1>=len(subs): period = count
         else                  : period = subs[axePos+1]    # Perioda v akej sa opakuju grupy
-        logger.debug(f"{self.name}._subPeriods: period={period} for axeKey={axeKey}")
+        logger.debug(f"{self.param['name']['value']}._subPeriods: period={period} for axeKey={axeKey}")
 
         #----------------------------------------------------------------------
         # Pocet grup s indexom axeIdx v osi axeKey
         #----------------------------------------------------------------------
         groups = self.count() // period                    # Pocet grup s indexom axeIdx v osi axeKey
-        logger.debug(f"{self.name}._subPeriods: groups={groups} for axeKey={axeKey}")
+        logger.debug(f"{self.param['name']['value']}._subPeriods: groups={groups} for axeKey={axeKey}")
 
         return period, serie, groups
 
@@ -1097,7 +1100,7 @@ class InfoData:
            in the axe with respective key axeKey.
         """
 
-        logger.debug(f"{self.name}._possByAxeIdx: axeKey={axeKey}, axeIdx={axeIdx}")
+        logger.debug(f"{self.param['name']['value']}._possByAxeIdx: axeKey={axeKey}, axeIdx={axeIdx}")
 
         #----------------------------------------------------------------------
         # Zistim hodnoty serie, period a groups pre danu os axeKey
@@ -1123,7 +1126,7 @@ class InfoData:
                 toRet.add(pos)
 
         #-----------------------------------------------------------------------
-        logger.debug(f"{self.name}._possByAxeIdx: Found {len(toRet)} positions for axeKey={axeKey}, axeIdx={axeIdx}")
+        logger.debug(f"{self.param['name']['value']}._possByAxeIdx: Found {len(toRet)} positions for axeKey={axeKey}, axeIdx={axeIdx}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -1131,13 +1134,13 @@ class InfoData:
         """Returns value of the axe with respective index axeIdx in lambda units
         """
 
-        logger.debug(f"{self.name}._axeValByIdx: axeKey={axeKey}, axeIdx={axeIdx}")
+        logger.debug(f"{self.param['name']['value']}._axeValByIdx: axeKey={axeKey}, axeIdx={axeIdx}")
 
         #----------------------------------------------------------------------
         # Kontrola existencie osi
         #----------------------------------------------------------------------
         if axeKey not in self._cnts.keys():
-            logger.error(f"{self.name}._axeValByIdx: Axe '{axeKey}' is not in InfoData axes {list(self._cnts.keys())}")
+            logger.error(f"{self.param['name']['value']}._axeValByIdx: Axe '{axeKey}' is not in InfoData axes {list(self._cnts.keys())}")
             return None
 
         #----------------------------------------------------------------------
@@ -1145,7 +1148,7 @@ class InfoData:
         #----------------------------------------------------------------------
         toRet = self._origs[axeKey] + (axeIdx * self._diffs[axeKey])
 
-        logger.debug(f"{self.name}._axeValByIdx: axeVal={toRet} for axeKey={axeKey} and axeIdx={axeIdx}")
+        logger.debug(f"{self.param['name']['value']}._axeValByIdx: axeVal={toRet} for axeKey={axeKey} and axeIdx={axeIdx}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -1159,7 +1162,7 @@ class InfoData:
         # Kontrola existencie osi
         #----------------------------------------------------------------------
         if axeKey not in self._cnts.keys():
-            logger.error(f"{self.name}._idxByAxeVal: Axe '{axeKey}' is not in InfoData axes {list(self._cnts.keys())}")
+            logger.error(f"{self.param['name']['value']}._idxByAxeVal: Axe '{axeKey}' is not in InfoData axes {list(self._cnts.keys())}")
             return None
 
         #----------------------------------------------------------------------
@@ -1175,7 +1178,7 @@ class InfoData:
             toRet = int(round(idx))
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}._idxByAxeVal: axeKey={axeKey}, axeVal={axeVal} -> idx={toRet}")
+        logger.debug(f"{self.param['name']['value']}._idxByAxeVal: axeKey={axeKey}, axeVal={axeVal} -> idx={toRet}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -1192,7 +1195,7 @@ class InfoData:
         for i, idx in enumerate(idxs):
             pos += idx * subProd[i]
 
-        logger.debug(f"{self.name}._posByIdxs: {idxs} -> pos={pos}")
+        logger.debug(f"{self.param['name']['value']}._posByIdxs: {idxs} -> pos={pos}")
         return pos
 
     #--------------------------------------------------------------------------
@@ -1235,7 +1238,7 @@ class InfoData:
         """
 
         if self._lastPos is None:
-            logger.error(f"{self.name}.lastPosIdxs: No lastPos stored")
+            logger.error(f"{self.param['name']['value']}.lastPosIdxs: No lastPos stored")
             return None
 
         return self._idxsByPos(self._lastPos)
@@ -1250,11 +1253,11 @@ class InfoData:
         self._lastPos = pos
 
         if pos is None:
-            logger.error(f"{self.name}.pointByPos: pos is None")
+            logger.error(f"{self.param['name']['value']}.pointByPos: pos is None")
             return None
 
         if (pos<0) or (pos>=len(self.points)):
-            logger.error(f"{self.name}.pointByPos: pos={pos} is out of range <0,{len(self.points)-1}>")
+            logger.error(f"{self.param['name']['value']}.pointByPos: pos={pos} is out of range <0,{len(self.points)-1}>")
             return None
 
         toRet = self.points[pos]
@@ -1275,7 +1278,7 @@ class InfoData:
            If coord is not compatible with the schema of this InfoData, logs error and returns None. FIX IN THE FUTURE
         """
 
-        logger.debug(f"{self.name}.pointByCoord: coord={coord} and actSubIdxs={self.actSubIdxs}")
+        logger.debug(f"{self.param['name']['value']}.pointByCoord: coord={coord} and actSubIdxs={self.actSubIdxs}")
 
         vals = []  # List of axe values for debugging
         idxs = []  # List of indices for respective axes
@@ -1285,7 +1288,7 @@ class InfoData:
         #----------------------------------------------------------------------
         for axe in self._cnts.keys():
 
-            print(f"{self.name}.pointByCoord: axe={axe}, coord={coord}")
+            print(f"{self.param['name']['value']}.pointByCoord: axe={axe}, coord={coord}")
 
             #------------------------------------------------------------------
             # Ziskanie value pre danu os
@@ -1295,7 +1298,7 @@ class InfoData:
                 # Ak je dodana value pre danu os, pouzijem ju
                 #--------------------------------------------------------------
                 axeVal = coord[axe]
-                logger.debug(f"{self.name}.pointByCoord: Axe '{axe}' found in coord, using value {axeVal}")
+                logger.debug(f"{self.param['name']['value']}.pointByCoord: Axe '{axe}' found in coord, using value {axeVal}")
 
             elif axe in self.actSubIdxs.keys() and self.actSubIdxs[axe]:
                 #--------------------------------------------------------------
@@ -1303,14 +1306,14 @@ class InfoData:
                 #--------------------------------------------------------------
                 axeIdx = self.actSubIdxs[axe]
                 axeVal = self._axeValByIdx(axeKey=axe, axeIdx=axeIdx)
-                logger.warning(f"{self.name}.pointByCoord: Axe '{axe}' not in coord, using value {axeVal} for freezed index {axeIdx} ")
+                logger.warning(f"{self.param['name']['value']}.pointByCoord: Axe '{axe}' not in coord, using value {axeVal} for freezed index {axeIdx} ")
 
             else:
                 #--------------------------------------------------------------
                 # Ak nie je dodana value a ani nie je os zmrazena, pouzijem hodnotu z origu
                 #--------------------------------------------------------------
                 axeVal = self._origs[axe]
-                logger.warning(f"{self.name}.pointByCoord: Axe '{axe}' is not in coord and not freezed, using origin value {axeVal}")
+                logger.warning(f"{self.param['name']['value']}.pointByCoord: Axe '{axe}' is not in coord and not freezed, using origin value {axeVal}")
 
             #------------------------------------------------------------------
             # Z axeVal vypocitam index v osi a vlozim ho do zoznamu idxs
@@ -1324,7 +1327,7 @@ class InfoData:
         pos = self._posByIdxs(idxs)
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}.pointByCoord: coord={coord} -> vals={vals} -> idxs={idxs} -> pos={pos}")
+        logger.debug(f"{self.param['name']['value']}.pointByCoord: coord={coord} -> vals={vals} -> idxs={idxs} -> pos={pos}")
         return self.pointByPos(pos)
 
     #==========================================================================
@@ -1338,7 +1341,7 @@ class InfoData:
         """
 
         oldActSubIdxs = self.actSubIdxs.copy()
-        logger.debug(f"{self.name}._actSubSet: {oldActSubIdxs}->{actSubIdxs}")
+        logger.debug(f"{self.param['name']['value']}._actSubSet: {oldActSubIdxs}->{actSubIdxs}")
 
         #----------------------------------------------------------------------
         # Kontrola zmeny definicie (self.actChanged moze mat hodnotu True z inych dovodov)
@@ -1350,7 +1353,7 @@ class InfoData:
         # Ak nie je subdata zmenena, vratim sa
         #----------------------------------------------------------------------
         if not self.actChanged:
-            logger.debug(f"{self.name}._actSubSet: actSubIdxs definition was not changed, no need to update")
+            logger.debug(f"{self.param['name']['value']}._actSubSet: actSubIdxs definition was not changed, no need to update")
             return
 
         #----------------------------------------------------------------------
@@ -1359,7 +1362,7 @@ class InfoData:
         for axe, axeIdx in actSubIdxs.items():
 
             if axe not in self._cnts.keys():
-                logger.error(f"{self.name}._actSubSet: Axe '{axe}' is not in InfoData axes {list(self._cnts.keys())}, change denied")
+                logger.error(f"{self.param['name']['value']}._actSubSet: Axe '{axe}' is not in InfoData axes {list(self._cnts.keys())}, change denied")
                 return
 
         #----------------------------------------------------------------------
@@ -1369,7 +1372,7 @@ class InfoData:
         self.actList = []
 
         #----------------------------------------------------------------------
-        logger.warning(f"{self.name}._actSubSet: definition was changed {oldActSubIdxs} -> {self.actSubIdxs}")
+        logger.warning(f"{self.param['name']['value']}._actSubSet: definition was changed {oldActSubIdxs} -> {self.actSubIdxs}")
 
     #--------------------------------------------------------------------------
     # Active subdata retrieval
@@ -1380,7 +1383,7 @@ class InfoData:
            If actSubIdxs is NOT provided, whole data became active subdata.
         """
 
-        logger.debug(f"{self.name}.actSubData: actSubIdxs={actSubIdxs}, force={force}")
+        logger.debug(f"{self.param['name']['value']}.actSubData: actSubIdxs={actSubIdxs}, force={force}")
 
         #----------------------------------------------------------------------
         # Nastavenie aktivnej subdata ak bola dodana definicia
@@ -1392,11 +1395,11 @@ class InfoData:
         # Kontrola potreby obnovenia aktivnej subdata pri zmene definicie subdata
         #----------------------------------------------------------------------
         if (not self.actChanged) and (not force):
-            logger.debug(f"{self.name}.actSubData: subData definition was not changed, no need to refresh")
+            logger.debug(f"{self.param['name']['value']}.actSubData: subData definition was not changed, no need to refresh")
             return self.actList
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}.actSubData: Refresh for actSubIdxs={self.actSubIdxs}, force={force}")
+        logger.debug(f"{self.param['name']['value']}.actSubData: Refresh for actSubIdxs={self.actSubIdxs}, force={force}")
 
         #----------------------------------------------------------------------
         # Inicializujem mnozinu pozicii subdata vsetkymi bodmi
@@ -1412,7 +1415,7 @@ class InfoData:
             # Kontrola, ci je daná os freezed
             #------------------------------------------------------------------
             if axeIdx is None:
-                logger.debug(f"{self.name}.actSubData: Axe '{axe}' is not freezed, skipping")
+                logger.debug(f"{self.param['name']['value']}.actSubData: Axe '{axe}' is not freezed, skipping")
                 continue
 
             #------------------------------------------------------------------
@@ -1424,7 +1427,7 @@ class InfoData:
             # Vytvorim prienik poss s touto mnozinou pozicii = odstranim body, ktore nepatria do danej osi
             #------------------------------------------------------------------
             poss = poss.intersection(actPoss)
-            logger.debug(f"{self.name}.actSubData: After axe '{axe}' with idx {axeIdx}, {len(poss)} positions remain in active subdata")
+            logger.debug(f"{self.param['name']['value']}.actSubData: After axe '{axe}' with idx {axeIdx}, {len(poss)} positions remain in active subdata")
 
         #----------------------------------------------------------------------
         # Create vector of InfoPoints for respective positions
@@ -1434,7 +1437,7 @@ class InfoData:
             self.actList.append(self.pointByPos(pos))
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}.actSubData: Found {len(self.actList)} positions in active subdata for actSubIdxs={self.actSubIdxs}")
+        logger.debug(f"{self.param['name']['value']}.actSubData: Found {len(self.actList)} positions in active subdata for actSubIdxs={self.actSubIdxs}")
         return self.actList
 
     #==========================================================================
@@ -1443,7 +1446,7 @@ class InfoData:
     def copyFrom(self, src, *, key=None, tgtSlice=(0,0,0,0), srcFrom=(0,0)) -> 'InfoData':
         "Copy point's values from srcs 2D data into tgts 2D data"
 
-        logger.debug(f"{self.name}.copyFrom: From {src.name} starting at {srcFrom} to nodes {tgtSlice} for key={key}")
+        logger.debug(f"{self.param['name']['value']}.copyFrom: From {src.param['name']['value']} starting at {srcFrom} to nodes {tgtSlice} for key={key}")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -1472,7 +1475,7 @@ class InfoData:
                 #--------------------------------------------------------------
                 tgtPoint = self.pointByIdxs([tgtRow, tgtCol])
                 if tgtPoint is None:
-                    logger.error(f"{self.name}.copyFrom: Target point[{tgtRow},{tgtCol}] does not exists")
+                    logger.error(f"{self.param['name']['value']}.copyFrom: Target point[{tgtRow},{tgtCol}] does not exists")
                     break
 
                 #--------------------------------------------------------------
@@ -1481,7 +1484,7 @@ class InfoData:
                 try:
                     srcPoint = src.pointByIdxs([srcRowFrom+tgtRow-tgtRowFrom, srcColFrom+tgtCol-tgtColFrom])
                 except IndexError:
-                    logger.error(f"{self.name}.copyFrom: Source point[{srcRowFrom+tgtRow-tgtRowFrom}, {srcColFrom+tgtCol-tgtColFrom}] does not exists")
+                    logger.error(f"{self.param['name']['value']}.copyFrom: Source point[{srcRowFrom+tgtRow-tgtRowFrom}, {srcColFrom+tgtCol-tgtColFrom}] does not exists")
                     break
 
                 #--------------------------------------------------------------
@@ -1492,7 +1495,7 @@ class InfoData:
                 pts += 1
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.copyFrom: Copied {pts} points")
+        logger.info(f"{self.param['name']['value']}.copyFrom: Copied {pts} points")
         return self
 
     #--------------------------------------------------------------------------
@@ -1502,14 +1505,14 @@ class InfoData:
            Data moved out of data bounds are lost, new data positions are cleared to default values.
            Returns count of moved points.
         """
-        logger.debug(f"{self.name}.moveByAxe: From {startIdx} by {deltaIdx} for axe key={axeKey}")
+        logger.debug(f"{self.param['name']['value']}.moveByAxe: From {startIdx} by {deltaIdx} for axe key={axeKey}")
         pts = 0
 
         #----------------------------------------------------------------------
         # Kontrola existencie osi
         #----------------------------------------------------------------------
         if axeKey not in self._cnts.keys():
-            logger.error(f"{self.name}.moveByAxe: Axe '{axeKey}' is not in InfoData axes {list(self._cnts.keys())}, change denied")
+            logger.error(f"{self.param['name']['value']}.moveByAxe: Axe '{axeKey}' is not in InfoData axes {list(self._cnts.keys())}, change denied")
             return pts
 
         #----------------------------------------------------------------------
@@ -1572,10 +1575,10 @@ class InfoData:
 
             #------------------------------------------------------------------
             pts += len(poss)
-            logger.debug(f"{self.name}.moveByAxe: {len(poss)}:{axeIdx}<-{srcIdx}")
+            logger.debug(f"{self.param['name']['value']}.moveByAxe: {len(poss)}:{axeIdx}<-{srcIdx}")
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.moveByAxe: From {startIdx} by {deltaIdx} for axe key={axeKey} moved {pts} InfoPoints")
+        logger.info(f"{self.param['name']['value']}.moveByAxe: From {startIdx} by {deltaIdx} for axe key={axeKey} moved {pts} InfoPoints")
         return pts
 
     #==========================================================================
@@ -1590,7 +1593,7 @@ class InfoData:
         Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.debug(f"{self.name}.nullMethod: do nothing for key '{outKey}' with params {params}")
+        logger.debug(f"{self.param['name']['value']}.nullMethod: do nothing for key '{outKey}' with params {params}")
         return 1
 
     #--------------------------------------------------------------------------
@@ -1603,7 +1606,7 @@ class InfoData:
         Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.debug(f"{self.name}.moveData: for key '{outKey}' with params {params}")
+        logger.debug(f"{self.param['name']['value']}.moveData: for key '{outKey}' with params {params}")
         return self.moveByAxe(axeKey=params[inKey], startIdx=params['startIdx'], deltaIdx=params['deltaIdx'])
 
     #--------------------------------------------------------------------------
@@ -1614,7 +1617,7 @@ class InfoData:
            Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.name}.normAbs: ")
+        logger.info(f"{self.param['name']['value']}.normAbs: ")
 
         #----------------------------------------------------------------------
         # Initialisation
@@ -1636,7 +1639,7 @@ class InfoData:
         else: norm = 1
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.normAbs: norm = {norm} for {len(nods)} points")
+        logger.info(f"{self.param['name']['value']}.normAbs: norm = {norm} for {len(nods)} points")
 
     #==========================================================================
     # Persistency methods
@@ -1644,11 +1647,11 @@ class InfoData:
     def toJson(self):
         "Converts node into json structure"
 
-        logger.debug(f'{self.name}.toJson:')
+        logger.debug(f'{self.param["name"]["value"]}.toJson:')
 
         toRet = {}
 
-        logger.debug(f'{self.name}.toJson: Converted')
+        logger.debug(f'{self.param["name"]["value"]}.toJson: Converted')
         return toRet
 
 #==============================================================================

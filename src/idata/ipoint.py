@@ -11,7 +11,7 @@ from   .                      import logger
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER      = '3.3.2'
+_VER      = '3.3.3'
 
 _IND      = '|  '                      # Info indentation
 _F_SCHEMA = 1                          # Format for ipType
@@ -586,7 +586,7 @@ class InfoPoint:
         elif type(val) == float   : toRet = f"{val:#{_F_TOTAL}.{_F_DECIM}f}"
         elif type(val) == complex : toRet = f"({val.real:#{_F_TOTAL}.{_F_DECIM}f} {val.imag:#{_F_TOTAL}.{_F_DECIM}f}j)"
         elif type(val) == str     : toRet = f"{val}"
-        elif self._isInfoData(val): toRet = f"{val.name}"
+        elif self._isInfoData(val): toRet = f"{val.param['name']['value']}"
         else                      : toRet = f"{val}"
 
         return toRet

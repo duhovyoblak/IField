@@ -174,7 +174,7 @@ class InfoDataCreateGui(tk.Toplevel):
         showinfo(title="Create data", message="Dáta boli vytvorené s nulovou dlžkou. Nastavte ich v dialogu Schema DataProperties.")
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.ok: Created InfoData '{self.data.name}' of type '{iDataType}'")
+        logger.info(f"{self.name}.ok: Created InfoData '{self.data.param['name']['value']}' of type '{iDataType}'")
         self.destroy()
 
     #--------------------------------------------------------------------------

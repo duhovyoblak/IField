@@ -2,6 +2,8 @@
 
 Projekt `IField` je Python aplikácia so grafickým používateľským rozhraním (GUI) pre prácu s informačnými poľami a maticami. Používa Tkinter na tvorbu rozhrania a siqolib knižnicu pre logiku a nástroje.
 
+Názov a typ inštancie `InfoData` a jej potomkov sú uložené v `param['name']['value']` a `param['ipType']['value']`.
+
 ## 📋 Popis
 
 IField poskytuje nástroje na:

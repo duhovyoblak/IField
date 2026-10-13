@@ -151,7 +151,7 @@ class InfoDataGui(ttk.Frame):
     def registerData(self, dataObj:InfoData) -> None:
         """Register this InfoDataGui instance in the respective InfoData instance."""
 
-        self.name = f'{dataObj.name} GUI'
+        self.name = f'{dataObj.param["name"]["value"]} GUI'
         self.data = dataObj
 
         dataObj.gui = self
@@ -163,13 +163,13 @@ class InfoDataGui(ttk.Frame):
         If GUI for respective InfoData already exists, logs warning and returns existing GUI.
         """
 
-        logger.info(f'{self.name}.newGui: For InfoData {dataObj.name} of type {dataObj.ipType}')
+        logger.info(f'{self.name}.newGui: For InfoData {dataObj.param["name"]["value"]} of type {dataObj.param["ipType"]["value"]}')
 
         #----------------------------------------------------------------------
         # Kontrola, ci uz existuje GUI pre dany IData objekt
         #----------------------------------------------------------------------
         if dataObj.gui is not None:
-            logger.warning(f'{self.name}.newGui: GUI for InfoData {dataObj.name} already exists')
+            logger.warning(f'{self.name}.newGui: GUI for InfoData {dataObj.param["name"]["value"]} already exists')
             return dataObj.gui
 
         #----------------------------------------------------------------------
@@ -190,7 +190,7 @@ class InfoDataGui(ttk.Frame):
         # Create a new independent window (non-modal) with offset position
         #----------------------------------------------------------------------
         newWindow = tk.Toplevel(self.container)
-        newWindow.title(f"Data: {dataObj.name}")
+        newWindow.title(f"Data: {dataObj.param['name']['value']}")
         newWindow.geometry(f"1300x740+{new_x}+{new_y}")
 
         #----------------------------------------------------------------------
@@ -879,7 +879,7 @@ class InfoDataGui(ttk.Frame):
                 dataObj.gui.container.lift()
                 dataObj.gui.container.focus_force()
             except tk.TclError:
-                logger.warning(f'{self.name}.onDataWindowShow: Window of {dataObj.name} no longer exists')
+                logger.warning(f'{self.name}.onDataWindowShow: Window of {dataObj.param["name"]["value"]} no longer exists')
             return
 
         #----------------------------------------------------------------------
@@ -888,7 +888,7 @@ class InfoDataGui(ttk.Frame):
         self.newGui(dataObj=dataObj)
 
         #----------------------------------------------------------------------
-        logger.debug(f'{self.name}.onDataWindowShow: Nemodale okno otvorene pre {dataObj.name}')
+        logger.debug(f'{self.name}.onDataWindowShow: Nemodale okno otvorene pre {dataObj.param["name"]["value"]}')
 
     #==========================================================================
     # File menu
@@ -914,7 +914,7 @@ class InfoDataGui(ttk.Frame):
             self.updateDisplayBar()
             self.refreshWindowMenu()
 
-            try   : self.container.title(f'Data: {self.data.name}')
+            try   : self.container.title(f'Data: {self.data.param["name"]["value"]}')
             except tk.TclError: pass
 
         logger.debug(f'{self.name}.onDataCreate: InfoDataCreateGui window closed')
@@ -931,7 +931,7 @@ class InfoDataGui(ttk.Frame):
 
         origSchema = self.data.getSchema()
 
-        gui = InfoPointGui(name=f'Schema {self.data.ipType}', container=self, ipType=self.data.ipType)
+        gui = InfoPointGui(name=f'Schema {self.data.param["ipType"]["value"]}', container=self, ipType=self.data.param["ipType"]["value"])
         gui.grab_set()
         self.wait_window(gui)
 
@@ -945,7 +945,7 @@ class InfoDataGui(ttk.Frame):
         #----------------------------------------------------------------------
         if gui.changed:
 
-                self.data.setIpType(self.data.ipType, force=True)
+                self.data.setIpType(self.data.param['ipType']['value'], force=True)
                 self.data.init()
                 self.viewChanged()
 
@@ -961,7 +961,7 @@ class InfoDataGui(ttk.Frame):
 
         logger.info(f'{self.name}.onSchemaData:')
 
-        gui = InfoDataDataGui(name=f'Data {self.data.name}', container=self, data=self.data)
+        gui = InfoDataDataGui(name=f'Data {self.data.param["name"]["value"]}', container=self, data=self.data)
         gui.grab_set()
         self.wait_window(gui)
 
@@ -1024,9 +1024,9 @@ class InfoDataGui(ttk.Frame):
         elif mode=='full' : text = self.data.info(full=True )['msg']
         else: text = [f'Unknown mode {mode}']
 
-        msgWin = SiqoMessage(name=self.data.name, text=text, wpix=800)
+        msgWin = SiqoMessage(name=self.data.param['name']['value'], text=text, wpix=800)
 
-        logger.debug(f'{self.name}.onInfo: Show info about {self.data.name}')
+        logger.debug(f'{self.name}.onInfo: Show info about {self.data.param["name"]["value"]}')
 
     #==========================================================================
     # Method to apply
@@ -1113,7 +1113,7 @@ class InfoDataGui(ttk.Frame):
             #------------------------------------------------------------------
             # Vystup smerovany do noveho IData objektu typu outData a noveho GUI okna
             #------------------------------------------------------------------
-            outName = f"{metDef['outData']}({self.data.name}.{inKey})"
+            outName = f"{metDef['outData']}({self.data.param['name']['value']}.{inKey})"
             outData = self.data.new(name=outName, iDataType=metDef['outData'])
             outGui  = self.new(outData)
 
@@ -1133,9 +1133,9 @@ class InfoDataGui(ttk.Frame):
         if not outData.isInSchema(valKeys=[outKey]):
 
             outData.setSchemaVal(key=outKey, name=metKey)
-            logger.warning(f'{self.name}.onMethodPlay: Value key {outKey} was added into schema of {outData.name}')
+            logger.warning(f'{self.name}.onMethodPlay: Value key {outKey} was added into schema of {outData.param["name"]["value"]}')
 
-        logger.audit(f'{self.name}.onMethodPlay: {outData.name}[{outKey}] = <{metKey}>({inKey}) with params={usrPar} on subset={self.sub2D}')
+        logger.audit(f'{self.name}.onMethodPlay: {outData.param["name"]["value"]}[{outKey}] = <{metKey}>({inKey}) with params={usrPar} on subset={self.sub2D}')
 
         #----------------------------------------------------------------------
         # Vsetko je pripravene: Press button PLAY
@@ -1155,7 +1155,7 @@ class InfoDataGui(ttk.Frame):
             #--------------------------------------------------------------
             # Apply the method and update the chart
             #--------------------------------------------------------------
-            logger.debug(f"{self.name}.methodApply: {outData.name} = {metKey}({inKey}), par={usrPar})")
+            logger.debug(f"{self.name}.methodApply: {outData.param['name']['value']} = {metKey}({inKey}), par={usrPar})")
 
             self.data.applyDataMethod(methodKey=metKey, inKey=inKey, outKey=outKey, params=usrPar, outData=outData)
             outGui.updateDisplayBar()
@@ -1250,7 +1250,7 @@ class InfoDataGui(ttk.Frame):
 
         self.clear()
         self.data = data
-        logger.info(f'{self.name}.applyPointMethod: New data name = {self.data.name}')
+        logger.info(f'{self.name}.applyPointMethod: New data name = {self.data.param["name"]["value"]}')
 
     #--------------------------------------------------------------------------
     def setPoint(self, c):

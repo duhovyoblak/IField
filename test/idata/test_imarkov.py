@@ -9,7 +9,7 @@ class TestIMarkovInit:
 
     def test_imarkov_creation(self, imarkov_instance):
         """Test creating IMarkov instance."""
-        assert imarkov_instance.name == "test_markov"
+        assert imarkov_instance.param['name']['value'] == "test_markov"
         assert imarkov_instance.dim == 1
         assert imarkov_instance.totObs == 0
         assert imarkov_instance.actVals == []

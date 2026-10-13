@@ -9,7 +9,7 @@ from   idata.idata            import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.0'
+_VER    = '1.1.1'
 
 _LAMBDA = 120       # Default points for Lambda axis
 _EPOCH  =  60       # Default points for Epoch axis
@@ -77,7 +77,7 @@ class InfoFieldMatrix(InfoData):
         self.applyDataMethod(methodKey='Comp constant (re/im)', valueKey='s', params={'real':0, 'imag':0})
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.constructor: done")
+        logger.info(f"{self.param['name']['value']}.constructor: done")
 
     #--------------------------------------------------------------------------
     # Method's methods
@@ -100,7 +100,7 @@ class InfoFieldMatrix(InfoData):
     #--------------------------------------------------------------------------
     def rndBool(self, valueKey:str, params:dict):
         """Clear all model and set state as random Boolean values."""
-        logger.debug(f"{self.name}.rndBool: for key '{valueKey}' with params {params}")
+        logger.debug(f"{self.param['name']['value']}.rndBool: for key '{valueKey}' with params {params}")
         pts = 0
 
         self.clearPoints(defs={valueKey: False})
@@ -108,12 +108,12 @@ class InfoFieldMatrix(InfoData):
         pts = self.applyDataMethod(methodKey='Random bit', valueKey=valueKey, params=params)
         self.actSubData()
 
-        logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
+        logger.info(f"{self.param['name']['value']}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
 
     #--------------------------------------------------------------------------
     def rndComplex(self, valueKey:str, params:dict):
         """Clear all model and set state as random complex values with respective number of discrete phases."""
-        logger.debug(f"{self.name}.rndComplex: for key '{valueKey}' with params {params}")
+        logger.debug(f"{self.param['name']['value']}.rndComplex: for key '{valueKey}' with params {params}")
         pts = 0
 
         self.clearPoints(defs={valueKey: False})
@@ -122,13 +122,13 @@ class InfoFieldMatrix(InfoData):
         pts = self.applyDataMethod(methodKey='Comp discrete phase', valueKey=valueKey, params=params)
         self.actSubData()
 
-        logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
+        logger.info(f"{self.param['name']['value']}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{valueKey}'")
 
     #--------------------------------------------------------------------------
     def epochStep(self, valueKey:str, params:dict):
         """Compute next epoch state."""
 
-        logger.info(f"{self.name}.epochStep: for key '{valueKey}' with params {params}")
+        logger.info(f"{self.param['name']['value']}.epochStep: for key '{valueKey}' with params {params}")
         pts = 0
 
         self.moveByAxe(axeKey='e', deltaIdx=1, startIdx=0)
@@ -145,7 +145,7 @@ class InfoFieldMatrix(InfoData):
             actPoint.set(vals={valueKey: newState})
             pts += 1
 
-        logger.info(f"{self.name}.epochStep: {pts} InfoPoints was updated for key '{valueKey}' in epoch step")
+        logger.info(f"{self.param['name']['value']}.epochStep: {pts} InfoPoints was updated for key '{valueKey}' in epoch step")
 
     #==========================================================================
     # Internal tools
@@ -153,7 +153,7 @@ class InfoFieldMatrix(InfoData):
     def getNeighStates(self, valueKey:str, l:int, e:int=0):
         "Returns list of states of neighbor points along given axis at given position"
 
-        logger.debug(f"{self.name}.getNeighStates: For {valueKey} at [{l}, {e}]")
+        logger.debug(f"{self.param['name']['value']}.getNeighStates: For {valueKey} at [{l}, {e}]")
 
         cntLambda = self.axeCntByKey('l')
         cntEpoch  = self.axeCntByKey('e')
@@ -180,18 +180,18 @@ class InfoFieldMatrix(InfoData):
                 rightValue = rightPoint.val(valueKey) * rot
                 rightStates.append( rightValue )
 
-        logger.debug(f"{self.name}.getNeighStates: leftStates={leftStates}, rightStates={rightStates}")
+        logger.debug(f"{self.param['name']['value']}.getNeighStates: leftStates={leftStates}, rightStates={rightStates}")
         return leftStates, rightStates
 
     #--------------------------------------------------------------------------
     def aggStates(self, states:list):
         "Aggregates list of states into single state according to given type and aggregation method"
 
-        logger.debug(f"{self.name}.aggStates: states={states}, sType={self.sType}, sAgg={self.sAgg}")
+        logger.debug(f"{self.param['name']['value']}.aggStates: states={states}, sType={self.sType}, sAgg={self.sAgg}")
         aggState = None
 
         if len(states) == 0:
-            logger.warning(f"{self.name}.aggStates: empty states list, returning None")
+            logger.warning(f"{self.param['name']['value']}.aggStates: empty states list, returning None")
             return aggState
 
         aggState = sum(states)
@@ -200,14 +200,14 @@ class InfoFieldMatrix(InfoData):
         elif self.sType == 'int'    : aggState = int    (aggState) if aggState else 0
         elif self.sType == 'complex': aggState = complex(aggState) if aggState else complex(0,0)
 
-        logger.debug(f"{self.name}.aggStates: {aggState}<-{states}")
+        logger.debug(f"{self.param['name']['value']}.aggStates: {aggState}<-{states}")
         return aggState
 
     #--------------------------------------------------------------------------
     def aggNeighbors(self, leftState, actState, rightState):
         "Aggregates states of neighors into single state according to given rule"
 
-        logger.debug(f"{self.name}.aggNeighbors: leftState={leftState}, actState={actState}, rightState={rightState}, rule={self.rule}")
+        logger.debug(f"{self.param['name']['value']}.aggNeighbors: leftState={leftState}, actState={actState}, rightState={rightState}, rule={self.rule}")
         aggState = actState
 
         if self.rule == 'and':
@@ -217,9 +217,9 @@ class InfoFieldMatrix(InfoData):
             if   self.sType == 'bool'            : aggState = bool(leftState or rightState)
             elif self.sType in ('int', 'complex'): aggState = leftState + rightState
 
-        else: logger.warning(f"{self.name}.aggNeighbors: Unknown rule '{self.rule}', returning actState")
+        else: logger.warning(f"{self.param['name']['value']}.aggNeighbors: Unknown rule '{self.rule}', returning actState")
 
-        logger.debug(f"{self.name}.aggNeighbors: {aggState}<-({leftState},{actState},{rightState})")
+        logger.debug(f"{self.param['name']['value']}.aggNeighbors: {aggState}<-({leftState},{actState},{rightState})")
         return aggState
 
     #==========================================================================

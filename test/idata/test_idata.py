@@ -8,7 +8,10 @@ class TestInfoDataInit:
 
     def test_idata_creation(self, idata_instance):
         """Test creating InfoData instance."""
-        assert idata_instance.name == "test_data"
+        assert idata_instance.param['name']['value'] == "test_data"
+        assert idata_instance.param['ipType']['value'] == "ipReal1D"
+        assert not hasattr(idata_instance, "ipType")
+        assert idata_instance.points == []
 
     def test_idata_different_names(self):
         """Test creating InfoData with different names."""
@@ -17,7 +20,7 @@ class TestInfoDataInit:
         names = ["data1", "dataset_test", "info_data"]
         for name in names:
             data = InfoData(name=name)
-            assert data.name == name
+            assert data.param['name']['value'] == name
 
 
 class TestInfoDataPoints:
@@ -155,7 +158,7 @@ class TestInfoDataEdgeCases:
         from idata.idata import InfoData
 
         data = InfoData(name="")
-        assert data.name == ""
+        assert data.param['name']['value'] == ""
 
     def test_long_name(self):
         """Test creating InfoData with very long name."""
@@ -163,8 +166,8 @@ class TestInfoDataEdgeCases:
 
         long_name = "a" * 1000
         data = InfoData(name=long_name)
-        assert data.name == long_name
-        assert len(data.name) == 1000
+        assert data.param['name']['value'] == long_name
+        assert len(data.param['name']['value']) == 1000
 
     def test_special_characters_in_name(self):
         """Test creating InfoData with special characters."""
@@ -172,4 +175,4 @@ class TestInfoDataEdgeCases:
 
         special_name = "data-#$%@!_test"
         data = InfoData(name=special_name)
-        assert data.name == special_name
+        assert data.param['name']['value'] == special_name

@@ -223,7 +223,7 @@ class InfoDataDataGui(tk.Toplevel):
 
             suggested = cnt - 1
             answer = askyesnocancel(
-                title   = self.data.name,
+                title   = self.data.param['name']['value'],
                 message = f"Axe '{key}' has zero length.\n\nUse suggested length {suggested} (points count - 1)?\n\n"
                           f"Yes = use {suggested}, No = keep zero length, Cancel = back to dialog",
                 parent  = self)

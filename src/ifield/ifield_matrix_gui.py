@@ -180,7 +180,7 @@ class IFieldMatrixGui(InfoDataGui):
         newState = self.dat.aggNeighbors(leftState, actState, rightState)
         text.append(f'New state after applying neighbors\' rule : {newState}')
 
-        msgWin = SiqoMessage(name=self.dat.name, text=text, wpix=800)
+        msgWin = SiqoMessage(name=self.dat.param['name']['value'], text=text, wpix=800)
 
 #==============================================================================
 # Inicializacia modulu

@@ -9,7 +9,7 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.7'
+_VER    = '1.1.8'
 _IND    = '|  '                        # Info indentation
 
 _IPTYPE_MARKOV = 'ipMarkovGen'
@@ -73,7 +73,7 @@ class IMarkov(InfoData):
         self.init( cnts=(0,) )
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.constructor: done")
+        logger.info(f"{self.param['name']['value']}.constructor: done")
 
     #--------------------------------------------------------------------------
     def setNamePro(self, mrkPro):
@@ -83,13 +83,13 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Odstranim z name {mrkPro} ak existuje
         #----------------------------------------------------------------------
-        if '{' in self.name and '}' in self.name:
-            self.name = self.name[:self.name.rfind('{')]
+        if '{' in self.param['name']['value'] and '}' in self.param['name']['value']:
+            self.param['name']['value'] = self.param['name']['value'][:self.param['name']['value'].rfind('{')]
 
         #----------------------------------------------------------------------
         # Doplnim do name aktualnu hodnotu {mrkPro}
         #----------------------------------------------------------------------
-        self.name += f"{{{mrkPro:6.4f}}}"
+        self.param['name']['value'] += f"{{{mrkPro:6.4f}}}"
 
     #--------------------------------------------------------------------------
     def __str__(self):
@@ -107,7 +107,7 @@ class IMarkov(InfoData):
            newline characters.
         """
 
-        logger.debug(f"{self.name}.info: full={full}")
+        logger.debug(f"{self.param['name']['value']}.info: full={full}")
         dat = {}
         msg = []
         if indent == 0: msg = [f"{indent*_IND}{60*'='}"]
@@ -127,7 +127,7 @@ class IMarkov(InfoData):
         if struct:
             dat['ver'           ] = _VER
             dat['axeName'       ] = self.axeNameByKey('x')
-            dat['ipType'        ] = self.ipType
+            dat['ipType'        ] = self.param['ipType']['value']
             dat['dim'           ] = self.dim
             dat['mrkPro'        ] = self.mrkPro
             dat['totObs'        ] = self.totObs
@@ -195,7 +195,7 @@ class IMarkov(InfoData):
                 #--------------------------------------------------------------
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.info: Created info")
+        logger.info(f"{self.param['name']['value']}.info: Created info")
         return {'res': 'OK', 'dat': dat, 'msg': msg}
 
     #--------------------------------------------------------------------------
@@ -203,7 +203,7 @@ class IMarkov(InfoData):
         """Resets the Markov analyser to its initial state.
         """
 
-        logger.debug(f"{self.name}.reset: Resetting Markov analyser")
+        logger.debug(f"{self.param['name']['value']}.reset: Resetting Markov analyser")
 
         #----------------------------------------------------------------------
         # Reset total observations and active point
@@ -218,20 +218,20 @@ class IMarkov(InfoData):
         self.needCompute = False
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.reset: Markov analyser reset complete")
+        logger.info(f"{self.param['name']['value']}.reset: Markov analyser reset complete")
 
     #--------------------------------------------------------------------------
     def setDim(self, dim:int):
         """Sets the dimension of the Markov analyser.
         """
 
-        logger.debug(f"{self.name}.setDim: dim={dim}")
+        logger.debug(f"{self.param['name']['value']}.setDim: dim={dim}")
 
         #----------------------------------------------------------------------
         # Check if the dimension is valid
         #----------------------------------------------------------------------
         if dim < 1:
-            logger.error(f"{self.name}.setDim: Invalid dimension {dim}, must be >= 1")
+            logger.error(f"{self.param['name']['value']}.setDim: Invalid dimension {dim}, must be >= 1")
             return
 
         #----------------------------------------------------------------------
@@ -241,21 +241,21 @@ class IMarkov(InfoData):
         self.dim = dim
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.setDim: Markov analyser dimension set to {self.dim}")
+        logger.info(f"{self.param['name']['value']}.setDim: Markov analyser dimension set to {self.dim}")
 
     #--------------------------------------------------------------------------
     def actPoints(self) -> list:
         """Returns list of the active Points in the Markov process.
         """
 
-        logger.debug(f"{self.name}.actPoints:")
+        logger.debug(f"{self.param['name']['value']}.actPoints:")
         toRet = []
 
         #---------------------------------------------------------------------
         # If there is no active point, return an empty list
         #---------------------------------------------------------------------
         if self.actPoint is None:
-            logger.info(f"{self.name}.actPoints: [No active point]")
+            logger.info(f"{self.param['name']['value']}.actPoints: [No active point]")
             return toRet
 
         #---------------------------------------------------------------------
@@ -272,7 +272,7 @@ class IMarkov(InfoData):
             toRet.extend(mrk.actPoints())
 
         #---------------------------------------------------------------------
-        logger.info(f"{self.name}.actPoints: Found {len(toRet)} active Points")
+        logger.info(f"{self.param['name']['value']}.actPoints: Found {len(toRet)} active Points")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -280,7 +280,7 @@ class IMarkov(InfoData):
         """Returns string representation of the active Points in the Markov process.
         """
 
-        logger.debug(f"{self.name}.actAddress:")
+        logger.debug(f"{self.param['name']['value']}.actAddress:")
         toRet = ''
 
         #---------------------------------------------------------------------
@@ -297,7 +297,7 @@ class IMarkov(InfoData):
             else     : toRet += f" -> {point.pos('x')}"
 
         #---------------------------------------------------------------------
-        logger.info(f"{self.name}.actAddress: '{toRet}'")
+        logger.info(f"{self.param['name']['value']}.actAddress: '{toRet}'")
         return toRet
 
     #==========================================================================
@@ -311,7 +311,7 @@ class IMarkov(InfoData):
         3. Return True if the observation was successful, False otherwise.
         """
 
-        logger.debug(f"{self.name}.observe: val={val}")
+        logger.debug(f"{self.param['name']['value']}.observe: val={val}")
         self.needCompute = True
 
         #----------------------------------------------------------------------
@@ -320,7 +320,7 @@ class IMarkov(InfoData):
         toRet = self.moveFwd(val=val, observe=True)
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.observe: '{val}' added")
+        logger.info(f"{self.param['name']['value']}.observe: '{val}' added")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -332,7 +332,7 @@ class IMarkov(InfoData):
         so this method currently returns None.
         """
 
-        logger.info(f"{self.name}.amend: val={val}")
+        logger.info(f"{self.param['name']['value']}.amend: val={val}")
         toRet = None
 
         #----------------------------------------------------------------------
@@ -355,7 +355,7 @@ class IMarkov(InfoData):
         """Generate value of the next observation from the Markov analyser.
         """
 
-        logger.info(f"{self.name}.generate: observe={observe}")
+        logger.info(f"{self.param['name']['value']}.generate: observe={observe}")
         toRet = None
 
         #----------------------------------------------------------------------
@@ -383,7 +383,7 @@ class IMarkov(InfoData):
         If maxPatterns > 0, returns only the first maxPatterns entries.
         """
 
-        logger.info(f"{self.name}.maxForce: minForce={minForce}, minObs={minObs}, maxPatterns={maxPatterns}")
+        logger.info(f"{self.param['name']['value']}.maxForce: minForce={minForce}, minObs={minObs}, maxPatterns={maxPatterns}")
 
         #----------------------------------------------------------------------
         # Collect all patterns recursively
@@ -402,7 +402,7 @@ class IMarkov(InfoData):
             sorted_toRet = dict(list(sorted_toRet.items())[:maxPatterns])
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.maxForce: Found {len(sorted_toRet)} patterns with force >= {minForce}")
+        logger.info(f"{self.param['name']['value']}.maxForce: Found {len(sorted_toRet)} patterns with force >= {minForce}")
         return sorted_toRet
 
     #--------------------------------------------------------------------------
@@ -418,7 +418,7 @@ class IMarkov(InfoData):
         3. Return True if activation was successful, False otherwise.
         """
 
-        logger.debug(f"{self.name}._moveFwd: val={val}")
+        logger.debug(f"{self.param['name']['value']}._moveFwd: val={val}")
 
         #----------------------------------------------------------------------
         # Move one step forward = last (dim-1) values from actVals plus new value val
@@ -448,21 +448,21 @@ class IMarkov(InfoData):
         4. Return True if activation was successful, False otherwise.
         """
 
-        logger.debug(f"{self.name}._activate: actVals={actVals}")
+        logger.debug(f"{self.param['name']['value']}._activate: actVals={actVals}")
         toRet = False
 
         #----------------------------------------------------------------------
         # Check length of the actVals list
         #----------------------------------------------------------------------
         if len(actVals) == 0:
-            logger.error(f"{self.name}._activate: actVals list is empty, cannot activate dim={self.dim}")
+            logger.error(f"{self.param['name']['value']}._activate: actVals list is empty, cannot activate dim={self.dim}")
             return toRet
 
         #----------------------------------------------------------------------
         # Pop the leftmost value from actVals and use it as the new observation value for this dimension
         #----------------------------------------------------------------------
         val = actVals.pop(0)
-        logger.debug(f"{self.name}._activate: val={val}")
+        logger.debug(f"{self.param['name']['value']}._activate: val={val}")
 
         #----------------------------------------------------------------------
         # Find/create InfoPoint with pos == val in this dimension of the Markov process
@@ -470,7 +470,7 @@ class IMarkov(InfoData):
         self.actPoint = self._getPoint(val=val, create=True)
 
         if self.actPoint is None:
-            logger.error(f"{self.name}._activate: Failed to find or add InfoPoint with pos={val} to the Markov analyser")
+            logger.error(f"{self.param['name']['value']}._activate: Failed to find or add InfoPoint with pos={val} to the Markov analyser")
             return toRet
 
         #----------------------------------------------------------------------
@@ -499,7 +499,7 @@ class IMarkov(InfoData):
                 nextMark = self.actPoint._vals.get('mrk', None)
 
                 if nextMark is None or not isinstance(nextMark, IMarkov):
-                    nextMark = IMarkov(name=f"{self.name}/({val})", dim=self.dim-1)
+                    nextMark = IMarkov(name=f"{self.param['name']['value']}/({val})", dim=self.dim-1)
                     self.actPoint.set(vals={'mrk': nextMark})
 
                 #--------------------------------------------------------------
@@ -512,11 +512,11 @@ class IMarkov(InfoData):
             # Last dimension reached, check if there are still values in actPos, which should not happen
             #------------------------------------------------------------------
             if len(actVals) > 0:
-                logger.error(f"{self.name}._activate: actVals list is not empty in the last dimension, remaining values: {actVals}")
+                logger.error(f"{self.param['name']['value']}._activate: actVals list is not empty in the last dimension, remaining values: {actVals}")
                 toRet = False
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}._activate: Activation status: {toRet}")
+        logger.debug(f"{self.param['name']['value']}._activate: Activation status: {toRet}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -530,7 +530,7 @@ class IMarkov(InfoData):
             mrkPro   (float): Probability asociated with this Markov analyser (default: 1.0 at root level)
         """
 
-        logger.debug(f"{self.name}._compute: mrkPro={mrkPro}")
+        logger.debug(f"{self.param['name']['value']}._compute: mrkPro={mrkPro}")
 
         #----------------------------------------------------------------------
         # Set local probability (mrkPro) associated with this Markov analyser
@@ -597,7 +597,7 @@ class IMarkov(InfoData):
 
         #----------------------------------------------------------------------
         self.needCompute = False
-        logger.info(f"{self.name}._compute: Probabilities and forces recalculated for {len(self.points)} points")
+        logger.info(f"{self.param['name']['value']}._compute: Probabilities and forces recalculated for {len(self.points)} points")
 
     #--------------------------------------------------------------------------
     def _maxForceRecursive(self, minForce=0.1, minObs=10, pattern=()):
@@ -612,7 +612,7 @@ class IMarkov(InfoData):
             dict: Patterns found at this level and nested levels
         """
 
-        logger.debug(f"{self.name}._maxForceRecursive: minForce={minForce}, minObs={minObs}, pattern={pattern}")
+        logger.debug(f"{self.param['name']['value']}._maxForceRecursive: minForce={minForce}, minObs={minObs}, pattern={pattern}")
         toRet = {}
 
         #----------------------------------------------------------------------
@@ -651,7 +651,7 @@ class IMarkov(InfoData):
         If create is False, returns None if InfoPoint with pos = val does not exist.
         """
 
-        logger.debug(f"{self.name}._getPoint: val={val} with create={create}")
+        logger.debug(f"{self.param['name']['value']}._getPoint: val={val} with create={create}")
 
         #----------------------------------------------------------------------
         # Find InfoPoint with pos == val
@@ -697,14 +697,14 @@ class IMarkov(InfoData):
            and must be found by iterating through the points.
         """
 
-        logger.debug(f"{self.name}._idxByAxeVal: axeKey={axeKey}, axeVal={axeVal}")
+        logger.debug(f"{self.param['name']['value']}._idxByAxeVal: axeKey={axeKey}, axeVal={axeVal}")
         toRet = None
 
         #----------------------------------------------------------------------
         # Kontrola existencie osi
         #----------------------------------------------------------------------
         if axeKey not in self._cnts.keys():
-            logger.error(f"{self.name}._idxByAxeVal: Axe '{axeKey}' is not in InfoData axes {list(self._cnts.keys())}")
+            logger.error(f"{self.param['name']['value']}._idxByAxeVal: Axe '{axeKey}' is not in InfoData axes {list(self._cnts.keys())}")
             return toRet
 
         #----------------------------------------------------------------------
@@ -717,7 +717,7 @@ class IMarkov(InfoData):
                 break
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.name}._idxByAxeVal: axeKey={axeKey}, axeVal={axeVal} -> idx={toRet}")
+        logger.debug(f"{self.param['name']['value']}._idxByAxeVal: axeKey={axeKey}, axeVal={axeVal} -> idx={toRet}")
         return toRet
 
     #==========================================================================
@@ -751,7 +751,7 @@ class IMarkov(InfoData):
         Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.name}.deltas: {outData.name}[{outKey}] = <Deltas>({inKey}) with params {params}")
+        logger.info(f"{self.param['name']['value']}.deltas: {outData.param['name']['value']}[{outKey}] = <Deltas>({inKey}) with params {params}")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -783,7 +783,7 @@ class IMarkov(InfoData):
             pts += 1
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
+        logger.info(f"{self.param['name']['value']}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
 
     #==========================================================================
     # Internal tools

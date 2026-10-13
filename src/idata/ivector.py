@@ -9,7 +9,7 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.0'
+_VER    = '1.1.1'
 
 _LAMBDA = 1200       # Default points for Lambda axis
 _AMP    =  200       # Default amplituda
@@ -36,7 +36,7 @@ class IVector(InfoData):
         #----------------------------------------------------------------------
         # Super constructor
         #----------------------------------------------------------------------
-        super().__init__(name)  
+        super().__init__(name)
 
         #----------------------------------------------------------------------
         # Private datove polozky triedy
@@ -53,7 +53,7 @@ class IVector(InfoData):
         self.applyDataMethod(methodKey='Integer random uniform', valueKey='s', params={'min':0, 'max':_AMP})
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.constructor: done")
+        logger.info(f"{self.param['name']['value']}.constructor: done")
 
     #--------------------------------------------------------------------------
     # Dynamics methods for IVector
@@ -78,7 +78,7 @@ class IVector(InfoData):
     def deltas(self, outData:'InfoData', outKey:str, params:dict):
         """Compute deltas of states between consecutive points."""
 
-        logger.info(f"{self.name}.deltas: for key '{outKey}' with params {params}")
+        logger.info(f"{self.param['name']['value']}.deltas: for key '{outKey}' with params {params}")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -110,13 +110,13 @@ class IVector(InfoData):
             pts += 1
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
+        logger.info(f"{self.param['name']['value']}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
 
     #--------------------------------------------------------------------------
     def autoCorr(self, outData:'InfoData', outKey:str, params:dict):
         """Compute auto-correlation of states."""
 
-        logger.info(f"{self.name}.autoCorr: for key '{outKey}' with params {params}")
+        logger.info(f"{self.param['name']['value']}.autoCorr: for key '{outKey}' with params {params}")
 
         #----------------------------------------------------------------------
         # Vsetky IPoints nastavim do subMatrix listu
@@ -161,7 +161,7 @@ class IVector(InfoData):
         points[n-1].set(vals={outKey: 0})
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.autoCorr: Done")
+        logger.info(f"{self.param['name']['value']}.autoCorr: Done")
 
     #--------------------------------------------------------------------------
     def RFT( self, outData:'InfoData', outKey:str, params:dict):
@@ -170,7 +170,7 @@ class IVector(InfoData):
         - 'rad' : radix level for FFT e.g. size = 2^rad (default 0 for dynamic rad)
         """
 
-        logger.info(f"{self.name}.RFT: for key '{outKey}' with params {params}")
+        logger.info(f"{self.param['name']['value']}.RFT: for key '{outKey}' with params {params}")
 
         #----------------------------------------------------------------------
         # Vsetky IPoints nastavim do subdata listu a vytvorim vektor vec
@@ -197,10 +197,10 @@ class IVector(InfoData):
         fft   = [(0+0j, 0)] * size  # Initialize FFT output vector with complex zeros a zero weighta
 
         if resid < 0:
-            logger.error(f"{self.name}.RFT: Not enough points for FFT (n={n}, rad={rad}, size={size})")
+            logger.error(f"{self.param['name']['value']}.RFT: Not enough points for FFT (n={n}, rad={rad}, size={size})")
             return
 
-        logger.info(f"{self.name}.RFT: rad set to {rad}, size = {size}")
+        logger.info(f"{self.param['name']['value']}.RFT: rad set to {rad}, size = {size}")
 
         #----------------------------------------------------------------------
         # Posuvam okno vec[] s dlzkou size o krok step az kym reziduum nebude mensie ako 16
@@ -211,7 +211,7 @@ class IVector(InfoData):
             # Ak je reziduum > 0, tak mozem vykonat FFT pre okno vec[start:start+size]
             #------------------------------------------------------------------
             if resid > 0:
-                logger.info(f"{self.name}.RFT: FFT window start={start}, stop={size}, resid={resid}")
+                logger.info(f"{self.param['name']['value']}.RFT: FFT window start={start}, stop={size}, resid={resid}")
 
                 #--------------------------------------------------------------
                 # Vytvorim vektor fft pre FFT vysledky a zavolam FFT
@@ -241,7 +241,7 @@ class IVector(InfoData):
         for i in range(n):
             points[i].set(vals={outKey: abs(fft[i])})
 
-        logger.info(f"{self.name}.RFT: Done")
+        logger.info(f"{self.param['name']['value']}.RFT: Done")
 
     #--------------------------------------------------------------------------
     def _FFT( self, vec:list, fft:list[complex], rad:int, base:list[complex]|None=None, depth:int=0 ):
@@ -264,8 +264,8 @@ class IVector(InfoData):
         -- f(k) = k * (sampling_frequency / size) for k in [0, size/2]
         """
 
-        if depth == 0: logger.info (f"{self.name}._FFT: Computing FFT with rad={rad}")
-        else         : logger.debug(f"{self.name}._FFT: Recursion depth={depth}, rad={rad}")
+        if depth == 0: logger.info (f"{self.param['name']['value']}._FFT: Computing FFT with rad={rad}")
+        else         : logger.debug(f"{self.param['name']['value']}._FFT: Recursion depth={depth}, rad={rad}")
 
         size  = 1 << rad       # 2^rad - FFT resolution at top level
         nasob = 1 << depth     # 2^depth - data stride (sample step) at current recursion level
@@ -282,7 +282,7 @@ class IVector(InfoData):
             # base[k] = e^(-i*2*pi*k/size) for k=0..size/2-1
             # base[k+size/2] = -base[k] (symmetry: reduces computation)
             base = [0+0j] * size
-            logger.debug(f"{self.name}._FFT: initialize twiddle factors (size={size})")
+            logger.debug(f"{self.param['name']['value']}._FFT: initialize twiddle factors (size={size})")
 
             theta = 2 * cmath.pi / size
             half = size // 2
@@ -301,7 +301,7 @@ class IVector(InfoData):
         # Computes: fft[k] = sum_{n=0,2,4,...} vec[n*nasob] * base[k*n % size]
         #----------------------------------------------------------------------
         if rad <= 1:
-            logger.debug(f"{self.name}._FFT: base case FFT (rad={rad}, depth={depth}, size=2)")
+            logger.debug(f"{self.param['name']['value']}._FFT: base case FFT (rad={rad}, depth={depth}, size=2)")
 
             # Two-point FFT:
             # fft[0] = vec[0]*base[0] + vec[nasob]*base[0] = (vec[0] + vec[nasob]) * 1
@@ -319,7 +319,7 @@ class IVector(InfoData):
         else:
             # Recursive case: combine even (from lower recursion) and odd indices
             self._FFT(vec, fft, rad - 1, base, depth + 1)
-            logger.debug(f"{self.name}._FFT: merging level {rad} (depth={depth})")
+            logger.debug(f"{self.param['name']['value']}._FFT: merging level {rad} (depth={depth})")
 
             # Butterfly operation: combine even-indexed terms (already in fft)
             # with odd-indexed terms (computed below)
@@ -351,22 +351,22 @@ class IVector(InfoData):
 
         #----------------------------------------------------------------------
         if depth == 0:
-            logger.info(f"{self.name}._FFT: FFT computation complete (size={size})")
+            logger.info(f"{self.param['name']['value']}._FFT: FFT computation complete (size={size})")
 
     #--------------------------------------------------------------------------
     def epochStep(self, outKey:str, params:dict):
         """Compute next epoch state."""
 
-        logger.info(f"{self.name}.epochStep: for key '{outKey}' with params {params}")
+        logger.info(f"{self.param['name']['value']}.epochStep: for key '{outKey}' with params {params}")
         pts = 0
 
 
-        logger.info(f"{self.name}.epochStep: {pts} InfoPoints was updated for key '{outKey}' in epoch step")
+        logger.info(f"{self.param['name']['value']}.epochStep: {pts} InfoPoints was updated for key '{outKey}' in epoch step")
 
     #--------------------------------------------------------------------------
     def rndBool(self, outKey:str, params:dict):
         """Clear all model and set state as random Boolean values."""
-        logger.debug(f"{self.name}.rndBool: for key '{outKey}' with params {params}")
+        logger.debug(f"{self.param['name']['value']}.rndBool: for key '{outKey}' with params {params}")
         pts = 0
 
         self.clearPoints(defs={outKey: False})
@@ -374,7 +374,7 @@ class IVector(InfoData):
         pts = self.applyDataMethod(methodKey='Random bit', valueKey=outKey, params=params)
         self.actSubData()
 
-        logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{outKey}'")
+        logger.info(f"{self.param['name']['value']}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{outKey}'")
 
     #==========================================================================
     # Internal tools

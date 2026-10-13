@@ -8,7 +8,7 @@ class TestISeriesInit:
 
     def test_iseries_creation(self, iseries_instance):
         """Test creating ISeries instance."""
-        assert iseries_instance.name == "test_series"
+        assert iseries_instance.param['name']['value'] == "test_series"
         assert iseries_instance.count() == 0
 
     def test_iseries_different_names(self):
@@ -18,7 +18,7 @@ class TestISeriesInit:
         names = ["series1", "series2", "data_series"]
         for name in names:
             series = ISeries(name=name)
-            assert series.name == name
+            assert series.param['name']['value'] == name
 
 
 class TestISeriesDataManagement:

@@ -96,7 +96,7 @@ class IFieldLineGui(InfoDataGui):
         text.append(f"{str(self.actPoint)} at {idxs}")
         text.append('')
 
-        msgWin = SiqoMessage(name=self.data.name, text=text, wpix=800)
+        msgWin = SiqoMessage(name=self.data.param['name']['value'], text=text, wpix=800)
 
 #==============================================================================
 # Inicializacia modulu

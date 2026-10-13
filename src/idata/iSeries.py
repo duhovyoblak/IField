@@ -9,7 +9,7 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER   = '1.1.0'
+_VER   = '1.1.1'
 
 _CNT   = 1200                          # Default number of points
 _AXES  = {'i': 'Time tick'}            # Default axes
@@ -63,7 +63,7 @@ class ISeries(InfoData):
         self.init( cnts=(cnt,) )
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.constructor: done")
+        logger.info(f"{self.param['name']['value']}.constructor: done")
 
     #--------------------------------------------------------------------------
     # Dynamics methods for ISeries
@@ -120,7 +120,7 @@ class ISeries(InfoData):
         Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.name}.deltas: {outData.name}[{outKey}] = <Deltas>({inKey}) with params {params}")
+        logger.info(f"{self.param['name']['value']}.deltas: {outData.param['name']['value']}[{outKey}] = <Deltas>({inKey}) with params {params}")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -157,7 +157,7 @@ class ISeries(InfoData):
             pts += 1
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
+        logger.info(f"{self.param['name']['value']}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
 
     #--------------------------------------------------------------------------
     def autoCorr(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
@@ -169,7 +169,7 @@ class ISeries(InfoData):
         Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.name}.autoCorr: {outData.name}[{outKey}] = <AutoCorr>({inKey}) with params {params}")
+        logger.info(f"{self.param['name']['value']}.autoCorr: {outData.param['name']['value']}[{outKey}] = <AutoCorr>({inKey}) with params {params}")
 
         #----------------------------------------------------------------------
         # Pripravim vystupny objekt outData
@@ -224,7 +224,7 @@ class ISeries(InfoData):
         #----------------------------------------------------------------------
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.autoCorr: Done")
+        logger.info(f"{self.param['name']['value']}.autoCorr: Done")
 
     #--------------------------------------------------------------------------
     def APC(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
@@ -236,7 +236,7 @@ class ISeries(InfoData):
         Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.name}.autoPhaseCorr: {outData.name}[{outKey}] = <AutoPhaseCorr>({inKey}) with params {params}")
+        logger.info(f"{self.param['name']['value']}.autoPhaseCorr: {outData.param['name']['value']}[{outKey}] = <AutoPhaseCorr>({inKey}) with params {params}")
 
         #----------------------------------------------------------------------
         # Pripravim vystupny objekt outData
@@ -313,7 +313,7 @@ class ISeries(InfoData):
         #----------------------------------------------------------------------
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.autoPhaseCorr: Done")
+        logger.info(f"{self.param['name']['value']}.autoPhaseCorr: Done")
 
     #--------------------------------------------------------------------------
     def RFT(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
@@ -325,7 +325,7 @@ class ISeries(InfoData):
         - outData: InfoData to store output data
         """
 
-        logger.info(f"{self.name}.RFT: {outData.name}[{outKey}] = <RFT>({inKey}) with params {params}")
+        logger.info(f"{self.param['name']['value']}.RFT: {outData.param['name']['value']}[{outKey}] = <RFT>({inKey}) with params {params}")
 
         #----------------------------------------------------------------------
         # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
@@ -352,10 +352,10 @@ class ISeries(InfoData):
         fft   = [0+0j] * size  # Initialize FFT output vector with complex zeros
 
         if resid < 0:
-            logger.error(f"{self.name}.RFT: Not enough points for FFT (n={n}, rad={rad}, size={size})")
+            logger.error(f"{self.param['name']['value']}.RFT: Not enough points for FFT (n={n}, rad={rad}, size={size})")
             return
 
-        logger.info(f"{self.name}.RFT: rad set to {rad}, size = {size}")
+        logger.info(f"{self.param['name']['value']}.RFT: rad set to {rad}, size = {size}")
 
         #----------------------------------------------------------------------
         # Posuvam okno vec[] s dlzkou size o krok step az kym reziduum nebude mensie ako 16
@@ -366,7 +366,7 @@ class ISeries(InfoData):
             # Ak je reziduum > 0, tak mozem vykonat FFT pre okno vec[start:start+size]
             #------------------------------------------------------------------
             if resid > 0:
-                logger.info(f"{self.name}.RFT: FFT window start={start}, stop={size}, resid={resid}")
+                logger.info(f"{self.param['name']['value']}.RFT: FFT window start={start}, stop={size}, resid={resid}")
 
                 #--------------------------------------------------------------
                 # Vytvorim vektor fft pre FFT vysledky a zavolam FFT
@@ -409,14 +409,14 @@ class ISeries(InfoData):
         for i in range(n):
             points[i].set(vals={outKey: abs(fft[i])})
 
-        logger.info(f"{self.name}.RFT: {outData.name}[{outKey}] = <RFT>({inKey}) Done")
+        logger.info(f"{self.param['name']['value']}.RFT: {outData.param['name']['value']}[{outKey}] = <RFT>({inKey}) Done")
 
     #--------------------------------------------------------------------------
     def rndBool(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
         """Clear all model and set state as random Boolean values.
         """
 
-        logger.info(f"{self.name}.rndBool: {outData.name}[{outKey}] = <RFT>({inKey}) with params {params}")
+        logger.info(f"{self.param['name']['value']}.rndBool: {outData.param['name']['value']}[{outKey}] = <RFT>({inKey}) with params {params}")
         pts = 0
 
         self.clearPoints(defs={outKey: False})
@@ -424,7 +424,7 @@ class ISeries(InfoData):
         pts = self.applyDataMethod(methodKey='Random bit', valueKey=outKey, params=params)
         self.actSubData()
 
-        logger.info(f"{self.name}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{outKey}'")
+        logger.info(f"{self.param['name']['value']}.rndBool: {pts} InfoPoints was set to random Boolean values for key '{outKey}'")
 
     #==========================================================================
     # Internal tools
@@ -449,8 +449,8 @@ class ISeries(InfoData):
         -- f(k) = k * (sampling_frequency / size) for k in [0, size/2]
         """
 
-        if depth == 0: logger.info (f"{self.name}._FFT: Computing FFT with rad={rad}")
-        else         : logger.debug(f"{self.name}._FFT: Recursion depth={depth}, rad={rad}")
+        if depth == 0: logger.info (f"{self.param['name']['value']}._FFT: Computing FFT with rad={rad}")
+        else         : logger.debug(f"{self.param['name']['value']}._FFT: Recursion depth={depth}, rad={rad}")
 
         size  = 1 << rad       # 2^rad - FFT resolution at top level
         nasob = 1 << depth     # 2^depth - data stride (sample step) at current recursion level
@@ -467,7 +467,7 @@ class ISeries(InfoData):
             # base[k] = e^(-i*2*pi*k/size) for k=0..size/2-1
             # base[k+size/2] = -base[k] (symmetry: reduces computation)
             base = [0+0j] * size
-            logger.debug(f"{self.name}._FFT: initialize twiddle factors (size={size})")
+            logger.debug(f"{self.param['name']['value']}._FFT: initialize twiddle factors (size={size})")
 
             theta = 2 * cmath.pi / size
             half = size // 2
@@ -486,7 +486,7 @@ class ISeries(InfoData):
         # Computes: fft[k] = sum_{n=0,2,4,...} vec[n*nasob] * base[k*n % size]
         #----------------------------------------------------------------------
         if rad <= 1:
-            logger.debug(f"{self.name}._FFT: base case FFT (rad={rad}, depth={depth}, size=2)")
+            logger.debug(f"{self.param['name']['value']}._FFT: base case FFT (rad={rad}, depth={depth}, size=2)")
 
             # Two-point FFT:
             # fft[0] = vec[0]*base[0] + vec[nasob]*base[0] = (vec[0] + vec[nasob]) * 1
@@ -504,7 +504,7 @@ class ISeries(InfoData):
         else:
             # Recursive case: combine even (from lower recursion) and odd indices
             self._FFT(vec, fft, rad - 1, base, depth + 1)
-            logger.debug(f"{self.name}._FFT: merging level {rad} (depth={depth})")
+            logger.debug(f"{self.param['name']['value']}._FFT: merging level {rad} (depth={depth})")
 
             # Butterfly operation: combine even-indexed terms (already in fft)
             # with odd-indexed terms (computed below)
@@ -536,7 +536,7 @@ class ISeries(InfoData):
 
         #----------------------------------------------------------------------
         if depth == 0:
-            logger.info(f"{self.name}._FFT: FFT computation complete (size={size})")
+            logger.info(f"{self.param['name']['value']}._FFT: FFT computation complete (size={size})")
 
     #--------------------------------------------------------------------------
 

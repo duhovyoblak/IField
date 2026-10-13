@@ -9,7 +9,7 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.0'
+_VER    = '1.1.1'
 
 _CNT   = (100,)                                            # Default number of points
 _AX1D  = {'x': 'Os X'}                                     # Default axes for ftion of one variable
@@ -67,9 +67,9 @@ class IFtion(InfoData):
             self.setSchema({'axes': _AX4D, 'vals': _VALS})
 
         else:
-            logger.error(f"{self.name}.constructor: Invalid dimension '{dim}' for IFtion")
+            logger.error(f"{self.param['name']['value']}.constructor: Invalid dimension '{dim}' for IFtion")
             raise ValueError(f"Invalid dimension '{dim}' for IFtion")
-        
+
         #----------------------------------------------------------------------
         # Ak tuple cnts neobsahuje dostatok prvkov, doplnim ho pridanim 1
         #----------------------------------------------------------------------
@@ -82,7 +82,7 @@ class IFtion(InfoData):
         self.init( cnts=cnts )
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.constructor: done")
+        logger.info(f"{self.param['name']['value']}.constructor: done")
 
     #--------------------------------------------------------------------------
     # Dynamics methods for IFtion
@@ -115,7 +115,7 @@ class IFtion(InfoData):
         Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.name}.deltas: {outData.name}[{outKey}] = <Deltas>({inKey}) with params {params}")
+        logger.info(f"{self.param['name']['value']}.deltas: {outData.param['name']['value']}[{outKey}] = <Deltas>({inKey}) with params {params}")
         pts = 0
 
         #----------------------------------------------------------------------
@@ -147,7 +147,7 @@ class IFtion(InfoData):
             pts += 1
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
+        logger.info(f"{self.param['name']['value']}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
 
     #==========================================================================
     # Internal tools
