@@ -14,7 +14,7 @@ from   .ipoint                import InfoPoint
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '3.4.5'
+_VER    = '3.4.6'
 _IND    = '|  '       # Info indentation
 _UPP    = 10          # distance units per period
 
@@ -197,7 +197,6 @@ class InfoData:
         self.ipType       = None        # Type of the InfoPoint in this InfoData
         self.points       = [InfoPoint] # List of InfoPoints
         self.gui          = None        # InfoDataGui instance for this InfoData
-        self.staticEdge   = False       # Static edge means value of the edge points is fixed in some methods
 
         self.actVal       = None        # Key of the current InfoPoint's dat value
         self.actSubIdxs   = {}          # Current active subdata definition as dict of freezed axesKeys with values
@@ -283,7 +282,6 @@ class InfoData:
         #----------------------------------------------------------------------
         self.points.clear()        # List of rows of lists of InfoPoints
         self.ipType     = ipType
-        self.staticEdge = False    # Static edge means value of the edge nodes is fixed
 
         self.actVal     = None     # Key of the InfoPoint's current dat value
         self.actSubIdxs = {}       # Current active subdata defined as dict of freezed axesKeys with values
@@ -326,7 +324,6 @@ class InfoData:
         dat['schema_vals'   ] = self.getSchemaVals()
         dat['cnt of points' ] = self.count()
         dat['len(points)'   ] = len(self.points)
-        dat['staticEdge'    ] = self.staticEdge
 
         dat['actVal'        ] = self.actVal
         dat['actSubIdxs'    ] = self.actSubIdxs
@@ -405,7 +402,6 @@ class InfoData:
 
         toRet.points     = []                  # List of InfoPoints
         toRet.ipType     = self.ipType         # Type of the InfoPoint in this InfoData
-        toRet.staticEdge = self.staticEdge     # Static edge means value of the edge nodes is fixed
 
         toRet.actVal     = self.actVal         # Key of the InfoPoint's dat value
         toRet.actSubIdxs = self.actSubIdxs.copy()  # Current active subdata defined as dict of freezed axesKeys with values
@@ -426,6 +422,19 @@ class InfoData:
         #----------------------------------------------------------------------
         return toRet
 
+    #--------------------------------------------------------------------------
+    def createOptions(self)->dict:
+        """Returns dict of options to be asked from the user during create dialogue
+
+        Returns {key: {'label': str, 'type': type, 'default': any}}
+        """
+
+
+
+
+
+
+        return {}
     #==========================================================================
     # Structure/Value modification
     #--------------------------------------------------------------------------
