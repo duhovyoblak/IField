@@ -9,7 +9,7 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.8'
+_VER    = '1.1.10'
 _IND    = '|  '                        # Info indentation
 
 _IPTYPE_MARKOV = 'ipMarkovGen'
@@ -50,12 +50,17 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Super constructor
         #----------------------------------------------------------------------
-        super().__init__(name, ipType=_IPTYPE_MARKOV)
+        super().__init__(name)
+        self.setIpType(_IPTYPE_MARKOV)
+
+        #----------------------------------------------------------------------
+        # IMarkov specific parameters
+        #----------------------------------------------------------------------
+        self.param['dim'] = {'value': dim, 'type': 'int'}  # Dimension, e.g. number of previous states to consider in the Markov process
 
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
-        self.dim      = dim   # Dimension, e.g. number of previous states to consider in the Markov process
         self.totObs   = 0     # Total number of observations in this Markov object
         self.mrkPro   = 1     # Probability associated with this Markov analyser, updated during computation
         self.eqProb   = 1     # Equal probability for all points, eqProb = 1 / len(self.points) if len(self.points) > 0 else 0
@@ -127,8 +132,9 @@ class IMarkov(InfoData):
         if struct:
             dat['ver'           ] = _VER
             dat['axeName'       ] = self.axeNameByKey('x')
+            dat['idType'        ] = self.param['idType']['value']
             dat['ipType'        ] = self.param['ipType']['value']
-            dat['dim'           ] = self.dim
+            dat['dim'           ] = self.param['dim']['value']
             dat['mrkPro'        ] = self.mrkPro
             dat['totObs'        ] = self.totObs
             dat['eqProb'        ] = self.eqProb
@@ -199,6 +205,13 @@ class IMarkov(InfoData):
         return {'res': 'OK', 'dat': dat, 'msg': msg}
 
     #--------------------------------------------------------------------------
+    def createParams(self)->list:
+        """Returns list of params to be asked from the user during create dialogue.
+        """
+
+        return []
+
+    #--------------------------------------------------------------------------
     def reset(self):
         """Resets the Markov analyser to its initial state.
         """
@@ -238,10 +251,10 @@ class IMarkov(InfoData):
         # Reset analyser and set the dimension
         #----------------------------------------------------------------------
         self.reset()
-        self.dim = dim
+        self.param['dim']['value'] = dim
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}.setDim: Markov analyser dimension set to {self.dim}")
+        logger.info(f"{self.param['name']['value']}.setDim: Markov analyser dimension set to {self.param['dim']['value']}")
 
     #--------------------------------------------------------------------------
     def actPoints(self) -> list:
@@ -426,7 +439,9 @@ class IMarkov(InfoData):
         # For dim=2, we keep the last 1 value plus new value (sliding window size = 2)
         # etc.
         #----------------------------------------------------------------------
-        if self.dim > 1: self.actVals = self.actVals[-(self.dim-1):] + [val]
+        dim = self.param['dim']['value']
+
+        if dim > 1: self.actVals = self.actVals[-(dim-1):] + [val]
         else           : self.actVals = [val]
 
         #----------------------------------------------------------------------
@@ -455,7 +470,7 @@ class IMarkov(InfoData):
         # Check length of the actVals list
         #----------------------------------------------------------------------
         if len(actVals) == 0:
-            logger.error(f"{self.param['name']['value']}._activate: actVals list is empty, cannot activate dim={self.dim}")
+            logger.error(f"{self.param['name']['value']}._activate: actVals list is empty, cannot activate dim={self.param['dim']['value']}")
             return toRet
 
         #----------------------------------------------------------------------
@@ -485,7 +500,7 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         toRet = True
 
-        if self.dim > 1:
+        if self.param['dim']['value'] > 1:
 
             #------------------------------------------------------------------
             # Check if the sliding window has more values to activate
@@ -499,7 +514,7 @@ class IMarkov(InfoData):
                 nextMark = self.actPoint._vals.get('mrk', None)
 
                 if nextMark is None or not isinstance(nextMark, IMarkov):
-                    nextMark = IMarkov(name=f"{self.param['name']['value']}/({val})", dim=self.dim-1)
+                    nextMark = IMarkov(name=f"{self.param['name']['value']}/({val})", dim=self.param['dim']['value']-1)
                     self.actPoint.set(vals={'mrk': nextMark})
 
                 #--------------------------------------------------------------

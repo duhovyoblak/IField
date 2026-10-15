@@ -10,14 +10,14 @@ from   tkinter.messagebox     import showinfo
 from   siqolib.logger         import SiqoLogger
 from   siqolib.message        import SiqoMessage, askInt, askReal
 
-from   .                      import logger, iDataTypes
+from   .                      import logger
 from   idata.ipoint           import InfoPoint
 from   idata.idata            import InfoData
 
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER            = '1.1.0'
+_VER            = '1.1.1'
 _WIN            = '800x540'
 _DPI            = 100
 
@@ -82,16 +82,10 @@ class InfoDataCreateGui(tk.Toplevel):
         lblType = ttk.Label(frmDisp, text="Data Type:")
         lblType.grid(column=0, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        self.selectedType = tk.StringVar()
-        cmbType = ttk.Combobox(frmDisp, textvariable=self.selectedType, values=list(iDataTypes.keys()))
+        self.idType = tk.StringVar()
+        cmbType = ttk.Combobox(frmDisp, textvariable=self.idType, values=InfoData.iDataTypes(), state='readonly')
         cmbType.grid(column=1, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
         cmbType.current(0)
-
-        #----------------------------------------------------------------------
-        # InfoData types specific options
-        #----------------------------------------------------------------------
-
-
 
         #----------------------------------------------------------------------
         # Create bottom buttons bar
@@ -146,26 +140,23 @@ class InfoDataCreateGui(tk.Toplevel):
             return
 
         #----------------------------------------------------------------------
-        # Vyhodnotenie vyberu iDataType od usera
-        #----------------------------------------------------------------------
-        iDataType = self.selectedType.get().strip()
-
-        if iDataType not in iDataTypes:
-            logger.warning(f"{self.name}.ok: Unknown iDataType {iDataType!r}")
-            showinfo(title="Invalid data type", message="Vyberte platný typ dát.")
-            return
-
-        #----------------------------------------------------------------------
         # Vytvorenie novych dat
         #----------------------------------------------------------------------
-        self.data = InfoData.new(name=name, iDataType=iDataType)
+        self.data = InfoData.new(name=name, iDataType=self.idType.get().strip())
 
         if self.data is None:
-            logger.error(f"{self.name}.ok: InfoData of type '{iDataType}' was not created")
-            showinfo(title="Create data", message=f"Dáta typu {iDataType} sa nepodarilo vytvoriť.")
+            logger.error(f"{self.name}.ok: InfoData of type '{self.idType.get().strip()}' was not created")
+            showinfo(title="Create data", message=f"Dáta typu {self.idType.get().strip()} sa nepodarilo vytvoriť.")
             return
 
         self.changed = True
+
+        #----------------------------------------------------------------------
+        # Nastavenie class-specifickych parametrov pre nove data
+        #----------------------------------------------------------------------
+        params = self.data.
+
+
 
         #----------------------------------------------------------------------
         # Upozornenie userovi, ze data boli vytvorene s nulovou dlzkou a treba ich nastavit
@@ -174,7 +165,7 @@ class InfoDataCreateGui(tk.Toplevel):
         showinfo(title="Create data", message="Dáta boli vytvorené s nulovou dlžkou. Nastavte ich v dialogu Schema DataProperties.")
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.name}.ok: Created InfoData '{self.data.param['name']['value']}' of type '{iDataType}'")
+        logger.info(f"{self.name}.ok: Created InfoData '{self.data.param['name']['value']}' of type '{self.data.param['idType']['value']}'")
         self.destroy()
 
     #--------------------------------------------------------------------------

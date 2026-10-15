@@ -14,7 +14,7 @@ from   .ipoint                import InfoPoint
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '3.5.0'
+_VER    = '3.5.1'
 _IND    = '|  '       # Info indentation
 _UPP    = 10          # distance units per period
 
@@ -110,6 +110,13 @@ class InfoData:
 
     #--------------------------------------------------------------------------
     @staticmethod
+    def getIpTypes() -> list:
+        """Returns list of available InfoPoint types."""
+
+        return InfoPoint.getIpTypes()
+
+    #--------------------------------------------------------------------------
+    @staticmethod
     def setSchema(ipType, schema) -> 'InfoData|None':
         """Inserts or updates schema in catalogue of schemas.
         """
@@ -129,7 +136,7 @@ class InfoData:
     #--------------------------------------------------------------------------
     @staticmethod
     def new(name, iDataType:str) -> 'InfoData|None':
-        """Creates new InfoData of type iDataType with name.
+        """Creates new InfoData of type iDataType with name and ipType.
            Returns new InfoData instance or None if iDataType is not defined.
         """
 
@@ -181,7 +188,7 @@ class InfoData:
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, name, ipType=_IPTYPE_REAL1D):
+    def __init__(self, name):
         """Initialize an InfoData instance and its initial InfoPoint type.
 
         The point structure remains empty until it is initialized separately.
@@ -194,13 +201,14 @@ class InfoData:
         #----------------------------------------------------------------------
         self.param = {}  # Dictionary to store class parameters
 
-        self.param['name'  ] = {'value': name, 'type': 'str'}                                     # Name of the InfoData
-        self.param['ipType'] = {'value': None, 'type': 'ComboBox', 'options': self.iDataTypes()}  # Type of the InfoPoint in this InfoData
+        self.param['name'  ] = {'value': name,                  'type': 'str'}                                     # Name of the InfoData
+        self.param['idType'] = {'value': self._idTypeByClass(), 'type': 'ComboBox', 'options': self.iDataTypes()}  # Type of the InfoData
+        self.param['ipType'] = {'value': _IPTYPE_REAL1D,        'type': 'ComboBox', 'options': self.getIpTypes()}  # Type of the InfoPoint in this InfoData
 
         #----------------------------------------------------------------------
         # Public datove polozky triedy
         #----------------------------------------------------------------------
-        self.points       = [InfoPoint] # List of InfoPoints
+        self.points       = []          # List of InfoPoints
         self.gui          = None        # InfoDataGui instance for this InfoData
 
         self.actVal       = None        # Key of the current InfoPoint's dat value
@@ -222,7 +230,7 @@ class InfoData:
         #----------------------------------------------------------------------
         # Inicializacia InfoPoint type
         #----------------------------------------------------------------------
-        self.setIpType(ipType)
+        self.setIpType(self.param['ipType']['value'])
 
         #----------------------------------------------------------------------
         # Zapis do zoznamu instancii InfoData Inicializacia
@@ -231,6 +239,17 @@ class InfoData:
 
         #----------------------------------------------------------------------
         logger.info(f"{self.param['name']['value']}.constructor: done")
+
+    #--------------------------------------------------------------------------
+    def _idTypeByClass(self) -> str:
+        """Returns key of iDataTypes whose className matches this class or its nearest base class.
+        """
+
+        for cls in type(self).__mro__:
+            for idType, cfg in iDataTypes.items():
+                if cfg.get('className') == cls.__name__: return idType
+
+        return 'InfoData'
 
     #--------------------------------------------------------------------------
     def __str__(self):
@@ -286,7 +305,7 @@ class InfoData:
         # Clear all InfoData's data and reset internal properties
         #----------------------------------------------------------------------
         self.points.clear()        # List of rows of lists of InfoPoints
-        self.param['ipType']['value']     = ipType
+
 
         self.actVal     = None     # Key of the InfoPoint's current dat value
         self.actSubIdxs = {}       # Current active subdata defined as dict of freezed axesKeys with values
@@ -297,6 +316,11 @@ class InfoData:
         self._origs     = {}       # Origin's coordinates of the InfoData for respective axes in lambda units
         self._rects     = {}       # Lenghts of the InfoData for respective axes in lambda units
         self._diffs     = {}       # Distance between two points in respective axes in lambda units
+
+        #----------------------------------------------------------------------
+        # Set the new ipType
+        #----------------------------------------------------------------------
+        self.param['ipType']['value'] = ipType
 
         #----------------------------------------------------------------------
         # Reset GUI display options to default values based on new ipType
@@ -324,6 +348,7 @@ class InfoData:
         # Build the summary lines for the full data structure.
         #----------------------------------------------------------------------
         dat['name'          ] = self.param['name']['value']
+        dat['idType'        ] = self.param['idType']['value']
         dat['ipType'        ] = self.param['ipType']['value']
         dat['schema_axes'   ] = self.getSchemaAxes()
         dat['schema_vals'   ] = self.getSchemaVals()
@@ -394,16 +419,28 @@ class InfoData:
         return toRet
 
     #--------------------------------------------------------------------------
-    def copy(self, name) -> 'InfoData':
-        """Creates full copy of this InfoData with new name.
+    def copy(self, name) -> 'InfoData|None':
+        """Creates full copy of this InfoData with new name and the same idType and ipType.
+           Returns None if name already exists or idType cannot be created.
         """
 
         logger.debug(f"{self.param['name']['value']}.copy: to {name}")
 
         #----------------------------------------------------------------------
-        # Create new InfoData with the same dimensions
+        # Ensure the new name is unique
         #----------------------------------------------------------------------
-        toRet = InfoData(name, self.param['ipType']['value'])
+        if InfoData.getData(name) is not None:
+            logger.error(f"{self.param['name']['value']}.copy: InfoData with name '{name}' already exists, command denied")
+            return None
+
+        #----------------------------------------------------------------------
+        # Create new InfoData of the same idType with the same ipType
+        #----------------------------------------------------------------------
+        toRet = InfoData.new(name, self.param['idType']['value'])
+        if toRet is None: return None
+
+        if toRet.param['ipType']['value'] != self.param['ipType']['value']:
+            toRet.setIpType(self.param['ipType']['value'])
 
         toRet.points     = []                  # List of InfoPoints
         toRet.actVal     = self.actVal         # Key of the InfoPoint's dat value
@@ -426,18 +463,14 @@ class InfoData:
         return toRet
 
     #--------------------------------------------------------------------------
-    def createOptions(self)->dict:
-        """Returns dict of options to be asked from the user during create dialogue
-
-        Returns {key: {'label': str, 'type': type, 'default': any}}
+    def createParams(self)->list:
+        """Returns list of params to be asked from the user during create dialogue.
+        This method should be overridden by subclasses to provide a list of parameters
+        specific to the actual InfoData type.
         """
 
+        return []
 
-
-
-
-
-        return {}
     #==========================================================================
     # Structure/Value modification
     #--------------------------------------------------------------------------

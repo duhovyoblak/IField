@@ -10,7 +10,8 @@ class TestIMarkovInit:
     def test_imarkov_creation(self, imarkov_instance):
         """Test creating IMarkov instance."""
         assert imarkov_instance.param['name']['value'] == "test_markov"
-        assert imarkov_instance.dim == 1
+        assert imarkov_instance.param['dim']['value'] == 1
+        assert not hasattr(imarkov_instance, "dim")
         assert imarkov_instance.totObs == 0
         assert imarkov_instance.actVals == []
         assert imarkov_instance.actPoint is None
@@ -21,7 +22,7 @@ class TestIMarkovInit:
 
         for dim in [1, 2, 3, 5]:
             mrk = IMarkov(name=f"test_dim_{dim}", dim=dim)
-            assert mrk.dim == dim
+            assert mrk.param['dim']['value'] == dim
             assert mrk.totObs == 0
 
     def test_imarkov_invalid_dimension(self):
@@ -30,7 +31,7 @@ class TestIMarkovInit:
 
         mrk = IMarkov(name="test", dim=1)
         mrk.setDim(0)  # Should not change
-        assert mrk.dim == 1  # Still dim=1 after reset
+        assert mrk.param['dim']['value'] == 1  # Still dim=1 after reset
 
     def test_imarkov_default_axis_name(self):
         """Test the axis name provided by IMarkov's schema."""
@@ -189,7 +190,7 @@ class TestIMarkovReset:
         assert imarkov_instance.totObs > 0
 
         imarkov_instance.setDim(2)
-        assert imarkov_instance.dim == 2
+        assert imarkov_instance.param['dim']['value'] == 2
         assert imarkov_instance.totObs == 0  # Reset on setDim
 
 
@@ -207,6 +208,8 @@ class TestIMarkovInfo:
         assert "dim" in info["dat"]
         assert "totObs" in info["dat"]
         assert "eqProb" in info["dat"]
+        assert info["dat"]["idType"] == "IMarkov"
+        assert info["dat"]["ipType"] == "ipMarkovGen"
         assert all(isinstance(line, str) for line in info["msg"])
         assert all('\n' not in line and '\r' not in line for line in info["msg"])
 
@@ -280,6 +283,6 @@ class TestIMarkovEdgeCases:
         from idata.imarkov import IMarkov
 
         mrk = IMarkov(name="test", dim=10)
-        assert mrk.dim == 10
+        assert mrk.param['dim']['value'] == 10
         mrk.observe(1)
         assert mrk.totObs == 1

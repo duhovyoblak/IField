@@ -23,7 +23,7 @@ from   idata.idata_create_gui            import InfoDataCreateGui
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER            = '2.2.1'
+_VER            = '2.2.2'
 _WIN            = '1300x740'
 _DPI            = 100
 
@@ -163,7 +163,7 @@ class InfoDataGui(ttk.Frame):
         If GUI for respective InfoData already exists, logs warning and returns existing GUI.
         """
 
-        logger.info(f'{self.name}.newGui: For InfoData {dataObj.param["name"]["value"]} of type {dataObj.param["ipType"]["value"]}')
+        logger.info(f'{self.name}.newGui: For InfoData {dataObj.param["name"]["value"]} of type {dataObj.param["idType"]["value"]}/{dataObj.param["ipType"]["value"]}')
 
         #----------------------------------------------------------------------
         # Kontrola, ci uz existuje GUI pre dany IData objekt

@@ -10,6 +10,7 @@ class TestInfoDataInit:
         """Test creating InfoData instance."""
         assert idata_instance.param['name']['value'] == "test_data"
         assert idata_instance.param['ipType']['value'] == "ipReal1D"
+        assert idata_instance.param['idType']['value'] == "InfoData"
         assert not hasattr(idata_instance, "ipType")
         assert idata_instance.points == []
 
@@ -112,11 +113,45 @@ class TestInfoDataInfo:
         assert any('type           :' in line for line in msg)
         assert all('\n' not in line and '\r' not in line for line in msg)
 
+    def test_info_contains_types(self, idata_instance):
+        """info() reports both idType and ipType."""
+        dat = idata_instance.info()['dat']
+
+        assert dat['idType'] == "InfoData"
+        assert dat['ipType'] == "ipReal1D"
+
     def test_string_representation_joins_info_lines(self, idata_instance):
         """__str__ appends exactly one newline after every info line."""
         msg = idata_instance.info()['msg']
 
         assert str(idata_instance) == ''.join(f'{line}\n' for line in msg)
+
+
+class TestInfoDataCopy:
+    """Test InfoData copy functionality."""
+
+    def test_copy_keeps_types(self, idata_instance):
+        """copy() keeps idType and ipType of the source."""
+        copy = idata_instance.copy("test_data_copy")
+
+        assert copy is not None
+        assert copy.param['name']['value'] == "test_data_copy"
+        assert copy.param['idType']['value'] == idata_instance.param['idType']['value']
+        assert copy.param['ipType']['value'] == idata_instance.param['ipType']['value']
+
+    def test_copy_keeps_derived_class(self):
+        """copy() of IMarkov is IMarkov, not plain InfoData."""
+        from idata.imarkov import IMarkov
+
+        markov = IMarkov(name="test_markov_src")
+        copy = markov.copy("test_markov_dst")
+
+        assert isinstance(copy, IMarkov)
+        assert copy.param['idType']['value'] == "IMarkov"
+
+    def test_copy_denies_existing_name(self, idata_instance):
+        """copy() into an already used name returns None."""
+        assert idata_instance.copy(idata_instance.param['name']['value']) is None
 
 
 class TestInfoDataReset:
