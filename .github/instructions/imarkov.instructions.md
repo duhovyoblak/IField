@@ -1,6 +1,6 @@
 ---
 applyTo:
-  - src/idata/imarkov.py
+  - packages/idata/imarkov.py
 ---
 
 # IMarkov Analyzer - Koncept a Architektúra

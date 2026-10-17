@@ -8,7 +8,7 @@ outdated pro values, which causes an error in bits.
 """
 
 import sys
-sys.path.insert(0, 'src')
+sys.path.insert(0, 'packages')
 
 from idata.imarkov import IMarkov
 import math

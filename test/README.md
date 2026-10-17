@@ -52,7 +52,7 @@ pytest test/idata/test_imarkov.py::TestIMarkovInit
 pytest test/idata/test_imarkov.py::TestIMarkovInit::test_imarkov_creation
 
 # S coverage reportom
-pytest test/idata/ --cov=src --cov-report=html
+pytest test/idata/ --cov=packages --cov-report=html
 ```
 
 ## Test Moduly
@@ -147,7 +147,7 @@ def test_something(imarkov_instance):
 
 ```bash
 # Generovanie HTML reportu
-pytest --cov=src --cov-report=html
+pytest --cov=packages --cov-report=html
 
 # Otvoriť report
 open htmlcov/index.html  # Na Macu
@@ -179,7 +179,7 @@ jobs:
 
 ### Import Error: `No module named 'idata'`
 
-Overovať, že `sys.path` v `conftest.py` obsahuje `src/` adresár.
+Overovať, že balíky sú nainštalované v aktívnom prostredí: `pip install -r requirements.txt` (editable inštalácia ukazuje na `packages/`).
 
 ### Tests niet discovered
 

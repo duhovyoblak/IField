@@ -1,0 +1,6 @@
+# Lokalne editable instalacie, spusti z korenoveho adresara IField s aktivovanym .venv:
+#   pip install -r requirements.txt
+# Zavislosti (numpy, matplotlib) a vyvojove (pytest cez ".[dev]") su definovane v pyproject.toml
+
+-e ../siqolib
+-e .[dev]

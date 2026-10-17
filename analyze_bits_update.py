@@ -8,7 +8,7 @@ zastaranú pro hodnotu, čo spôsobuje chybu v bits.
 """
 
 import sys
-sys.path.insert(0, 'src')
+sys.path.insert(0, 'packages')
 
 from idata.imarkov import IMarkov
 import math

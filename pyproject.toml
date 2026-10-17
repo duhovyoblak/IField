@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ifield"
+description = "IField - Information Field"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "Proprietary"}
+authors = [{name = "Pavol Horansky"}]
+keywords = ["siqo", "ifield"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: Other/Proprietary License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "siqolib",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.urls]
+Homepage = "https://github.com/duhovyoblak/IField"
+Repository = "https://github.com/duhovyoblak/IField"
+
+[tool.setuptools]
+packages = ["idata", "ifield"]
+package-dir = {"" = "packages"}
+
+[tool.setuptools.package-data]
+idata = ["*.json"]
+
+[tool.setuptools_scm]
+write_to = ".version"
+write_to_template = "{version}\n"
+fallback_version = "0.1.0"
+local_scheme = "no-local-version"

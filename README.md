@@ -16,8 +16,7 @@ IField poskytuje nástroje na:
 
 ```
 IField/
-├── src/                                      # Zdrojový kód
-│   ├── main.py                               # Hlavný vstupný bod aplikácie
+├── packages/                                 # Zdrojový kód balíčkov (package-dir v pyproject.toml)
 │   ├── idata/                                # Dátový balíček (Info bázové triedy)
 │   │   ├── __init__.py
 │   │   ├── idata.py                          # InfoData - matica bodov (základná trieda)
@@ -29,6 +28,7 @@ IField/
 │   │   ├── ivector.py                        # IVector - vektor
 │   │   ├── ipoint_gui.py                     # GUI pre body
 │   │   ├── idata_gui.py                      # GUI pre matice
+│   │   ├── idata_create_gui.py               # GUI pre vytvorenie dát
 │   │   ├── idata_data_gui.py                 # GUI pre dáta matíc
 │   │   ├── idata_display_gui.py              # GUI pre zobrazovanie matíc
 │   │   └── idata_method_gui.py               # GUI pre metódy matíc
@@ -40,6 +40,9 @@ IField/
 │       ├── model_gui.py                      # GUI pre model
 │       ├── ifield_matrix_gui.py              # GUI pre IField matice
 │       └── ifield_line_gui.py                # GUI pre IField čiary
+├── src/                                      # Vstupný bod a pomocné spúšťacie testy
+│   ├── main.py                               # Hlavný vstupný bod aplikácie
+│   └── test_*.py                             # Pomocné ručné testy GUI
 ├── test/                                     # Testovací kód (pytest)
 │   ├── conftest.py                           # Pytest konfigurácia a fixtures
 │   ├── README.md                             # Dokumentácia testov
@@ -50,6 +53,8 @@ IField/
 │   │   └── test_iseries.py                   # Testy ISeries (8 testov)
 │   └── ifield/                               # Testy pre ifield balíček (budúcnosť)
 ├── Old/                                      # Staré verzie a deprecated kód
+├── pyproject.toml                            # Definícia balíkov (idata, ifield) a závislostí
+├── requirements.txt                          # Lokálne editable inštalácie (siqolib, IField)
 ├── pytest.ini                                # Pytest konfigurácia
 ├── README.md                                 # Tento súbor
 └── install-cheat.md                          # Návod na inštaláciu
@@ -58,15 +63,24 @@ IField/
 ## 🚀 Spustenie
 
 ### Požiadavky
-- Python 3.x
+- Python 3.11+
 - tkinter (zvyčajne súčasť Pythonu)
-- siqolib knižnica
+- siqolib knižnica (susedný repozitár `../siqolib`)
+
+### Inštalácia
+
+Z koreňového adresára `IField` s aktivovaným `.venv`:
+
+```bash
+pip install -r requirements.txt
+```
+
+Nainštaluje `../siqolib` a `IField` (balíky `idata`, `ifield` z `packages/`) ako editable spolu s `numpy`, `matplotlib` a `pytest`.
 
 ### Spuštenie aplikácie
 
 ```bash
-cd src
-python main.py
+python src/main.py
 ```
 
 Aplikácia spustí GUI okno s testom triedy `IFieldMatrixGui`.
@@ -94,7 +108,7 @@ pytest test/idata/ -v
 pytest test/idata/test_imarkov.py -v
 
 # S coverage reportom
-pytest test/idata/ --cov=src/idata --cov-report=html
+pytest test/idata/ --cov=packages/idata --cov-report=html
 
 # V VS Code
 # - Otvoriť Testing panel (ľavá bočná lišta)

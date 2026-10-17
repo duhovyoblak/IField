@@ -1,12 +1,7 @@
-"""Pytest configuration and fixtures for IField tests."""
+"""Pytest configuration and fixtures for IField tests.
 
-import sys
-import os
-from pathlib import Path
-
-# Add src directory to Python path
-src_path = os.path.join(os.path.dirname(__file__), "..", "src")
-sys.path.insert(0, src_path)
+Packages idata and ifield are imported from the editable install (pip install -r requirements.txt).
+"""
 
 import pytest
 
