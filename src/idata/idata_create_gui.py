@@ -8,7 +8,7 @@ from   tkinter                import (ttk, font, PanedWindow)
 from   tkinter.messagebox     import showinfo
 
 from   siqolib.logger         import SiqoLogger
-from   siqolib.message        import SiqoMessage, askInt, askReal
+from   siqolib.message        import SiqoMessage, askInt, askReal, askStr, askOption
 
 from   .                      import logger
 from   idata.ipoint           import InfoPoint
@@ -17,7 +17,7 @@ from   idata.idata            import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER            = '1.1.1'
+_VER            = '1.2.1'
 _WIN            = '800x540'
 _DPI            = 100
 
@@ -41,12 +41,13 @@ class InfoDataCreateGui(tk.Toplevel):
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, name, container, **kwargs):
+    def __init__(self, name, container, dataGui, **kwargs):
         "Call constructor of InfoDataCreateGui and initialise it for respective data"
 
         self.name     = name           # Name of this GUI
         self.changed  = False          # Flag indicating if counts have been changed
         self.data     = None           # InfoData to be created
+        self.dataGui  = dataGui        # Data GUI that owns this create dialog
 
         #----------------------------------------------------------------------
         # Internal objects
@@ -140,7 +141,7 @@ class InfoDataCreateGui(tk.Toplevel):
             return
 
         #----------------------------------------------------------------------
-        # Vytvorenie novych dat
+        # Vytvorenie novych dat a asociovanie data ku GUI
         #----------------------------------------------------------------------
         self.data = InfoData.new(name=name, iDataType=self.idType.get().strip())
 
@@ -149,20 +150,82 @@ class InfoDataCreateGui(tk.Toplevel):
             showinfo(title="Create data", message=f"Dáta typu {self.idType.get().strip()} sa nepodarilo vytvoriť.")
             return
 
+        #----------------------------------------------------------------------
+        # GUI bez dat prevezme nove data, inak sa otvori nove okno pre nove data
+        #----------------------------------------------------------------------
+        if self.dataGui.data is None:
+            self.dataGui.registerData(self.data)
+            self.dataGui.refreshForData()
+            targetGui = self.dataGui
+
+        else:
+            targetGui = self.dataGui.newGui(dataObj=self.data)
+
         self.changed = True
 
         #----------------------------------------------------------------------
-        # Nastavenie class-specifickych parametrov pre nove data
+        # Ziskanie class-specifickych parametrov pre nove data
         #----------------------------------------------------------------------
-        params = self.data.
-
-
+        crtParams = self.data.getCreateParams()
 
         #----------------------------------------------------------------------
-        # Upozornenie userovi, ze data boli vytvorene s nulovou dlzkou a treba ich nastavit
-        # v dialogu Schema DataProperties
+        # ak params obsahuje kluc 'cnts', vyvolam dialog pre zadanie poctu bodov
         #----------------------------------------------------------------------
-        showinfo(title="Create data", message="Dáta boli vytvorené s nulovou dlžkou. Nastavte ich v dialogu Schema DataProperties.")
+        if 'cnts' in crtParams:
+
+            crtParams.remove('cnts')
+            targetGui.onSchemaData()
+
+        #----------------------------------------------------------------------
+        # Postupne prechadzam cez vsetky parametre a nastavujem ich hodnoty
+        #----------------------------------------------------------------------
+        for key in crtParams:
+
+            label = self.data.param[key]['label']
+            value = self.data.param[key]['value']
+            typ   = self.data.param[key]['type' ]
+
+            if typ=='ComboBox': options = self.data.param[key]['options']
+
+            #------------------------------------------------------------------
+            # Zavolam dialog na zadanie hodnoty pre tento parameter
+            #------------------------------------------------------------------
+            if typ=='str':
+
+                value = askStr(container=self, title="Parameter input", prompt=f"Zadajte hodnotu pre '{label}':", initialvalue=value)
+
+                if value is not None: self.data.param[key]['value'] = value
+
+            elif typ=='int':
+
+                value = askInt(container=self, title="Parameter input", prompt=f"Zadajte hodnotu pre '{label}':", initialvalue=value)
+
+                if value is not None: self.data.param[key]['value'] = value
+
+            elif typ=='float':
+
+                value = askReal(container=self, title="Parameter input", prompt=f"Zadajte hodnotu pre '{label}':", initialvalue=value)
+
+                if value is not None: self.data.param[key]['value'] = value
+
+            elif typ=='ComboBox':
+
+                value = askOption(container=self, title="Parameter input", prompt=f"Zadajte hodnotu pre '{label}':", options=options, initialvalue=value)
+
+                if value is not None: self.data.param[key]['value'] = value
+
+            else:
+                logger.warning(f"Unsupported parameter type '{typ}' for key '{key}'")
+
+        #----------------------------------------------------------------------
+        # Pouzite class-specifickych parametrov pre nove data
+        #----------------------------------------------------------------------
+        self.data.useCreateParams()
+
+        #----------------------------------------------------------------------
+        # Zobrazenie novych dat v GUI, bez ohladu na to ci sa volal dialog 'cnts'
+        #----------------------------------------------------------------------
+        targetGui.viewChanged(force=True)
 
         #----------------------------------------------------------------------
         logger.info(f"{self.name}.ok: Created InfoData '{self.data.param['name']['value']}' of type '{self.data.param['idType']['value']}'")

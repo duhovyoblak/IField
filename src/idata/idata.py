@@ -182,6 +182,11 @@ class InfoData:
             toRet = InfoData(name=name)
 
         #----------------------------------------------------------------------
+        # Vytvaram class InfoData
+        #----------------------------------------------------------------------
+
+
+        #----------------------------------------------------------------------
         logger.info(f"InfoData.new: Created new {className} '{toRet.param['name']['value']}' with ipType='{toRet.param['ipType']['value']}'")
         return toRet
 
@@ -201,9 +206,9 @@ class InfoData:
         #----------------------------------------------------------------------
         self.param = {}  # Dictionary to store class parameters
 
-        self.param['name'  ] = {'value': name,                  'type': 'str'}                                     # Name of the InfoData
-        self.param['idType'] = {'value': self._idTypeByClass(), 'type': 'ComboBox', 'options': self.iDataTypes()}  # Type of the InfoData
-        self.param['ipType'] = {'value': _IPTYPE_REAL1D,        'type': 'ComboBox', 'options': self.getIpTypes()}  # Type of the InfoPoint in this InfoData
+        self.param['name'  ] = {'label': 'Názov dát', 'value': name,                  'type': 'str'}                                     # Name of the InfoData
+        self.param['idType'] = {'label': 'Typ dát'  , 'value': self._idTypeByClass(), 'type': 'ComboBox', 'options': self.iDataTypes()}  # Type of the InfoData
+        self.param['ipType'] = {'label': 'Typ bodu' , 'value': _IPTYPE_REAL1D,        'type': 'ComboBox', 'options': self.getIpTypes()}  # Type of the InfoPoint in this InfoData
 
         #----------------------------------------------------------------------
         # Public datove polozky triedy
@@ -463,13 +468,21 @@ class InfoData:
         return toRet
 
     #--------------------------------------------------------------------------
-    def createParams(self)->list:
+    def getCreateParams(self)->list:
         """Returns list of params to be asked from the user during create dialogue.
         This method should be overridden by subclasses to provide a list of parameters
         specific to the actual InfoData type.
         """
 
-        return []
+        return ['cnts']  # Sposobi zavolanie dialogu pre zadanie poctu bodov v jednotlivych osiach
+
+    #--------------------------------------------------------------------------
+    def useCreateParams(self):
+        """Use the class-specific parameters obtained during the creation of the InfoData.
+        This method should be overridden by subclasses to apply the parameters as needed.
+        """
+
+        pass
 
     #==========================================================================
     # Structure/Value modification

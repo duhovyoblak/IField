@@ -56,7 +56,7 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # IMarkov specific parameters
         #----------------------------------------------------------------------
-        self.param['dim'] = {'value': dim, 'type': 'int'}  # Dimension, e.g. number of previous states to consider in the Markov process
+        self.param['dim'] = {'label': 'Počet vnímaných stavov', 'value': dim, 'type': 'int'}  # Dimension, e.g. number of previous states to consider in the Markov process
 
         #----------------------------------------------------------------------
         # Private datove polozky triedy
@@ -205,11 +205,18 @@ class IMarkov(InfoData):
         return {'res': 'OK', 'dat': dat, 'msg': msg}
 
     #--------------------------------------------------------------------------
-    def createParams(self)->list:
+    def getCreateParams(self)->list:
         """Returns list of params to be asked from the user during create dialogue.
         """
 
-        return []
+        return ['dim']
+
+    #--------------------------------------------------------------------------
+    def useCreateParams(self):
+        """Use the class-specific parameters obtained during the creation of the InfoData.
+        """
+
+        self.setDim(self.param['dim']['value'])
 
     #--------------------------------------------------------------------------
     def reset(self):

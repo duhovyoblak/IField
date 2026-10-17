@@ -6,7 +6,7 @@ import numpy                             as np
 
 import tkinter                           as tk
 from   tkinter                           import ttk
-from   tkinter.messagebox                import showinfo
+from   tkinter.messagebox                import showinfo, askokcancel
 
 import matplotlib.pyplot                 as plt
 from   matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -23,7 +23,7 @@ from   idata.idata_create_gui            import InfoDataCreateGui
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER            = '2.2.2'
+_VER            = '2.4.1'
 _WIN            = '1300x740'
 _DPI            = 100
 
@@ -42,6 +42,8 @@ _COLORMAPS = {
 }
 #_CMAP           = _COLORMAPS['Diverging'][1]       # Default colormap
 _CMAP           = _COLORMAPS['Qualitative'][2]       # Default colormap
+
+_MAIN_COLOR     = 'red'  # Border color of the main window, closing of which ends the program
 
 #==============================================================================
 # Module's variables
@@ -325,7 +327,7 @@ class InfoDataGui(ttk.Frame):
         helpMenu.add_command(label="Set Logger to   DEBUG", command=lambda: logger.setLevel('DEBUG')  )
 
         # Pridanie Data Window menu
-        self.windowMenu = tk.Menu(mainMenu, tearoff=0)
+        self.windowMenu = tk.Menu(mainMenu, tearoff=0, postcommand=self.refreshWindowMenu)
         mainMenu.add_cascade(label="Data", menu=self.windowMenu)
         self.refreshWindowMenu()
 
@@ -363,6 +365,12 @@ class InfoDataGui(ttk.Frame):
         #----------------------------------------------------------------------
         if hasattr(self.container, 'protocol'):
             self.container.protocol("WM_DELETE_WINDOW", self.onCloseWindow)
+
+        #----------------------------------------------------------------------
+        # Hlavne okno (tk.Tk) ukoncuje cely program, preto je farebne odlisene
+        #----------------------------------------------------------------------
+        if self.isMainWindow():
+            self.container.configure(highlightthickness=3, highlightbackground=_MAIN_COLOR, highlightcolor=_MAIN_COLOR)
 
         #----------------------------------------------------------------------
         # Initialisation
@@ -845,7 +853,7 @@ class InfoDataGui(ttk.Frame):
         self.windowMenu.delete(0, tk.END)
 
         #----------------------------------------------------------------------
-        # Vytvorenie poloziek pre vsetky IData.datas
+        # Vytvorenie poloziek pre vsetky IData.datas okrem dat zobrazenych v tomto GUI
         #----------------------------------------------------------------------
         for dataName, dataObj in InfoData.getDatas(mySelf=self.data).items():
 
@@ -897,27 +905,32 @@ class InfoDataGui(ttk.Frame):
         "Create a new data object and assign it to this GUI"
 
         logger.info(f'{self.name}.onDataCreate:')
-        gui = InfoDataCreateGui(name=self.name, container=self)
-        gui.grab_set()
-        self.wait_window(gui)
+        crtGui = InfoDataCreateGui(name=self.name, container=self, dataGui=self)
+        crtGui.grab_set()
+        self.wait_window(crtGui)
 
-        if gui.changed:
-
-            if self.data is not None and self.data.gui is self:
-                self.data.gui = None
-
-            self.registerData(gui.data)
-
-            self.resetDisplay()
-            self.cbValMet['values'] = list(self.data.mapShowMethods().keys())
-            self.cbSetMet['values'] = self.data.visibleMethodKeys()
-            self.updateDisplayBar()
+        #----------------------------------------------------------------------
+        # Nove data su v tomto GUI (ak nemalo data) alebo v novom okne, menu Data treba obnovit
+        #----------------------------------------------------------------------
+        if crtGui.changed:
             self.refreshWindowMenu()
 
-            try   : self.container.title(f'Data: {self.data.param["name"]["value"]}')
-            except tk.TclError: pass
-
+        #----------------------------------------------------------------------
         logger.debug(f'{self.name}.onDataCreate: InfoDataCreateGui window closed')
+
+    #--------------------------------------------------------------------------
+    def refreshForData(self):
+        """Refresh display options, controls and window title after new self.data was registered
+        in this GUI which had no data before.
+        """
+
+        self.resetDisplay()
+        self.cbValMet['values'] = list(self.data.mapShowMethods().keys())
+        self.cbSetMet['values'] = self.data.visibleMethodKeys()
+        self.updateDisplayBar()
+
+        try   : self.container.title(f'Data: {self.data.param["name"]["value"]}')
+        except tk.TclError: pass
 
     #--------------------------------------------------------------------------
     #==========================================================================
@@ -1195,10 +1208,25 @@ class InfoDataGui(ttk.Frame):
         self.btnPlay['state'     ] = tk.NORMAL
 
     #--------------------------------------------------------------------------
+    def isMainWindow(self) -> bool:
+        "Returns True if this GUI lives in the main application window (tk.Tk), closing of which ends the program"
+
+        return isinstance(self.container, tk.Tk)
+
+    #--------------------------------------------------------------------------
     def onCloseWindow(self):
-        "Handle window close and cleanup stale GUI references"
+        "Handle window close and cleanup stale GUI references. Closing of the main window requires confirmation"
 
         logger.info(f'{self.name}.onCloseWindow: Closing GUI window')
+
+        #----------------------------------------------------------------------
+        # Zatvorenie hlavneho okna ukonci program aj vsetky ostatne okna
+        #----------------------------------------------------------------------
+        if self.isMainWindow():
+
+            if not askokcancel(title="Ukončiť program", message="Toto je hlavné okno. Jeho zatvorením sa ukončí program a zatvoria sa všetky ostatné okná.\n\nNaozaj chceš pokračovať?", icon='warning', parent=self.container):
+                logger.info(f'{self.name}.onCloseWindow: Closing of the main window was cancelled by user')
+                return
 
         #----------------------------------------------------------------------
         # Remove back-reference from InfoData to GUI instance.
