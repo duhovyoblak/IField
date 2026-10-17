@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------------
 import tkinter                  as tk
 
-from   siqolib.logger           import SiqoLogger
+from   siqolib                  import logger
 
 from   idata.idata              import InfoData
 from   idata.idata_gui          import InfoDataGui
@@ -22,7 +22,6 @@ _VALS_MAX  = 100000
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
 
-    logger = SiqoLogger(name='IData', level='INFO')
     logger.frameDepth = 2
     print(f'logger.frameDepth = {logger.frameDepth}')
 
