@@ -1,7 +1,11 @@
 {
     "InfoData"  :{"fileName": "",          "className": "InfoData" }
+
+
    ,"ISeries"   :{"fileName": "iseries",   "className": "ISeries"  }
+   ,"IMarkov"   :{"fileName": "imarkov",   "className": "IMarkov"  }
+
+
    ,"IFtion"    :{"fileName": "iftion",    "className": "IFtion"   }
    ,"IVector"   :{"fileName": "ivector",   "className": "IVector"  }
-   ,"IMarkov"   :{"fileName": "imarkov",   "className": "IMarkov"  }
 }

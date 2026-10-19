@@ -246,6 +246,23 @@ class InfoData:
         logger.info(f"{self.param['name']['value']}.constructor: done")
 
     #--------------------------------------------------------------------------
+    def getCreateParams(self)->list:
+        """Returns list of params to be asked from the user during create dialogue.
+        This method should be overridden by subclasses to provide a list of parameters
+        specific to the actual InfoData type.
+        """
+
+        return ['cnts']  # Sposobi zavolanie dialogu pre zadanie poctu bodov v jednotlivych osiach
+
+    #--------------------------------------------------------------------------
+    def useCreateParams(self):
+        """Use the class-specific parameters obtained during the creation of the InfoData.
+        This method should be overridden by subclasses to apply the parameters as needed.
+        """
+
+        pass
+
+    #--------------------------------------------------------------------------
     def _idTypeByClass(self) -> str:
         """Returns key of iDataTypes whose className matches this class or its nearest base class.
         """
@@ -466,23 +483,6 @@ class InfoData:
 
         #----------------------------------------------------------------------
         return toRet
-
-    #--------------------------------------------------------------------------
-    def getCreateParams(self)->list:
-        """Returns list of params to be asked from the user during create dialogue.
-        This method should be overridden by subclasses to provide a list of parameters
-        specific to the actual InfoData type.
-        """
-
-        return ['cnts']  # Sposobi zavolanie dialogu pre zadanie poctu bodov v jednotlivych osiach
-
-    #--------------------------------------------------------------------------
-    def useCreateParams(self):
-        """Use the class-specific parameters obtained during the creation of the InfoData.
-        This method should be overridden by subclasses to apply the parameters as needed.
-        """
-
-        pass
 
     #==========================================================================
     # Structure/Value modification

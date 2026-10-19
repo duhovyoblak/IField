@@ -73,12 +73,48 @@ class IMarkov(InfoData):
         self.needCompute = False  # Flag if probabilities and gains need to be recomputed
 
         #----------------------------------------------------------------------
-        # Inicializujem histogram, na zaciatku neobsahuje zidne body, preto cnts=(0,)
+        # Inicializujem histogram, na zaciatku neobsahuje ziadne body, preto cnts=(0,)
         #----------------------------------------------------------------------
         self.init( cnts=(0,) )
 
         #----------------------------------------------------------------------
         logger.info(f"{self.param['name']['value']}.constructor: done")
+
+    #--------------------------------------------------------------------------
+    def getCreateParams(self)->list:
+        """Returns list of params to be asked from the user during create dialogue.
+        """
+
+        return ['dim']
+
+    #--------------------------------------------------------------------------
+    def useCreateParams(self):
+        """Use the class-specific parameters obtained during the creation of the InfoData.
+        """
+
+        self.setDim(self.param['dim']['value'])
+
+    #--------------------------------------------------------------------------
+    def reset(self):
+        """Resets the Markov analyser to its initial state.
+        """
+
+        logger.debug(f"{self.param['name']['value']}.reset: Resetting Markov analyser")
+
+        #----------------------------------------------------------------------
+        # Reset total observations and active point
+        #----------------------------------------------------------------------
+        self.init( cnts=(0,) )
+        self.mrkPro      = 1
+        self.totObs      = 0
+        self.eqProb      = 1
+
+        self.actVals     = []
+        self.actPoint    = None
+        self.needCompute = False
+
+        #----------------------------------------------------------------------
+        logger.info(f"{self.param['name']['value']}.reset: Markov analyser reset complete")
 
     #--------------------------------------------------------------------------
     def setNamePro(self, mrkPro):
@@ -203,42 +239,6 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         logger.info(f"{self.param['name']['value']}.info: Created info")
         return {'res': 'OK', 'dat': dat, 'msg': msg}
-
-    #--------------------------------------------------------------------------
-    def getCreateParams(self)->list:
-        """Returns list of params to be asked from the user during create dialogue.
-        """
-
-        return ['dim']
-
-    #--------------------------------------------------------------------------
-    def useCreateParams(self):
-        """Use the class-specific parameters obtained during the creation of the InfoData.
-        """
-
-        self.setDim(self.param['dim']['value'])
-
-    #--------------------------------------------------------------------------
-    def reset(self):
-        """Resets the Markov analyser to its initial state.
-        """
-
-        logger.debug(f"{self.param['name']['value']}.reset: Resetting Markov analyser")
-
-        #----------------------------------------------------------------------
-        # Reset total observations and active point
-        #----------------------------------------------------------------------
-        self.init( cnts=(0,) )
-        self.mrkPro      = 1
-        self.totObs      = 0
-        self.eqProb      = 1
-
-        self.actVals     = []
-        self.actPoint    = None
-        self.needCompute = False
-
-        #----------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}.reset: Markov analyser reset complete")
 
     #--------------------------------------------------------------------------
     def setDim(self, dim:int):

@@ -9,15 +9,17 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER   = '1.1.1'
+_VER   = '1.2.0'
 
-_CNT   = 1200                          # Default number of points
+_IPTYPE_SERIES = 'ipSeries'
+
 _AXES  = {'i': 'Time tick'}            # Default axes
 _VALS  = {'s': 'State', 'd': 'Delta'}  # Default values
 
 #==============================================================================
 # Module's variables
 #------------------------------------------------------------------------------
+InfoData.setSchema(_IPTYPE_SERIES, {'axes': _AXES, 'vals': _VALS})
 
 #==============================================================================
 # ISeries
@@ -31,41 +33,51 @@ class ISeries(InfoData):
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, name, dTime=1, cnt:dict|tuple=_CNT, axes:dict|tuple=_AXES, vals:dict|tuple=_VALS):
+    def __init__(self, name, dTime=1):
         """Calls constructor of ISeries, e.g. one-dimensional InfoData
         Parameters:
         - name   : Name of the ISeries object
         - dTime  : Time step between consecutive points in seconds
-        - cnt    : Number of points in the series (default 1200)
-        - axes   : Axes   of the series (default {'i': 'Time tick'})
-        - vals   : Values of the series (default {'s': 'State', 'd': 'Delta'})
         """
 
         #----------------------------------------------------------------------
         # Super constructor
         #----------------------------------------------------------------------
         super().__init__(name)
+        self.setIpType(_IPTYPE_SERIES)
 
         #----------------------------------------------------------------------
-        # Datove polozky triedy
+        # ISeries specific parameters
         #----------------------------------------------------------------------
-        self.dTime = dTime     # Time step between consecutive points in seconds
+        self.param['dTime'] = {'label': 'Časový krok', 'value': dTime, 'type': 'float'}  # Time step between consecutive points in seconds
 
         #----------------------------------------------------------------------
-        # Schema setup
+        # Private datove polozky triedy
         #----------------------------------------------------------------------
-        self.setIpType('ipSeries')
-        self.setSchema({'axes': axes, 'vals': vals})
 
-        #----------------------------------------------------------------------
-        # Inicializacia cnt InfoPoints
-        #----------------------------------------------------------------------
-        self.init( cnts=(cnt,) )
+
 
         #----------------------------------------------------------------------
         logger.info(f"{self.param['name']['value']}.constructor: done")
 
     #--------------------------------------------------------------------------
+    def getCreateParams(self)->list:
+        """Returns list of params to be asked from the user during create dialogue.
+        """
+
+        return ['cnts', 'dTime']
+
+    #--------------------------------------------------------------------------
+    def useCreateParams(self):
+        """Use the class-specific parameters obtained during the creation of the InfoData.
+        """
+
+        #----------------------------------------------------------------------
+        # Pouzijem value z parametrov create dialogu
+        #----------------------------------------------------------------------
+        self.param['dTime']['value'] = float(self.param['dTime']['value'])
+
+    #==========================================================================
     # Dynamics methods for ISeries
     #--------------------------------------------------------------------------
     def mapSetMethods(self) -> dict:
