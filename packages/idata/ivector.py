@@ -9,7 +9,7 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.1'
+_VER    = '1.2.0'
 
 _LAMBDA = 1200       # Default points for Lambda axis
 _AMP    =  200       # Default amplituda
@@ -47,7 +47,12 @@ class IVector(InfoData):
         # Inicializacia
         #----------------------------------------------------------------------
         self.setIpType('ipIntLine')
-        self.setSchema({'axes': {'l': 'Lambda'}, 'vals': {'s': 'State', 'd': 'Delta', 'c': 'Autocorr', 'a': 'Amplitude'}})
+        self.setSchema({'axes': {'l': 'Lambda'}, 'vals': {
+            's': {'name': 'State', 'color': '#1f77b4'},
+            'd': {'name': 'Delta', 'color': '#ff7f0e'},
+            'c': {'name': 'Autocorr', 'color': '#2ca02c'},
+            'a': {'name': 'Amplitude', 'color': '#d62728'},
+        }})
         self.init(cnts={'l':_LAMBDA})
 
         self.applyDataMethod(methodKey='Integer random uniform', valueKey='s', params={'min':0, 'max':_AMP})

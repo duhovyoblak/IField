@@ -9,12 +9,13 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER   = '1.2.0'
+_VER   = '1.3.0'
 
 _IPTYPE_SERIES = 'ipSeries'
 
 _AXES  = {'i': 'Time tick'}            # Default axes
-_VALS  = {'s': 'State', 'd': 'Delta'}  # Default values
+_VALS  = {'s': {'name': 'State', 'color': '#1f77b4'},
+          'd': {'name': 'Delta', 'color': '#ff7f0e'}}  # Default values
 
 #==============================================================================
 # Module's variables

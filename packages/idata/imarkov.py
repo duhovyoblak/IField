@@ -9,18 +9,18 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.10'
+_VER    = '1.2.0'
 _IND    = '|  '                        # Info indentation
 
 _IPTYPE_MARKOV = 'ipMarkovGen'
 
 _AXES = {"x"   : "Value"}
 
-_VALS = {"obs" : "Observations"
-        ,"loc" : "Local prob"
-        ,"pro" : "Joint prob"
-        ,"for" : "Force"
-        ,"mrk" : "Markov analyser"
+_VALS = {"obs" : {'name': "Observations", "color": '#1f77b4'}
+        ,"loc" : {'name': "Local prob", "color": '#ff7f0e'}
+        ,"pro" : {'name': "Joint prob", "color": '#2ca02c'}
+        ,"for" : {'name': "Force", "color": '#d62728'}
+        ,"mrk" : {'name': "Markov analyser", "color": '#9467bd'}
         }
 
 #==============================================================================

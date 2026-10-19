@@ -9,14 +9,14 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.1'
+_VER    = '1.2.0'
 
 _CNT   = (100,)                                            # Default number of points
 _AX1D  = {'x': 'Os X'}                                     # Default axes for ftion of one variable
 _AX2D  = {'x': 'Os X','y': 'Os Y'}                         # Default axes for ftion of two variables
 _AX3D  = {'x': 'Os X','y': 'Os Y','z': 'Os Z'}             # Default axes for ftion of three variables
 _AX4D  = {'x': 'Os X','y': 'Os Y','z': 'Os Z','w': 'Os W'} # Default axes for ftion of four variables
-_VALS  = {'f': 'Ftion value'}                              # Default values
+_VALS  = {'f': {'name': 'Ftion value', 'color': '#1f77b4'}} # Default values
 
 #==============================================================================
 # Module's variables

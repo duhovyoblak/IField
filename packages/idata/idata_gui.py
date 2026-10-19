@@ -23,7 +23,7 @@ from   idata.idata_create_gui            import InfoDataCreateGui
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER            = '2.4.1'
+_VER            = '2.5.0'
 _WIN            = '1300x740'
 _DPI            = 100
 
@@ -231,7 +231,7 @@ class InfoDataGui(ttk.Frame):
                         ,'keyY'       : axeKeys[1] if len(axeKeys)>1 else ''     # key for Axis Y to show
                         ,'keyZ'       : axeKeys[2] if len(axeKeys)>2 else ''     # key for Axis Z to show
                         ,'showMethod' : ''                                       # key for methods for value to show
-                        ,'valName'    : next(iter(vals.values()), '')            # Value name to show (first of vals)
+                        ,'valName'    : next((value['name'] for value in vals.values()), '')  # Value name to show (first of vals)
                         ,'valKey'     : next(iter(vals.keys()  ), '')            # Value key to show (first of vals)
                         }
 
@@ -429,7 +429,7 @@ class InfoDataGui(ttk.Frame):
         lblVal.grid(column=4, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         self.cbValName = ttk.Combobox(container, textvariable=self.varValName, width=_COMBO_WIDTH)
-        self.cbValName['values'] = list(self.data.getSchemaVals().values()) if self.data is not None else []
+        self.cbValName['values'] = [value['name'] for value in self.data.getSchemaVals().values()] if self.data is not None else []
         self.cbValName['state' ] = 'readonly'
         self.cbValName.bind('<<ComboboxSelected>>', self.viewChanged)
         self.cbValName.grid(column=5, row=0, sticky=tk.E, padx=_PADX, pady=_PADY)
@@ -491,7 +491,8 @@ class InfoDataGui(ttk.Frame):
 
         self.display['valKey'] = self.data.valKeyByName(self.display['valName'])
         if not self.display['valKey']:
-            logger.warning(f"{self.name}.viewChanged: Value '{self.display['valName']}' not in values {list(self.data.getSchemaVals().values())}, setting to 'None'")
+            valueNames = [value['name'] for value in self.data.getSchemaVals().values()]
+            logger.warning(f"{self.name}.viewChanged: Value '{self.display['valName']}' not in values {valueNames}, setting to 'None'")
             return
 
         logger.debug(f"{self.name}.viewChanged: Show {self.display['showMethod']}({self.display['valName']}[{self.display['valKey']}]) in X:{self.display['keyX']}, Y:{self.display['keyY']}")
@@ -535,7 +536,7 @@ class InfoDataGui(ttk.Frame):
         #----------------------------------------------------------------------
         # Update values list and value to show in the chart
         #----------------------------------------------------------------------
-        self.cbValName['values'] = list(self.data.getSchemaVals().values())
+        self.cbValName['values'] = [value['name'] for value in self.data.getSchemaVals().values()]
         self.cbValName.set(self.display['valName'])
 
     #--------------------------------------------------------------------------
@@ -635,22 +636,24 @@ class InfoDataGui(ttk.Frame):
         #----------------------------------------------------------------------
         if self.display['type'] == 'LINE':
             logger.debug(f'{self.name}.updateChart: Chart type LINE selected')
+            valueColor = self.data.valColorByKey(self.display['valKey'])
 
             #------------------------------------------------------------------
             # Vyber zobrazenej osi
             #------------------------------------------------------------------
-            if       self.display['keyX'] and     self.display['keyY']: chrtObj = chart.plot(npX, npY, npC) #, linewidths=1, edgecolors='gray')
-            elif     self.display['keyX'] and not self.display['keyY']: chrtObj = chart.plot(npX,      npC) #, linewidths=1, edgecolors='gray')
-            elif not self.display['keyX'] and     self.display['keyY']: chrtObj = chart.plot(npY,      npC) #, linewidths=1, edgecolors='gray')
-            elif not self.display['keyX'] and not self.display['keyY']: chrtObj = chart.plot(          npC) #, linewidths=1, edgecolors='gray')
+            if       self.display['keyX'] and     self.display['keyY']: chrtObj = chart.plot(npX, npY, npC, color=valueColor)
+            elif     self.display['keyX'] and not self.display['keyY']: chrtObj = chart.plot(npX,      npC, color=valueColor)
+            elif not self.display['keyX'] and     self.display['keyY']: chrtObj = chart.plot(npY,      npC, color=valueColor)
+            elif not self.display['keyX'] and not self.display['keyY']: chrtObj = chart.plot(          npC, color=valueColor)
 
         #----------------------------------------------------------------------
         # Show SCATTER chart
         #----------------------------------------------------------------------
         elif self.display['type'] == 'SCATTER':
             logger.debug(f'{self.name}.updateChart: Chart type SCATTER selected')
+            valueColor = self.data.valColorByKey(self.display['valKey'])
 
-            chrtObj = chart.scatter( x=npX, y=npY, c=npC, marker="s", cmap='coolwarm') # , lw=0, s=(72./self.figure.dpi)**2
+            chrtObj = chart.scatter( x=npX, y=npY, c=npC, marker="s", cmap='coolwarm', edgecolors=valueColor) # , lw=0, s=(72./self.figure.dpi)**2
 
             #------------------------------------------------------------------
             # Colorbar
@@ -662,6 +665,7 @@ class InfoDataGui(ttk.Frame):
         #----------------------------------------------------------------------
         elif self.display['type'] == 'QUIVER':
             logger.debug(f'{self.name}.updateChart: Chart type QUIVER selected')
+            valueColor = self.data.valColorByKey(self.display['valKey'])
 
             #------------------------------------------------------------------
             # Kontrola npU a npV
@@ -673,6 +677,7 @@ class InfoDataGui(ttk.Frame):
                 return
 
             chrtObj = chart.quiver(npX, npY, npU, npV, npC, cmap='RdYlBu_r')
+            chrtObj.set_edgecolor(valueColor)
 
             #------------------------------------------------------------------
             # Colorbar
@@ -949,20 +954,19 @@ class InfoDataGui(ttk.Frame):
         self.wait_window(gui)
 
         #----------------------------------------------------------------------
-        # Zmeny v nazvoch axes/values
-        #----------------------------------------------------------------------
-        self.updateDisplayBar()
-
-        #----------------------------------------------------------------------
-        #  Zmeny v hodnotach axes/values
-        #----------------------------------------------------------------------
         if gui.changed:
 
+            if gui.axesChanged:
                 self.data.setIpType(self.data.param['ipType']['value'], force=True)
                 self.data.init()
-                self.viewChanged()
-
                 logger.warning(f'{self.name}.onSchemaSchema: Axes changed from {origSchema} to {self.data.getSchema()}, reset data')
+            else:
+                self.resetDisplay()
+
+            self.updateDisplayBar()
+            self.viewChanged(force=True)
+        else:
+            self.updateDisplayBar()
 
         #----------------------------------------------------------------------
         logger.debug(f'{self.name}.onSchemaSchema: InfoPointGui window closed')
@@ -1351,7 +1355,9 @@ if __name__ == '__main__':
     data.logger.info('Test of InfoDataGui class')
 
     data.setIpType('ipTest')
-    data.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
+    data.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {
+        's': {'name': 'State', 'color': '#1f77b4'},
+    }})
     data.init(cnts={'l':100, 'e':50})
 
     data.logger.setLevel('DEBUG')

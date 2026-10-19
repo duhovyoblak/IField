@@ -9,7 +9,7 @@ from   idata.idata            import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.1'
+_VER    = '1.2.0'
 
 _LAMBDA = 120       # Default points for Lambda axis
 _EPOCH  =  60       # Default points for Epoch axis
@@ -71,7 +71,10 @@ class InfoFieldMatrix(InfoData):
         # Inicializacia
         #----------------------------------------------------------------------
         self.setIpType('ipTest')
-        self.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State', 'omg': 'Omega'}})
+        self.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {
+            's': {'name': 'State', 'color': '#1f77b4'},
+            'omg': {'name': 'Omega', 'color': '#ff7f0e'},
+        }})
         self.init(cnts={'l':_LAMBDA, 'e':_EPOCH})
 
         self.applyDataMethod(methodKey='Comp constant (re/im)', valueKey='s', params={'real':0, 'imag':0})

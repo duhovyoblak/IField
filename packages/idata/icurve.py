@@ -9,11 +9,11 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.1.1'
+_VER    = '1.2.0'
 
 _CNT   = 1200                             # Default number of points
 _AXES  = {'x': 'Os X', 'y': 'Os Y'}       # Default axes
-_VALS  = {'v': 'Value'            }       # Default values
+_VALS  = {'v': {'name': 'Value', 'color': '#1f77b4'}}  # Default values
 
 #==============================================================================
 # Module's variables

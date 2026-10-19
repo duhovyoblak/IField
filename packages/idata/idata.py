@@ -14,7 +14,7 @@ from   .ipoint                import InfoPoint
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '3.5.1'
+_VER    = '3.6.0'
 _IND    = '|  '       # Info indentation
 _UPP    = 10          # distance units per period
 
@@ -23,8 +23,7 @@ _F_POS  =  8          # Format for position
 _IPTYPE_REAL1D = 'ipReal1D'
 
 _AXES = {"x"   : "Position X"}
-_VALS = {"y"   : "Real value"
-        }
+_VALS = {"y": {'name': 'Real value', 'color': '#1f77b4'}}
 
 #==============================================================================
 # Module's variables
@@ -118,7 +117,8 @@ class InfoData:
     #--------------------------------------------------------------------------
     @staticmethod
     def setSchema(ipType, schema) -> 'InfoData|None':
-        """Inserts or updates schema in catalogue of schemas.
+        """Inserts or updates schema in the catalogue of schemas.
+        Value entries contain 'name' and 'color'; omitted colors are assigned automatically.
         """
 
         InfoPoint.setSchema(ipType, schema)
@@ -755,8 +755,8 @@ class InfoData:
 
     #--------------------------------------------------------------------------
     def equalSchema(self, schema) -> dict:
-        """Check if schema definition for ipType is equal to the testSchema as dict {ipType: {'axes':{}, 'vals':{}}}.
-           Returns dict with keys 'exists', 'equalAxes', 'equalVals' and boolean values for respective checks.
+        """Compare this InfoData's schema with a candidate schema.
+           Reports key equality separately from value name/color metadata equality.
         """
 
         return InfoPoint.equalSchema(self.param['ipType']['value'], schema)
@@ -770,7 +770,7 @@ class InfoData:
 
     #--------------------------------------------------------------------------
     def getSchema(self) -> dict:
-        """Returns copy of schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}
+        """Returns copy of schema with values as {key: {'name': name, 'color': color}}.
            If ipType is not defined in the schema yet, first create empty schema for this ipType.
         """
 
@@ -857,15 +857,16 @@ class InfoData:
     # Schema vals methods
     #--------------------------------------------------------------------------
     def getSchemaVals(self) -> dict:
-        """Returns values keys and names as dict {key: name} for respective ipType.
+        """Returns value metadata as dict {key: {'name': name, 'color': color}}.
            If ipType is not defined in the schema yet, first create empty schema for this ipType.
         """
 
         return InfoPoint.getSchemaVals(self.param['ipType']['value'])
 
     #--------------------------------------------------------------------------
-    def setSchemaVal(self, key, name):
-        """Sets value key and name for respective ipType.
+    def setSchemaVal(self, key:str, name:str, color:str|None=None):
+        """Sets value key, name, and color for respective ipType.
+        If color is omitted, the schema assigns the next available default color.
         - If ipType is not defined in the schema, first create empty schema for this ipType.
         - If value exists already, redefine name.
         - Do NOT clear points in this InfoData nor reset internal structures _cnts, _origs, _rects and _diffs.
@@ -873,7 +874,7 @@ class InfoData:
         - This method has no impact on InfoPoints of other ipTypes.
         """
 
-        InfoPoint.setSchemaVal(self.param['ipType']['value'], key, name)
+        InfoPoint.setSchemaVal(self.param['ipType']['value'], key, name, color)
 
         if self.gui is not None:
             self.gui.resetDisplay()
@@ -904,6 +905,12 @@ class InfoData:
         """
 
         return InfoPoint.valNameByKey(self.param['ipType']['value'], key)
+
+    #--------------------------------------------------------------------------
+    def valColorByKey(self, key) -> str|None:
+        """Returns a value's configured color for this InfoData's ipType."""
+
+        return InfoPoint.valColorByKey(self.param['ipType']['value'], key)
 
     #--------------------------------------------------------------------------
     def valKeyByName(self, name) -> str|None:

@@ -97,6 +97,48 @@ class TestIPointEdgeCases:
         assert abs(point.pos('x') - 3.14159) < 0.001
 
 
+class TestIPointValueSchema:
+    """Test schema value names and associated plot colors."""
+
+    def test_schema_assigns_colors_and_preserves_explicit_colors(self):
+        from idata.ipoint import InfoPoint
+
+        ip_type = 'testColorSchema'
+        InfoPoint.setSchema(ip_type, {
+            'axes': {'x': 'X'},
+            'vals': {
+                'state': {'name': 'State', 'color': '#123456'},
+                'delta': {'name': 'Delta'},
+            },
+        })
+
+        values = InfoPoint.getSchemaVals(ip_type)
+        assert values['state'] == {'name': 'State', 'color': '#123456'}
+        assert values['delta']['name'] == 'Delta'
+        assert values['delta']['color']
+        assert values['delta']['color'] != values['state']['color']
+        assert InfoPoint.valNameByKey(ip_type, 'state') == 'State'
+        assert InfoPoint.valColorByKey(ip_type, 'state') == '#123456'
+
+    def test_set_schema_value_assigns_next_color_when_omitted(self):
+        from idata.ipoint import InfoPoint
+
+        ip_type = 'testAutoColorSchema'
+        InfoPoint.setSchema(ip_type, {'axes': {}, 'vals': {'first': 'First'}})
+        first_color = InfoPoint.valColorByKey(ip_type, 'first')
+
+        InfoPoint.setSchemaVal(ip_type, 'second', 'Second')
+
+        assert InfoPoint.valColorByKey(ip_type, 'second')
+        assert InfoPoint.valColorByKey(ip_type, 'second') != first_color
+
+    def test_set_schema_value_rejects_invalid_color(self):
+        from idata.ipoint import InfoPoint
+
+        with pytest.raises(ValueError, match='Invalid color'):
+            InfoPoint.setSchemaVal('testInvalidColorSchema', 'value', 'Value', 'not-a-color')
+
+
 class TestIPointInfo:
     """Test InfoPoint info output contract."""
 

@@ -280,7 +280,9 @@ if __name__ == '__main__':
     logger.frameDepth = 2
 
     im.setIpType('ipTest')
-    im.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {'s': 'State'}})
+    im.setSchema({'axes': {'l': 'Lambda', 'e': 'Epoch'}, 'vals': {
+        's': {'name': 'State', 'color': '#1f77b4'},
+    }})
     im.init(cnts={'l':30, 'e':10})
 
     matGui = InfoDataDataGui(name='Schema test', container=win, data=im)

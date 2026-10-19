@@ -3,7 +3,7 @@
 #------------------------------------------------------------------------------
 import tkinter                as tk
 from   tkinter                import (ttk, font, PanedWindow)
-from   tkinter.messagebox     import showinfo, askokcancel, askyesno
+from   tkinter.messagebox     import showinfo, showerror, askokcancel, askyesno
 
 from   siqolib.message        import SiqoMessage, askInt, askReal
 
@@ -13,7 +13,7 @@ from   idata.ipoint           import InfoPoint
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER            = '1.1.4'
+_VER            = '1.2.0'
 _WIN            = '800x540'
 _DPI            = 100
 
@@ -41,6 +41,7 @@ class InfoPointGui(tk.Toplevel):
         self.name     = name               # Name of this chart
         self.ipType   = ipType             # InfoPoint type to work with
         self.changed  = False              # Flag if setting was changed
+        self.axesChanged = False            # Flag if applying changes requires resetting data
 
         #----------------------------------------------------------------------
         # Internal objects
@@ -116,6 +117,9 @@ class InfoPointGui(tk.Toplevel):
 
         lbl = ttk.Label(tab, text=lblName)
         lbl.grid(column=1, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
+        if paramType == 'vals':
+            lbl = ttk.Label(tab, text='Color')
+            lbl.grid(column=2, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
         #----------------------------------------------------------------------
         # Show parameters
@@ -129,12 +133,21 @@ class InfoPointGui(tk.Toplevel):
             lbl.grid(column=0, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
 
             ent = ttk.Entry(tab)
-            ent.insert(0, str(val))
-            ent.bind("<FocusOut>", lambda event, key=key, entry=ent: self.setParam(paramType, key, entry.get()))
+            ent.insert(0, str(val['name'] if paramType == 'vals' else val))
+            if paramType == 'vals':
+                colorEntry = ttk.Entry(tab, width=12)
+                colorEntry.insert(0, val['color'])
+                colorEntry.grid(column=2, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+                btnSet = ttk.Button(tab, text="Set", command=lambda key=key, entry=ent, color=colorEntry: self.setParam(paramType, key, entry.get(), color.get()))
+                btnSet.grid(column=3, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+                deleteColumn = 4
+            else:
+                ent.bind("<FocusOut>", lambda event, key=key, entry=ent: self.setParam(paramType, key, entry.get()))
+                deleteColumn = 2
             ent.grid(column=1, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
 
             btnDelete = ttk.Button(tab, text="Delete", command=lambda key=key: self.delParam(paramType, key))
-            btnDelete.grid(column=2, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+            btnDelete.grid(column=deleteColumn, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
 
             row += 1
 
@@ -142,7 +155,7 @@ class InfoPointGui(tk.Toplevel):
         # Add button for new parameter
         #----------------------------------------------------------------------
         separator = ttk.Separator(tab, orient='horizontal')
-        separator.grid(column=0, row=row, columnspan=3, sticky=tk.EW, padx=_PADX, pady=_PADY)
+        separator.grid(column=0, row=row, columnspan=5 if paramType == 'vals' else 3, sticky=tk.EW, padx=_PADX, pady=_PADY)
         row += 1
 
         entPar = ttk.Entry(tab)
@@ -153,11 +166,19 @@ class InfoPointGui(tk.Toplevel):
         entNam.insert(0, 'New Param Name')
         entNam.grid(column=1, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
 
-        btnAdd = ttk.Button(tab, text="Add new", command=lambda: self.setParam(paramType, entPar.get(), entNam.get()))
-        btnAdd.grid(column=2, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+        if paramType == 'vals':
+            entColor = ttk.Entry(tab, width=12)
+            entColor.grid(column=2, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+            addCommand = lambda: self.setParam(paramType, entPar.get(), entNam.get(), entColor.get())
+            addColumn = 3
+        else:
+            addCommand = lambda: self.setParam(paramType, entPar.get(), entNam.get())
+            addColumn = 2
+        btnAdd = ttk.Button(tab, text="Add new", command=addCommand)
+        btnAdd.grid(column=addColumn, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
 
     #--------------------------------------------------------------------------
-    def setParam(self, paramType:str, key:str, val:str):
+    def setParam(self, paramType:str, key:str, val:str, color:str|None=None):
         "Update or Add new parameter to the InfoPoint"
 
         logger.debug(f'{self.name}.setParam: {paramType} : {key} : {val}')
@@ -174,7 +195,14 @@ class InfoPointGui(tk.Toplevel):
         # Add Value
         #----------------------------------------------------------------------
         elif paramType == 'vals':
-            InfoPoint.setSchemaVal(self.ipType, key, val)
+            color = color.strip() if color else None
+            try:
+                InfoPoint.setSchemaVal(self.ipType, key, val, color=color)
+            except ValueError as err:
+                logger.error(f'{self.name}.setParam: Invalid value color for {key}: {err}')
+                showerror(title="Invalid color", message=str(err), parent=self)
+                self.showParams(self.tabVal, 'vals', InfoPoint.getSchemaVals(self.ipType), lblParam='Value', lblName='Value Name')
+                return
             logger.info(f'{self.name}.setParam: {paramType}: {key}={val} was set')
             self.showParams(self.tabVal, 'vals', InfoPoint.getSchemaVals(self.ipType), lblParam='Value', lblName='Value Name')
 
@@ -238,6 +266,7 @@ class InfoPointGui(tk.Toplevel):
                 if askyesno(title='Axes changed', message='Axes was changed. Apply changes and reset  data?'):
 
                     self.changed = True
+                    self.axesChanged = True
                     logger.warning(f'{self.name}.onDataSchema: Axes changed from {self.origSchema} to {newSchema}, reset data')
 
                 else:
@@ -246,8 +275,11 @@ class InfoPointGui(tk.Toplevel):
                     logger.warning(f'{self.name}.onDataSchema: Axes changed from {self.origSchema} to {newSchema}, but user cancelled changes, schema restored')
 
             else:
-                self.changed = False
-                logger.info(f'{self.name}.ok: {self.ipType} schema unchanged')
+                self.changed = not test['equalValDetails']
+                if self.changed:
+                    logger.info(f'{self.name}.ok: {self.ipType} value metadata changed')
+                else:
+                    logger.info(f'{self.name}.ok: {self.ipType} schema unchanged')
 
         #----------------------------------------------------------------------
         self.destroy()

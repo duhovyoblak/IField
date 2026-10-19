@@ -1,9 +1,10 @@
 #==============================================================================
 # Siqo class InfoPoint
 #------------------------------------------------------------------------------
+import cmath
+import colorsys
 import copy
 import math
-import cmath
 import random                 as rnd
 
 from   .                      import logger
@@ -11,7 +12,7 @@ from   .                      import logger
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER      = '3.3.3'
+_VER      = '3.4.0'
 
 _IND      = '|  '                      # Info indentation
 _F_SCHEMA = 1                          # Format for ipType
@@ -21,10 +22,15 @@ _F_POS    = 4                          # Number of digits for position coordinat
 
 _SCH_AXES = {}                         # Default axes for InfoPoint schema
 _SCH_VALS = {}                         # Default values for InfoPoint schema
+_SCHEMA_COLORS = (
+    '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+    '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+    '#393b79', '#637939', '#8c6d31', '#843c39', '#7b4173',
+    '#3182bd', '#31a354', '#756bb1', '#636363', '#e6550d',
+)
 
 _SCHEMA   = {'ipReal'   :{'axes'  :_SCH_AXES.copy()
                          ,'vals'  :_SCH_VALS.copy()
-                         ,'module':''
                          }
             }                          # Default built-in Schema for InfoPoint
 
@@ -43,7 +49,7 @@ _InfoDataClass = None  # Cache for InfoData class (lazy import to avoid circular
 class InfoPoint:
     """Define InfoPoint as a dynamic data structure in the space defined by schema.
        Schema defines which axes and vals are defined for respective InfoPoint type <ipType>.
-       Schema is one static structure for all type of InfoPoints and is defined as dict {ipType: {'axes':{key:name}, 'vals':{key:name}}}.
+       Values are stored as {key: {'name': str, 'color': str}}.
        Methods for manipulation of InfoPoint values are defined as static methods and can be mapped to method names in mapSetMethods() static method.
     """
 
@@ -89,11 +95,11 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def equalSchema(ipType, testSchema) -> dict:
-        """Check if schema definition for ipType is equal to the testSchema as dict {ipType: {'axes':{}, 'vals':{}}}.
-           Returns dict with keys 'exists', 'equalAxes', 'equalVals' and boolean values for respective checks.
+        """Compare a schema with the registered definition for an InfoPoint type.
+           Reports key equality separately from value name/color metadata equality.
         """
 
-        toRet = {'exists':False, 'equalAxes':False, 'equalVals':False}
+        toRet = {'exists':False, 'equalAxes':False, 'equalVals':False, 'equalValDetails':False}
 
         #----------------------------------------------------------------------
         # Check if ipType is defined
@@ -114,7 +120,18 @@ class InfoPoint:
         # Check vals
         #----------------------------------------------------------------------
         if 'vals' in testSchema.keys():
-            if InfoPoint._schema[ipType]['vals'].keys() == testSchema['vals'].keys(): toRet['equalVals'] = True
+            currentVals = InfoPoint._schema[ipType]['vals']
+            testVals = testSchema['vals']
+            if currentVals.keys() == testVals.keys():
+                toRet['equalVals'] = True
+                toRet['equalValDetails'] = all(
+                    currentVals[key]['name'] == (value.get('name') if isinstance(value, dict) else value)
+                    and (
+                        not isinstance(value, dict)
+                        or currentVals[key]['color'] == value.get('color')
+                    )
+                    for key, value in testVals.items()
+                )
 
         #----------------------------------------------------------------------
         return toRet
@@ -165,7 +182,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getSchema(ipType) -> dict:
-        """Returns copy of schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}}
+        """Returns copy of schema with values as {key: {'name': name, 'color': color}}.
            If ipType is not defined in the schema yet, first create empty schema for this ipType.
         """
 
@@ -175,16 +192,67 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def setSchema(ipType, schema):
-        """Set schema for respective InfoPoint type as dict {'axes':{}, 'vals':{}, 'module': '__module__name__'}
+        """Set schema for respective InfoPoint type as {'axes': {}, 'vals': {key: {'name', 'color'}}}.
            If ipType is not defined in the schema yet, first create empty schema for this ipType.
            This method has no impact on InfoPoints of other ipTypes.
-           Returns name of the module to import to work with this schema.
+           Legacy value entries in the form key: name are assigned automatic colors.
         """
 
         InfoPoint.checkSchema(ipType)
-        InfoPoint._schema[ipType] = copy.deepcopy(schema)
+        normalized = copy.deepcopy(schema)
+        vals = {}
+        for key, value in normalized.get('vals', {}).items():
+            if isinstance(value, dict):
+                if 'name' not in value:
+                    raise ValueError(f"Schema value '{key}' for '{ipType}' must include 'name'")
+                name = value['name']
+                color = value.get('color')
+            else:
+                name = value
+                color = None
+
+            if not isinstance(name, str) or not name.strip():
+                raise ValueError(f"Schema value '{key}' for '{ipType}' must have a non-empty name")
+            if color is None:
+                color = InfoPoint._nextSchemaColor(vals)
+            InfoPoint._validateSchemaColor(ipType, key, color)
+            vals[key] = {'name': name, 'color': color}
+
+        normalized['vals'] = vals
+        normalized.setdefault('axes', copy.deepcopy(_SCH_AXES))
+        InfoPoint._schema[ipType] = normalized
 
         logger.info(f"InfoPoint.setSchema: schema for ipType '{ipType}' was set")
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def _nextSchemaColor(vals: dict) -> str:
+        """Return the next unused color from the built-in value palette."""
+
+        usedColors = {value['color'] for value in vals.values()}
+        for color in _SCHEMA_COLORS:
+            if color not in usedColors:
+                return color
+
+        offset = len(vals) - len(_SCHEMA_COLORS)
+        for idx in range(offset, offset + len(_SCHEMA_COLORS) + 1):
+            hue = (idx * 0.618033988749895) % 1
+            red, green, blue = colorsys.hsv_to_rgb(hue, 0.68, 0.82)
+            color = f'#{round(red * 255):02x}{round(green * 255):02x}{round(blue * 255):02x}'
+            if color not in usedColors:
+                return color
+
+        raise RuntimeError("Could not generate an unused schema color")
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def _validateSchemaColor(ipType, key, color) -> None:
+        """Reject colors that Matplotlib cannot use for a value."""
+
+        from matplotlib.colors import is_color_like
+
+        if not isinstance(color, str) or not is_color_like(color):
+            raise ValueError(f"Invalid color '{color}' for schema value '{key}' in '{ipType}'")
 
     #--------------------------------------------------------------------------
     # Axes methods
@@ -347,7 +415,7 @@ class InfoPoint:
     #--------------------------------------------------------------------------
     @staticmethod
     def getSchemaVals(ipType) -> dict:
-        """Returns values keys and names as dict {key: name} for respective ipType.
+        """Returns value metadata as dict {key: {'name': name, 'color': color}}.
            If ipType is not defined in the schema yet, first create empty schema for this ipType.
         """
 
@@ -371,8 +439,8 @@ class InfoPoint:
 
     #--------------------------------------------------------------------------
     @staticmethod
-    def setSchemaVal(ipType, key, name):
-        """Sets value key and name for respective ipType.
+    def setSchemaVal(ipType, key:str, name:str, color:str|None=None):
+        """Set a value name and color; omitted colors are assigned automatically.
            If ipType is not defined in the schema, first create empty schema for this ipType.
            If value exists already, redefine name.
            This method has no impact on InfoPoints of other ipTypes.
@@ -380,13 +448,15 @@ class InfoPoint:
 
         InfoPoint.checkSchema(ipType)
 
-        if (key not in InfoPoint._schema[ipType]['vals'].keys()) or (InfoPoint._schema[ipType]['vals'][key] != name):
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(f"Schema value '{key}' for '{ipType}' must have a non-empty name")
 
-            InfoPoint._schema[ipType]['vals'][key] = name
-            logger.debug(f"InfoPoint.setSchemaVal: set key '{key}' for value '{name}'")
-
-        else:
-            logger.debug(f"InfoPoint.setSchemaVal: value '{name}' for key '{key}' is already defined, no change")
+        vals = InfoPoint._schema[ipType]['vals']
+        if color is None:
+            color = InfoPoint._nextSchemaColor(vals)
+        InfoPoint._validateSchemaColor(ipType, key, color)
+        vals[key] = {'name': name, 'color': color}
+        logger.debug(f"InfoPoint.setSchemaVal: set key '{key}' for value '{name}' with color '{color}'")
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -466,7 +536,18 @@ class InfoPoint:
             return None
 
         else:
-            return InfoPoint._schema[ipType]['vals'][key]
+            return InfoPoint._schema[ipType]['vals'][key]['name']
+
+    #--------------------------------------------------------------------------
+    @staticmethod
+    def valColorByKey(ipType, key) -> str|None:
+        """Return a value's configured color for the respective ipType."""
+
+        if ipType not in InfoPoint._schema or key not in InfoPoint._schema[ipType]['vals']:
+            logger.warning(f"InfoPoint.valColorByKey: Key '{key}' not found for ipType '{ipType}'")
+            return None
+
+        return InfoPoint._schema[ipType]['vals'][key]['color']
 
     #--------------------------------------------------------------------------
     @staticmethod
@@ -486,9 +567,9 @@ class InfoPoint:
         #----------------------------------------------------------------------
         # Find the val's key for the val's name
         #----------------------------------------------------------------------
-        for key, valName in InfoPoint._schema[ipType]['vals'].items():
+        for key, valInfo in InfoPoint._schema[ipType]['vals'].items():
 
-            if valName == name:
+            if valInfo['name'] == name:
                 logger.debug(f"InfoPoint.valKeyByName: Name '{name}' found in values {InfoPoint._schema[ipType]['vals']} for key '{key}'")
                 return key
 
@@ -627,7 +708,7 @@ class InfoPoint:
             # Pridam hodnotu do vystupu
             #------------------------------------------------------------------
             if i>0: toRet += ', '
-            toRet += f"{valName}={self._format(self._vals.get(val, None))}"
+            toRet += f"{valName['name']}={self._format(self._vals.get(val, None))}"
             i += 1
 
         #----------------------------------------------------------------------

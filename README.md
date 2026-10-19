@@ -77,6 +77,32 @@ pip install -r requirements.txt
 
 Nainštaluje `../siqolib` a `IField` (balíky `idata`, `ifield` z `packages/`) ako editable spolu s `numpy`, `matplotlib` a `pytest`.
 
+### Schéma hodnôt a farby
+
+Každá hodnota v schéme má názov a farbu grafu:
+
+```python
+{
+    'state': {'name': 'State', 'color': '#1f77b4'},
+    'delta': {'name': 'Delta', 'color': '#ff7f0e'},
+}
+```
+
+`InfoPoint.setSchemaVal(ipType, key, name, color=None)` automaticky pridelí ďalšiu nepoužitú predvolenú farbu, keď `color` nie je zadaná. `InfoPoint.getSchemaVals(ipType)` vracia metadáta každej hodnoty vrátane farby. Staršie schémy `key: name` sa pri registrácii prevedú a dostanú automatické farby.
+
+### Schéma hodnôt a farby
+
+Každá hodnota v schéme má názov a farbu grafu:
+
+```python
+{
+    'state': {'name': 'State', 'color': '#1f77b4'},
+    'delta': {'name': 'Delta', 'color': '#ff7f0e'},
+}
+```
+
+`InfoPoint.setSchemaVal(ipType, key, name, color=None)` automaticky pridelí ďalšiu nepoužitú predvolenú farbu, keď `color` nie je zadaná. `InfoPoint.getSchemaVals(ipType)` vracia metadáta každej hodnoty vrátane farby. Staršie schémy `key: name` sa pri registrácii prevedú a dostanú automatické farby.
+
 ### Spuštenie aplikácie
 
 ```bash
