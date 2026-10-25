@@ -12,7 +12,7 @@ from   .                      import logger
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER      = '3.4.0'
+_VER      = '3.4.1'
 
 _IND      = '|  '                      # Info indentation
 _F_SCHEMA = 1                          # Format for ipType
@@ -453,7 +453,8 @@ class InfoPoint:
 
         vals = InfoPoint._schema[ipType]['vals']
         if color is None:
-            color = InfoPoint._nextSchemaColor(vals)
+            if key in vals: color = vals[key]['color']
+            else          : color = InfoPoint._nextSchemaColor(vals)
         InfoPoint._validateSchemaColor(ipType, key, color)
         vals[key] = {'name': name, 'color': color}
         logger.debug(f"InfoPoint.setSchemaVal: set key '{key}' for value '{name}' with color '{color}'")

@@ -16,10 +16,10 @@ _IPTYPE_MARKOV = 'ipMarkovGen'
 
 _AXES = {"x"   : "Value"}
 
-_VALS = {"obs" : {'name': "Observations", "color": '#1f77b4'}
-        ,"loc" : {'name': "Local prob", "color": '#ff7f0e'}
-        ,"pro" : {'name': "Joint prob", "color": '#2ca02c'}
-        ,"for" : {'name': "Force", "color": '#d62728'}
+_VALS = {"obs" : {'name': "Observations",    "color": '#1f77b4'}
+        ,"loc" : {'name': "Local prob",      "color": '#ff7f0e'}
+        ,"pro" : {'name': "Joint prob",      "color": '#2ca02c'}
+        ,"for" : {'name': "Force",           "color": '#d62728'}
         ,"mrk" : {'name': "Markov analyser", "color": '#9467bd'}
         }
 
@@ -331,43 +331,59 @@ class IMarkov(InfoData):
         3. Return True if the observation was successful, False otherwise.
         """
 
+        #----------------------------------------------------------------------
+        # Kontrola platnosti vstupnej hodnoty - nesmie byt Bool ani ine typy okrem int
+        #----------------------------------------------------------------------
+        if not isinstance(val, int) or isinstance(val, bool):
+            logger.error(f"{self.param['name']['value']}.observe: Invalid value '{val}'")
+            return False
+
+        #----------------------------------------------------------------------
         logger.debug(f"{self.param['name']['value']}.observe: val={val}")
-        self.needCompute = True
 
         #----------------------------------------------------------------------
         # Move one step forward and observe the new value
         #----------------------------------------------------------------------
-        toRet = self.moveFwd(val=val, observe=True)
+        if self._moveFwd(val=val, observe=True, generate=False) is None:
+            return False
 
         #----------------------------------------------------------------------
         logger.info(f"{self.param['name']['value']}.observe: '{val}' added")
-        return toRet
+        return True
 
     #--------------------------------------------------------------------------
-    def amend(self, val:int)->int|None:
-        """Advance the Markov analyser without recording a new observation.
+    def evaluate(self, val:int) -> dict|None:
+        """Evaluate an observation in the Markov analyser.
 
-        Probabilities are recomputed when necessary and the active Markov path
-        is moved forward. The expected-value calculation is not implemented yet,
-        so this method currently returns None.
+        1. Move the observation window forward one step.
+        2. Activate the corresponding points and obtain their characteristics.
+        3. Return the characteristics dict if successful, None otherwise.
+        4. Return characteristics dict or None if evaluation failed.
         """
 
-        logger.info(f"{self.param['name']['value']}.amend: val={val}")
-        toRet = None
+        #----------------------------------------------------------------------
+        # Kontrola platnosti vstupnej hodnoty - nesmie byt Bool ani ine typy okrem int
+        #----------------------------------------------------------------------
+        if not isinstance(val, int) or isinstance(val, bool):
+            logger.error(f"{self.param['name']['value']}.evaluate: Invalid value '{val}'")
+            return None
 
         #----------------------------------------------------------------------
-        # Recompute probabilities and gains if needed
+        logger.debug(f"{self.param['name']['value']}.evaluate: val={val}")
+        self.needCompute = True
+
+        #----------------------------------------------------------------------
+        # Kontrola potreby recompute
         #----------------------------------------------------------------------
         if self.needCompute: self._compute()
 
         #----------------------------------------------------------------------
-        # Move the active Markov path one step forward
+        # Move one step forward and observe the new value
         #----------------------------------------------------------------------
-        success = self.moveFwd(val=val)
-
-        if not success: return None
+        toRet = self._moveFwd(val=val, observe=False, generate=False)
 
         #----------------------------------------------------------------------
+        logger.info(f"{self.param['name']['value']}.evaluate: '{val}' added")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -426,7 +442,9 @@ class IMarkov(InfoData):
         return sorted_toRet
 
     #--------------------------------------------------------------------------
-    def moveFwd(self, val:int, *, observe:bool=False) -> bool:
+    # Internal methods for IMarkov
+    #--------------------------------------------------------------------------
+    def _moveFwd(self, val:int, *, observe:bool=False, generate:bool=False) -> dict|None:
         """Move values of the chain of Markov analysers forward with the new observation value.
 
         1. Move window of the Markov process forward one step
@@ -435,10 +453,10 @@ class IMarkov(InfoData):
         2. Activate the InfoPoints in each dimension > 1 according to the shifted values,
            activate the InfoPoint with pos == val in the last dimension of the Markov process.
 
-        3. Return True if activation was successful, False otherwise.
+        3. Returns the characteristics dict of the activated InfoPoint if successful, None otherwise.
         """
 
-        logger.debug(f"{self.param['name']['value']}._moveFwd: val={val}")
+        logger.debug(f"{self.param['name']['value']}.__moveFwd: val={val}")
 
         #----------------------------------------------------------------------
         # Move one step forward = last (dim-1) values from actVals plus new value val
@@ -449,17 +467,15 @@ class IMarkov(InfoData):
         dim = self.param['dim']['value']
 
         if dim > 1: self.actVals = self.actVals[-(dim-1):] + [val]
-        else           : self.actVals = [val]
+        else      : self.actVals = [val]
 
         #----------------------------------------------------------------------
         # Activate internal state of the Markov analyser according to the shifted values in actVals
         #----------------------------------------------------------------------
-        return self._activate(actVals=self.actVals.copy(), observe=observe)
+        return self._activate(actVals=self.actVals.copy(), observe=observe, generate=generate)
 
     #--------------------------------------------------------------------------
-    # Internal methods for IMarkov
-    #--------------------------------------------------------------------------
-    def _activate(self, actVals:list, *, observe:bool=False) -> bool:
+    def _activate(self, actVals:list, *, observe:bool=False, generate:bool=False) -> dict|None:
         """Activate the Markov analyser according to the list of values in actVals.
 
         1. For each dimension of the Markov process, find or create InfoPoint with val == actVals[dim].
@@ -467,18 +483,20 @@ class IMarkov(InfoData):
            Markov analyser and dive into it.
         3. If observe==True, update the observation count for the activated InfoPoint
            and total observation count for this dimension.
-        4. Return True if activation was successful, False otherwise.
+        4. If generate==True, generate the next value based on the activated InfoPoint.
+
+        5. Return dict of characteristics if activation was successful, None otherwise.
         """
 
-        logger.debug(f"{self.param['name']['value']}._activate: actVals={actVals}")
-        toRet = False
+        logger.debug(f"{self.param['name']['value']}._activate: actVals={actVals}, observe={observe}, generate={generate}")
+        toRet = None
 
         #----------------------------------------------------------------------
         # Check length of the actVals list
         #----------------------------------------------------------------------
         if len(actVals) == 0:
             logger.error(f"{self.param['name']['value']}._activate: actVals list is empty, cannot activate dim={self.param['dim']['value']}")
-            return toRet
+            return None
 
         #----------------------------------------------------------------------
         # Pop the leftmost value from actVals and use it as the new observation value for this dimension
@@ -487,13 +505,14 @@ class IMarkov(InfoData):
         logger.debug(f"{self.param['name']['value']}._activate: val={val}")
 
         #----------------------------------------------------------------------
-        # Find/create InfoPoint with pos == val in this dimension of the Markov process
+        # Find InfoPoint with pos == val in this dimension of the Markov process
+        # Create point only if observe is True
         #----------------------------------------------------------------------
-        self.actPoint = self._getPoint(val=val, create=True)
+        self.actPoint = self._getPoint(val=val, create=observe)
 
         if self.actPoint is None:
             logger.error(f"{self.param['name']['value']}._activate: Failed to find or add InfoPoint with pos={val} to the Markov analyser")
-            return toRet
+            return None
 
         #----------------------------------------------------------------------
         # If observe is True, update the observation count for the activated InfoPoint and total observation count for this dimension
@@ -501,12 +520,11 @@ class IMarkov(InfoData):
         if observe:
             self.totObs                += 1
             self.actPoint._vals['obs'] += 1
+            self.needCompute = True
 
         #----------------------------------------------------------------------
         # If this is not the last dimension (=1), dive into the next dimension
         #----------------------------------------------------------------------
-        toRet = True
-
         if self.param['dim']['value'] > 1:
 
             #------------------------------------------------------------------
@@ -525,9 +543,9 @@ class IMarkov(InfoData):
                     self.actPoint.set(vals={'mrk': nextMark})
 
                 #--------------------------------------------------------------
-                # Activate the next dimension
+                # Return result from the next dimension
                 #--------------------------------------------------------------
-                toRet = toRet and nextMark._activate(actVals=actVals, observe=observe)
+                toRet = nextMark._activate(actVals=actVals, observe=observe)
 
         else:
             #------------------------------------------------------------------
@@ -535,10 +553,15 @@ class IMarkov(InfoData):
             #------------------------------------------------------------------
             if len(actVals) > 0:
                 logger.error(f"{self.param['name']['value']}._activate: actVals list is not empty in the last dimension, remaining values: {actVals}")
-                toRet = False
+                return None
+
+            #------------------------------------------------------------------
+            # Return dict of characteristics for the activated InfoPoint
+            #------------------------------------------------------------------
+            toRet = self.actPoint._vals
 
         #----------------------------------------------------------------------
-        logger.debug(f"{self.param['name']['value']}._activate: Activation status: {toRet}")
+        logger.debug(f"{self.param['name']['value']}._activate: {toRet}")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -750,62 +773,12 @@ class IMarkov(InfoData):
 
         methods = super().mapSetMethods()
 
-        methods['ISeries deltas'      ] = {'dataMethod' : self.deltas
-                                          ,'pointMethod':None
-                                          ,'params'     :{}
-                                          ,'visible'    :True
-                                          ,'paramAsk'   :True
-                                          ,'outData'    :None
-                                          ,'outKey'     :'d'
-                                          }
 
         return methods
 
     #==========================================================================
     # IMarkov methods to apply in Dynamics methods
     #--------------------------------------------------------------------------
-    def deltas(self, inKey:str, outKey:str, params:dict, outData:'InfoData'):
-        """Compute auto-correlation of states for each phase.
-        - inKey  : Key of the value to be read by the method
-        - outKey : Key of the value to be set by the method
-        - params : Parameters for the method as dict
-        - outData: InfoData to store output data
-        Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
-        """
-
-        logger.info(f"{self.param['name']['value']}.deltas: {outData.param['name']['value']}[{outKey}] = <Deltas>({inKey}) with params {params}")
-        pts = 0
-
-        #----------------------------------------------------------------------
-        # Vsetky IPoints nastavim do subMatrix listu
-        #----------------------------------------------------------------------
-        points = self.actSubData()
-
-        prevS = 0
-        points[0].set( vals = {outKey: prevS} )
-
-        #----------------------------------------------------------------------
-        # Prejdem vsetky boby v subdata a pre kazdy bod nastavim hodnotu ako rozdiel medzi hodnotou bodu a predosleho bodu
-        #----------------------------------------------------------------------
-        for i in range(1, len(points)):
-
-            point = points[i]
-            currS = point.val(valKey='s')
-
-            #------------------------------------------------------------------
-            # Vypocet a nastavenie delty
-            #------------------------------------------------------------------
-            delta = currS - prevS
-            point.set( vals = {outKey: delta})
-
-            #------------------------------------------------------------------
-            # Posun na nasledujuci bod
-            #------------------------------------------------------------------
-            prevS = currS
-            pts += 1
-
-        #----------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
 
     #==========================================================================
     # Internal tools

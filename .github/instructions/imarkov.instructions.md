@@ -66,7 +66,7 @@ Keď sa pozoruje nová hodnota `val`:
 1. **Posun okna**: `self.actVals = self.actVals[-(dim-1):] + [val]`
    - Zahodiť najstaršiu hodnotu, pridať novú
 
-2. **Aktivovanie bodov**: `moveFwd(val)` → `_activate(actVals)`
+2. **Aktivovanie bodov**: `_moveFwd(val)` → `_activate(actVals)`
    - Prejsť hierarchiou dimenzií
    - Nájsť/vytvoriť InfoPoints pre daný reťazec
 
@@ -220,7 +220,7 @@ self.bits += (newBit - oldBit)
 - `observe(val)`: Hlavná operácia - analýza pozorovania
   - Inkrementálna aktualizácia `bits` a `pro`
   - Bezpečnosť pred `log(0)`
-- `moveFwd(val)`: Posun okna a aktivovanie bodov
+- `_moveFwd(val)`: Posun okna a aktivovanie bodov
 - `_activate(actVals)`: Rekurzívne aktivovanie cez dimenzie
 - `_getPoint(val, create)`: Nájdenie/vytvorenie bodu
 - `generate()`: Generovanie nasledujúcej hodnoty (stub)

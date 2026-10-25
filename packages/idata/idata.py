@@ -1011,7 +1011,7 @@ class InfoData:
         pts = 0
 
         #----------------------------------------------------------------------
-        # Ziskanie vykonavanej funkcie a jej parametrov
+        # Ziskanie odkazu na metodu, ktora ma byt aplikovana
         #----------------------------------------------------------------------
         methods = self.mapSetMethods()
 

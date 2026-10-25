@@ -2,10 +2,7 @@
 #  IField: Test file for IFieldMatrixGui class
 #------------------------------------------------------------------------------
 import tkinter                  as tk
-
 from   siqolib                  import logger
-
-from   idata.idata              import InfoData
 from   idata.idata_gui          import InfoDataGui
 
 #==============================================================================
@@ -38,12 +35,8 @@ if __name__ =='__main__':
     #--------------------------------------------------------------------------
     # Zaciatok testu
     #--------------------------------------------------------------------------
-    data = InfoData('IDataGuiTest')
-
     logger.setLevel('INFO')
     logger.info('Test of InfoDataGui class')
-
-    print(data.info(full=False)['msg'])
 
     dataGui = InfoDataGui(container=win)
     dataGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)

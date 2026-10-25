@@ -200,7 +200,7 @@ Základné triedy bez špecifickej aplikačnej logiky:
     - `observe(val)`: Spracovanie pozorovania s aktualizáciou aktívnych bodov
     - `_compute()`: Prepočítanie všetkých pravdepodobností a gains rekurzívne cez dimenzie
     - `maxGain(minGain, minObs, maxPatterns)`: Hľadanie vzoriek s maximálnym gain
-    - `moveFwd(val)`: Posun okna posledných `dim` hodnôt
+    - `_moveFwd(val)`: Posun okna posledných `dim` hodnôt
     - `_activate(actVals)`: Aktivácia bodov podľa hodnôt cez dimenzie
 
 - **ISeries** (`iseries.py`) - Časový rad

@@ -100,6 +100,16 @@ class ISeries(InfoData):
                                           ,'outData'    :None
                                           ,'outKey'     :'d'
                                           }
+
+        methods['ISeries Markov'      ] = {'dataMethod' :self.markov
+                                          ,'visible'    :True
+                                          ,'pointMethod':None
+                                          ,'params'     :{}
+                                          ,'paramAsk'   :True
+                                          ,'outData'    :'IMarkov'
+                                          ,'outKey'     :'obs'
+                                          }
+
         methods['ISeries autocorr'    ] = {'dataMethod' :self.autoCorr
                                           ,'visible'    :True
                                           ,'pointMethod':None
@@ -171,6 +181,73 @@ class ISeries(InfoData):
 
         #----------------------------------------------------------------------
         logger.info(f"{self.param['name']['value']}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
+
+    #--------------------------------------------------------------------------
+    def markov(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
+        """Compute Markov transitions of states between consecutive points.
+        - inKey  : Key of the value to be read by the method
+        - outKey : Key of the value to be set by the method
+        - params : Parameters for the method as dict
+        - outData: InfoData to store output data
+        Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
+        """
+
+        logger.info(f"{self.param['name']['value']}.markov: {outData.param['name']['value']}[{outKey}] = <Markov>({inKey}) with params {params}")
+
+        #----------------------------------------------------------------------
+        # Pripravim vystupny objekt outData
+        #----------------------------------------------------------------------
+        outData.setSchemaVal( key=outKey, name=f'Markov({self.valNameByKey(inKey)})' )
+
+        #----------------------------------------------------------------------
+        # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
+        #----------------------------------------------------------------------
+        points = self.actList
+
+        #----------------------------------------------------------------------
+        # Prejdem vsetky body v subdata a poslem do markovovskeho analyzatora hodnotu state
+        #----------------------------------------------------------------------
+        pts = 0
+        for point in points:
+
+            state = point.val(valKey=inKey)
+
+            #------------------------------------------------------------------
+            # Pozorovanie state
+            #------------------------------------------------------------------
+            if outData.observe(state):
+                pts += 1
+
+            else:
+                logger.error(f"{self.param['name']['value']}.markov: Failed to observe state '{state}' for key '{outKey}', observation cancelled.")
+                return None
+
+        logger.info(f"{self.param['name']['value']}.markov: {pts} InfoPoints was observed for key '{outKey}' in Markov")
+
+        #----------------------------------------------------------------------
+        # Prejdem vsetky body v subdata a poslem do markovovskeho analyzatora hodnotu state
+        # a vyziadam si pracdepodobnosti a force
+        #----------------------------------------------------------------------
+        pts = 0
+        for point in points:
+
+            state = point.val(valKey=inKey)
+
+            #------------------------------------------------------------------
+            # Ziskanie pravdepodobnosti a force pre state
+            #------------------------------------------------------------------
+            if outData.observe(state):
+                pts += 1
+
+            else:
+                logger.error(f"{self.param['name']['value']}.markov: Failed to get probs and force for state '{state}' for key '{outKey}', observation cancelled.")
+                return None
+
+        logger.info(f"{self.param['name']['value']}.markov: {pts} InfoPoints was evaluated for key '{outKey}' in Markov")
+
+        #----------------------------------------------------------------------
+        logger.info(f"{self.param['name']['value']}.markov: {pts} InfoPoints was updated for key '{outKey}' in Markov")
+        return pts
 
     #--------------------------------------------------------------------------
     def autoCorr(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
