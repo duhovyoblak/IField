@@ -238,17 +238,6 @@ class TestIMarkovInfo:
         assert all('\n' not in line and '\r' not in line for line in info['msg'])
         assert str(markov) == ''.join(f'{line}\n' for line in markov.info()['msg'])
 
-    def test_act_address(self):
-        """Test actAddress() method."""
-        from idata.imarkov import IMarkov
-
-        mrk = IMarkov(name="test", dim=2)
-        mrk.observe(1)
-        mrk.observe(2)
-
-        # After two observations with dim=2, should have address
-        address = mrk.actAddress()
-        assert isinstance(address, str)
 
 
 class TestIMarkovEdgeCases:

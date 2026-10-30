@@ -2,6 +2,7 @@
 # Siqo class IMarkov
 #------------------------------------------------------------------------------
 import math
+import random  as rnd
 
 from   .                      import logger
 from   .idata                 import InfoData
@@ -9,7 +10,7 @@ from   .idata                 import InfoData
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER    = '1.2.0'
+_VER    = '1.2.1'
 _IND    = '|  '                        # Info indentation
 
 _IPTYPE_MARKOV = 'ipMarkovGen'
@@ -295,31 +296,6 @@ class IMarkov(InfoData):
         logger.info(f"{self.param['name']['value']}.actPoints: Found {len(toRet)} active Points")
         return toRet
 
-    #--------------------------------------------------------------------------
-    def actAddress(self) -> str:
-        """Returns string representation of the active Points in the Markov process.
-        """
-
-        logger.debug(f"{self.param['name']['value']}.actAddress:")
-        toRet = ''
-
-        #---------------------------------------------------------------------
-        # Ziskam list of active Points in the Markov process
-        #---------------------------------------------------------------------
-        actPts = self.actPoints()
-
-        #---------------------------------------------------------------------
-        # Konvertujem list of active Points to string representation
-        #---------------------------------------------------------------------
-        for i, point in enumerate(actPts):
-
-            if i == 0: toRet = f"{point.pos('x')}"
-            else     : toRet += f" -> {point.pos('x')}"
-
-        #---------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}.actAddress: '{toRet}'")
-        return toRet
-
     #==========================================================================
     # IMarkov methods
     #--------------------------------------------------------------------------
@@ -370,7 +346,39 @@ class IMarkov(InfoData):
 
         #----------------------------------------------------------------------
         logger.debug(f"{self.param['name']['value']}.evaluate: val={val}")
-        self.needCompute = True
+
+        #----------------------------------------------------------------------
+        # Kontrola potreby recompute
+        #----------------------------------------------------------------------
+        if self.needCompute: self._compute()
+
+        #----------------------------------------------------------------------
+        # Move one step forward and obtain the characteristics of the activated points
+        #----------------------------------------------------------------------
+        toRet = self._moveFwd(val=val, observe=False, generate=False)
+
+        #----------------------------------------------------------------------
+        logger.info(f"{self.param['name']['value']}.evaluate: '{val}' evaluated")
+        return toRet
+
+    #--------------------------------------------------------------------------
+    def generate(self, val:int)->int|None:
+        """Generate value of the next observation from the Markov analyser.
+
+        1. Move the observation window forward one step.
+        2. Activate the corresponding points and generate next value predictions based on markov probabilities.
+        3. Return generated value if the generation was successful, None otherwise.
+        """
+
+        #----------------------------------------------------------------------
+        # Kontrola platnosti vstupnej hodnoty - nesmie byt Bool ani ine typy okrem int
+        #----------------------------------------------------------------------
+        if not isinstance(val, int) or isinstance(val, bool):
+            logger.error(f"{self.param['name']['value']}.generate: Invalid value '{val}' type of {type(val)}")
+            return None
+
+        #----------------------------------------------------------------------
+        logger.debug(f"{self.param['name']['value']}.generate: val={val}")
 
         #----------------------------------------------------------------------
         # Kontrola potreby recompute
@@ -380,31 +388,16 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Move one step forward and observe the new value
         #----------------------------------------------------------------------
-        toRet = self._moveFwd(val=val, observe=False, generate=False)
+        resp = self._moveFwd(val=val, observe=True, generate=True)
+
+        if resp is None:
+            return None
+
+        toRet = resp['generated']
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}.evaluate: '{val}' added")
-        return toRet
-
-    #--------------------------------------------------------------------------
-    def generate(self, observe=False)->int|None:
-        """Generate value of the next observation from the Markov analyser.
-        """
-
-        logger.info(f"{self.param['name']['value']}.generate: observe={observe}")
-        toRet = None
-
-        #----------------------------------------------------------------------
-        # Recompute probabilities and gains if needed
-        #----------------------------------------------------------------------
-        if self.needCompute: self._compute()
-
-        #----------------------------------------------------------------------
-        # Find InfoPoint with pos == val
-        #----------------------------------------------------------------------
-
-        #----------------------------------------------------------------------
-        return toRet
+        logger.info(f"{self.param['name']['value']}.generate: '{val}' generated value '{toRet}'")
+        return toRet  # Return the generated value from the response
 
     #--------------------------------------------------------------------------
     def maxForce(self, minForce=0.1, minObs=10, maxPatterns=0) -> dict:
@@ -460,9 +453,10 @@ class IMarkov(InfoData):
 
         #----------------------------------------------------------------------
         # Move one step forward = last (dim-1) values from actVals plus new value val
-        # Note: For dim=1, we keep only the current value (sliding window size = 1)
-        # For dim=2, we keep the last 1 value plus new value (sliding window size = 2)
-        # etc.
+        # Note:
+        #     For dim=1, we keep the new value only (sliding window size = 1)
+        #     For dim=2, we keep the new value plus the last 1 value (sliding window size = 2)
+        #     etc.
         #----------------------------------------------------------------------
         dim = self.param['dim']['value']
 
@@ -484,8 +478,7 @@ class IMarkov(InfoData):
         3. If observe==True, update the observation count for the activated InfoPoint
            and total observation count for this dimension.
         4. If generate==True, generate the next value based on the activated InfoPoint.
-
-        5. Return dict of characteristics if activation was successful, None otherwise.
+        5. else return dict of characteristics if activation was successful, None otherwise.
         """
 
         logger.debug(f"{self.param['name']['value']}._activate: actVals={actVals}, observe={observe}, generate={generate}")
@@ -505,10 +498,9 @@ class IMarkov(InfoData):
         logger.debug(f"{self.param['name']['value']}._activate: val={val}")
 
         #----------------------------------------------------------------------
-        # Find InfoPoint with pos == val in this dimension of the Markov process
-        # Create point only if observe is True
+        # Find/Create InfoPoint with pos == val in this dimension of the Markov process
         #----------------------------------------------------------------------
-        self.actPoint = self._getPoint(val=val, create=observe)
+        self.actPoint = self._getPoint(val=val, create=True)
 
         if self.actPoint is None:
             logger.error(f"{self.param['name']['value']}._activate: Failed to find or add InfoPoint with pos={val} to the Markov analyser")
@@ -523,42 +515,39 @@ class IMarkov(InfoData):
             self.needCompute = True
 
         #----------------------------------------------------------------------
-        # If this is not the last dimension (=1), dive into the next dimension
+        # If some actValue left, dive into the next dimension
+        # An incomplete initial window is a valid observation
         #----------------------------------------------------------------------
-        if self.param['dim']['value'] > 1:
+        if len(actVals) > 0:
 
             #------------------------------------------------------------------
-            # Check if the sliding window has more values to activate
-            # An incomplete initial window is a valid observation
+            # Get or create Markov analyser for the next dimension
             #------------------------------------------------------------------
-            if len(actVals) > 0:
+            nextMark = self.actPoint._vals.get('mrk', None)
 
-                #--------------------------------------------------------------
-                # Get or create Markov analyser for the next dimension
-                #--------------------------------------------------------------
-                nextMark = self.actPoint._vals.get('mrk', None)
+            if nextMark is None or not isinstance(nextMark, IMarkov):
+                nextMark = IMarkov(name=f"{self.param['name']['value']}/({val})", dim=self.param['dim']['value']-1)
+                self.actPoint.set(vals={'mrk': nextMark})
 
-                if nextMark is None or not isinstance(nextMark, IMarkov):
-                    nextMark = IMarkov(name=f"{self.param['name']['value']}/({val})", dim=self.param['dim']['value']-1)
-                    self.actPoint.set(vals={'mrk': nextMark})
-
-                #--------------------------------------------------------------
-                # Return result from the next dimension
-                #--------------------------------------------------------------
-                toRet = nextMark._activate(actVals=actVals, observe=observe)
+            #------------------------------------------------------------------
+            # Return result from the next dimension
+            #------------------------------------------------------------------
+            toRet = nextMark._activate(actVals=actVals, observe=observe, generate=generate)
 
         else:
             #------------------------------------------------------------------
-            # Last dimension reached, check if there are still values in actPos, which should not happen
+            # If generated, generate the next value and store it in the characteristics
             #------------------------------------------------------------------
-            if len(actVals) > 0:
-                logger.error(f"{self.param['name']['value']}._activate: actVals list is not empty in the last dimension, remaining values: {actVals}")
-                return None
+            if generate:
 
-            #------------------------------------------------------------------
-            # Return dict of characteristics for the activated InfoPoint
-            #------------------------------------------------------------------
-            toRet = self.actPoint._vals
+                generatedVal = self._generateNext()
+                toRet = {'generated': generatedVal}
+
+            else:
+                #--------------------------------------------------------------
+                # Return dict of characteristics for the activated InfoPoint
+                #--------------------------------------------------------------
+                toRet = self.actPoint._vals
 
         #----------------------------------------------------------------------
         logger.debug(f"{self.param['name']['value']}._activate: {toRet}")
@@ -643,6 +632,54 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         self.needCompute = False
         logger.info(f"{self.param['name']['value']}._compute: Probabilities and forces recalculated for {len(self.points)} points")
+
+    #--------------------------------------------------------------------------
+    def _generateNext(self)->int:
+        """Generate the next value based on the current InfoPoint's values.
+        Returns generated integer value
+        """
+
+        logger.debug(f"{self.param['name']['value']}._generateNext:")
+        toRet = None
+
+        #----------------------------------------------------------------------
+        # Generate random float between 0 and 1
+        #----------------------------------------------------------------------
+        randFloat = rnd.uniform(0, 1)
+
+        #----------------------------------------------------------------------
+        # Pick integer based on ordered probabilities v this Markov analyser in self.actPoint
+        #----------------------------------------------------------------------
+        cumPro = 0
+
+        for point in self.points:
+
+            #------------------------------------------------------------------
+            # Accumulate local probability as we iterate through the points
+            #------------------------------------------------------------------
+            cumPro += point._vals['loc']
+
+            #------------------------------------------------------------------
+            # If cumulative probability exceeds random float, select this point
+            #------------------------------------------------------------------
+            if cumPro >= randFloat:
+                toRet = point.pos('x')
+                break
+
+        #----------------------------------------------------------------------
+        # Kontrola vybratia bodu
+        #----------------------------------------------------------------------
+        if toRet is None:
+
+            #------------------------------------------------------------------
+            # If we reach here, it means the random float was not less than cumulative probability
+            # This can happen due to rounding errors, so we default to the last point
+            #------------------------------------------------------------------
+            toRet = point.pos('x')
+
+        #----------------------------------------------------------------------
+        logger.debug(f"{self.param['name']['value']}._generateNext: returning {toRet}")
+        return toRet
 
     #--------------------------------------------------------------------------
     def _maxForceRecursive(self, minForce=0.1, minObs=10, pattern=()):
