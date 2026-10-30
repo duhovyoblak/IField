@@ -1128,11 +1128,28 @@ class InfoDataGui(ttk.Frame):
         if 'outData' in metDef and metDef['outData']:
 
             #------------------------------------------------------------------
-            # Vystup smerovany do noveho IData objektu typu outData a noveho GUI okna
+            # Vystup smerovany do ineho IData objektu typu outData a ineho GUI okna
             #------------------------------------------------------------------
             outName = f"{metDef['outData']}({self.data.param['name']['value']}.{inKey})"
-            outData = self.data.new(name=outName, iDataType=metDef['outData'])
-            outGui  = self.new(outData)
+
+            #------------------------------------------------------------------
+            # Ak vystupne InfoData uz existuju, vratim ich
+            #------------------------------------------------------------------
+            outData = InfoData.getData(name=outName)
+
+            if outData is None:
+
+                #--------------------------------------------------------------
+                # Vytvorim novy IData objekt a prislusne GUI okno
+                #--------------------------------------------------------------
+                outData = self.data.new(name=outName, iDataType=metDef['outData'])
+                outGui  = self.newGui(outData)
+
+            else:
+                #--------------------------------------------------------------
+                # Ak vystupne InfoData uz existuju, vratim ich GUI
+                #--------------------------------------------------------------
+                outGui  = outData.gui
 
         else:
             #------------------------------------------------------------------

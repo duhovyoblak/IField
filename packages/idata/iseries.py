@@ -15,7 +15,8 @@ _IPTYPE_SERIES = 'ipSeries'
 
 _AXES  = {'i': 'Time tick'}            # Default axes
 _VALS  = {'s': {'name': 'State', 'color': '#1f77b4'},
-          'd': {'name': 'Delta', 'color': '#ff7f0e'}}  # Default values
+          'd': {'name': 'Delta', 'color': '#ff7f0e'},
+          'f': {'name': 'Force', 'color': '#2ca02c'}}  # Default values
 
 #==============================================================================
 # Module's variables
@@ -104,7 +105,7 @@ class ISeries(InfoData):
         methods['ISeries Markov'      ] = {'dataMethod' :self.markov
                                           ,'visible'    :True
                                           ,'pointMethod':None
-                                          ,'params'     :{}
+                                          ,'params'     :{'dim': 3}
                                           ,'paramAsk'   :True
                                           ,'outData'    :'IMarkov'
                                           ,'outKey'     :'obs'
@@ -147,9 +148,23 @@ class ISeries(InfoData):
         pts = 0
 
         #----------------------------------------------------------------------
-        # Pripravim vystupny objekt outData
+        # Skontrolujem vstupne udaje
+        #----------------------------------------------------------------------
+        if len(self.actList) < 2:
+            logger.warning(f"{self.param['name']['value']}.deltas: Not enough InfoPoints to compute deltas")
+            return None
+
+        if 'dim' not in params:
+            logger.warning(f"{self.param['name']['value']}.deltas: Missing 'dim' parameter")
+            return None
+
+        #----------------------------------------------------------------------
+        # Inicializujem vystupny objekt outData
         #----------------------------------------------------------------------
         outData.setSchemaVal( key=outKey, name=f'Delta({self.valNameByKey(inKey)})' )
+
+        if outData.getDim() != params['dim']:
+            outData.setDim(params['dim'])
 
         #----------------------------------------------------------------------
         # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
@@ -170,8 +185,13 @@ class ISeries(InfoData):
             #------------------------------------------------------------------
             # Vypocet a nastavenie delty
             #------------------------------------------------------------------
-            delta = currS - prevS
-            outData.pointByPos(i).set( vals={outKey: delta} )
+            try:
+                delta = currS - prevS
+                outData.pointByPos(i).set( vals={outKey: delta} )
+
+            except Exception as e:
+                logger.error(f"{self.param['name']['value']}.deltas: For point {i}, currS={currS}, prevS={prevS}: {e}")
+                return None
 
             #------------------------------------------------------------------
             # Posun na nasledujuci bod
@@ -236,7 +256,10 @@ class ISeries(InfoData):
             #------------------------------------------------------------------
             # Ziskanie pravdepodobnosti a force pre state
             #------------------------------------------------------------------
-            if outData.observe(state):
+            resp = outData.evaluate(state)
+
+            if resp is not None:
+                point.set( vals={'f': resp['for']} )
                 pts += 1
 
             else:

@@ -19,8 +19,8 @@ _AXES = {"x"   : "Value"}
 
 _VALS = {"obs" : {'name': "Observations",    "color": '#1f77b4'}
         ,"loc" : {'name': "Local prob",      "color": '#ff7f0e'}
-        ,"pro" : {'name': "Joint prob",      "color": '#2ca02c'}
-        ,"for" : {'name': "Force",           "color": '#d62728'}
+        ,"pro" : {'name': "Joint prob",      "color": '#d62728'}
+        ,"for" : {'name': "Force",           "color": '#2ca02c'}
         ,"mrk" : {'name': "Markov analyser", "color": '#9467bd'}
         }
 
@@ -241,6 +241,12 @@ class IMarkov(InfoData):
         logger.info(f"{self.param['name']['value']}.info: Created info")
         return {'res': 'OK', 'dat': dat, 'msg': msg}
 
+    #--------------------------------------------------------------------------
+    def getDim(self) -> int:
+        """Returns the dimension of the Markov analyser.
+        """
+        return self.param['dim']['value']
+    
     #--------------------------------------------------------------------------
     def setDim(self, dim:int):
         """Sets the dimension of the Markov analyser.
