@@ -163,14 +163,12 @@ class ISeries(InfoData):
         # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
         #----------------------------------------------------------------------
         points = self.actList
-
-        prevS = 0
-        outData.pointByPos(0).set( vals={outKey: prevS} )
+        prevS  = 0
 
         #----------------------------------------------------------------------
         # Prejdem vsetky body v subdata a pre kazdy bod nastavim hodnotu ako rozdiel medzi hodnotou bodu a predosleho bodu
         #----------------------------------------------------------------------
-        for i in range(1, len(points)):
+        for i in range(len(points)):
 
             point = points[i]
             currS = point.val(valKey=inKey)
@@ -190,7 +188,7 @@ class ISeries(InfoData):
             # Posun na nasledujuci bod
             #------------------------------------------------------------------
             prevS = currS
-            pts += 1
+            pts  += 1
 
         #----------------------------------------------------------------------
         logger.info(f"{self.param['name']['value']}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")

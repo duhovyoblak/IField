@@ -193,7 +193,7 @@ class InfoData:
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, name):
+    def __init__(self, name, register=True):
         """Initialize an InfoData instance and its initial InfoPoint type.
 
         The point structure remains empty until it is initialized separately.
@@ -240,10 +240,11 @@ class InfoData:
         #----------------------------------------------------------------------
         # Zapis do zoznamu instancii InfoData Inicializacia
         #----------------------------------------------------------------------
-        InfoData.datas[self.param['name']['value']] = self
+        if register:
+            InfoData.datas[self.param['name']['value']] = self
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}.constructor: done")
+        logger.debug(f"{self.param['name']['value']}.constructor: done")
 
     #--------------------------------------------------------------------------
     def getCreateParams(self)->list:
@@ -351,7 +352,7 @@ class InfoData:
             self.gui.resetDisplay()
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}.setIpType: ipType was set to '{ipType}' and InfoData was reset")
+        logger.debug(f"{self.param['name']['value']}.setIpType: ipType was set to '{ipType}' and InfoData was reset")
 
     #--------------------------------------------------------------------------
     def info(self, indent=0, full=False) -> dict:
@@ -502,7 +503,7 @@ class InfoData:
            Returns count of created InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.param['name']['value']}.init: {cnts}, {origs}, {rects}")
+        logger.debug(f"{self.param['name']['value']}.init: {cnts}, {origs}, {rects}")
 
         #----------------------------------------------------------------------
         # Kontrola definicie ipType

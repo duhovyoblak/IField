@@ -43,7 +43,7 @@ class IMarkov(InfoData):
     #==========================================================================
     # Constructor & utilities
     #--------------------------------------------------------------------------
-    def __init__(self, name, dim:int=1):
+    def __init__(self, name, dim:int=1, register=True):
         "Calls constructor of IMarkov process analyser/generator"
 
         logger.debug(f"{name}.constructor: Creating IMarkov object with dim={dim}")
@@ -51,7 +51,7 @@ class IMarkov(InfoData):
         #----------------------------------------------------------------------
         # Super constructor
         #----------------------------------------------------------------------
-        super().__init__(name)
+        super().__init__(name, register=register)
         self.setIpType(_IPTYPE_MARKOV)
 
         #----------------------------------------------------------------------
@@ -79,7 +79,7 @@ class IMarkov(InfoData):
         self.init( cnts=(0,) )
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}.constructor: done")
+        logger.debug(f"{self.param['name']['value']}.constructor: done")
 
     #--------------------------------------------------------------------------
     def getCreateParams(self)->list:
@@ -246,7 +246,7 @@ class IMarkov(InfoData):
         """Returns the dimension of the Markov analyser.
         """
         return self.param['dim']['value']
-    
+
     #--------------------------------------------------------------------------
     def setDim(self, dim:int):
         """Sets the dimension of the Markov analyser.
@@ -330,7 +330,7 @@ class IMarkov(InfoData):
             return False
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}.observe: '{val}' added")
+        logger.debug(f"{self.param['name']['value']}.observe: '{val}' added")
         return True
 
     #--------------------------------------------------------------------------
@@ -364,7 +364,7 @@ class IMarkov(InfoData):
         toRet = self._moveFwd(val=val, observe=False, generate=False)
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}.evaluate: '{val}' evaluated")
+        logger.debug(f"{self.param['name']['value']}.evaluate: '{val}' evaluated")
         return toRet
 
     #--------------------------------------------------------------------------
@@ -402,7 +402,7 @@ class IMarkov(InfoData):
         toRet = resp['generated']
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}.generate: '{val}' generated value '{toRet}'")
+        logger.debug(f"{self.param['name']['value']}.generate: '{val}' generated value '{toRet}'")
         return toRet  # Return the generated value from the response
 
     #--------------------------------------------------------------------------
@@ -532,7 +532,7 @@ class IMarkov(InfoData):
             nextMark = self.actPoint._vals.get('mrk', None)
 
             if nextMark is None or not isinstance(nextMark, IMarkov):
-                nextMark = IMarkov(name=f"{self.param['name']['value']}/({val})", dim=self.param['dim']['value']-1)
+                nextMark = IMarkov(name=f"{self.param['name']['value']}/({val})", dim=self.param['dim']['value']-1, register=False)
                 self.actPoint.set(vals={'mrk': nextMark})
 
             #------------------------------------------------------------------
@@ -637,7 +637,7 @@ class IMarkov(InfoData):
 
         #----------------------------------------------------------------------
         self.needCompute = False
-        logger.info(f"{self.param['name']['value']}._compute: Probabilities and forces recalculated for {len(self.points)} points")
+        logger.debug(f"{self.param['name']['value']}._compute: Probabilities and forces recalculated for {len(self.points)} points")
 
     #--------------------------------------------------------------------------
     def _generateNext(self)->int:
