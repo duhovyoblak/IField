@@ -103,6 +103,15 @@ class ISeries(InfoData):
                                           ,'outKey'     :'d'
                                           }
 
+        methods['ISeries deltaInverse'] = {'dataMethod' :self.deltaInverse
+                                          ,'visible'    :True
+                                          ,'pointMethod':None
+                                          ,'params'     :{}
+                                          ,'paramAsk'   :True
+                                          ,'outData'    :None
+                                          ,'outKey'     :'s'
+                                          }
+
         methods['ISeries autoSimilarMarkov'] = {'dataMethod' :self.autoSimilarMarkov
                                           ,'visible'    :True
                                           ,'pointMethod':None
@@ -192,6 +201,64 @@ class ISeries(InfoData):
 
         #----------------------------------------------------------------------
         logger.info(f"{self.param['name']['value']}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
+
+    #--------------------------------------------------------------------------
+    def deltaInverse(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
+        """Re-create states from deltas between consecutive points.
+        - inKey  : Key of the value to be read by the method
+        - outKey : Key of the value to be set by the method
+        - params : Parameters for the method as dict
+        - outData: InfoData to store output data
+        Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
+        """
+
+        logger.info(f"{self.param['name']['value']}.deltaInverse: {outData.param['name']['value']}[{outKey}] = <DeltaInverse>({inKey}) with params {params}")
+        pts = 0
+
+        #----------------------------------------------------------------------
+        # Skontrolujem vstupne udaje
+        #----------------------------------------------------------------------
+        if len(self.actList) < 2:
+            logger.warning(f"{self.param['name']['value']}.deltaInverse: Not enough InfoPoints to compute delta inverse")
+            return None
+
+        #----------------------------------------------------------------------
+        # Inicializujem vystupny objekt outData
+        #----------------------------------------------------------------------
+
+        #----------------------------------------------------------------------
+        # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
+        #----------------------------------------------------------------------
+        points = self.actList
+        prevS  = 0
+
+        #----------------------------------------------------------------------
+        # Prejdem vsetky body v subdata a pre kazdy bod nastavim hodnotu ako rozdiel medzi hodnotou bodu a predosleho bodu
+        #----------------------------------------------------------------------
+        for i in range(len(points)):
+
+            point = points[i]
+            delta = point.val(valKey=inKey)
+
+            #------------------------------------------------------------------
+            # Vypocet a nastavenie state
+            #------------------------------------------------------------------
+            try:
+                currS = prevS + delta
+                outData.pointByPos(i).set( vals={outKey: currS} )
+
+            except Exception as e:
+                logger.error(f"{self.param['name']['value']}.deltaInverse: For point {i}, currS={currS}, prevS={prevS}: {e}")
+                return None
+
+            #------------------------------------------------------------------
+            # Posun na nasledujuci bod
+            #------------------------------------------------------------------
+            prevS = currS
+            pts  += 1
+
+        #----------------------------------------------------------------------
+        logger.info(f"{self.param['name']['value']}.deltaInverse: {pts} states was re-created for key '{outKey}'")
 
     #--------------------------------------------------------------------------
     def autoSimilarMarkov(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
