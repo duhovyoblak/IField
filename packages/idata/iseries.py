@@ -56,6 +56,7 @@ class ISeries(InfoData):
         #----------------------------------------------------------------------
         # Private datove polozky triedy
         #----------------------------------------------------------------------
+        self.markov = None    # InfoData markov model for the series
 
 
 
@@ -102,13 +103,13 @@ class ISeries(InfoData):
                                           ,'outKey'     :'d'
                                           }
 
-        methods['ISeries Markov'      ] = {'dataMethod' :self.markov
+        methods['ISeries autoSimilarMarkov'] = {'dataMethod' :self.autoSimilarMarkov
                                           ,'visible'    :True
                                           ,'pointMethod':None
-                                          ,'params'     :{'dim': 3}
+                                          ,'params'     :{'dim': 3, 'learnPct': 0.8}
                                           ,'paramAsk'   :True
-                                          ,'outData'    :'IMarkov'
-                                          ,'outKey'     :'obs'
+                                          ,'outData'    :None
+                                          ,'outKey'     :'f'
                                           }
 
         methods['ISeries autocorr'    ] = {'dataMethod' :self.autoCorr
@@ -154,17 +155,9 @@ class ISeries(InfoData):
             logger.warning(f"{self.param['name']['value']}.deltas: Not enough InfoPoints to compute deltas")
             return None
 
-        if 'dim' not in params:
-            logger.warning(f"{self.param['name']['value']}.deltas: Missing 'dim' parameter")
-            return None
-
         #----------------------------------------------------------------------
         # Inicializujem vystupny objekt outData
         #----------------------------------------------------------------------
-        outData.setSchemaVal( key=outKey, name=f'Delta({self.valNameByKey(inKey)})' )
-
-        if outData.getDim() != params['dim']:
-            outData.setDim(params['dim'])
 
         #----------------------------------------------------------------------
         # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
@@ -203,21 +196,35 @@ class ISeries(InfoData):
         logger.info(f"{self.param['name']['value']}.deltas: {pts} InfoPoints was updated for key '{outKey}' in deltas")
 
     #--------------------------------------------------------------------------
-    def markov(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
+    def autoSimilarMarkov(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:
         """Compute Markov transitions of states between consecutive points.
-        - inKey  : Key of the value to be read by the method
-        - outKey : Key of the value to be set by the method
+        - inKey  : Key of the state to be read by the internal Markov model
+        - outKey : Key for the force to be set using the Markov model
         - params : Parameters for the method as dict
         - outData: InfoData to store output data
         Returns count of updated InfoPoints or None if initialization failed due to incompatible parameters or undefined ipType.
         """
 
-        logger.info(f"{self.param['name']['value']}.markov: {outData.param['name']['value']}[{outKey}] = <Markov>({inKey}) with params {params}")
+        logger.info(f"{self.param['name']['value']}.autoSimilarMarkov: {outData.param['name']['value']}[{outKey}] = <Markov>({inKey}) with params {params}")
 
         #----------------------------------------------------------------------
-        # Pripravim vystupny objekt outData
+        # Skontrolujem vstupne udaje
         #----------------------------------------------------------------------
-        outData.setSchemaVal( key=outKey, name=f'Markov({self.valNameByKey(inKey)})' )
+        if len(self.actList) < 2:
+            logger.warning(f"{self.param['name']['value']}.autoSimilarMarkov: Not enough InfoPoints to proceed")
+            return None
+
+        if 'dim' not in params:
+            logger.warning(f"{self.param['name']['value']}.autoSimilarMarkov: Missing 'dim' parameter")
+            return None
+
+        #----------------------------------------------------------------------
+        # Pripravim interny markovov model ak neexistuje
+        #----------------------------------------------------------------------
+        if self.markov is None:
+
+            self.markov = InfoData.new(name=f'Markov({self.valNameByKey(inKey)})', iDataType='IMarkov')
+            self.markov.setDim(params.get('dim', 1))
 
         #----------------------------------------------------------------------
         # Ziskam pracovny zoznam InfoPoints na aplikovanie metody (subData)
@@ -235,18 +242,18 @@ class ISeries(InfoData):
             #------------------------------------------------------------------
             # Pozorovanie state
             #------------------------------------------------------------------
-            if outData.observe(state):
+            if self.markov.observe(state):
                 pts += 1
 
             else:
-                logger.error(f"{self.param['name']['value']}.markov: Failed to observe state '{state}' for key '{outKey}', observation cancelled.")
+                logger.error(f"{self.param['name']['value']}.autoSimilarMarkov: Failed to observe state '{state}' for key '{outKey}', observation cancelled.")
                 return None
 
-        logger.info(f"{self.param['name']['value']}.markov: {pts} InfoPoints was observed for key '{outKey}' in Markov")
+        logger.info(f"{self.param['name']['value']}.autoSimilarMarkov: {pts} InfoPoints was observed for key '{outKey}' in Markov")
 
         #----------------------------------------------------------------------
         # Prejdem vsetky body v subdata a poslem do markovovskeho analyzatora hodnotu state
-        # a vyziadam si pracdepodobnosti a force
+        # a vyziadam si pravdepodobnosti a force
         #----------------------------------------------------------------------
         pts = 0
         for point in points:
@@ -256,20 +263,20 @@ class ISeries(InfoData):
             #------------------------------------------------------------------
             # Ziskanie pravdepodobnosti a force pre state
             #------------------------------------------------------------------
-            resp = outData.evaluate(state)
+            resp = self.markov.evaluate(state)
 
             if resp is not None:
                 point.set( vals={'f': resp['for']} )
                 pts += 1
 
             else:
-                logger.error(f"{self.param['name']['value']}.markov: Failed to get probs and force for state '{state}' for key '{outKey}', observation cancelled.")
+                logger.error(f"{self.param['name']['value']}.autoSimilarMarkov: Failed to get probs and force for state '{state}' for key '{outKey}', observation cancelled.")
                 return None
 
-        logger.info(f"{self.param['name']['value']}.markov: {pts} InfoPoints was evaluated for key '{outKey}' in Markov")
+        logger.info(f"{self.param['name']['value']}.autoSimilarMarkov: {pts} InfoPoints was evaluated for key '{outKey}' in Markov")
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}.markov: {pts} InfoPoints was updated for key '{outKey}' in Markov")
+        logger.info(f"{self.param['name']['value']}.autoSimilarMarkov: {pts} InfoPoints was updated for key '{outKey}' in Markov")
         return pts
 
     #--------------------------------------------------------------------------
