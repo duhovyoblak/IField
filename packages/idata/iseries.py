@@ -318,9 +318,12 @@ class ISeries(InfoData):
 
         #----------------------------------------------------------------------
         # Prejdem vsetky body v subdata a poslem do markovovskeho analyzatora hodnotu state
-        # a vyziadam si pravdepodobnosti a force
+        # Zapamatam si hodnotu force pre kazdy point, kladne force do forPos, zaporne do forNeg
         #----------------------------------------------------------------------
         pts = 0
+        forPos = []
+        forNeg = []
+
         for point in points:
 
             state = point.val(valKey=inKey)
@@ -331,7 +334,11 @@ class ISeries(InfoData):
             resp = self.markov.evaluate(state)
 
             if resp is not None:
+
                 point.set( vals={'f': resp['for']} )
+                i = point.
+
+
                 pts += 1
 
             else:

@@ -38,6 +38,7 @@ if __name__ =='__main__':
     logger.setLevel('INFO')
     logger.info('Test of InfoDataGui class')
 
+
     dataGui = InfoDataGui(container=win)
     dataGui.pack(fill=tk.BOTH, expand=True, side=tk.TOP, anchor=tk.N)
 
