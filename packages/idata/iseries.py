@@ -115,7 +115,7 @@ class ISeries(InfoData):
         methods['ISeries autoSimilarMarkov'] = {'dataMethod' :self.autoSimilarMarkov
                                           ,'visible'    :True
                                           ,'pointMethod':None
-                                          ,'params'     :{'dim': 3, 'learnPct': 0.8}
+                                          ,'params'     :{'dim': 3, 'forceMin': 0.8}
                                           ,'paramAsk'   :True
                                           ,'outData'    :None
                                           ,'outKey'     :'f'
@@ -314,13 +314,13 @@ class ISeries(InfoData):
                 logger.error(f"{self.param['name']['value']}.autoSimilarMarkov: Failed to observe state '{state}' for key '{outKey}', observation cancelled.")
                 return None
 
-        logger.info(f"{self.param['name']['value']}.autoSimilarMarkov: {pts} InfoPoints was observed for key '{outKey}' in Markov")
+        logger.info(f"{self.param['name']['value']}.autoSimilarMarkov: {pts} InfoPoints was observed in Markov")
 
         #----------------------------------------------------------------------
         # Prejdem vsetky body v subdata a poslem do markovovskeho analyzatora hodnotu state
         # Zapamatam si hodnotu force pre kazdy point, kladne force do forPos, zaporne do forNeg
         #----------------------------------------------------------------------
-        pts = 0
+        idx = 0
         forPos = []
         forNeg = []
 
@@ -329,27 +329,63 @@ class ISeries(InfoData):
             state = point.val(valKey=inKey)
 
             #------------------------------------------------------------------
-            # Ziskanie pravdepodobnosti a force pre state
+            # Ziskanie pravdepodobnosti a force pre point pomocou evaluate state
             #------------------------------------------------------------------
             resp = self.markov.evaluate(state)
 
             if resp is not None:
 
-                point.set( vals={'f': resp['for']} )
-                i = point.
+                force = resp['for']
+                point.set( vals={'f': force} )
 
+                if   force >= 0: forPos.append((force, idx))
+                elif force <  0: forNeg.append((force, idx))
 
-                pts += 1
+                idx += 1
 
             else:
                 logger.error(f"{self.param['name']['value']}.autoSimilarMarkov: Failed to get probs and force for state '{state}' for key '{outKey}', observation cancelled.")
                 return None
 
-        logger.info(f"{self.param['name']['value']}.autoSimilarMarkov: {pts} InfoPoints was evaluated for key '{outKey}' in Markov")
+        logger.info(f"{self.param['name']['value']}.autoSimilarMarkov: {pts} InfoPoints was evaluated in Markov analyzer")
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}.autoSimilarMarkov: {pts} InfoPoints was updated for key '{outKey}' in Markov")
-        return pts
+        # Zotriedim body podla hodnoty force, kladne a zaporne oddelene
+        #----------------------------------------------------------------------
+        forPos.sort(reverse=True)
+        forNeg.sort()
+
+        forceMin = params['forceMin']
+        mods = 0
+
+        #----------------------------------------------------------------------
+        # Synchronne citam polozky z forPos a forNeg az kym forcePos - forceNeg neklesne pod parameter 'forceMin'
+        #----------------------------------------------------------------------
+
+        for posItem, negItem in zip(forPos, forNeg):
+
+            forcePos, idxPos = posItem
+            forceNeg, idxNeg = negItem
+
+            #------------------------------------------------------------------
+            # Ak celkova force klesne pod forceMin, ukoncim spracovanie
+            #------------------------------------------------------------------
+            if forcePos - forceNeg < forceMin:
+                break
+
+            #------------------------------------------------------------------
+            # Presuniem hodnotu 1 zo state z pointu forceNeg do pointu forcePos
+            #------------------------------------------------------------------
+            statePos = self.actList[idxPos].val(valKey=inKey)
+            self.actList[idxPos].set( vals={inKey: statePos+1} )
+
+            stateNeg = self.actList[idxNeg].val(valKey=inKey)
+            self.actList[idxNeg].set( vals={inKey: stateNeg-1} )
+            mods += 1
+
+        #----------------------------------------------------------------------
+        logger.info(f"{self.param['name']['value']}.autoSimilarMarkov: state of {mods} InfoPoints was updated for key '{inKey}'")
+        return mods
 
     #--------------------------------------------------------------------------
     def autoCorr(self, inKey:str, outKey:str, params:dict, outData:'InfoData') -> int|None:

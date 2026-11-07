@@ -23,7 +23,7 @@ from   idata.idata_create_gui            import InfoDataCreateGui
 #==============================================================================
 # Module's constants
 #------------------------------------------------------------------------------
-_VER            = '2.5.0'
+_VER            = '2.5.1'
 _WIN            = '1300x740'
 _DPI            = 100
 
@@ -523,15 +523,16 @@ class InfoDataGui(ttk.Frame):
     #--------------------------------------------------------------------------
     @hasDataQuiet
     def updateDisplayBar(self):
-        """Update display bar according to current display self.options.
-        This method is called in self.viewChanged()
+        """Update the display bar according to the current display options.
+
+        Empty axis keys and the 'None' selection represent an unused axis.
         """
 
         #----------------------------------------------------------------------
         # Update axis to show in the chart
         #----------------------------------------------------------------------
-        self.lblX['text'] = self.data.axeNameByKey(self.display['keyX']) if self.display['keyX'] != 'None' else 'None'
-        self.lblY['text'] = self.data.axeNameByKey(self.display['keyY']) if self.display['keyY'] != 'None' else 'None'
+        self.lblX['text'] = self.data.axeNameByKey(self.display['keyX']) if self.display['keyX'] not in ('', 'None') else 'None'
+        self.lblY['text'] = self.data.axeNameByKey(self.display['keyY']) if self.display['keyY'] not in ('', 'None') else 'None'
 
         #----------------------------------------------------------------------
         # Update values list and value to show in the chart

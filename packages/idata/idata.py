@@ -208,7 +208,7 @@ class InfoData:
 
         self.param['name'  ] = {'label': 'Názov dát', 'value': name,                  'type': 'str'}                                     # Name of the InfoData
         self.param['idType'] = {'label': 'Typ dát'  , 'value': self._idTypeByClass(), 'type': 'ComboBox', 'options': self.iDataTypes()}  # Type of the InfoData
-        self.param['ipType'] = {'label': 'Typ bodu' , 'value': _IPTYPE_REAL1D,        'type': 'ComboBox', 'options': self.getIpTypes()}  # Type of the InfoPoint in this InfoData
+        self.param['ipType'] = {'label': 'Typ bodu' , 'value': 'undefined',           'type': 'ComboBox', 'options': self.getIpTypes()}  # Type of the InfoPoint in this InfoData
 
         #----------------------------------------------------------------------
         # Public datove polozky triedy
@@ -235,7 +235,7 @@ class InfoData:
         #----------------------------------------------------------------------
         # Inicializacia InfoPoint type
         #----------------------------------------------------------------------
-        self.setIpType(self.param['ipType']['value'])
+        self.setIpType(_IPTYPE_REAL1D)
 
         #----------------------------------------------------------------------
         # Zapis do zoznamu instancii InfoData Inicializacia
@@ -321,7 +321,7 @@ class InfoData:
         # Kontrola zmeny ipType
         #----------------------------------------------------------------------
         if (self.param['ipType']['value'] == ipType) and (not force):
-            logger.warning(f"{self.param['name']['value']}.setIpType: ipType was not changed, no need to reset")
+            logger.warning(f"{self.param['name']['value']}.setIpType: ipType '{ipType}' was not changed, no need to reset")
             return
 
         #----------------------------------------------------------------------
@@ -1112,7 +1112,7 @@ class InfoData:
         pts = dataMethod(inKey=inKey, outKey=outKey, params=params, outData=outData)   # self uz bolo predane pri priradeni do premennej dataMethod
 
         #----------------------------------------------------------------------
-        logger.info(f"{self.param['name']['value']}._applyDataMethod: {pts} InfoPoints was updated for '{outKey}'<-{dataMethod.__name__}({inKey}, {params})")
+        logger.info(f"{self.param['name']['value']}._applyDataMethod: '{outKey}'<-{dataMethod.__name__}({inKey}, {params}) done")
         return pts
 
     #==========================================================================
