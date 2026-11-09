@@ -804,6 +804,14 @@ class InfoPoint:
                         if i < len(valKeys):
                             self._vals[valKeys[i]] = v
 
+    #--------------------------------------------------------------------------
+    def setVal(self, key, val):
+        """Set value for one axis of this InfoPoint.
+           key  : axis key for which the value is to be set.
+           val  : new value for the specified axis key.
+        """
+        self.set(vals={key: val})
+
     #==========================================================================
     # InfoPoint Value's retrieval
     #--------------------------------------------------------------------------
@@ -854,24 +862,28 @@ class InfoPoint:
 
              This method is vulnerable to wrong input data, e.g. if indent is negative,
              it will create info message with negative number of indents without warning.
-             'dat' is in wrong structure FIX IN THE FUTURE
         """
 
         dat = {}
         msg = []
 
         #----------------------------------------------------------------------
-        # info o cele strukture
+        # Data info o celej strukture
         #----------------------------------------------------------------------
         dat['type'  ] = self._ipType
-        dat['pos'   ] = self._posStr()
-        dat['vals'  ] = self._valsStr()
+        dat['pos'   ] = self._pos
+        dat['vals'  ] = self._vals
 
+        #----------------------------------------------------------------------
+        # Message info o celej strukture
+        #----------------------------------------------------------------------
         if indent == 0: msg.append(f"{indent*_IND}{60*'='}")
 
-        for key, val in dat.items():
-            msg.append(f"{indent*_IND}{key:<15}: {val}")
+        msg.append(f"{indent*_IND}{'type':<15}: {self._ipType}"   )
+        msg.append(f"{indent*_IND}{'pos' :<15}: {self._posStr()}" )
+        msg.append(f"{indent*_IND}{'vals':<15}: {self._valsStr()}")
 
+        #----------------------------------------------------------------------
         return {'res':'OK', 'dat':dat, 'msg':msg}
 
     #==========================================================================
@@ -947,7 +959,7 @@ class InfoPoint:
         """
 
         const = int(params.get('const', 0))
-        infoPoint.set(vals={outKey: const})
+        infoPoint.setVal(outKey, const)
         return 1
 
     #--------------------------------------------------------------------------
@@ -963,7 +975,7 @@ class InfoPoint:
 
         val = rnd.randint(minVal, maxVal)
 
-        infoPoint.set(vals={outKey: val})
+        infoPoint.setVal(outKey, val)
         return 1
 
     #--------------------------------------------------------------------------
@@ -975,7 +987,7 @@ class InfoPoint:
         """
 
         const = float(params.get('const', 0))
-        infoPoint.set(vals={outKey: const})
+        infoPoint.setVal(outKey, const)
         return 1
 
     #--------------------------------------------------------------------------
@@ -991,7 +1003,7 @@ class InfoPoint:
 
         val = rnd.uniform(minVal, maxVal)
 
-        infoPoint.set(vals={outKey: val})
+        infoPoint.setVal(outKey, val)
         return 1
 
     #--------------------------------------------------------------------------
@@ -1005,7 +1017,7 @@ class InfoPoint:
         prob1 = params.get('prob1', 0.5)
         val = 1 if rnd.random() < prob1 else 0
 
-        infoPoint.set(vals={outKey: val})
+        infoPoint.setVal(outKey, val)
         return 1
 
     #--------------------------------------------------------------------------
@@ -1021,7 +1033,7 @@ class InfoPoint:
         imag = params.get('imag', 0)
         val  = complex(real, imag)
 
-        infoPoint.set(vals={outKey: val})
+        infoPoint.setVal(outKey, val)
         return 1
 
     #--------------------------------------------------------------------------
@@ -1037,7 +1049,7 @@ class InfoPoint:
         phase   = params.get('phase', 0)
         val     = abs_val * cmath.exp(complex(0, phase))
 
-        infoPoint.set(vals={outKey: val})
+        infoPoint.setVal(outKey, val)
         return 1
 
     #--------------------------------------------------------------------------
@@ -1058,7 +1070,7 @@ class InfoPoint:
         imag = imMin + (imMax - imMin) * rnd.random()
         val  = complex(real, imag)
 
-        infoPoint.set(vals={outKey: val})
+        infoPoint.setVal(outKey, val)
         return 1
 
     #--------------------------------------------------------------------------
@@ -1079,7 +1091,7 @@ class InfoPoint:
         phase   = phaseMin + (phaseMax - phaseMin) * rnd.random()
         val     = abs_val * cmath.exp(complex(0, phase))
 
-        infoPoint.set(vals={outKey: val})
+        infoPoint.setVal(outKey, val)
         return 1
 
     #--------------------------------------------------------------------------
@@ -1099,7 +1111,7 @@ class InfoPoint:
         phase = phase_idx * _CIRCLE / phases
         val = abs_val * cmath.exp(complex(0, phase))
 
-        infoPoint.set(vals={outKey: val})
+        infoPoint.setVal(outKey, val)
         return 1
 
 #==============================================================================

@@ -31,13 +31,14 @@ class TestIPointValues:
 
     def test_set_and_get_value(self, ipoint_instance):
         """Test setting and getting values."""
-        ipoint_instance.set(vals={"test_key": 42})
+        ipoint_instance.setVal("test_key", 42)
         value = ipoint_instance.val(valKey="test_key")
         assert value == 42
 
     def test_set_multiple_values(self, ipoint_instance):
         """Test setting multiple values."""
-        ipoint_instance.set(vals={"key1": 10, "key2": 20})
+        ipoint_instance.setVal("key1", 10)
+        ipoint_instance.setVal("key2", 20)
         assert ipoint_instance.val(valKey="key1") == 10
         assert ipoint_instance.val(valKey="key2") == 20
 

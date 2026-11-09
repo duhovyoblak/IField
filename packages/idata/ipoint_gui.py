@@ -316,8 +316,7 @@ class InfoPointValsGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        info = point.info()
-        self.origVals = info['dat']['vals']  # Original values pre prikaz Cancel
+        self.origVals = point.info()['dat']['vals']  # Original values pre prikaz Cancel
 
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
@@ -335,7 +334,7 @@ class InfoPointValsGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # List of value's keys and values
         #----------------------------------------------------------------------
-        info_msg = '\n'.join(info['msg'])
+        info_msg = '\n'.join(point.info()['msg'])
         lblVal = ttk.Label(frmVals, text=f"Point Values for {info_msg}:")
         lblVal.grid(column=0, row=0, sticky=tk.W, padx=_PADX, pady=_PADY)
 
@@ -391,7 +390,7 @@ class InfoPointValsGui(tk.Toplevel):
     def ok(self):
         "Parse user inputs"
 
-        newVals = self.point.info()['vals']
+        newVals = self.point.info()['dat']['vals']
         logger.info(f'{self.name}.ok: New values = {newVals}')
 
         #----------------------------------------------------------------------

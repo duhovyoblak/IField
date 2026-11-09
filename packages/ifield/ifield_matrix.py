@@ -145,7 +145,7 @@ class InfoFieldMatrix(InfoData):
             rightState= self.aggStates(rightStates)
 
             newState = self.aggNeighbors(leftState, actState, rightState)
-            actPoint.set(vals={valueKey: newState})
+            actPoint.setVal(valueKey, newState)
             pts += 1
 
         logger.info(f"{self.param['name']['value']}.epochStep: {pts} InfoPoints was updated for key '{valueKey}' in epoch step")

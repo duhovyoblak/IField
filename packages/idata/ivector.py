@@ -92,7 +92,7 @@ class IVector(InfoData):
         points = self.actSubData()
 
         prevS = 0
-        points[0].set( vals = {outKey: prevS} )
+        points[0].setVal(outKey, prevS)
 
         #----------------------------------------------------------------------
         # Prejdem vsetky boby v subdata a pre kazdy bod nastavim hodnotu ako rozdiel medzi hodnotou bodu a predosleho bodu
@@ -106,7 +106,7 @@ class IVector(InfoData):
             # Vypocet a nastavenie delty
             #------------------------------------------------------------------
             delta = currS - prevS
-            point.set( vals = {outKey: delta})
+            point.setVal(outKey, delta)
 
             #------------------------------------------------------------------
             # Posun na nasledujuci bod
@@ -158,12 +158,12 @@ class IVector(InfoData):
             #------------------------------------------------------------------
             # Normujem sumu podla poctu bodov a nastavim hodnotu auto-korelacie pre tau
             #------------------------------------------------------------------
-            points[tau].set(vals={outKey: (suma/n) })
+            points[tau].setVal(outKey, (suma/n) )
 
         #----------------------------------------------------------------------
         # Posledny bod nastavim na 0
         #----------------------------------------------------------------------
-        points[n-1].set(vals={outKey: 0})
+        points[n-1].setVal(outKey, 0)
 
         #----------------------------------------------------------------------
         logger.info(f"{self.param['name']['value']}.autoCorr: Done")
@@ -232,8 +232,6 @@ class IVector(InfoData):
                     fft[i] += fftLocal[i]
                     fft[i].weight += 1
 
-
-
         start = 0
         size  = 1 << rad  # Size of the FFT window (must be a power of 2)
         step  = size      # Step size for moving the window
@@ -244,7 +242,7 @@ class IVector(InfoData):
         # Nastavim vysledky do subdata listu
         #----------------------------------------------------------------------
         for i in range(n):
-            points[i].set(vals={outKey: abs(fft[i])})
+            points[i].setVal(outKey, abs(fft[i]))
 
         logger.info(f"{self.param['name']['value']}.RFT: Done")
 

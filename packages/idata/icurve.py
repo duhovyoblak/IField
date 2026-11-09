@@ -94,7 +94,7 @@ class ICurve(InfoData):
         points = self.actSubData()
 
         prevS = 0
-        points[0].set( vals = {outKey: prevS} )
+        points[0].setVal(outKey, prevS )
 
         #----------------------------------------------------------------------
         # Prejdem vsetky boby v subdata a pre kazdy bod nastavim hodnotu ako rozdiel medzi hodnotou bodu a predosleho bodu
@@ -108,7 +108,7 @@ class ICurve(InfoData):
             # Vypocet a nastavenie delty
             #------------------------------------------------------------------
             delta = currS - prevS
-            point.set( vals = {outKey: delta})
+            point.setVal(outKey, delta)
 
             #------------------------------------------------------------------
             # Posun na nasledujuci bod

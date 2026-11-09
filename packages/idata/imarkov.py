@@ -533,7 +533,7 @@ class IMarkov(InfoData):
 
             if nextMark is None or not isinstance(nextMark, IMarkov):
                 nextMark = IMarkov(name=f"{self.param['name']['value']}/({val})", dim=self.param['dim']['value']-1, register=False)
-                self.actPoint.set(vals={'mrk': nextMark})
+                self.actPoint.setVal('mrk', nextMark)
 
             #------------------------------------------------------------------
             # Return result from the next dimension

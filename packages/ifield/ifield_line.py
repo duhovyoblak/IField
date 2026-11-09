@@ -92,7 +92,7 @@ class InfoFieldLine(InfoData):
         points = self.actSubData()
 
         prevS = 0
-        points[0].set( vals = {outKey: prevS} )
+        points[0].setVal(outKey, prevS)
 
         #----------------------------------------------------------------------
         # Prejdem vsetky boby v subdata a pre kazdy bod nastavim hodnotu ako rozdiel medzi hodnotou bodu a predosleho bodu
@@ -106,7 +106,7 @@ class InfoFieldLine(InfoData):
             # Vypocet a nastavenie delty
             #------------------------------------------------------------------
             delta = currS - prevS
-            point.set( vals = {outKey: delta})
+            point.setVal(outKey, delta)
 
             #------------------------------------------------------------------
             # Posun na nasledujuci bod
@@ -158,12 +158,12 @@ class InfoFieldLine(InfoData):
             #------------------------------------------------------------------
             # Normujem sumu podla poctu bodov a nastavim hodnotu auto-korelacie pre tau
             #------------------------------------------------------------------
-            points[tau].set(vals={outKey: (suma/n) })
+            points[tau].setVal(outKey, (suma/n) )
 
         #----------------------------------------------------------------------
         # Posledny bod nastavim na 0
         #----------------------------------------------------------------------
-        points[n-1].set(vals={outKey: 0})
+        points[n-1].setVal(outKey, 0)
 
         #----------------------------------------------------------------------
         logger.info(f"{self.param['name']['value']}.autoCorr: Done")
@@ -244,7 +244,7 @@ class InfoFieldLine(InfoData):
         # Nastavim vysledky do subdata listu
         #----------------------------------------------------------------------
         for i in range(n):
-            points[i].set(vals={outKey: abs(fft[i])})
+            points[i].setVal(outKey, abs(fft[i]))
 
         logger.info(f"{self.param['name']['value']}.RFT: Done")
 

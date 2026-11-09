@@ -187,7 +187,7 @@ class ISeries(InfoData):
             #------------------------------------------------------------------
             try:
                 delta = currS - prevS
-                outData.pointByPos(i).set( vals={outKey: delta} )
+                outData.pointByPos(i).setVal(outKey, delta)
 
             except Exception as e:
                 logger.error(f"{self.param['name']['value']}.deltas: For point {i}, currS={currS}, prevS={prevS}: {e}")
@@ -245,7 +245,7 @@ class ISeries(InfoData):
             #------------------------------------------------------------------
             try:
                 currS = prevS + delta
-                outData.pointByPos(i).set( vals={outKey: currS} )
+                outData.pointByPos(i).setVal(outKey, currS)
 
             except Exception as e:
                 logger.error(f"{self.param['name']['value']}.deltaInverse: For point {i}, currS={currS}, prevS={prevS}: {e}")
@@ -336,7 +336,7 @@ class ISeries(InfoData):
             if resp is not None:
 
                 force = resp['for']
-                point.set( vals={'f': force} )
+                point.setVal('f', force)
 
                 if   force >= 0: forPos.append((force, idx))
                 elif force <  0: forNeg.append((force, idx))
@@ -377,10 +377,10 @@ class ISeries(InfoData):
             # Presuniem hodnotu 1 zo state z pointu forceNeg do pointu forcePos
             #------------------------------------------------------------------
             statePos = self.actList[idxPos].val(valKey=inKey)
-            self.actList[idxPos].set( vals={inKey: statePos+1} )
+            self.actList[idxPos].setVal(inKey, statePos+1)
 
             stateNeg = self.actList[idxNeg].val(valKey=inKey)
-            self.actList[idxNeg].set( vals={inKey: stateNeg-1} )
+            self.actList[idxNeg].setVal(inKey, stateNeg-1)
             mods += 1
 
         #----------------------------------------------------------------------
@@ -445,7 +445,7 @@ class ISeries(InfoData):
             # Normujem sumu podla poctu bodov a nastavim hodnotu auto-korelacie pre tau
             #------------------------------------------------------------------
             outData.pointByPos(tau).set(pos={'x': tau * self.dTime}, vals={'ac': (suma/n) })
-            inPoints[tau].set(vals={outKey: (suma/n) })
+            inPoints[tau].setVal(outKey, (suma/n) )
 
         #----------------------------------------------------------------------
         # Posledny bod nastavim na 0
@@ -534,7 +534,7 @@ class ISeries(InfoData):
                 #--------------------------------------------------------------
                 # Normujem sumu podla poctu produktov
                 #--------------------------------------------------------------
-                outData.pointByIdxs((tau, phs)).set(vals={outKey: (suma/cnt) })
+                outData.pointByIdxs((tau, phs)).setVal(outKey, (suma/cnt) )
 
         #----------------------------------------------------------------------
         # Posledny bod nastavim na 0
@@ -635,7 +635,7 @@ class ISeries(InfoData):
         # Nastavim vysledky do subdata listu
         #----------------------------------------------------------------------
         for i in range(n):
-            points[i].set(vals={outKey: abs(fft[i])})
+            points[i].setVal(outKey, abs(fft[i]))
 
         logger.info(f"{self.param['name']['value']}.RFT: {outData.param['name']['value']}[{outKey}] = <RFT>({inKey}) Done")
 
