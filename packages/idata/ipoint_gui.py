@@ -316,7 +316,8 @@ class InfoPointValsGui(tk.Toplevel):
         #----------------------------------------------------------------------
         # Internal objects
         #----------------------------------------------------------------------
-        self.origVals = point.info()['dat']['vals']  # Original values pre prikaz Cancel
+        self.origVals  = dict(point.info()['dat']['vals'])  # Original values pre prikaz Cancel (deep copy)
+        self.convTypes = {}                                 # Dict to store conversion types for each key: {key: combobox}
 
         #----------------------------------------------------------------------
         # Initialise original tkInter.Tk
@@ -344,6 +345,9 @@ class InfoPointValsGui(tk.Toplevel):
         lblVal = ttk.Label(frmVals, text="Value:")
         lblVal.grid(column=1, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
 
+        lblVal = ttk.Label(frmVals, text="as:")
+        lblVal.grid(column=2, row=1, sticky=tk.W, padx=_PADX, pady=_PADY)
+
         row = 2
         for key, val in self.origVals.items():
 
@@ -354,6 +358,11 @@ class InfoPointValsGui(tk.Toplevel):
             ent.insert(0, str(val))
             ent.bind("<FocusOut>", lambda event, key=key, entry=ent: self.setParam(key, entry.get()))
             ent.grid(column=1, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+
+            cmbConv = ttk.Combobox(frmVals, values=['String', 'Int', 'Real'], state='readonly', width=8)
+            cmbConv.current(0)  # Default to 'String'
+            cmbConv.grid(column=2, row=row, sticky=tk.W, padx=_PADX, pady=_PADY)
+            self.convTypes[key] = cmbConv
 
             row += 1
 
@@ -388,7 +397,42 @@ class InfoPointValsGui(tk.Toplevel):
 
     #--------------------------------------------------------------------------
     def ok(self):
-        "Parse user inputs"
+        "Parse user inputs and convert values according to selected type"
+
+        logger.info(f'{self.name}.ok: Processing values with conversion types')
+
+        #----------------------------------------------------------------------
+        # Pokúsim sa konvertovať hodnoty podľa vybraného typu
+        #----------------------------------------------------------------------
+        convertedVals = {}
+
+        for key, val_str in self.point.info()['dat']['vals'].items():
+
+            convType = self.convTypes[key].get()
+
+            try:
+                if   convType == 'String': convertedVals[key] = str(val_str)
+                elif convType == 'Int'   : convertedVals[key] = int(float(val_str))
+                elif convType == 'Real'  : convertedVals[key] = float(val_str)
+                else:
+                    convertedVals[key] = val_str
+
+                logger.debug(f'{self.name}.ok: {key}: "{val_str}" -> {convType} = {convertedVals[key]}')
+
+            except (ValueError, TypeError) as err:
+                logger.error(f'{self.name}.ok: Conversion error for {key}: "{val_str}" to {convType}: {err}')
+                showerror(
+                    title="Conversion Error",
+                    message=f'Cannot convert value "{val_str}" for "{key}" to {convType}\n\nError: {err}',
+                    parent=self
+                )
+                return
+
+        #----------------------------------------------------------------------
+        # Ak boli všetky konverzie úspešné, nastavím hodnoty
+        #----------------------------------------------------------------------
+        for key, val in convertedVals.items():
+            self.point.setVal(key, val)
 
         newVals = self.point.info()['dat']['vals']
         logger.info(f'{self.name}.ok: New values = {newVals}')

@@ -1544,8 +1544,14 @@ class InfoData:
                 #--------------------------------------------------------------
                 # Copy value from source to target node
                 #--------------------------------------------------------------
-                srcDat = srcPoint.get(key=key)
-                tgtPoint.set(dat=srcDat)
+                if key is None:
+                    srcDat = srcPoint.get()
+                    tgtPoint.set(vals=srcDat['vals'])
+                else:
+                    srcVal = srcPoint.val(key)
+                    if srcVal is not None:
+                        tgtPoint.setVal(key, srcVal)
+                        
                 pts += 1
 
         #----------------------------------------------------------------------

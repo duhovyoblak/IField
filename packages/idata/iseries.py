@@ -370,7 +370,7 @@ class ISeries(InfoData):
             #------------------------------------------------------------------
             # Ak celkova force klesne pod forceMin, ukoncim spracovanie
             #------------------------------------------------------------------
-            if forcePos - forceNeg < forceMin:
+            if (-forceNeg < forceMin) or (forcePos < forceMin):
                 break
 
             #------------------------------------------------------------------
